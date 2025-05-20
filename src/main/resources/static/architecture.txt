@@ -1,0 +1,51 @@
+Classroom Management Application Architecture
+=====================================
+
+┌───────────────────┐     ┌────────────────────┐     ┌───────────────────┐
+│                   │     │                    │     │                   │
+│  API Controllers  │────▶│     Services      │────▶│    Repositories   │
+│                   │     │                   │     │                   │
+└───────────────────┘     └────────────────────┘     └───────────────────┘
+         │                          │                          │
+         │                          │                          │
+         ▼                          ▼                          ▼
+┌───────────────────┐     ┌────────────────────┐     ┌───────────────────┐
+│                   │     │                    │     │                   │
+│      DTOs         │     │ Service Impl       │     │     Entities      │
+│                   │     │                    │     │                   │
+└───────────────────┘     └────────────────────┘     └───────────────────┘
+                                    │                          │
+                                    │                          │
+                                    ▼                          ▼
+                           ┌────────────────────┐     ┌───────────────────┐
+                           │                    │     │                   │
+                           │     Mappers        │────▶│     Database      │
+                           │                    │     │                   │
+                           └────────────────────┘     └───────────────────┘
+                        
+┌───────────────────────────────────────────────────────────────────────┐
+│                          Cross-Cutting Concerns                       │
+├───────────────────┬───────────────────┬───────────────────┬───────────┤
+│  Security Config  │  Exception        │  Data Loader      │  Util     │
+│                   │  Handling         │                   │           │
+└───────────────────┴───────────────────┴───────────────────┴───────────┘
+
+Component Descriptions:
+----------------------
+* API Controllers: Handle HTTP requests/responses and route to services
+* DTOs: Data Transfer Objects for API payload
+* Services: Define business operations (interfaces)
+* Service Impl: Implement business logic
+* Repositories: Data access layer using Spring Data JPA
+* Entities: JPA entity classes mapped to database tables
+* Mappers: Convert between DTOs and Entities
+* Cross-Cutting Concerns: Components affecting multiple layers
+
+Data Flow:
+---------
+1. Client request → Controllers
+2. Controllers convert request to DTOs
+3. DTOs passed to Services
+4. Services implement business logic
+5. Repositories interface with database
+6. Response flows back through Services → Controllers → Client 
