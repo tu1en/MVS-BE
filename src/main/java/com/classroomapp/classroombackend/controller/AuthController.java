@@ -18,6 +18,12 @@ import com.classroomapp.classroombackend.util.UserMapper;
 
 import jakarta.validation.Valid;
 
+// Thêm các import sau vào đầu file
+import java.util.HashMap;
+import java.util.Map;
+// Thêm import
+import com.classroomapp.classroombackend.security.JwtUtil;
+
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -27,10 +33,14 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     
     @Autowired
-    public AuthController(UserRepository userRepository, UserService userService, PasswordEncoder passwordEncoder) {
+    // Thêm vào constructor
+    private final JwtUtil jwtUtil;
+    
+    public AuthController(UserRepository userRepository, UserService userService, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
         this.userRepository = userRepository;
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
+        this.jwtUtil = jwtUtil;
     }
     
     /**
@@ -65,6 +75,26 @@ public class AuthController {
         return new ResponseEntity<>(UserMapper.toDto(savedUser), HttpStatus.CREATED);
     }
     
-    // Note: Login functionality would be implemented here
-    // In a production application, this would typically use JWT or other token-based authentication
-} 
+    @PostMapping("/login")
+    public ResponseEntity<Map<String, String>> loginUser(@RequestBody Map<String, String> credentials) {
+        String username = credentials.get("username");
+        String password = credentials.get("password");
+        
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new IllegalArgumentException("Invalid password");
+        }
+        
+        Map<String, String> response = new HashMap<>();
+        
+        // Generate JWT token
+        String token = jwtUtil.generateToken(user.getUsername(), user.getRole());
+        response.put("role", user.getRole());
+        response.put("token", token);
+        response.put("role", user.getRole());
+        
+        return ResponseEntity.ok(response);
+    }
+}

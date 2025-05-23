@@ -4,35 +4,45 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import jakarta.servlet.*;
+import com.classroomapp.classroombackend.filter.JwtAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        // Cho phép truy cập đến H2 console trong môi trường phát triển
-        // Trong thực tế, nên bỏ cấu hình này khi triển khai production
-        http.csrf(AbstractHttpConfigurer::disable)
-            .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/h2-console/**", "/api/**").permitAll()  // Tạm thời cho phép tất cả API
-                // Các API yêu cầu xác thực sẽ được cấu hình sau
-                .anyRequest().authenticated()
-            )
-            .headers(headers -> headers.frameOptions().disable()); // Cần thiết cho H2 console
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-        return http.build();
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
-    
-    /**
-     * Define password encoder for secure password storage
-     */
+
+    @Bean
+public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    http
+    .addFilterBefore(jwtAuthenticationFilter, (Class<? extends jakarta.servlet.Filter>) UsernamePasswordAuthenticationFilter.class)
+        .authorizeHttpRequests(auth -> auth
+            .requestMatchers("/api/auth/**").permitAll()
+            .requestMatchers("/api/admin/**").hasRole("ADMIN")
+            .requestMatchers("/api/teacher/**").hasRole("TEACHER")
+            .requestMatchers("/api/student/**").hasRole("STUDENT")
+            .anyRequest().authenticated()
+        )
+        .sessionManagement(session -> session
+            .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+        )
+        .csrf().disable();
+    return http.build();
+}
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-} 
+}
