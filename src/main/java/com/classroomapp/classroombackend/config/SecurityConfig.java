@@ -9,9 +9,9 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import jakarta.servlet.*;
+import jakarta.servlet.Filter;
 import com.classroomapp.classroombackend.filter.JwtAuthenticationFilter;
+
 
 @Configuration
 @EnableWebSecurity
@@ -26,7 +26,7 @@ public class SecurityConfig {
     @Bean
 public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     http
-    .addFilterBefore(jwtAuthenticationFilter, (Class<? extends jakarta.servlet.Filter>) UsernamePasswordAuthenticationFilter.class)
+    .addFilterAt(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/api/auth/**").permitAll()
             .requestMatchers("/api/admin/**").hasRole("ADMIN")
