@@ -18,12 +18,12 @@ public class JwtUtil {
     @Value("${jwt.expiration}")
     private int expiration;
 
-    public String generateToken(String username, String role) {
+    public String generateToken(String username, Integer roleId) {
         Map<String, Object> claims = new HashMap<>();
+        claims.put("role_id", roleId);
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(username)
-                .claim("role", role)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + expiration * 1000))
                 .signWith(SignatureAlgorithm.HS256, secret)

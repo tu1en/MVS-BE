@@ -99,7 +99,7 @@ public class UserServiceImpl implements UserService {
         existingUser.setUsername(userDto.getUsername());
         existingUser.setEmail(userDto.getEmail());
         existingUser.setFullName(userDto.getFullName());
-        existingUser.setRole(userDto.getRole());
+        existingUser.setRoleId(userDto.getRoleId());
         
         // Note: Password should be updated in a separate endpoint with proper validation
         
