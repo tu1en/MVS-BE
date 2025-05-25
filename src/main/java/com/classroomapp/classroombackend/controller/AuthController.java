@@ -7,6 +7,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.classroomapp.classroombackend.dto.RegisterDto;
@@ -97,5 +98,42 @@ public class AuthController {
         response.put("token", token);
     
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+    
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    
+        // Generate a password reset token
+        String resetToken = jwtUtil.generateToken(user.getUsername(), user.getRoleId());
+        userService.sendPasswordResetEmail(user.getEmail(), resetToken);
+    
+        return ResponseEntity.ok("Password reset email sent successfully.");
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@RequestBody Map<String, String> request) {
+        String token = request.get("token");
+        String newPassword = request.get("newPassword");
+    
+        // Validate token
+        if (!jwtUtil.validateToken(token)) {
+            throw new IllegalArgumentException("Invalid or expired token");
+        }
+    
+        // Get username from token
+        String username = jwtUtil.getUsernameFromToken(token);
+    
+        // Update password
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    
+        return ResponseEntity.ok("Password reset successfully.");
     }
 }

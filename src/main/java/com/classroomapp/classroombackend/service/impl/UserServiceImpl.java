@@ -13,17 +13,32 @@ import com.classroomapp.classroombackend.model.User;
 import com.classroomapp.classroombackend.repository.UserRepository;
 import com.classroomapp.classroombackend.service.UserService;
 import com.classroomapp.classroombackend.util.UserMapper;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 
 @Service
 public class UserServiceImpl implements UserService {
 
+    
+    @Override
+    public void sendPasswordResetEmail(String email, String resetToken) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(email);
+        message.setSubject("Password Reset Request");
+        message.setText("To reset your password, click the link below:\n" +
+            "http://localhost:3000/reset-password?token=" + resetToken);
+        mailSender.send(message);
+    }
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JavaMailSender mailSender;
     
     @Autowired
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder,JavaMailSender mailSender) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.mailSender = mailSender;
     }
 
     @Override
@@ -128,4 +143,4 @@ public class UserServiceImpl implements UserService {
     public boolean IsEmailExists(String email) {
         return userRepository.existsByEmail(email);
     }
-} 
+}
