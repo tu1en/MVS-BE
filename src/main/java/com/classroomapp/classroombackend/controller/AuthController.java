@@ -16,8 +16,9 @@ import com.classroomapp.classroombackend.model.User;
 import com.classroomapp.classroombackend.repository.UserRepository;
 import com.classroomapp.classroombackend.service.UserService;
 import com.classroomapp.classroombackend.util.UserMapper;
-
-import jakarta.validation.Valid;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseToken;
 
 // Thêm các import sau vào đầu file
 import java.util.HashMap;
@@ -52,7 +53,7 @@ public class AuthController {
      * @return created user
      */
     @PostMapping("/register")
-    public ResponseEntity<UserDto> RegisterUser(@Valid @RequestBody RegisterDto registerDto) {
+    public ResponseEntity<UserDto> RegisterUser(@RequestBody RegisterDto registerDto) {
         // Check if username already exists
         if (userService.IsUsernameExists(registerDto.getUsername())) {
             throw new IllegalArgumentException("Username already taken");
@@ -135,5 +136,39 @@ public class AuthController {
         userRepository.save(user);
     
         return ResponseEntity.ok("Password reset successfully.");
+    }
+
+    @PostMapping("/google-login")
+    public ResponseEntity<Map<String, String>> googleLogin(@RequestBody Map<String, String> credentials) {
+        String idToken = credentials.get("idToken");
+        
+        // Verify Google ID token
+        FirebaseToken decodedToken;
+        try {
+            decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
+        } catch (com.google.firebase.auth.FirebaseAuthException e) {
+            throw new IllegalArgumentException("Invalid Google ID token", e);
+        }
+        String email = decodedToken.getEmail();
+        
+        // Check if user exists
+        User user = userRepository.findByEmail(email)
+            .orElseGet(() -> {
+                // Create new user if not exists
+                User newUser = new User();
+                newUser.setEmail(email);
+                newUser.setFullName(decodedToken.getName());
+                newUser.setRoleId(1); // Default role
+                return userRepository.save(newUser);
+            });
+        
+        // Generate JWT
+        String token = jwtUtil.generateToken(user.getEmail(), user.getRoleId());
+        
+        Map<String, String> response = new HashMap<>();
+        response.put("role", user.getRoleId().toString());
+        response.put("token", token);
+        
+        return ResponseEntity.ok(response);
     }
 }
