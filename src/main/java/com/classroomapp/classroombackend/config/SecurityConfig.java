@@ -29,6 +29,7 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/api/auth/**").permitAll()
             .requestMatchers("/api/admin/**").hasRole("ADMIN")
+            .requestMatchers("/api/manager/**").hasRole("MANAGER")
             .requestMatchers("/api/teacher/**").hasRole("TEACHER")
             .requestMatchers("/api/student/**").hasRole("STUDENT")
             .anyRequest().authenticated()
