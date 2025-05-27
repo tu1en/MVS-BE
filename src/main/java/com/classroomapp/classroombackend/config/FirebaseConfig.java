@@ -9,10 +9,17 @@ public class FirebaseConfig {
     @PostConstruct
     public void init() {
         try {
-            FirebaseApp.initializeApp();
-        } catch (IllegalStateException e) {
-            // Already initialized
+            // Thêm cấu hình Firebase từ file JSON
+            java.io.FileInputStream serviceAccount =
+                new java.io.FileInputStream("src/main/resources/sep490-e5896-firebase-adminsdk-fbsvc-402079bade.json");
+            
+            com.google.firebase.FirebaseOptions options = new com.google.firebase.FirebaseOptions.Builder()
+                .setCredentials(com.google.auth.oauth2.GoogleCredentials.fromStream(serviceAccount))
+                .build();
+                
+            FirebaseApp.initializeApp(options);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
-   
 }
