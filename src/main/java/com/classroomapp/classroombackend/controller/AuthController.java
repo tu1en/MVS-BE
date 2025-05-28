@@ -25,6 +25,9 @@ import java.util.HashMap;
 import java.util.Map;
 // Thêm import
 import com.classroomapp.classroombackend.security.JwtUtil;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import java.util.Date;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -84,6 +87,8 @@ public class AuthController {
         String username = credentials.get("username");
         String password = credentials.get("password");
     
+        System.out.println("Login attempt for user: " + username);
+    
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
     
@@ -93,9 +98,31 @@ public class AuthController {
     
         Map<String, String> response = new HashMap<>();
     
-        // Generate JWT token
-        String token = jwtUtil.generateToken(user.getUsername(), user.getRoleId()); 
-        response.put("role", user.getRoleId().toString());
+        // Chuyển đổi roleId thành tên vai trò để thêm vào token
+        String roleName = jwtUtil.convertRoleIdToName(user.getRoleId());
+        System.out.println("Login successful for user: " + username + " with role: " + roleName + " (roleId: " + user.getRoleId() + ")");
+        
+        // Thêm cả email và username vào claims
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("sub", user.getUsername());  // Subject là username
+        claims.put("email", user.getEmail());
+        claims.put("username", user.getUsername());
+        claims.put("role", user.getRoleId());
+        claims.put("roles", new String[]{roleName});
+        
+        // Generate JWT token mới với claims đầy đủ
+        String token = Jwts.builder()
+            .setClaims(claims)
+            .setSubject(user.getUsername())
+            .setIssuedAt(new Date(System.currentTimeMillis()))
+            .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)) // 24 giờ
+            .signWith(SignatureAlgorithm.HS512, jwtUtil.getSecretKey())
+            .compact();
+            
+        System.out.println("Generated new token for user: " + username);
+        
+        response.put("role", roleName);
+        response.put("roleId", user.getRoleId().toString());
         response.put("token", token);
     
         return ResponseEntity.ok(response);
@@ -108,8 +135,22 @@ public class AuthController {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
     
-        // Generate a password reset token
-        String resetToken = jwtUtil.generateToken(user.getUsername(), user.getRoleId());
+        // Generate a password reset token with claims
+        String roleName = jwtUtil.convertRoleIdToName(user.getRoleId());
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("sub", user.getUsername());
+        claims.put("email", user.getEmail());
+        claims.put("role", user.getRoleId());
+        claims.put("roles", new String[]{roleName});
+        
+        String resetToken = Jwts.builder()
+            .setClaims(claims)
+            .setSubject(user.getUsername())
+            .setIssuedAt(new Date(System.currentTimeMillis()))
+            .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000))
+            .signWith(SignatureAlgorithm.HS512, jwtUtil.getSecretKey())
+            .compact();
+            
         userService.sendPasswordResetEmail(user.getEmail(), resetToken);
     
         return ResponseEntity.ok("Password reset email sent successfully.");
@@ -163,10 +204,24 @@ public class AuthController {
             });
         
         // Generate JWT
-        String token = jwtUtil.generateToken(user.getEmail(), user.getRoleId());
+        String roleName = jwtUtil.convertRoleIdToName(user.getRoleId());
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("sub", user.getEmail());
+        claims.put("email", user.getEmail());
+        claims.put("role", user.getRoleId());
+        claims.put("roles", new String[]{roleName});
+        
+        String token = Jwts.builder()
+            .setClaims(claims)
+            .setSubject(user.getEmail())
+            .setIssuedAt(new Date(System.currentTimeMillis()))
+            .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000))
+            .signWith(SignatureAlgorithm.HS512, jwtUtil.getSecretKey())
+            .compact();
         
         Map<String, String> response = new HashMap<>();
-        response.put("role", user.getRoleId().toString());
+        response.put("role", roleName);
+        response.put("roleId", user.getRoleId().toString());
         response.put("token", token);
         
         return ResponseEntity.ok(response);

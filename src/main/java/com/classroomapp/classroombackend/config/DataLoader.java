@@ -6,8 +6,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import com.classroomapp.classroombackend.constants.RoleConstants;
+import com.classroomapp.classroombackend.model.Request;
 import com.classroomapp.classroombackend.model.User;
+import com.classroomapp.classroombackend.repository.RequestRepository;
 import com.classroomapp.classroombackend.repository.UserRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.classroomapp.classroombackend.dto.TeacherRequestFormDTO;
+import com.classroomapp.classroombackend.dto.StudentRequestFormDTO;
+
+import java.time.LocalDateTime;
 
 /**
  * Initialize test data when application starts
@@ -16,21 +23,34 @@ import com.classroomapp.classroombackend.repository.UserRepository;
 public class DataLoader implements CommandLineRunner {
 
     private final UserRepository userRepository;
+    private final RequestRepository requestRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ObjectMapper objectMapper;
     
     @Autowired
-    public DataLoader(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public DataLoader(
+        UserRepository userRepository, 
+        RequestRepository requestRepository,
+        PasswordEncoder passwordEncoder,
+        ObjectMapper objectMapper
+    ) {
         this.userRepository = userRepository;
+        this.requestRepository = requestRepository;
         this.passwordEncoder = passwordEncoder;
+        this.objectMapper = objectMapper;
     }
     
     @Override
     public void run(String... args) throws Exception {
         // Clear existing data
         userRepository.deleteAll();
+        requestRepository.deleteAll();
         
         // Create sample users
         CreateUsers();
+        
+        // Create sample requests
+        CreateRequests();
     }
     
     /**
@@ -47,11 +67,20 @@ public class DataLoader implements CommandLineRunner {
         userRepository.save(admin);
         
         // Create teacher user
+        User manager = new User();
+        manager.setUsername("manager");
+        manager.setPassword(passwordEncoder.encode("manager123"));
+        manager.setEmail("manager@classroomapp.com");
+        manager.setFullName("Nigga Cheese");
+        manager.setRoleId(RoleConstants.MANAGER);
+        userRepository.save(manager);
+
+        // Create teacher user
         User teacher = new User();
         teacher.setUsername("teacher");
         teacher.setPassword(passwordEncoder.encode("teacher123"));
         teacher.setEmail("teacher@classroomapp.com");
-        teacher.setFullName("Jane Doe");
+        teacher.setFullName("Butt Slapper");
         teacher.setRoleId(RoleConstants.TEACHER);
         userRepository.save(teacher);
         
@@ -60,8 +89,69 @@ public class DataLoader implements CommandLineRunner {
         student.setUsername("student");
         student.setPassword(passwordEncoder.encode("student123"));
         student.setEmail("bigfattyboi1801@gmail.com");
-        student.setFullName("John Smith");
+        student.setFullName("Ass Cracker");
         student.setRoleId(RoleConstants.STUDENT);
         userRepository.save(student);
+    }
+    
+    /**
+     * Create sample requests for testing
+     */
+    private void CreateRequests() {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            // Đảm bảo encoding UTF-8 cho các ký tự Unicode
+            objectMapper.configure(com.fasterxml.jackson.core.JsonGenerator.Feature.ESCAPE_NON_ASCII, false);
+            
+            // Create teacher request
+            TeacherRequestFormDTO teacherForm = new TeacherRequestFormDTO();
+            teacherForm.setEmail("teacher.request@example.com");
+            teacherForm.setFullName("Nguyễn Văn A");
+            teacherForm.setPhoneNumber("0912345678");
+            teacherForm.setQualifications("Thạc sĩ CNTT");
+            teacherForm.setExperience("5 năm kinh nghiệm dạy học");
+            teacherForm.setSubjects("Lập trình Java, C++, Python");
+            teacherForm.setAdditionalInfo("Đã từng giảng dạy tại đại học FPT");
+            
+            String teacherFormJson = objectMapper.writeValueAsString(teacherForm);
+            System.out.println("Teacher JSON: " + teacherFormJson);
+            
+            Request teacherRequest = new Request();
+            teacherRequest.setEmail(teacherForm.getEmail());
+            teacherRequest.setFullName(teacherForm.getFullName());
+            teacherRequest.setPhoneNumber(teacherForm.getPhoneNumber());
+            teacherRequest.setRequestedRole("TEACHER");
+            teacherRequest.setStatus("PENDING");
+            teacherRequest.setFormResponses(teacherFormJson);
+            teacherRequest.setCreatedAt(LocalDateTime.now());
+            
+            requestRepository.save(teacherRequest);
+            
+            // Create student request
+            StudentRequestFormDTO studentForm = new StudentRequestFormDTO();
+            studentForm.setEmail("student.request@example.com");
+            studentForm.setFullName("Trần Thị B");
+            studentForm.setPhoneNumber("0987654321");
+            studentForm.setGrade("Lớp 12");
+            studentForm.setParentContact("Phụ huynh: Nguyễn Văn C, SĐT: 0912398765");
+            studentForm.setAdditionalInfo("Học sinh giỏi quốc gia môn Toán");
+            
+            String studentFormJson = objectMapper.writeValueAsString(studentForm);
+            System.out.println("Student JSON: " + studentFormJson);
+            
+            Request studentRequest = new Request();
+            studentRequest.setEmail(studentForm.getEmail());
+            studentRequest.setFullName(studentForm.getFullName());
+            studentRequest.setPhoneNumber(studentForm.getPhoneNumber());
+            studentRequest.setRequestedRole("STUDENT");
+            studentRequest.setStatus("PENDING");
+            studentRequest.setFormResponses(studentFormJson);
+            studentRequest.setCreatedAt(LocalDateTime.now());
+            
+            requestRepository.save(studentRequest);
+        } catch (Exception e) {
+            System.err.println("Lỗi khi tạo request mẫu: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }

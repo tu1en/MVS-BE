@@ -28,6 +28,13 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
     .addFilterAt(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/api/auth/**").permitAll()
+            .requestMatchers("/api/role-requests/teacher").permitAll()
+            .requestMatchers("/api/role-requests/student").permitAll()
+            .requestMatchers("/api/role-requests/check").permitAll()
+            .requestMatchers("/role-requests/teacher").permitAll()
+            .requestMatchers("/role-requests/student").permitAll()
+            .requestMatchers("/role-requests/check").permitAll()
+            .requestMatchers("/api/admin/requests/**").hasAnyRole("ADMIN", "MANAGER")
             .requestMatchers("/api/admin/**").hasRole("ADMIN")
             .requestMatchers("/api/manager/**").hasRole("MANAGER")
             .requestMatchers("/api/teacher/**").hasRole("TEACHER")
