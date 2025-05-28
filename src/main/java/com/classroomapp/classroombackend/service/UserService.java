@@ -61,4 +61,6 @@ public interface UserService {
      * @return true if email exists
      */
     boolean IsEmailExists(String email);
+
+    void sendPasswordResetEmail(String email, String resetLink);
 } 
