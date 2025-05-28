@@ -5,6 +5,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import com.classroomapp.classroombackend.constants.RoleConstants;
 import com.classroomapp.classroombackend.model.User;
 import com.classroomapp.classroombackend.repository.UserRepository;
 
@@ -42,7 +43,7 @@ public class DataLoader implements CommandLineRunner {
         admin.setPassword(passwordEncoder.encode("admin123"));
         admin.setEmail("admin@classroomapp.com");
         admin.setFullName("Administrator");
-        admin.setRole("ADMIN");
+        admin.setRoleId(RoleConstants.ADMIN);
         userRepository.save(admin);
         
         // Create teacher user
@@ -51,16 +52,16 @@ public class DataLoader implements CommandLineRunner {
         teacher.setPassword(passwordEncoder.encode("teacher123"));
         teacher.setEmail("teacher@classroomapp.com");
         teacher.setFullName("Jane Doe");
-        teacher.setRole("TEACHER");
+        teacher.setRoleId(RoleConstants.TEACHER);
         userRepository.save(teacher);
         
         // Create student user
         User student = new User();
         student.setUsername("student");
         student.setPassword(passwordEncoder.encode("student123"));
-        student.setEmail("student@classroomapp.com");
+        student.setEmail("bigfattyboi1801@gmail.com");
         student.setFullName("John Smith");
-        student.setRole("STUDENT");
+        student.setRoleId(RoleConstants.STUDENT);
         userRepository.save(student);
     }
-} 
+}

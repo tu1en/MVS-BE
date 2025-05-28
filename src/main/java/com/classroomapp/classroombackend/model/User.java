@@ -9,13 +9,21 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import jakarta.persistence.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 
 @Entity
-@Table(name = "users") // 'user' is a reserved keyword in many SQL databases
+@Table(name = "users")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Getter
+@Setter
 public class User {
 
     @Id
@@ -23,16 +31,39 @@ public class User {
     private Long id;
 
     @NotBlank
+    @Column(nullable = false, length = 100)
     private String username;
 
     @NotBlank
+    @Column(nullable = false, length = 255)
     private String password;
 
     @NotBlank
     @Email
+    @Column(nullable = false, length = 255)
     private String email;
 
+    @Column(name = "full_name", length = 255)
     private String fullName;
-    
-    private String role; // e.g., "STUDENT", "TEACHER", "ADMIN"
-} 
+
+    @Column(name = "role_id")
+    private Integer roleId;
+
+    @Column(name = "enrollment_date")
+    private LocalDate enrollmentDate;
+
+    @Column(name = "hire_date")
+    private LocalDate hireDate;
+
+    @Column(length = 100)
+    private String department;
+
+    @Column(name = "created_at", columnDefinition = "datetime default getdate()")
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", columnDefinition = "datetime default getdate()")
+    private LocalDateTime updatedAt;
+
+    @Column(length = 10, columnDefinition = "nvarchar(10) default 'active'")
+    private String status;
+}

@@ -37,7 +37,7 @@ public class ClassroomServiceImpl implements ClassroomService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", teacherId));
         
         // Validate teacher role
-        if (!"TEACHER".equalsIgnoreCase(teacher.getRole()) && !"ADMIN".equalsIgnoreCase(teacher.getRole())) {
+        if (teacher.getRoleId() != 2 && teacher.getRoleId() != 4) {
             throw new IllegalArgumentException("Only teachers can create classrooms");
         }
         
@@ -105,8 +105,8 @@ public class ClassroomServiceImpl implements ClassroomService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", studentId));
         
         // Validate student role
-        if (!"STUDENT".equalsIgnoreCase(student.getRole())) {
-            throw new IllegalArgumentException("Only users with student role can be enrolled");
+        if (student.getRoleId() != 1 && student.getRoleId() != 4) {
+            throw new IllegalArgumentException("Only teachers can create classrooms");
         }
         
         classroom.getStudents().add(student);
