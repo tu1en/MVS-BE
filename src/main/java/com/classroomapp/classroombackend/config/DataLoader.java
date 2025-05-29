@@ -50,7 +50,7 @@ public class DataLoader implements CommandLineRunner {
         CreateUsers();
         
         // Create sample requests
-        CreateRequests();
+        // CreateRequests();
     }
     
     /**
@@ -88,70 +88,9 @@ public class DataLoader implements CommandLineRunner {
         User student = new User();
         student.setUsername("student");
         student.setPassword(passwordEncoder.encode("student123"));
-        student.setEmail("bigfattyboi1801@gmail.com");
+        student.setEmail("student@classroomapp.com");
         student.setFullName("Ass Cracker");
         student.setRoleId(RoleConstants.STUDENT);
         userRepository.save(student);
-    }
-    
-    /**
-     * Create sample requests for testing
-     */
-    private void CreateRequests() {
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            // Đảm bảo encoding UTF-8 cho các ký tự Unicode
-            objectMapper.configure(com.fasterxml.jackson.core.JsonGenerator.Feature.ESCAPE_NON_ASCII, false);
-            
-            // Create teacher request
-            TeacherRequestFormDTO teacherForm = new TeacherRequestFormDTO();
-            teacherForm.setEmail("teacher.request@example.com");
-            teacherForm.setFullName("Nguyễn Văn A");
-            teacherForm.setPhoneNumber("0912345678");
-            teacherForm.setQualifications("Thạc sĩ CNTT");
-            teacherForm.setExperience("5 năm kinh nghiệm dạy học");
-            teacherForm.setSubjects("Lập trình Java, C++, Python");
-            teacherForm.setAdditionalInfo("Đã từng giảng dạy tại đại học FPT");
-            
-            String teacherFormJson = objectMapper.writeValueAsString(teacherForm);
-            System.out.println("Teacher JSON: " + teacherFormJson);
-            
-            Request teacherRequest = new Request();
-            teacherRequest.setEmail(teacherForm.getEmail());
-            teacherRequest.setFullName(teacherForm.getFullName());
-            teacherRequest.setPhoneNumber(teacherForm.getPhoneNumber());
-            teacherRequest.setRequestedRole("TEACHER");
-            teacherRequest.setStatus("PENDING");
-            teacherRequest.setFormResponses(teacherFormJson);
-            teacherRequest.setCreatedAt(LocalDateTime.now());
-            
-            requestRepository.save(teacherRequest);
-            
-            // Create student request
-            StudentRequestFormDTO studentForm = new StudentRequestFormDTO();
-            studentForm.setEmail("student.request@example.com");
-            studentForm.setFullName("Trần Thị B");
-            studentForm.setPhoneNumber("0987654321");
-            studentForm.setGrade("Lớp 12");
-            studentForm.setParentContact("Phụ huynh: Nguyễn Văn C, SĐT: 0912398765");
-            studentForm.setAdditionalInfo("Học sinh giỏi quốc gia môn Toán");
-            
-            String studentFormJson = objectMapper.writeValueAsString(studentForm);
-            System.out.println("Student JSON: " + studentFormJson);
-            
-            Request studentRequest = new Request();
-            studentRequest.setEmail(studentForm.getEmail());
-            studentRequest.setFullName(studentForm.getFullName());
-            studentRequest.setPhoneNumber(studentForm.getPhoneNumber());
-            studentRequest.setRequestedRole("STUDENT");
-            studentRequest.setStatus("PENDING");
-            studentRequest.setFormResponses(studentFormJson);
-            studentRequest.setCreatedAt(LocalDateTime.now());
-            
-            requestRepository.save(studentRequest);
-        } catch (Exception e) {
-            System.err.println("Lỗi khi tạo request mẫu: " + e.getMessage());
-            e.printStackTrace();
-        }
     }
 }

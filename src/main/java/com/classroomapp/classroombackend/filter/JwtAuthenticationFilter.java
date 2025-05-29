@@ -1,6 +1,7 @@
 package com.classroomapp.classroombackend.filter;
 
 import com.classroomapp.classroombackend.security.JwtUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -15,10 +16,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
@@ -28,14 +31,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
         throws ServletException, IOException {
         try {
-            String token = getTokenFromRequest(request);
+            String requestURI = request.getRequestURI();
+            log.info("JWT Filter - Processing request: {} {}", request.getMethod(), requestURI);
             
-            // Thêm logging để debug
-            System.out.println("JWT Filter - Request URI: " + request.getRequestURI());
-            System.out.println("JWT Filter - Token present: " + (token != null && !token.isEmpty()));
+            String token = getTokenFromRequest(request);
+            log.info("JWT Filter - Token present: {}", token != null && !token.isEmpty());
 
+            // Print headers for debugging in development
+            if (requestURI.contains("/approve") || requestURI.contains("/test")) {
+                log.info("===== REQUEST HEADERS FOR {} =====", requestURI);
+                Enumeration<String> headerNames = request.getHeaderNames();
+                while (headerNames.hasMoreElements()) {
+                    String headerName = headerNames.nextElement();
+                    // Skip logging cookies and other sensitive headers
+                    if (!headerName.toLowerCase().contains("cookie")) {
+                        log.info("Header: {} = {}", headerName, request.getHeader(headerName));
+                    }
+                }
+            }
+            
             if (token != null && !token.isEmpty()) {
-                System.out.println("JWT Filter - Token (first 20 chars): " + token.substring(0, Math.min(token.length(), 20)) + "...");
+                log.info("JWT Filter - Token (first 20 chars): {}", token.substring(0, Math.min(token.length(), 20)) + "...");
             }
 
             // Kiểm tra và xác thực token
@@ -43,20 +59,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // Lấy subject từ token (có thể là username hoặc email)
                 String subject = jwtUtil.getUsernameFromToken(token);
                 if (subject == null) {
-                    System.out.println("JWT Filter - Subject is null");
+                    log.warn("JWT Filter - Subject is null");
                     filterChain.doFilter(request, response);
                     return;
                 }
                 
-                System.out.println("JWT Filter - Subject: " + subject);
+                log.info("JWT Filter - Subject: {}", subject);
                 
                 // Lấy role từ token
                 Integer roleId = null;
                 try {
                     roleId = jwtUtil.getRoleFromToken(token);
-                    System.out.println("JWT Filter - Role ID: " + roleId);
+                    log.info("JWT Filter - Role ID: {}", roleId);
                 } catch (Exception e) {
-                    System.out.println("JWT Filter - Error getting role: " + e.getMessage());
+                    log.warn("JWT Filter - Error getting role: {}", e.getMessage());
                 }
                 
                 // Chuyển đổi roleId thành tên role
@@ -71,14 +87,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     }
                 }
                 
-                System.out.println("JWT Filter - Role Name: " + role);
+                log.info("JWT Filter - Role Name: {}", role);
                 
                 // Tạo danh sách quyền từ role
                 List<SimpleGrantedAuthority> authorities = Collections.singletonList(
                         new SimpleGrantedAuthority("ROLE_" + role));
                 
                 // Log danh sách quyền
-                System.out.println("JWT Filter - Authorities: " + authorities.stream()
+                log.info("JWT Filter - Authorities: {}", authorities.stream()
                         .map(auth -> auth.getAuthority())
                         .collect(Collectors.joining(", ")));
                 
@@ -87,13 +103,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         new UsernamePasswordAuthenticationToken(subject, null, authorities);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
                 
-                System.out.println("JWT Filter - Authentication set: " + subject + " with role: " + role);
+                log.info("JWT Filter - Authentication set: {} with role: {}", subject, role);
             } else if (StringUtils.hasText(token)) {
-                System.out.println("JWT Filter - Invalid token");
+                log.warn("JWT Filter - Invalid token");
+            } else if (requestURI.contains("/approve") || requestURI.contains("/reject")) {
+                log.warn("JWT Filter - No token for approve/reject endpoint! This will cause a 403 error.");
             }
         } catch (Exception e) {
-            System.out.println("JWT Filter - Exception: " + e.getMessage());
-            e.printStackTrace();
+            log.error("JWT Filter - Exception: {}", e.getMessage(), e);
             // Không throw exception để đảm bảo request tiếp tục xử lý
         }
 

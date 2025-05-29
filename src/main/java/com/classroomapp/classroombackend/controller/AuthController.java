@@ -116,7 +116,7 @@ public class AuthController {
             .setSubject(user.getUsername())
             .setIssuedAt(new Date(System.currentTimeMillis()))
             .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)) // 24 giờ
-            .signWith(SignatureAlgorithm.HS512, jwtUtil.getSecretKey())
+            .signWith(SignatureAlgorithm.HS512, jwtUtil.getSecretKeyFromString())
             .compact();
             
         System.out.println("Generated new token for user: " + username);
@@ -148,7 +148,7 @@ public class AuthController {
             .setSubject(user.getUsername())
             .setIssuedAt(new Date(System.currentTimeMillis()))
             .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000))
-            .signWith(SignatureAlgorithm.HS512, jwtUtil.getSecretKey())
+            .signWith(SignatureAlgorithm.HS512, jwtUtil.getSecretKeyFromString())
             .compact();
             
         userService.sendPasswordResetEmail(user.getEmail(), resetToken);
@@ -216,7 +216,7 @@ public class AuthController {
             .setSubject(user.getEmail())
             .setIssuedAt(new Date(System.currentTimeMillis()))
             .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000))
-            .signWith(SignatureAlgorithm.HS512, jwtUtil.getSecretKey())
+            .signWith(SignatureAlgorithm.HS512, jwtUtil.getSecretKeyFromString())
             .compact();
         
         Map<String, String> response = new HashMap<>();

@@ -13,4 +13,5 @@ public interface RequestService {
     List<RequestResponseDTO> getRequestsByEmail(String email);
     boolean hasActiveRequest(String email, String role);
     RequestResponseDTO getRequestDetails(Long requestId);
+    List<RequestResponseDTO> getAllRequests();
 } 

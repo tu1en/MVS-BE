@@ -63,18 +63,26 @@ public class RequestServiceImpl implements RequestService {
     @Override
     @Transactional
     public RequestResponseDTO approveRequest(Long requestId) {
+        log.info("Starting approval process for request ID: {}", requestId);
+        
         Request request = requestRepository.findById(requestId)
-                .orElseThrow(() -> new RuntimeException("Request not found"));
+                .orElseThrow(() -> new RuntimeException("Request not found with ID: " + requestId));
+        log.info("Found request: {}", request);
 
         if (!"PENDING".equals(request.getStatus())) {
-            throw new RuntimeException("Request is not in PENDING status");
+            log.warn("Request {} is not in PENDING status. Current status: {}", requestId, request.getStatus());
+            throw new RuntimeException("Request is not in PENDING status. Current status: " + request.getStatus());
         }
 
+        log.info("Setting request {} status to APPROVED", requestId);
         request.setStatus("APPROVED");
         request.setProcessedAt(LocalDateTime.now());
 
         // Update or create user with the requested role
         try {
+            log.info("Attempting to create/update user for request {}: email={}, name={}, role={}", 
+                    requestId, request.getEmail(), request.getFullName(), request.getRequestedRole());
+                    
             boolean success = userService.createOrUpdateUser(
                 request.getEmail(), 
                 request.getFullName(), 
@@ -82,15 +90,18 @@ public class RequestServiceImpl implements RequestService {
             );
             
             if (!success) {
-                log.warn("Failed to update user role, but request was approved");
+                log.warn("Failed to update user role, but request was approved. Request ID: {}", requestId);
+            } else {
+                log.info("Successfully created/updated user for request {}", requestId);
             }
         } catch (Exception e) {
-            log.error("Error updating user role", e);
+            log.error("Error updating user role for request {}: {}", requestId, e.getMessage(), e);
             // Don't fail the approval if user update fails
         }
         
         // Send approval notification
         try {
+            log.info("Sending approval notification for request {}", requestId);
             emailService.sendRequestStatusNotification(
                 request.getEmail(),
                 request.getFullName(),
@@ -98,12 +109,19 @@ public class RequestServiceImpl implements RequestService {
                 "APPROVED", 
                 null
             );
+            log.info("Successfully sent approval notification for request {}", requestId);
         } catch (Exception e) {
-            log.error("Failed to send approval email", e);
+            log.error("Failed to send approval email for request {}: {}", requestId, e.getMessage(), e);
             // Don't fail the approval if email fails
         }
 
-        return convertToDTO(requestRepository.save(request));
+        log.info("Saving approved request to database: {}", request);
+        Request savedRequest = requestRepository.save(request);
+        log.info("Request successfully saved with ID: {}", savedRequest.getId());
+        
+        RequestResponseDTO responseDTO = convertToDTO(savedRequest);
+        log.info("Returning response DTO: {}", responseDTO);
+        return responseDTO;
     }
 
     @Override
@@ -161,6 +179,61 @@ public class RequestServiceImpl implements RequestService {
         Request request = requestRepository.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Request not found"));
         return convertToDTO(request);
+    }
+
+    @Override
+    public List<RequestResponseDTO> getAllRequests() {
+        return requestRepository.findAll().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Alternative approval method that skips user creation/update
+     * This helps isolate if the user service is causing issues
+     */
+    public RequestResponseDTO approveRequestSkipUserCreation(Long requestId) {
+        log.info("Starting simplified approval process for request ID: {} (skipping user creation)", requestId);
+        
+        Request request = requestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Request not found with ID: " + requestId));
+        log.info("Found request: {}", request);
+
+        if (!"PENDING".equals(request.getStatus())) {
+            log.warn("Request {} is not in PENDING status. Current status: {}", requestId, request.getStatus());
+            throw new RuntimeException("Request is not in PENDING status. Current status: " + request.getStatus());
+        }
+
+        log.info("Setting request {} status to APPROVED", requestId);
+        request.setStatus("APPROVED");
+        request.setProcessedAt(LocalDateTime.now());
+        
+        // Skip user creation/update
+        log.info("SKIPPING user creation/update for testing purposes");
+        
+        // Send approval notification
+        try {
+            log.info("Sending approval notification for request {}", requestId);
+            emailService.sendRequestStatusNotification(
+                request.getEmail(),
+                request.getFullName(),
+                request.getRequestedRole(),
+                "APPROVED", 
+                null
+            );
+            log.info("Successfully sent approval notification for request {}", requestId);
+        } catch (Exception e) {
+            log.error("Failed to send approval email for request {}: {}", requestId, e.getMessage(), e);
+            // Don't fail the approval if email fails
+        }
+
+        log.info("Saving approved request to database: {}", request);
+        Request savedRequest = requestRepository.save(request);
+        log.info("Request successfully saved with ID: {}", savedRequest.getId());
+        
+        RequestResponseDTO responseDTO = convertToDTO(savedRequest);
+        log.info("Returning response DTO: {}", responseDTO);
+        return responseDTO;
     }
 
     private RequestResponseDTO convertToDTO(Request request) {

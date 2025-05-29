@@ -20,6 +20,16 @@ public interface EmailService {
     void sendRequestStatusNotification(String to, String fullName, String requestedRole, String status, String reason);
     
     /**
+     * Send account information with credentials
+     * @param to Recipient email address
+     * @param fullName Recipient's full name
+     * @param role User's role
+     * @param username Username for login
+     * @param password Temporary password
+     */
+    void sendAccountInfoEmail(String to, String fullName, String role, String username, String password);
+    
+    /**
      * Send a form completion confirmation
      * @param to Recipient email address
      * @param fullName Recipient's full name
