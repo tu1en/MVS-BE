@@ -21,8 +21,7 @@ public class DataLoader implements CommandLineRunner {
     private final RequestRepository requestRepository;
     private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper;
-    
-    @Autowired
+      @Autowired
     public DataLoader(
         UserRepository userRepository, 
         RequestRepository requestRepository,
@@ -30,9 +29,6 @@ public class DataLoader implements CommandLineRunner {
         ObjectMapper objectMapper
     ) {
         this.userRepository = userRepository;
-        this.classroomRepository = classroomRepository;
-        this.sessionRepository = sessionRepository;
-        this.attendanceRepository = attendanceRepository;
         this.requestRepository = requestRepository;
         this.passwordEncoder = passwordEncoder;
         this.objectMapper = objectMapper;
