@@ -51,7 +51,7 @@ public class SubmissionServiceImpl implements SubmissionService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", studentId));
         
         // Validate student role
-        if (!"STUDENT".equalsIgnoreCase(student.getRole())) {
+        if (student.getRoleId() != 1) {
             throw new IllegalArgumentException("Only users with student role can submit assignments");
         }
         
@@ -168,7 +168,7 @@ public class SubmissionServiceImpl implements SubmissionService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", teacherId));
         
         // Validate teacher role
-        if (!"TEACHER".equalsIgnoreCase(teacher.getRole()) && !"ADMIN".equalsIgnoreCase(teacher.getRole())) {
+        if (teacher.getRoleId() != 2 && teacher.getRoleId() != 3) {
             throw new IllegalArgumentException("Only teachers can grade submissions");
         }
         

@@ -2,6 +2,7 @@ package com.classroomapp.classroombackend.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -27,5 +28,6 @@ public class RegisterDto {
     @NotBlank(message = "Full name is required")
     private String fullName;
     
-    private String role;
+    @NotNull(message = "Role ID is required")
+    private Integer roleId;
 } 

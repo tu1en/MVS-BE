@@ -91,7 +91,7 @@ There are persistent connectivity issues when trying to resolve Maven dependenci
 ### Using the SimpleGreetingApp
 1. Compile: `javac SimpleGreetingApp.java`
 2. Run: `java SimpleGreetingApp`
-3. Access: http://localhost:8090/
+3. Access: http://localhost:8088/
 
 ### Using Spring Boot (when Maven issues are resolved)
 1. Build: `mvn clean package`
