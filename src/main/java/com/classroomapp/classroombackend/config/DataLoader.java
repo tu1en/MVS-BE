@@ -1,11 +1,12 @@
 package com.classroomapp.classroombackend.config;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.classroomapp.classroombackend.model.User;
+import com.classroomapp.classroombackend.repository.AttendanceRepository;
+import com.classroomapp.classroombackend.repository.AttendanceSessionRepository;
+import com.classroomapp.classroombackend.repository.ClassroomRepository;
 import com.classroomapp.classroombackend.repository.UserRepository;
 
 /**
@@ -15,52 +16,25 @@ import com.classroomapp.classroombackend.repository.UserRepository;
 public class DataLoader implements CommandLineRunner {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    
-    @Autowired
-    public DataLoader(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    private final ClassroomRepository classroomRepository;
+    private final AttendanceSessionRepository sessionRepository;
+    private final AttendanceRepository attendanceRepository;
+
+    public DataLoader(
+            UserRepository userRepository,
+            ClassroomRepository classroomRepository,
+            AttendanceSessionRepository sessionRepository,
+            AttendanceRepository attendanceRepository) {
         this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
+        this.classroomRepository = classroomRepository;
+        this.sessionRepository = sessionRepository;
+        this.attendanceRepository = attendanceRepository;
     }
-    
+
     @Override
-    public void run(String... args) throws Exception {
-        // Clear existing data
-        userRepository.deleteAll();
-        
-        // Create sample users
-        CreateUsers();
-    }
-    
-    /**
-     * Create sample users for testing
-     */
-    private void CreateUsers() {
-        // Create admin user
-        User admin = new User();
-        admin.setUsername("admin");
-        admin.setPassword(passwordEncoder.encode("admin123"));
-        admin.setEmail("admin@classroomapp.com");
-        admin.setFullName("Administrator");
-        admin.setRole("ADMIN");
-        userRepository.save(admin);
-        
-        // Create teacher user
-        User teacher = new User();
-        teacher.setUsername("teacher");
-        teacher.setPassword(passwordEncoder.encode("teacher123"));
-        teacher.setEmail("teacher@classroomapp.com");
-        teacher.setFullName("Jane Doe");
-        teacher.setRole("TEACHER");
-        userRepository.save(teacher);
-        
-        // Create student user
-        User student = new User();
-        student.setUsername("student");
-        student.setPassword(passwordEncoder.encode("student123"));
-        student.setEmail("student@classroomapp.com");
-        student.setFullName("John Smith");
-        student.setRole("STUDENT");
-        userRepository.save(student);
+    @Transactional
+    public void run(String... args) {
+        // Không cần xóa dữ liệu vì đã có data.sql
+        // Chỉ thực hiện các tác vụ khởi tạo bổ sung nếu cần
     }
 } 

@@ -25,6 +25,20 @@ public class ClassroomServiceImpl implements ClassroomService {
     private final ModelMapper modelMapper;
 
     @Override
+    public List<ClassroomDto> getAllClassrooms() {
+        List<Classroom> classrooms = classroomRepository.findAll();
+        return classrooms.stream()
+                .map(modelMapper::MapToClassroomDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public ClassroomDto getClassroomById(Long id) {
+        // Delegate to the existing method
+        return GetClassroomById(id);
+    }
+
+    @Override
     public ClassroomDto GetClassroomById(Long id) {
         Classroom classroom = FindClassroomById(id);
         return modelMapper.MapToClassroomDto(classroom);
@@ -148,4 +162,4 @@ public class ClassroomServiceImpl implements ClassroomService {
         return classroomRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Classroom", "id", id));
     }
-} 
+}

@@ -1,26 +1,58 @@
 package com.classroomapp.classroombackend.controller;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.classroomapp.classroombackend.dto.AssignmentDto;
 import com.classroomapp.classroombackend.dto.CreateAssignmentDto;
 import com.classroomapp.classroombackend.service.AssignmentService;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
-@RequestMapping("/api/assignments")
+@RequestMapping("/api/v1/assignments")
 @RequiredArgsConstructor
 public class AssignmentController {
 
     private final AssignmentService assignmentService;
     
+    @GetMapping
+    public List<Map<String, Object>> getAllAssignments() {
+        List<Map<String, Object>> assignments = new ArrayList<>();
+        
+        Map<String, Object> assignment1 = new HashMap<>();
+        assignment1.put("id", 1);
+        assignment1.put("title", "Bài tập Spring Security");
+        assignment1.put("description", "Tìm hiểu về JWT");
+        assignment1.put("dueDate", "2023-12-31");
+        
+        assignments.add(assignment1);
+        return assignments;
+    }
+
     @GetMapping("/{id}")
-    public ResponseEntity<AssignmentDto> GetAssignmentById(@PathVariable Long id) {
-        return ResponseEntity.ok(assignmentService.GetAssignmentById(id));
+    public Map<String, Object> getAssignmentById(@PathVariable int id) {
+        Map<String, Object> assignment = new HashMap<>();
+        assignment.put("id", id);
+        assignment.put("title", "Bài tập " + id);
+        assignment.put("description", "Mô tả bài tập " + id);
+        assignment.put("dueDate", "2023-12-31");
+        return assignment;
     }
     
     @PostMapping
