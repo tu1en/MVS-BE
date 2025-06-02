@@ -6,8 +6,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import com.classroomapp.classroombackend.constants.RoleConstants;
+import com.classroomapp.classroombackend.model.Blog;
 import com.classroomapp.classroombackend.model.User;
+import com.classroomapp.classroombackend.repository.BlogRepository;
 import com.classroomapp.classroombackend.repository.UserRepository;
+
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Initialize test data when application starts
@@ -16,11 +22,13 @@ import com.classroomapp.classroombackend.repository.UserRepository;
 public class DataLoader implements CommandLineRunner {
 
     private final UserRepository userRepository;
+    private final BlogRepository blogRepository;
     private final PasswordEncoder passwordEncoder;
     
     @Autowired
-    public DataLoader(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public DataLoader(UserRepository userRepository, BlogRepository blogRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.blogRepository = blogRepository;
         this.passwordEncoder = passwordEncoder;
     }
     
@@ -28,15 +36,20 @@ public class DataLoader implements CommandLineRunner {
     public void run(String... args) throws Exception {
         // Clear existing data
         userRepository.deleteAll();
+        blogRepository.deleteAll();
         
         // Create sample users
-        CreateUsers();
+        List<User> users = CreateUsers();
+        
+        // Create sample blogs
+        CreateSampleBlogs(users);
     }
     
     /**
      * Create sample users for testing
+     * @return List of created users
      */
-    private void CreateUsers() {
+    private List<User> CreateUsers() {
         // Create admin user
         User admin = new User();
         admin.setUsername("admin");
@@ -63,5 +76,90 @@ public class DataLoader implements CommandLineRunner {
         student.setFullName("John Smith");
         student.setRoleId(RoleConstants.STUDENT);
         userRepository.save(student);
+        
+        // Create manager user
+        User manager = new User();
+        manager.setUsername("manager");
+        manager.setPassword(passwordEncoder.encode("manager123"));
+        manager.setEmail("manager@classroomapp.com");
+        manager.setFullName("Manager User");
+        manager.setRoleId(RoleConstants.MANAGER);
+        userRepository.save(manager);
+        
+        return Arrays.asList(admin, teacher, student, manager);
+    }
+    
+    /**
+     * Create sample blogs for testing
+     * @param users List of users for assigning authors
+     */
+    private void CreateSampleBlogs(List<User> users) {
+        User admin = users.get(0);
+        User teacher = users.get(1);
+        User manager = users.get(3);
+        
+        // Blog 1 - Published by Admin
+        Blog blog1 = new Blog();
+        blog1.setTitle("Welcome to Our Classroom Platform");
+        blog1.setDescription("This is the first blog post on our classroom platform. We're excited to announce the launch of our new digital learning environment designed to facilitate better communication between teachers and students.\n\nOur platform includes features such as:\n- Virtual classrooms\n- Assignment submission\n- Grading system\n- Discussion forums\n\nWe hope you enjoy using our platform!");
+        blog1.setImageUrl("https://images.unsplash.com/photo-1503676260728-1c00da094a0b?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80");
+        blog1.setThumbnailUrl("https://images.unsplash.com/photo-1503676260728-1c00da094a0b?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60");
+        blog1.setTags("announcement, welcome, platform");
+        blog1.setAuthor(admin);
+        blog1.setIsPublished(true);
+        blog1.setStatus("published");
+        LocalDateTime now = LocalDateTime.now();
+        blog1.setPublishedDate(now.minusDays(7));
+        blog1.setLastEditedDate(now.minusDays(7));
+        blog1.setLastEditedBy(admin);
+        blog1.setViewCount(156);
+        blogRepository.save(blog1);
+        
+        // Blog 2 - Published by Teacher
+        Blog blog2 = new Blog();
+        blog2.setTitle("Tips for Effective Online Learning");
+        blog2.setDescription("As we transition to more online learning, here are some tips to help students succeed:\n\n1. **Create a dedicated study space** - Find a quiet, comfortable place where you can focus.\n\n2. **Establish a routine** - Set regular hours for studying and stick to them.\n\n3. **Take breaks** - Use techniques like the Pomodoro method (25 minutes of work followed by a 5-minute break).\n\n4. **Stay organized** - Use digital calendars and to-do lists to keep track of assignments and deadlines.\n\n5. **Participate actively** - Engage in online discussions and ask questions when you need help.\n\nWhat strategies do you find most effective for online learning? Share in the comments!");
+        blog2.setImageUrl("https://images.unsplash.com/photo-1498243691581-b145c3f54a5a?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80");
+        blog2.setThumbnailUrl("https://images.unsplash.com/photo-1498243691581-b145c3f54a5a?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60");
+        blog2.setVideoUrl("https://www.youtube.com/embed/sBJmRD7kNTk");
+        blog2.setTags("online learning, study tips, education");
+        blog2.setAuthor(teacher);
+        blog2.setIsPublished(true);
+        blog2.setStatus("published");
+        blog2.setPublishedDate(now.minusDays(5));
+        blog2.setLastEditedDate(now.minusDays(5));
+        blog2.setLastEditedBy(teacher);
+        blog2.setViewCount(89);
+        blogRepository.save(blog2);
+        
+        // Blog 3 - Draft by Manager
+        Blog blog3 = new Blog();
+        blog3.setTitle("Upcoming Features for Next Semester");
+        blog3.setDescription("We're working on several exciting features that will be released next semester. These improvements are based on feedback from students and teachers.\n\n**Coming Soon:**\n\n- Improved messaging system\n- Real-time collaboration tools\n- Mobile app for iOS and Android\n- Integration with popular educational tools\n- Advanced analytics for teachers\n\nThis post is still a draft and will be updated with more details before publication.");
+        blog3.setThumbnailUrl("https://i1.sndcdn.com/artworks-000473680527-kz21lf-t1080x1080.jpg");
+        blog3.setTags("features, upcoming, improvements");
+        blog3.setAuthor(manager);
+        blog3.setIsPublished(false);
+        blog3.setStatus("draft");
+        blog3.setLastEditedDate(now.minusDays(2));
+        blog3.setLastEditedBy(manager);
+        blogRepository.save(blog3);
+        
+        // Blog 4 - Published by Manager with image and video
+        Blog blog4 = new Blog();
+        blog4.setTitle("Virtual Field Trip: Exploring World Museums");
+        blog4.setDescription("Today we're taking a virtual field trip to some of the world's most famous museums that offer online tours.\n\nMany prestigious museums provide virtual tours that allow you to explore their collections from the comfort of your home. This is a great educational resource for art, history, and cultural studies.\n\n**Museums featured in the video:**\n\n- The Louvre, Paris\n- The British Museum, London\n- The Metropolitan Museum of Art, New York\n- The Vatican Museums, Rome\n- The National Museum of Modern and Contemporary Art, Seoul\n\nThe attached video provides a guided tour of these museums. We hope this virtual field trip inspires students to learn more about art and history!");
+        blog4.setImageUrl("https://images.unsplash.com/photo-1515169273894-7e876dcf13da?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80");
+        blog4.setThumbnailUrl("https://images.unsplash.com/photo-1515169273894-7e876dcf13da?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60");
+        blog4.setVideoUrl("https://www.youtube.com/embed/vQ_sAt-VzRk");
+        blog4.setTags("virtual tour, museums, art, history, education");
+        blog4.setAuthor(manager);
+        blog4.setIsPublished(true);
+        blog4.setStatus("published");
+        blog4.setPublishedDate(now.minusDays(1));
+        blog4.setLastEditedDate(now.minusDays(1));
+        blog4.setLastEditedBy(manager);
+        blog4.setViewCount(42);
+        blogRepository.save(blog4);
     }
 }
