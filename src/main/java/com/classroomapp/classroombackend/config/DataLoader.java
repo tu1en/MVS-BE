@@ -11,10 +11,6 @@ import com.classroomapp.classroombackend.model.User;
 import com.classroomapp.classroombackend.repository.RequestRepository;
 import com.classroomapp.classroombackend.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.classroomapp.classroombackend.dto.TeacherRequestFormDTO;
-import com.classroomapp.classroombackend.dto.StudentRequestFormDTO;
-
-import java.time.LocalDateTime;
 
 /**
  * Initialize test data when application starts
