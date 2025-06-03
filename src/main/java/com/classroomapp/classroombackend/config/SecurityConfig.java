@@ -15,51 +15,48 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 import com.classroomapp.classroombackend.filter.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpMethod;
 
 @Configuration
 @EnableWebSecurity
 @Slf4j
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
-
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-    }
+    @Autowired
+    private JwtAuthenticationFilter jwtAuthFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         log.info("Configuring security filter chain");
         http
-            .addFilterAt(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-            .authorizeHttpRequests(auth -> auth
+            // First configure CORS
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            // Then disable CSRF
+            .csrf(csrf -> csrf.disable())
+            // Then configure authorization rules
+            .authorizeHttpRequests(authorize -> authorize
+                // Allow OPTIONS requests for CORS preflight
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                
                 // Public endpoints
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/role-requests/teacher").permitAll()
-                .requestMatchers("/api/role-requests/student").permitAll()
-                .requestMatchers("/api/role-requests/check").permitAll()
-                .requestMatchers("/role-requests/teacher").permitAll()
-                .requestMatchers("/role-requests/student").permitAll()
-                .requestMatchers("/role-requests/check").permitAll()
+                .requestMatchers("/api/public/**").permitAll()
+                .requestMatchers("/api/role-requests/**").permitAll()
+                .requestMatchers("/role-requests/**").permitAll() // Allow both with and without /api prefix
+                .requestMatchers("/api/files/**").permitAll()
+                .requestMatchers("/files/**").permitAll() // Allow both with and without /api prefix
+                .requestMatchers("/h2-console/**").permitAll()
                 
-                // Test endpoints for development
-                .requestMatchers("/api/admin/requests/*/approve-simple").permitAll()
-                
-                // Protected endpoints
-                .requestMatchers("/api/admin/requests/**").hasAnyRole("ADMIN", "MANAGER")
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/manager/**").hasRole("MANAGER")
-                .requestMatchers("/api/teacher/**").hasRole("TEACHER")
-                .requestMatchers("/api/student/**").hasRole("STUDENT")
+                // All other requests need authentication
                 .anyRequest().authenticated()
             )
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf.disable());
+            // Finally add the JWT filter before the standard authentication filter
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+            .headers(headers -> headers.frameOptions().disable()); // For H2 console
         
         log.info("Security filter chain configured successfully");
         return http.build();
@@ -68,10 +65,11 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:8088", "http://localhost", "https://mvsclassroom.com"));
+        configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost:3000", "http://localhost:5173"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
