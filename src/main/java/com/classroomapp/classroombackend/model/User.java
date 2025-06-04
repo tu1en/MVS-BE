@@ -58,11 +58,11 @@ public class User {
     @Column(length = 100)
     private String department;
 
-    @Column(name = "created_at", columnDefinition = "datetime default getdate()")
-    private LocalDateTime createdAt;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column(name = "updated_at", columnDefinition = "datetime default getdate()")
-    private LocalDateTime updatedAt;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
     @Column(length = 10, columnDefinition = "nvarchar(10) default 'active'")
     private String status;
@@ -163,4 +163,6 @@ public class User {
     public void setStatus(String status) {
         this.status = status;
     }
+    @Column(length = 10)
+    private String status = "active";
 }
