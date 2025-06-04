@@ -1,4 +1,4 @@
--- Tạo bảng users
+-- Create users table
 CREATE TABLE users (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(100) NOT NULL UNIQUE,
@@ -14,7 +14,7 @@ CREATE TABLE users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Tạo bảng classrooms
+-- Create classrooms table
 CREATE TABLE classrooms (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -24,13 +24,13 @@ CREATE TABLE classrooms (
     teacher_id BIGINT,
     location_lat DOUBLE,
     location_lon DOUBLE,
-    allowed_radius DOUBLE DEFAULT 100.0, -- Bán kính cho phép điểm danh (mét)
+    allowed_radius DOUBLE DEFAULT 100.0, -- Allowed attendance radius (meters)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (teacher_id) REFERENCES users(id)
 );
 
--- Tạo bảng classroom_enrollments (quan hệ nhiều-nhiều giữa classroom và users)
+-- Create classroom_enrollments table (many-to-many relationship between classroom and users)
 CREATE TABLE classroom_enrollments (
     classroom_id BIGINT,
     user_id BIGINT,
@@ -40,7 +40,7 @@ CREATE TABLE classroom_enrollments (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
--- Tạo bảng attendance_sessions
+-- Create attendance_sessions table
 CREATE TABLE attendance_sessions (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255),
@@ -59,7 +59,7 @@ CREATE TABLE attendance_sessions (
     FOREIGN KEY (teacher_id) REFERENCES users(id)
 );
 
--- Tạo bảng attendances
+-- Create attendances table
 CREATE TABLE attendances (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT,
@@ -80,7 +80,7 @@ CREATE TABLE attendances (
     FOREIGN KEY (marked_by_id) REFERENCES users(id)
 );
 
--- Tạo bảng allowed_ips (whitelist IP cho điểm danh)
+-- Create allowed_ips table (whitelist IP for attendance)
 CREATE TABLE allowed_ips (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     ip_address VARCHAR(45) NOT NULL UNIQUE,
@@ -89,7 +89,7 @@ CREATE TABLE allowed_ips (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Tạo bảng assignments
+-- Create assignments table
 CREATE TABLE assignments (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
@@ -101,14 +101,14 @@ CREATE TABLE assignments (
     FOREIGN KEY (classroom_id) REFERENCES classrooms(id)
 );
 
--- Tạo bảng submissions
+-- Create submissions table
 CREATE TABLE submissions (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     assignment_id BIGINT,
     student_id BIGINT,
     comment VARCHAR(2000),
     file_submission_url VARCHAR(255),
-    submitted_at TIMESTAMP,
+    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     score INTEGER,
     feedback VARCHAR(500),
     graded_at TIMESTAMP,
@@ -116,4 +116,16 @@ CREATE TABLE submissions (
     FOREIGN KEY (assignment_id) REFERENCES assignments(id),
     FOREIGN KEY (student_id) REFERENCES users(id),
     FOREIGN KEY (graded_by_id) REFERENCES users(id)
-); 
+);
+
+-- Create accomplishments table
+CREATE TABLE accomplishments (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    course_title VARCHAR(255) NOT NULL,
+    subject VARCHAR(255),
+    teacher_name VARCHAR(255),
+    grade DOUBLE,
+    completion_date DATE,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);

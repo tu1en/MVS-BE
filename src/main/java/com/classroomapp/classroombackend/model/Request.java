@@ -12,7 +12,8 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Request {    @Id
+public class Request {
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
@@ -25,16 +26,14 @@ public class Request {    @Id
     @Column(nullable = false, length = 20)
     private String phoneNumber;
 
-    @Column(nullable = false, length = 50)
-    private String requestedRole; // "TEACHER" or "STUDENT"
+    @Column(nullable = false, length = 50)    private String requestedRole; // "TEACHER" or "STUDENT"
     
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT", length = 4000)
     private String formResponses; // JSON string containing form responses
 
-    @Column(nullable = false, length = 50)
-    private String status = "PENDING"; // PENDING, APPROVED, REJECTED
+    @Column(nullable = false, length = 50)    private String status = "PENDING"; // PENDING, APPROVED, REJECTED
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT", length = 4000)
     private String rejectReason;
 
     @Column(nullable = false)
@@ -47,4 +46,4 @@ public class Request {    @Id
     protected void onCreate() {
         createdAt = LocalDateTime.now();
     }
-} 
+}
