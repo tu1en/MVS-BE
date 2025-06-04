@@ -8,46 +8,53 @@ import org.springframework.stereotype.Component;
 import com.classroomapp.classroombackend.constants.RoleConstants;
 import com.classroomapp.classroombackend.model.Request;
 import com.classroomapp.classroombackend.model.User;
+import com.classroomapp.classroombackend.model.Accomplishment;
 import com.classroomapp.classroombackend.repository.RequestRepository;
 import com.classroomapp.classroombackend.repository.UserRepository;
+import com.classroomapp.classroombackend.repository.AccomplishmentRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.classroomapp.classroombackend.dto.TeacherRequestFormDTO;
 import com.classroomapp.classroombackend.dto.StudentRequestFormDTO;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalDate;
 
 /**
  * Initialize test data when application starts
  */
 @Component
-public class DataLoader implements CommandLineRunner {
-
-    private final UserRepository userRepository;
+public class DataLoader implements CommandLineRunner {    private final UserRepository userRepository;
     private final RequestRepository requestRepository;
+    private final AccomplishmentRepository accomplishmentRepository;
     private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper;
     
-    @Autowired
-    public DataLoader(
+    @Autowired    public DataLoader(
         UserRepository userRepository, 
         RequestRepository requestRepository,
+        AccomplishmentRepository accomplishmentRepository,
         PasswordEncoder passwordEncoder,
         ObjectMapper objectMapper
     ) {
         this.userRepository = userRepository;
         this.requestRepository = requestRepository;
+        this.accomplishmentRepository = accomplishmentRepository;
         this.passwordEncoder = passwordEncoder;
         this.objectMapper = objectMapper;
     }
-    
-    @Override
+      @Override
     public void run(String... args) throws Exception {
         // Clear existing data
         userRepository.deleteAll();
         requestRepository.deleteAll();
+        accomplishmentRepository.deleteAll();
         
         // Create sample users
         CreateUsers();
+        
+        // Create sample accomplishments
+        CreateAccomplishments();
         
         // Create sample requests
         // CreateRequests();
@@ -92,5 +99,42 @@ public class DataLoader implements CommandLineRunner {
         student.setFullName("Ass Cracker");
         student.setRoleId(RoleConstants.STUDENT);
         userRepository.save(student);
+    }
+    
+    /**
+     * Create sample accomplishments for testing
+     */
+    private void CreateAccomplishments() {
+        // Get the student user we created
+        User student = userRepository.findByUsername("student")
+                .orElseThrow(() -> new RuntimeException("Student user not found"));
+        
+        // Create sample accomplishments
+        Accomplishment math = new Accomplishment();
+        math.setUser(student);
+        math.setCourseTitle("Advanced Mathematics");
+        math.setSubject("Mathematics");
+        math.setTeacherName("Dr. John Smith");
+        math.setGrade(85.5);
+        math.setCompletionDate(LocalDate.now().minusDays(30));
+        accomplishmentRepository.save(math);
+        
+        Accomplishment physics = new Accomplishment();
+        physics.setUser(student);
+        physics.setCourseTitle("Classical Physics");
+        physics.setSubject("Physics");
+        physics.setTeacherName("Prof. Jane Doe");
+        physics.setGrade(92.0);
+        physics.setCompletionDate(LocalDate.now().minusDays(15));
+        accomplishmentRepository.save(physics);
+        
+        Accomplishment programming = new Accomplishment();
+        programming.setUser(student);
+        programming.setCourseTitle("Java Programming");
+        programming.setSubject("Computer Science");
+        programming.setTeacherName("Mr. Bob Wilson");
+        programming.setGrade(88.5);
+        programming.setCompletionDate(LocalDate.now().minusDays(7));
+        accomplishmentRepository.save(programming);
     }
 }

@@ -34,8 +34,10 @@ public class SecurityConfig {
         log.info("Configuring security filter chain");
         http
             .addFilterAt(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            .headers(headers -> headers.frameOptions().disable())  // Required for H2 console
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
+                .requestMatchers("/h2-console/**").permitAll()  // Allow H2 console
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/role-requests/teacher").permitAll()
                 .requestMatchers("/api/role-requests/student").permitAll()
@@ -59,7 +61,10 @@ public class SecurityConfig {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf.disable());
+            .csrf(csrf -> csrf
+                .ignoringRequestMatchers("/h2-console/**")  // Disable CSRF for H2 console
+                .disable()
+            );
         
         log.info("Security filter chain configured successfully");
         return http.build();
@@ -68,7 +73,7 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:8088", "http://localhost", "https://mvsclassroom.com"));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:3001", "http://localhost:8088", "http://localhost", "https://mvsclassroom.com"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
         configuration.setAllowCredentials(true);

@@ -14,9 +14,8 @@ import java.util.List;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
     @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**")  // Thay đổi từ /api/** thành /** để match với tất cả các endpoints
-            .allowedOrigins("http://localhost:3000", "http://localhost:8088", "http://localhost")
+    public void addCorsMappings(CorsRegistry registry) {        registry.addMapping("/**")  // Match all endpoints
+            .allowedOrigins("http://localhost:3000", "http://localhost:3001", "http://localhost:8088", "http://localhost")
             .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
             .allowedHeaders("*")
             .allowCredentials(true)
