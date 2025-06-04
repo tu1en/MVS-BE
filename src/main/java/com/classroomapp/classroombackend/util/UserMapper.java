@@ -3,7 +3,8 @@ package com.classroomapp.classroombackend.util;
 import com.classroomapp.classroombackend.dto.usermanagement.UserDto;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 
-public class UserMapper {    public static UserDto toDto(User user) {
+public class UserMapper {
+    public static UserDto toDto(User user) {
         if (user == null) {
             return null;
         }
@@ -21,7 +22,9 @@ public class UserMapper {    public static UserDto toDto(User user) {
         dto.setUpdatedAt(user.getUpdatedAt());
         dto.setStatus(user.getStatus());
         return dto;
-    }    public static User toEntity(UserDto userDto) {
+    }
+
+    public static User toEntity(UserDto userDto) {
         if (userDto == null) {
             return null;
         }

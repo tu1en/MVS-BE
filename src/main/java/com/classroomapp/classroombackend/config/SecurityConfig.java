@@ -28,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
+@EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)  // Giữ cài đặt mở rộng từ phiên bản local
 @Slf4j
 public class SecurityConfig {
 
@@ -61,42 +61,56 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        log.info("Configuring security filter chain");
-        http
-            .addFilterAt(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-            .authorizeHttpRequests(auth -> auth
-                // Public endpoints
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/role-requests/teacher").permitAll()
-                .requestMatchers("/api/role-requests/student").permitAll()
-                .requestMatchers("/api/role-requests/check").permitAll()
-                .requestMatchers("/role-requests/teacher").permitAll()
-                .requestMatchers("/role-requests/student").permitAll()
-                .requestMatchers("/role-requests/check").permitAll()
-                
-                // Test endpoints for development
-                .requestMatchers("/api/admin/requests/*/approve-simple").permitAll()
-                
-                // Protected endpoints
-                .requestMatchers("/api/admin/requests/**").hasAnyRole("ADMIN", "MANAGER")
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/manager/**").hasRole("MANAGER")
-                .requestMatchers("/api/teacher/**").hasRole("TEACHER")
-                .requestMatchers("/api/student/**").hasRole("STUDENT")
-                .anyRequest().authenticated()
-            )
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf.disable());
-        
-        log.info("Security filter chain configured successfully");
-        return http.build();
-    }
+public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    log.info("Configuring security filter chain");
+    http
+        .addFilterAt(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+        .headers(headers -> headers.frameOptions().disable())  // Required for H2 console
+        .authorizeHttpRequests(auth -> auth
+            // Public endpoints
+            .requestMatchers("/h2-console/**").permitAll()  // Allow H2 console
+            .requestMatchers("/api/auth/**").permitAll()
+            .requestMatchers("/api/role-requests/teacher").permitAll()
+            .requestMatchers("/api/role-requests/student").permitAll()
+            .requestMatchers("/api/role-requests/check").permitAll()
+            .requestMatchers("/role-requests/teacher").permitAll()
+            .requestMatchers("/role-requests/student").permitAll()
+            .requestMatchers("/role-requests/check").permitAll()
+            
+            // Blog endpoints từ phiên bản cũ
+            .requestMatchers("/api/blogs").permitAll()
+            .requestMatchers("/api/blogs/published").permitAll()
+            .requestMatchers("/api/blogs/{id:[\\d]+}").permitAll()
+            .requestMatchers("/api/blogs/search").permitAll()
+            .requestMatchers("/api/blogs/tag/**").permitAll()
+            .requestMatchers("/api/blogs/author/**").permitAll()
+            .requestMatchers("/api/blogs/{id:[\\d]+}/publish").authenticated()
+            .requestMatchers("/api/blogs/{id:[\\d]+}/unpublish").authenticated()
+            
+            // Test endpoints for development
+            .requestMatchers("/api/admin/requests/*/approve-simple").permitAll()
+            
+            // Protected endpoints
+            .requestMatchers("/api/admin/requests/**").hasAnyRole("ADMIN", "MANAGER")
+            .requestMatchers("/api/admin/**").hasRole("ADMIN")
+            .requestMatchers("/api/manager/**").hasRole("MANAGER")
+            .requestMatchers("/api/teacher/**").hasRole("TEACHER")
+            .requestMatchers("/api/student/**").hasRole("STUDENT")
+            .anyRequest().authenticated()
+        )
+        .sessionManagement(session -> session
+            .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+        )
+        .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+        .csrf(csrf -> csrf
+            .ignoringRequestMatchers("/h2-console/**")  // Disable CSRF for H2 console
+            .disable()
+        );
     
-    @Bean
+    log.info("Security filter chain configured successfully");
+    return http.build();
+}
+      @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         // Cho phép origin từ frontend React và các nguồn khác

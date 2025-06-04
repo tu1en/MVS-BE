@@ -59,15 +59,13 @@ public class User {
     private LocalDate hireDate;
 
     @Column(length = 100)
-    private String department;
-
-    @Column(name = "created_at")
+    private String department;    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(length = 10)
+    @Column(length = 10, columnDefinition = "nvarchar(10) default 'active'")
     private String status = "active";
     
     /**
