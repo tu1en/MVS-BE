@@ -17,25 +17,25 @@ public class Request {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
     private String email;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
     private String fullName;
 
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(20)")
     private String phoneNumber;
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(50)")
     private String requestedRole; // "TEACHER" or "STUDENT"
 
-    @Column(length = 4000)
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String formResponses; // JSON string containing form responses
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(50)")
     private String status = "PENDING"; // PENDING, APPROVED, REJECTED
 
-    @Column(length = 4000)
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String rejectReason;
 
     @Column(nullable = false)
@@ -48,4 +48,4 @@ public class Request {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
     }
-}
+} 

@@ -1,6 +1,6 @@
 package com.classroomapp.classroombackend.config;
 import com.google.firebase.FirebaseApp;
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration

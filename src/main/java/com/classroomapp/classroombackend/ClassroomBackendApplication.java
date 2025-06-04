@@ -22,7 +22,7 @@ public class ClassroomBackendApplication {
     @Configuration
     public class EncodingConfig implements WebMvcConfigurer {
         @Bean
-        public HttpMessageConverter<String> responseBodyConverter() {
+        public HttpMessageConverter<String> encodingResponseBodyConverter() {
             StringHttpMessageConverter converter = new StringHttpMessageConverter(StandardCharsets.UTF_8);
             converter.setWriteAcceptCharset(false);
             return converter;
@@ -30,7 +30,7 @@ public class ClassroomBackendApplication {
 
         @Override
         public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
-            converters.add(0, responseBodyConverter());
+            converters.add(0, encodingResponseBodyConverter());
         }
     }
 } 

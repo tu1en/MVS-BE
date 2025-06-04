@@ -1,5 +1,6 @@
 package com.classroomapp.classroombackend.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -37,4 +38,19 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return true if a user with the email exists
      */
     boolean existsByEmail(String email);
+    
+    /**
+     * Check if an email is already registered to another user
+     * @param email the email to check
+     * @param id the user ID to exclude from the check
+     * @return true if a user with the email exists and has a different ID
+     */
+    boolean existsByEmailAndIdNot(String email, Long id);
+    
+    /**
+     * Find users by role ID
+     * @param roleId the role ID to search for
+     * @return list of users with the specified role
+     */
+    List<User> findByRoleId(Integer roleId);
 } 

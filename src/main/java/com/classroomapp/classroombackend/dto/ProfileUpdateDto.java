@@ -7,25 +7,23 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Base DTO for profile updates - common fields for all user types
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserDto {
-    private Long id;
-
-    @NotBlank(message = "Username is required")
-    @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
-    private String username;
-
-    @NotBlank(message = "Email is required")
+public class ProfileUpdateDto {
     @Email(message = "Email must be valid")
     private String email;
-
+    
     @NotBlank(message = "Full name is required")
+    @Size(min = 2, max = 100, message = "Full name must be between 2 and 100 characters")
     private String fullName;
-
-    private Integer roleId;
-
-    // Password is not included in response DTO for security
-    // When needed, a separate DTO should be used for password changes
+    
+    // Optional current password for validation when changing sensitive information
+    private String currentPassword;
+    
+    // Optional new password if user wants to change it
+    private String newPassword;
 }

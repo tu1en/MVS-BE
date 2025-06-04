@@ -118,12 +118,12 @@ public class AuthController {
             .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)) // 24 giờ
             .signWith(SignatureAlgorithm.HS512, jwtUtil.getSecretKeyFromString())
             .compact();
-              System.out.println("Generated new token for user: " + username);
+            
+        System.out.println("Generated new token for user: " + username);
         
         response.put("role", roleName);
         response.put("roleId", user.getRoleId().toString());
         response.put("token", token);
-        response.put("userId", user.getId().toString());
     
         return ResponseEntity.ok(response);
     }
@@ -218,11 +218,11 @@ public class AuthController {
             .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000))
             .signWith(SignatureAlgorithm.HS512, jwtUtil.getSecretKeyFromString())
             .compact();
-          Map<String, String> response = new HashMap<>();
+        
+        Map<String, String> response = new HashMap<>();
         response.put("role", roleName);
         response.put("roleId", user.getRoleId().toString());
         response.put("token", token);
-        response.put("userId", user.getId().toString());
         
         return ResponseEntity.ok(response);
     }

@@ -14,8 +14,9 @@ import java.util.List;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
     @Override
-    public void addCorsMappings(CorsRegistry registry) {        registry.addMapping("/**")  // Match all endpoints
-            .allowedOrigins("http://localhost:3000", "http://localhost:3001", "http://localhost:8088", "http://localhost")
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**")  // Thay đổi từ /api/** thành /** để match với tất cả các endpoints
+            .allowedOrigins("http://localhost:3000", "http://localhost:8088", "http://localhost")
             .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
             .allowedHeaders("*")
             .allowCredentials(true)
@@ -23,13 +24,13 @@ public class WebConfig implements WebMvcConfigurer {
     }
     
     @Bean
-    public HttpMessageConverter<String> responseBodyConverter() {
+    public HttpMessageConverter<String> webResponseBodyConverter() {
         return new StringHttpMessageConverter(StandardCharsets.UTF_8);
     }
 
     @Override
     public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
-        converters.add(responseBodyConverter());
+        converters.add(webResponseBodyConverter());
     }
 
     @Override

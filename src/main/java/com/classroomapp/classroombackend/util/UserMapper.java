@@ -15,9 +15,7 @@ public class UserMapper {
                 user.getUsername(),
                 user.getEmail(),
                 user.getFullName(),
-                user.getRoleId(),
-                user.getCreatedAt(),
-                user.getStatus()
+                user.getRoleId()
         );
     }
 
@@ -32,8 +30,6 @@ public class UserMapper {
         user.setEmail(userDto.getEmail());
         user.setFullName(userDto.getFullName());
         user.setRoleId(userDto.getRoleId());
-        user.setCreatedAt(userDto.getCreatedAt());
-        user.setStatus(userDto.getStatus());
         return user;
     }
 }
