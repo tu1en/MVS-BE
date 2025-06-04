@@ -14,7 +14,6 @@ import com.classroomapp.classroombackend.repository.BlogRepository;
 import com.classroomapp.classroombackend.repository.AccomplishmentRepository;
 import com.classroomapp.classroombackend.repository.requestmanagement.RequestRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.classroomapp.classroombackend.dto.TeacherRequestFormDTO;
 import com.classroomapp.classroombackend.dto.StudentRequestFormDTO;
 
@@ -28,29 +27,23 @@ import java.util.List;
  */
 @Component
 public class DataLoader implements CommandLineRunner {
-    
-    private final UserRepository userRepository;
+      private final UserRepository userRepository;
     private final RequestRepository requestRepository;
     private final AccomplishmentRepository accomplishmentRepository;
     private final BlogRepository blogRepository;
     private final PasswordEncoder passwordEncoder;
-    private final ObjectMapper objectMapper;
-    
-    @Autowired
+      @Autowired
     public DataLoader(
-        UserRepository userRepository, 
+        UserRepository userRepository,
         RequestRepository requestRepository,
         AccomplishmentRepository accomplishmentRepository,
         BlogRepository blogRepository,
-        PasswordEncoder passwordEncoder,
-        ObjectMapper objectMapper
-    ) {
+        PasswordEncoder passwordEncoder    ) {
         this.userRepository = userRepository;
         this.requestRepository = requestRepository;
         this.accomplishmentRepository = accomplishmentRepository;
         this.blogRepository = blogRepository;
         this.passwordEncoder = passwordEncoder;
-        this.objectMapper = objectMapper;
     }
     @Override
     public void run(String... args) throws Exception {
@@ -113,15 +106,8 @@ public class DataLoader implements CommandLineRunner {
         student.setFullName("Ass Cracker");
         student.setRoleId(RoleConstants.STUDENT);
         userRepository.save(student);
-        
-        // Create manager user
-        User manager = new User();
-        manager.setUsername("manager");
-        manager.setPassword(passwordEncoder.encode("manager123"));
-        manager.setEmail("manager@classroomapp.com");
-        manager.setFullName("Manager User");
-        manager.setRoleId(RoleConstants.MANAGER);
-        userRepository.save(manager);
+          // Manager user is already created earlier
+        // No need to create another manager user
         
         return Arrays.asList(admin, teacher, student, manager);
     }
