@@ -2,9 +2,9 @@ package com.classroomapp.classroombackend.service;
 
 import com.classroomapp.classroombackend.dto.AccomplishmentDto;
 import com.classroomapp.classroombackend.model.Accomplishment;
-import com.classroomapp.classroombackend.model.User;
+import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.AccomplishmentRepository;
-import com.classroomapp.classroombackend.repository.UserRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

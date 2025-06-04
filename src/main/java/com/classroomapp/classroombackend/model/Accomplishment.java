@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDate;
+import com.classroomapp.classroombackend.model.usermanagement.User;
 
 @Entity
 @Table(name = "accomplishments")
