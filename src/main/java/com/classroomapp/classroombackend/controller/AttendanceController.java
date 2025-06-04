@@ -19,15 +19,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.classroomapp.classroombackend.dto.ApiResponse;
-import com.classroomapp.classroombackend.dto.AttendanceDto;
+import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceDto;
 import com.classroomapp.classroombackend.dto.LocationDataDto;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
-import com.classroomapp.classroombackend.model.Attendance;
-import com.classroomapp.classroombackend.model.AttendanceSession;
-import com.classroomapp.classroombackend.model.User;
-import com.classroomapp.classroombackend.repository.AttendanceRepository;
-import com.classroomapp.classroombackend.repository.AttendanceSessionRepository;
-import com.classroomapp.classroombackend.repository.UserRepository;
+import com.classroomapp.classroombackend.model.attendancemanagement.Attendance;
+import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSession;
+import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceRepository;
+import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceSessionRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.AttendanceService;
 
 import jakarta.servlet.http.HttpServletRequest;

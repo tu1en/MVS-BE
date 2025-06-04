@@ -1,10 +1,11 @@
-package com.classroomapp.classroombackend.repository;
+package com.classroomapp.classroombackend.repository.requestmanagement;
 
-import com.classroomapp.classroombackend.model.Request;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import com.classroomapp.classroombackend.model.Request;
 
 @Repository
 public interface RequestRepository extends JpaRepository<Request, Long> {
@@ -12,4 +13,4 @@ public interface RequestRepository extends JpaRepository<Request, Long> {
     List<Request> findByStatus(String status);
     List<Request> findByRequestedRole(String role);
     boolean existsByEmailAndStatusAndRequestedRole(String email, String status, String role);
-} 
+}

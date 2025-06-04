@@ -7,11 +7,19 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @SpringBootApplication
+@EnableJpaRepositories(basePackages = {
+    "com.classroomapp.classroombackend.repository.usermanagement",
+    "com.classroomapp.classroombackend.repository.classroommanagement",
+    "com.classroomapp.classroombackend.repository.attendancemanagement",
+    "com.classroomapp.classroombackend.repository.assignmentmanagement",
+    "com.classroomapp.classroombackend.repository.requestmanagement"
+})
 public class ClassroomBackendApplication {
 
     public static void main(String[] args) {

@@ -1,9 +1,10 @@
 package com.classroomapp.classroombackend.service;
 
-import com.classroomapp.classroombackend.dto.ClassroomDto;
-import com.classroomapp.classroombackend.dto.CreateClassroomDto;
-
 import java.util.List;
+
+import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
+import com.classroomapp.classroombackend.dto.classroommanagement.CourseDetailsDto;
+import com.classroomapp.classroombackend.dto.classroommanagement.CreateClassroomDto;
 
 public interface ClassroomService {
     
@@ -42,4 +43,7 @@ public interface ClassroomService {
     
     // Get classrooms by subject
     List<ClassroomDto> GetClassroomsBySubject(String subject);
+    
+    // Get comprehensive course details including all related information
+    CourseDetailsDto GetCourseDetails(Long classroomId);
 }

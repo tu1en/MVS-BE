@@ -1,7 +1,5 @@
 package com.classroomapp.classroombackend.service;
 
-import java.net.http.HttpClient;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,18 +15,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.classroomapp.classroombackend.dto.ApiResponse;
-import com.classroomapp.classroombackend.dto.AttendanceDto;
+import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceDto;
 import com.classroomapp.classroombackend.dto.LocationDataDto;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
-import com.classroomapp.classroombackend.model.Attendance;
-import com.classroomapp.classroombackend.model.AttendanceSession;
-import com.classroomapp.classroombackend.model.Classroom;
-import com.classroomapp.classroombackend.model.User;
-import com.classroomapp.classroombackend.repository.AttendanceRepository;
-import com.classroomapp.classroombackend.repository.AttendanceSessionRepository;
-import com.classroomapp.classroombackend.repository.ClassroomRepository;
-import com.classroomapp.classroombackend.repository.UserRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.classroomapp.classroombackend.model.attendancemanagement.Attendance;
+import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSession;
+import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
+import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceRepository;
+import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceSessionRepository;
+import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 
 /**
  * Service xử lý logic điểm danh
@@ -62,8 +59,6 @@ public class AttendanceService {
     );
     
     // Các phụ thuộc
-    private final ObjectMapper objectMapper;
-    private final HttpClient httpClient;
     private final AttendanceRepository attendanceRepository;
     private final AttendanceSessionRepository sessionRepository;
     private final UserRepository userRepository;
@@ -74,16 +69,10 @@ public class AttendanceService {
      */
     @Autowired
     public AttendanceService(
-            ObjectMapper objectMapper,
             AttendanceRepository attendanceRepository,
             AttendanceSessionRepository sessionRepository,
             UserRepository userRepository,
             ClassroomRepository classroomRepository) {
-        this.objectMapper = objectMapper;
-        this.httpClient = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_1_1)
-                .connectTimeout(Duration.ofSeconds(5))
-                .build();
         this.attendanceRepository = attendanceRepository;
         this.sessionRepository = sessionRepository;
         this.userRepository = userRepository;
@@ -107,7 +96,7 @@ public class AttendanceService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
         
         // Kiểm tra người dùng có phải là giáo viên không
-        boolean isTeacher = "TEACHER".equalsIgnoreCase(user.getRole());
+        boolean isTeacher = user.getRoleId() == 2; // 2 = TEACHER
         
         // Tự động điểm danh cho giáo viên nếu có phiên học đang diễn ra
         if (isTeacher) {

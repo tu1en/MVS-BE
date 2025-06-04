@@ -1,17 +1,19 @@
 package com.classroomapp.classroombackend.service.impl;
 
-import com.classroomapp.classroombackend.model.User;
-import com.classroomapp.classroombackend.repository.UserRepository;
-import com.classroomapp.classroombackend.service.EmailService;
-import com.classroomapp.classroombackend.service.UserServiceExtension;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.Optional;
+import java.util.UUID;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
-import java.util.UUID;
+import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.classroomapp.classroombackend.service.EmailService;
+import com.classroomapp.classroombackend.service.UserServiceExtension;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor

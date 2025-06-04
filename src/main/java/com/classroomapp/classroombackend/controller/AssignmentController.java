@@ -17,8 +17,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.classroomapp.classroombackend.dto.AssignmentDto;
-import com.classroomapp.classroombackend.dto.CreateAssignmentDto;
+import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto;
+import com.classroomapp.classroombackend.dto.assignmentmanagement.CreateAssignmentDto;
 import com.classroomapp.classroombackend.service.AssignmentService;
 
 import jakarta.validation.Valid;

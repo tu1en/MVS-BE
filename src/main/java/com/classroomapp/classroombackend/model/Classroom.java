@@ -3,6 +3,8 @@ package com.classroomapp.classroombackend.model;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.classroomapp.classroombackend.model.usermanagement.User;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;

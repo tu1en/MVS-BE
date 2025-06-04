@@ -7,10 +7,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.classroomapp.classroombackend.dto.UserDto;
+import com.classroomapp.classroombackend.dto.usermanagement.UserDto;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
-import com.classroomapp.classroombackend.model.User;
-import com.classroomapp.classroombackend.repository.UserRepository;
+import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.UserService;
 import com.classroomapp.classroombackend.util.UserMapper;
 import org.springframework.mail.SimpleMailMessage;

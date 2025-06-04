@@ -10,10 +10,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.classroomapp.classroombackend.dto.ApiResponse;
 import com.classroomapp.classroombackend.dto.LocationDataDto;
-import com.classroomapp.classroombackend.repository.AttendanceRepository;
-import com.classroomapp.classroombackend.repository.AttendanceSessionRepository;
-import com.classroomapp.classroombackend.repository.ClassroomRepository;
-import com.classroomapp.classroombackend.repository.UserRepository;
+import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceRepository;
+import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceSessionRepository;
+import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -45,7 +45,6 @@ public class AttendanceServiceTest {
     @BeforeEach
     void setUp() {
         attendanceService = new AttendanceService(
-            objectMapper,
             attendanceRepository,
             sessionRepository,
             userRepository,
@@ -124,7 +123,6 @@ public class AttendanceServiceTest {
     void TestHaversineDistanceCalculation() throws Exception {
         // Tạo một instance mới để truy cập phương thức private thông qua reflection
         AttendanceService service = new AttendanceService(
-            objectMapper,
             attendanceRepository,
             sessionRepository,
             userRepository,

@@ -1,7 +1,9 @@
 package com.classroomapp.classroombackend.config;
-import com.google.firebase.FirebaseApp;
 import javax.annotation.PostConstruct;
+
 import org.springframework.context.annotation.Configuration;
+
+import com.google.firebase.FirebaseApp;
 
 @Configuration
 public class FirebaseConfig {
@@ -12,8 +14,7 @@ public class FirebaseConfig {
             // Thêm cấu hình Firebase từ file JSON
             java.io.FileInputStream serviceAccount =
                 new java.io.FileInputStream("src/main/resources/sep490-e5896-firebase-adminsdk-fbsvc-402079bade.json");
-            
-            com.google.firebase.FirebaseOptions options = new com.google.firebase.FirebaseOptions.Builder()
+              com.google.firebase.FirebaseOptions options = com.google.firebase.FirebaseOptions.builder()
                 .setCredentials(com.google.auth.oauth2.GoogleCredentials.fromStream(serviceAccount))
                 .build();
                 

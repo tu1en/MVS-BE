@@ -1,20 +1,30 @@
 package com.classroomapp.classroombackend.service.impl;
 
-import com.classroomapp.classroombackend.dto.ClassroomDto;
-import com.classroomapp.classroombackend.dto.CreateClassroomDto;
-import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
-import com.classroomapp.classroombackend.model.Classroom;
-import com.classroomapp.classroombackend.model.User;
-import com.classroomapp.classroombackend.repository.ClassroomRepository;
-import com.classroomapp.classroombackend.repository.UserRepository;
-import com.classroomapp.classroombackend.service.ClassroomService;
-import com.classroomapp.classroombackend.util.ModelMapper;
-import lombok.RequiredArgsConstructor;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto;
+import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
+import com.classroomapp.classroombackend.dto.classroommanagement.CourseDetailsDto;
+import com.classroomapp.classroombackend.dto.classroommanagement.ScheduleDto;
+import com.classroomapp.classroombackend.dto.usermanagement.UserDto;
+import com.classroomapp.classroombackend.dto.classroommanagement.CreateClassroomDto;
+import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
+import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
+import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
+import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.assignmentmanagement.AssignmentRepository;
+import com.classroomapp.classroombackend.repository.assignmentmanagement.SubmissionRepository;
+import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.classroomapp.classroombackend.service.ClassroomService;
+import com.classroomapp.classroombackend.util.ModelMapper;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +32,8 @@ public class ClassroomServiceImpl implements ClassroomService {
 
     private final ClassroomRepository classroomRepository;
     private final UserRepository userRepository;
+    private final AssignmentRepository assignmentRepository;
+    private final SubmissionRepository submissionRepository;
     private final ModelMapper modelMapper;
 
     @Override
@@ -147,14 +159,130 @@ public class ClassroomServiceImpl implements ClassroomService {
         return classrooms.stream()
                 .map(modelMapper::MapToClassroomDto)
                 .collect(Collectors.toList());
-    }
-
-    @Override
+    }    @Override
     public List<ClassroomDto> GetClassroomsBySubject(String subject) {
         List<Classroom> classrooms = classroomRepository.findBySubject(subject);
         return classrooms.stream()
                 .map(modelMapper::MapToClassroomDto)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public CourseDetailsDto GetCourseDetails(Long classroomId) {
+        Classroom classroom = FindClassroomById(classroomId);
+        
+        // Map basic classroom info
+        CourseDetailsDto courseDetails = new CourseDetailsDto();
+        courseDetails.setId(classroom.getId());
+        courseDetails.setName(classroom.getName());
+        courseDetails.setDescription(classroom.getDescription());
+        courseDetails.setSection(classroom.getSection());
+        courseDetails.setSubject(classroom.getSubject());
+        
+        // Map teacher info
+        courseDetails.setTeacher(modelMapper.MapToUserDto(classroom.getTeacher()));
+        
+        // Map students info
+        List<UserDto> students = classroom.getStudents().stream()
+                .map(modelMapper::MapToUserDto)
+                .collect(Collectors.toList());
+        courseDetails.setStudents(students);
+        courseDetails.setTotalStudents(students.size());
+        
+        // Map syllabus if exists
+        if (classroom.getSyllabus() != null) {
+            courseDetails.setSyllabus(modelMapper.MapToSyllabusDto(classroom.getSyllabus()));
+        }
+        
+        // Map schedules
+        List<ScheduleDto> schedules = classroom.getSchedules().stream()
+                .map(modelMapper::MapToScheduleDto)
+                .collect(Collectors.toList());
+        courseDetails.setSchedules(schedules);
+        
+        // Get assignments for this classroom
+        List<Assignment> assignments = assignmentRepository.findByClassroom(classroom);
+        List<AssignmentDto> assignmentDtos = assignments.stream()
+                .map(modelMapper::MapToAssignmentDto)
+                .collect(Collectors.toList());
+        courseDetails.setAssignments(assignmentDtos);
+        courseDetails.setTotalAssignments(assignments.size());
+        
+        // Count active assignments (due date in future)
+        long activeAssignments = assignments.stream()
+                .filter(assignment -> assignment.getDueDate().isAfter(LocalDateTime.now()))
+                .count();
+        courseDetails.setActiveAssignments((int) activeAssignments);
+        
+        // Calculate statistics
+        CourseDetailsDto.CourseStatistics statistics = calculateCourseStatistics(classroom, assignments);
+        courseDetails.setStatistics(statistics);
+        
+        return courseDetails;
+    }
+    
+    private CourseDetailsDto.CourseStatistics calculateCourseStatistics(Classroom classroom, List<Assignment> assignments) {
+        CourseDetailsDto.CourseStatistics stats = new CourseDetailsDto.CourseStatistics();
+        
+        stats.setTotalStudents(classroom.getStudents().size());
+        stats.setTotalAssignments(assignments.size());
+        
+        // Count active and completed assignments
+        LocalDateTime now = LocalDateTime.now();
+        long activeCount = assignments.stream()
+                .filter(assignment -> assignment.getDueDate().isAfter(now))
+                .count();
+        long completedCount = assignments.stream()
+                .filter(assignment -> assignment.getDueDate().isBefore(now))
+                .count();
+        
+        stats.setActiveAssignments((int) activeCount);
+        stats.setCompletedAssignments((int) completedCount);
+        
+        // Calculate submission statistics
+        int totalSubmissions = 0;
+        int gradedSubmissions = 0;
+        double totalScore = 0.0;
+        int scoredSubmissions = 0;
+        
+        for (Assignment assignment : assignments) {
+            long submissionCount = submissionRepository.countByAssignment(assignment);
+            totalSubmissions += submissionCount;
+            
+            long gradedCount = submissionRepository.countByAssignmentAndScoreIsNotNull(assignment);
+            gradedSubmissions += gradedCount;
+            
+            // Calculate average score for this assignment
+            List<com.classroomapp.classroombackend.model.assignmentmanagement.Submission> gradedSubs = 
+                submissionRepository.findByAssignmentAndScoreIsNotNull(assignment);
+            
+            for (var submission : gradedSubs) {
+                if (submission.getScore() != null) {
+                    totalScore += submission.getScore();
+                    scoredSubmissions++;
+                }
+            }
+        }
+        
+        stats.setTotalSubmissions(totalSubmissions);
+        stats.setGradedSubmissions(gradedSubmissions);
+        
+        // Calculate average grade
+        if (scoredSubmissions > 0) {
+            stats.setAverageGrade(totalScore / scoredSubmissions);
+        } else {
+            stats.setAverageGrade(0.0);
+        }
+        
+        // Calculate completion rate
+        if (assignments.size() > 0 && classroom.getStudents().size() > 0) {
+            int expectedSubmissions = assignments.size() * classroom.getStudents().size();
+            stats.setCompletionRate((double) totalSubmissions / expectedSubmissions * 100);
+        } else {
+            stats.setCompletionRate(0.0);
+        }
+        
+        return stats;
     }
     
     // Helper method to find classroom by ID or throw exception

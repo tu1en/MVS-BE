@@ -1,5 +1,10 @@
 package com.classroomapp.classroombackend.model;
 
+import java.time.LocalDateTime;
+
+import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
+import com.classroomapp.classroombackend.model.usermanagement.User;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -13,8 +18,6 @@ import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "submissions")

@@ -6,32 +6,29 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import com.classroomapp.classroombackend.constants.RoleConstants;
-import com.classroomapp.classroombackend.model.User;
-import com.classroomapp.classroombackend.repository.RequestRepository;
-import com.classroomapp.classroombackend.repository.UserRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.requestmanagement.RequestRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 
 /**
  * Initialize test data when application starts
  */
 @Component
 public class DataLoader implements CommandLineRunner {
-
+    
     private final UserRepository userRepository;
     private final RequestRepository requestRepository;
     private final PasswordEncoder passwordEncoder;
-    private final ObjectMapper objectMapper;
-      @Autowired
+    
+    @Autowired
     public DataLoader(
         UserRepository userRepository, 
         RequestRepository requestRepository,
-        PasswordEncoder passwordEncoder,
-        ObjectMapper objectMapper
+        PasswordEncoder passwordEncoder
     ) {
         this.userRepository = userRepository;
         this.requestRepository = requestRepository;
         this.passwordEncoder = passwordEncoder;
-        this.objectMapper = objectMapper;
     }
 
     @Override

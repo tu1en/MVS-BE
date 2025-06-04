@@ -1,7 +1,7 @@
 package com.classroomapp.classroombackend.service;
 
-import com.classroomapp.classroombackend.dto.AssignmentDto;
-import com.classroomapp.classroombackend.dto.CreateAssignmentDto;
+import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto;
+import com.classroomapp.classroombackend.dto.assignmentmanagement.CreateAssignmentDto;
 
 import java.util.List;
 

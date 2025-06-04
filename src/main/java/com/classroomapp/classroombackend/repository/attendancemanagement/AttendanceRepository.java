@@ -1,4 +1,4 @@
-package com.classroomapp.classroombackend.repository;
+package com.classroomapp.classroombackend.repository.attendancemanagement;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -7,9 +7,9 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.classroomapp.classroombackend.model.Attendance;
-import com.classroomapp.classroombackend.model.Classroom;
-import com.classroomapp.classroombackend.model.User;
+import com.classroomapp.classroombackend.model.attendancemanagement.Attendance;
+import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
+import com.classroomapp.classroombackend.model.usermanagement.User;
 
 @Repository
 public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
@@ -40,4 +40,4 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
     
     // Find all attendance records marked by a specific teacher
     List<Attendance> findByMarkedBy(User teacher);
-} 
+}

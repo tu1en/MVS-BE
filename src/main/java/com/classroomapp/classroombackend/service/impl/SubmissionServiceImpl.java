@@ -8,17 +8,17 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.classroomapp.classroombackend.dto.CreateSubmissionDto;
-import com.classroomapp.classroombackend.dto.GradeSubmissionDto;
-import com.classroomapp.classroombackend.dto.SubmissionDto;
+import com.classroomapp.classroombackend.dto.assignmentmanagement.CreateSubmissionDto;
+import com.classroomapp.classroombackend.dto.assignmentmanagement.GradeSubmissionDto;
+import com.classroomapp.classroombackend.dto.assignmentmanagement.SubmissionDto;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
-import com.classroomapp.classroombackend.model.Assignment;
-import com.classroomapp.classroombackend.model.Classroom;
-import com.classroomapp.classroombackend.model.Submission;
-import com.classroomapp.classroombackend.model.User;
-import com.classroomapp.classroombackend.repository.AssignmentRepository;
-import com.classroomapp.classroombackend.repository.SubmissionRepository;
-import com.classroomapp.classroombackend.repository.UserRepository;
+import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
+import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
+import com.classroomapp.classroombackend.model.assignmentmanagement.Submission;
+import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.assignmentmanagement.AssignmentRepository;
+import com.classroomapp.classroombackend.repository.assignmentmanagement.SubmissionRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.SubmissionService;
 import com.classroomapp.classroombackend.util.ModelMapper;
 

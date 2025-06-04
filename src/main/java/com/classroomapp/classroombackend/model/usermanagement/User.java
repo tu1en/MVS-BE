@@ -1,9 +1,15 @@
-package com.classroomapp.classroombackend.model;
+package com.classroomapp.classroombackend.model.usermanagement;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -12,9 +18,6 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import jakarta.persistence.*;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 
 @Entity
@@ -58,12 +61,44 @@ public class User {
     @Column(length = 100)
     private String department;
 
-    @Column(name = "created_at", columnDefinition = "datetime default getdate()")
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at", columnDefinition = "datetime default getdate()")
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(length = 10, columnDefinition = "nvarchar(10) default 'active'")
-    private String status;
+    @Column(length = 10)
+    private String status = "active";
+    
+    /**
+     * Get the role name as String based on the roleId
+     * 
+     * @return String representation of the user's role
+     */
+    public String getRole() {
+        if (roleId == null) return "USER";
+        
+        switch (roleId) {
+            case 1: return "STUDENT";
+            case 2: return "TEACHER";
+            case 3: return "MANAGER";
+            case 4: return "ADMIN";
+            default: return "USER";
+        }
+    }
+    
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+        if (updatedAt == null) {
+            updatedAt = LocalDateTime.now();
+        }
+    }
+    
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

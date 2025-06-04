@@ -2,7 +2,6 @@ package com.classroomapp.classroombackend.controller;
 
 import com.classroomapp.classroombackend.dto.RequestResponseDTO;
 import com.classroomapp.classroombackend.service.RequestService;
-import com.classroomapp.classroombackend.service.impl.RequestServiceImpl;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

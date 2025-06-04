@@ -1,4 +1,4 @@
-package com.classroomapp.classroombackend.repository;
+package com.classroomapp.classroombackend.repository.attendancemanagement;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -7,9 +7,9 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.classroomapp.classroombackend.model.AttendanceSession;
-import com.classroomapp.classroombackend.model.Classroom;
-import com.classroomapp.classroombackend.model.User;
+import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSession;
+import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
+import com.classroomapp.classroombackend.model.usermanagement.User;
 
 @Repository
 public interface AttendanceSessionRepository extends JpaRepository<AttendanceSession, Long> {
@@ -39,4 +39,4 @@ public interface AttendanceSessionRepository extends JpaRepository<AttendanceSes
     // Find active sessions that overlap with the given time
     List<AttendanceSession> findByIsActiveTrueAndStartTimeBeforeAndEndTimeAfter(
         LocalDateTime currentTime, LocalDateTime currentTime2);
-} 
+}

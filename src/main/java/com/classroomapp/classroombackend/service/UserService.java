@@ -2,7 +2,7 @@ package com.classroomapp.classroombackend.service;
 
 import java.util.List;
 
-import com.classroomapp.classroombackend.dto.UserDto;
+import com.classroomapp.classroombackend.dto.usermanagement.UserDto;
 
 public interface UserService {
     

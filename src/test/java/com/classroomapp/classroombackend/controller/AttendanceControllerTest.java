@@ -16,9 +16,9 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.classroomapp.classroombackend.dto.ApiResponse;
 import com.classroomapp.classroombackend.dto.LocationDataDto;
-import com.classroomapp.classroombackend.repository.AttendanceRepository;
-import com.classroomapp.classroombackend.repository.AttendanceSessionRepository;
-import com.classroomapp.classroombackend.repository.UserRepository;
+import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceRepository;
+import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceSessionRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.AttendanceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 

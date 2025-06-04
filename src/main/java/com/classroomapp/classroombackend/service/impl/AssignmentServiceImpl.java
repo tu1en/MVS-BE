@@ -1,12 +1,12 @@
 package com.classroomapp.classroombackend.service.impl;
 
-import com.classroomapp.classroombackend.dto.AssignmentDto;
-import com.classroomapp.classroombackend.dto.CreateAssignmentDto;
+import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto;
+import com.classroomapp.classroombackend.dto.assignmentmanagement.CreateAssignmentDto;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
-import com.classroomapp.classroombackend.model.Assignment;
-import com.classroomapp.classroombackend.model.Classroom;
-import com.classroomapp.classroombackend.repository.AssignmentRepository;
-import com.classroomapp.classroombackend.repository.ClassroomRepository;
+import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
+import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
+import com.classroomapp.classroombackend.repository.assignmentmanagement.AssignmentRepository;
+import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 import com.classroomapp.classroombackend.service.AssignmentService;
 import com.classroomapp.classroombackend.util.ModelMapper;
 import lombok.RequiredArgsConstructor;

@@ -1,5 +1,6 @@
-package com.classroomapp.classroombackend.model;
+package com.classroomapp.classroombackend.model.assignmentmanagement;
 
+import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -49,4 +50,4 @@ public class Assignment {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "classroom_id")
     private Classroom classroom;
-} 
+}
