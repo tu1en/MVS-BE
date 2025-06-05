@@ -19,7 +19,6 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import com.classroomapp.classroombackend.filter.JwtAuthenticationFilter;
-import com.classroomapp.classroombackend.filter.SessionClearingFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 
@@ -31,9 +30,6 @@ public class SecurityConfig {
 
     @Autowired
     private JwtAuthenticationFilter jwtAuthFilter;
-    
-    @Autowired
-    private SessionClearingFilter sessionClearingFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -61,9 +57,7 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
 
-            // Add the session clearing filter first
-            .addFilterBefore(sessionClearingFilter, UsernamePasswordAuthenticationFilter.class)
-            // Then add the JWT filter
+            // Add the JWT filter before the standard authentication filter
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
             .headers(headers -> headers.frameOptions().disable()) // For H2 console
             .sessionManagement(session -> session
