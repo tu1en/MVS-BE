@@ -33,7 +33,6 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         log.info("Configuring security filter chain");
         http
-
             // First configure CORS
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             // Then disable CSRF
@@ -43,11 +42,6 @@ public class SecurityConfig {
                 // Allow OPTIONS requests for CORS preflight
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 
-
-            .addFilterAt(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-            .headers(headers -> headers.frameOptions().disable())  // Required for H2 console
-            .authorizeHttpRequests(auth -> auth
-
                 // Public endpoints
                 .requestMatchers("/h2-console/**").permitAll()  // Allow H2 console
                 .requestMatchers("/api/auth/**").permitAll()
@@ -56,25 +50,17 @@ public class SecurityConfig {
                 .requestMatchers("/role-requests/**").permitAll() // Allow both with and without /api prefix
                 .requestMatchers("/api/files/**").permitAll()
                 .requestMatchers("/files/**").permitAll() // Allow both with and without /api prefix
-                .requestMatchers("/h2-console/**").permitAll()
                 
                 // All other requests need authentication
                 .anyRequest().authenticated()
             )
 
-            // Finally add the JWT filter before the standard authentication filter
+            // Add the JWT filter before the standard authentication filter
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-            .headers(headers -> headers.frameOptions().disable()); // For H2 console
-
+            .headers(headers -> headers.frameOptions().disable()) // For H2 console
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf
-                .ignoringRequestMatchers("/h2-console/**")  // Disable CSRF for H2 console
-                .disable()
             );
-
         
         log.info("Security filter chain configured successfully");
         return http.build();
