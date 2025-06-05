@@ -10,7 +10,6 @@ import com.classroomapp.classroombackend.model.Blog;
 import com.classroomapp.classroombackend.model.User;
 import com.classroomapp.classroombackend.repository.BlogRepository;
 import com.classroomapp.classroombackend.model.Request;
-import com.classroomapp.classroombackend.model.User;
 import com.classroomapp.classroombackend.model.Accomplishment;
 import com.classroomapp.classroombackend.repository.RequestRepository;
 import com.classroomapp.classroombackend.repository.UserRepository;
@@ -23,8 +22,6 @@ import com.classroomapp.classroombackend.dto.StudentRequestFormDTO;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 
-
-import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -36,45 +33,41 @@ public class DataLoader implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final BlogRepository blogRepository;
-public class DataLoader implements CommandLineRunner {    private final UserRepository userRepository;
     private final RequestRepository requestRepository;
     private final AccomplishmentRepository accomplishmentRepository;
     private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper;
     
     @Autowired
-    public DataLoader(UserRepository userRepository, BlogRepository blogRepository, PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.blogRepository = blogRepository;
-    @Autowired    public DataLoader(
+    public DataLoader(
         UserRepository userRepository, 
+        BlogRepository blogRepository,
         RequestRepository requestRepository,
         AccomplishmentRepository accomplishmentRepository,
         PasswordEncoder passwordEncoder,
         ObjectMapper objectMapper
     ) {
         this.userRepository = userRepository;
+        this.blogRepository = blogRepository;
         this.requestRepository = requestRepository;
         this.accomplishmentRepository = accomplishmentRepository;
         this.passwordEncoder = passwordEncoder;
         this.objectMapper = objectMapper;
     }
-      @Override
+    
+    @Override
     public void run(String... args) throws Exception {
         // Clear existing data
         userRepository.deleteAll();
         blogRepository.deleteAll();
+        requestRepository.deleteAll();
+        accomplishmentRepository.deleteAll();
         
         // Create sample users
         List<User> users = CreateUsers();
         
         // Create sample blogs
         CreateSampleBlogs(users);
-        requestRepository.deleteAll();
-        accomplishmentRepository.deleteAll();
-        
-        // Create sample users
-        CreateUsers();
         
         // Create sample accomplishments
         CreateAccomplishments();
@@ -97,33 +90,6 @@ public class DataLoader implements CommandLineRunner {    private final UserRepo
         admin.setRoleId(RoleConstants.ADMIN);
         userRepository.save(admin);
         
-        // Create teacher user
-        User manager = new User();
-        manager.setUsername("manager");
-        manager.setPassword(passwordEncoder.encode("manager123"));
-        manager.setEmail("manager@classroomapp.com");
-        manager.setFullName("Nigga Cheese");
-        manager.setRoleId(RoleConstants.MANAGER);
-        userRepository.save(manager);
-
-        // Create teacher user
-        User teacher = new User();
-        teacher.setUsername("teacher");
-        teacher.setPassword(passwordEncoder.encode("teacher123"));
-        teacher.setEmail("teacher@classroomapp.com");
-        teacher.setFullName("Butt Slapper");
-        teacher.setRoleId(RoleConstants.TEACHER);
-        userRepository.save(teacher);
-        
-        // Create student user
-        User student = new User();
-        student.setUsername("student");
-        student.setPassword(passwordEncoder.encode("student123"));
-        student.setEmail("student@classroomapp.com");
-        student.setFullName("Ass Cracker");
-        student.setRoleId(RoleConstants.STUDENT);
-        userRepository.save(student);
-        
         // Create manager user
         User manager = new User();
         manager.setUsername("manager");
@@ -132,8 +98,26 @@ public class DataLoader implements CommandLineRunner {    private final UserRepo
         manager.setFullName("Manager User");
         manager.setRoleId(RoleConstants.MANAGER);
         userRepository.save(manager);
+
+        // Create teacher user
+        User teacher = new User();
+        teacher.setUsername("teacher");
+        teacher.setPassword(passwordEncoder.encode("teacher123"));
+        teacher.setEmail("teacher@classroomapp.com");
+        teacher.setFullName("Teacher User");
+        teacher.setRoleId(RoleConstants.TEACHER);
+        userRepository.save(teacher);
         
-        return Arrays.asList(admin, teacher, student, manager);
+        // Create student user
+        User student = new User();
+        student.setUsername("student");
+        student.setPassword(passwordEncoder.encode("student123"));
+        student.setEmail("student@classroomapp.com");
+        student.setFullName("Student User");
+        student.setRoleId(RoleConstants.STUDENT);
+        userRepository.save(student);
+        
+        return Arrays.asList(admin, manager, teacher, student);
     }
     
     /**
@@ -142,8 +126,8 @@ public class DataLoader implements CommandLineRunner {    private final UserRepo
      */
     private void CreateSampleBlogs(List<User> users) {
         User admin = users.get(0);
-        User teacher = users.get(1);
-        User manager = users.get(3);
+        User manager = users.get(1);
+        User teacher = users.get(2);
         
         // Blog 1 - Published by Admin
         Blog blog1 = new Blog();

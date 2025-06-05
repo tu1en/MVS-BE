@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import com.classroomapp.classroombackend.filter.JwtAuthenticationFilter;
+import com.classroomapp.classroombackend.filter.SessionClearingFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 
@@ -30,35 +31,11 @@ public class SecurityConfig {
 
     @Autowired
     private JwtAuthenticationFilter jwtAuthFilter;
+    
+    @Autowired
+    private SessionClearingFilter sessionClearingFilter;
 
     @Bean
-public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    http
-    .addFilterAt(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-        .authorizeHttpRequests(auth -> auth
-            .requestMatchers("/api/auth/**").permitAll()
-            // Cho phép truy cập công khai vào API blog đọc
-            .requestMatchers("/api/blogs").permitAll()
-            .requestMatchers("/api/blogs/published").permitAll()
-            .requestMatchers("/api/blogs/{id:[\\d]+}").permitAll()
-            .requestMatchers("/api/blogs/search").permitAll()
-            .requestMatchers("/api/blogs/tag/**").permitAll()
-            .requestMatchers("/api/blogs/author/**").permitAll()
-            // Duy trì bảo mật cho các API quản lý
-            .requestMatchers("/api/blogs/{id:[\\d]+}/publish").authenticated()
-            .requestMatchers("/api/blogs/{id:[\\d]+}/unpublish").authenticated()
-            .requestMatchers("/api/admin/**").hasRole("ADMIN")
-            .requestMatchers("/api/manager/**").hasRole("MANAGER")
-            .requestMatchers("/api/teacher/**").hasRole("TEACHER")
-            .requestMatchers("/api/student/**").hasRole("STUDENT")
-            .anyRequest().authenticated()
-        )
-        .sessionManagement(session -> session
-            .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-        )
-        .csrf().disable();
-    return http.build();
-}
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         log.info("Configuring security filter chain");
         http
@@ -84,7 +61,9 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
                 .anyRequest().authenticated()
             )
 
-            // Add the JWT filter before the standard authentication filter
+            // Add the session clearing filter first
+            .addFilterBefore(sessionClearingFilter, UsernamePasswordAuthenticationFilter.class)
+            // Then add the JWT filter
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
             .headers(headers -> headers.frameOptions().disable()) // For H2 console
             .sessionManagement(session -> session

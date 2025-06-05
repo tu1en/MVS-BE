@@ -28,9 +28,12 @@ import com.classroomapp.classroombackend.security.JwtUtil;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import java.util.Date;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 
 @RestController
 @RequestMapping("/api/auth")
+@Slf4j
 public class AuthController {
 
     private final UserRepository userRepository;
@@ -87,7 +90,7 @@ public class AuthController {
         String username = credentials.get("username");
         String password = credentials.get("password");
     
-        System.out.println("Login attempt for user: " + username);
+        log.info("Login attempt for user: {}", username);
     
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -100,7 +103,7 @@ public class AuthController {
     
         // Chuyển đổi roleId thành tên vai trò để thêm vào token
         String roleName = jwtUtil.convertRoleIdToName(user.getRoleId());
-        System.out.println("Login successful for user: " + username + " with role: " + roleName + " (roleId: " + user.getRoleId() + ")");
+        log.info("Login successful for user: {} with role: {} (roleId: {})", username, roleName, user.getRoleId());
         
         // Thêm cả email và username vào claims
         Map<String, Object> claims = new HashMap<>();
@@ -109,6 +112,8 @@ public class AuthController {
         claims.put("username", user.getUsername());
         claims.put("role", user.getRoleId());
         claims.put("roles", new String[]{roleName});
+        claims.put("manual_login", true); // Thêm flag để đánh dấu đây là login thủ công
+        claims.put("login_time", System.currentTimeMillis()); // Thêm thời gian login
         
         // Generate JWT token mới với claims đầy đủ
         String token = Jwts.builder()
@@ -118,14 +123,23 @@ public class AuthController {
             .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)) // 24 giờ
             .signWith(SignatureAlgorithm.HS512, jwtUtil.getSecretKeyFromString())
             .compact();
-              System.out.println("Generated new token for user: " + username);
+        log.info("Generated new token for user: {}", username);
         
         response.put("role", roleName);
         response.put("roleId", user.getRoleId().toString());
         response.put("token", token);
         response.put("userId", user.getId().toString());
+        response.put("requiresManualLogin", "true"); // Thêm flag để frontend biết không tự động lưu
     
-        return ResponseEntity.ok(response);
+        // Tạo header để ngăn cache
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Cache-Control", "no-cache, no-store, must-revalidate");
+        headers.add("Pragma", "no-cache");
+        headers.add("Expires", "0");
+    
+        return ResponseEntity.ok()
+            .headers(headers)
+            .body(response);
     }
 
     @PostMapping("/forgot-password")
@@ -210,6 +224,8 @@ public class AuthController {
         claims.put("email", user.getEmail());
         claims.put("role", user.getRoleId());
         claims.put("roles", new String[]{roleName});
+        claims.put("manual_login", true);
+        claims.put("login_time", System.currentTimeMillis());
         
         String token = Jwts.builder()
             .setClaims(claims)
@@ -218,13 +234,22 @@ public class AuthController {
             .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000))
             .signWith(SignatureAlgorithm.HS512, jwtUtil.getSecretKeyFromString())
             .compact();
-          Map<String, String> response = new HashMap<>();
+        Map<String, String> response = new HashMap<>();
         response.put("role", roleName);
         response.put("roleId", user.getRoleId().toString());
         response.put("token", token);
         response.put("userId", user.getId().toString());
+        response.put("requiresManualLogin", "true");
         
-        return ResponseEntity.ok(response);
+        // Tạo header để ngăn cache
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Cache-Control", "no-cache, no-store, must-revalidate");
+        headers.add("Pragma", "no-cache");
+        headers.add("Expires", "0");
+        
+        return ResponseEntity.ok()
+            .headers(headers)
+            .body(response);
     }
 
     @PostMapping("/change-password")
@@ -249,18 +274,14 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mật khẩu mới không được vượt quá 50 ký tự");
         }
         
-        // Get username from token
         String username = jwtUtil.getUsernameFromToken(token);
-        
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        
-        // Verify old password
+                
         if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mật khẩu cũ không chính xác");
         }
         
-        // Update password
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
         
