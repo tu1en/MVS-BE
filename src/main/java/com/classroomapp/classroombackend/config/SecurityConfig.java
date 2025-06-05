@@ -2,6 +2,7 @@ package com.classroomapp.classroombackend.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -23,6 +24,7 @@ import org.springframework.http.HttpMethod;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @Slf4j
 public class SecurityConfig {
 
@@ -30,6 +32,33 @@ public class SecurityConfig {
     private JwtAuthenticationFilter jwtAuthFilter;
 
     @Bean
+public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    http
+    .addFilterAt(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+        .authorizeHttpRequests(auth -> auth
+            .requestMatchers("/api/auth/**").permitAll()
+            // Cho phép truy cập công khai vào API blog đọc
+            .requestMatchers("/api/blogs").permitAll()
+            .requestMatchers("/api/blogs/published").permitAll()
+            .requestMatchers("/api/blogs/{id:[\\d]+}").permitAll()
+            .requestMatchers("/api/blogs/search").permitAll()
+            .requestMatchers("/api/blogs/tag/**").permitAll()
+            .requestMatchers("/api/blogs/author/**").permitAll()
+            // Duy trì bảo mật cho các API quản lý
+            .requestMatchers("/api/blogs/{id:[\\d]+}/publish").authenticated()
+            .requestMatchers("/api/blogs/{id:[\\d]+}/unpublish").authenticated()
+            .requestMatchers("/api/admin/**").hasRole("ADMIN")
+            .requestMatchers("/api/manager/**").hasRole("MANAGER")
+            .requestMatchers("/api/teacher/**").hasRole("TEACHER")
+            .requestMatchers("/api/student/**").hasRole("STUDENT")
+            .anyRequest().authenticated()
+        )
+        .sessionManagement(session -> session
+            .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+        )
+        .csrf().disable();
+    return http.build();
+}
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         log.info("Configuring security filter chain");
         http
