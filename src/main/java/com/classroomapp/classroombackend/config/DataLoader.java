@@ -16,12 +16,13 @@ import com.classroomapp.classroombackend.repository.RequestRepository;
 import com.classroomapp.classroombackend.repository.UserRepository;
 import com.classroomapp.classroombackend.repository.AccomplishmentRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.classroomapp.classroombackend.dto.TeacherRequestFormDTO;
 import com.classroomapp.classroombackend.dto.StudentRequestFormDTO;
 
 import java.time.LocalDateTime;
 import java.time.LocalDate;
-import java.time.LocalDate;
+
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -79,7 +80,7 @@ public class DataLoader implements CommandLineRunner {    private final UserRepo
         CreateAccomplishments();
         
         // Create sample requests
-        // CreateRequests();
+        CreateRequests();
     }
     
     /**
@@ -244,5 +245,50 @@ public class DataLoader implements CommandLineRunner {    private final UserRepo
         programming.setGrade(88.5);
         programming.setCompletionDate(LocalDate.now().minusDays(7));
         accomplishmentRepository.save(programming);
+    }
+    
+    /**
+     * Create sample role requests for testing
+     */
+    private void CreateRequests() throws Exception {
+        // Create a teacher role request
+        TeacherRequestFormDTO teacherForm = new TeacherRequestFormDTO();
+        teacherForm.setEmail("nguyenvanA@gmail.com");
+        teacherForm.setFullName("Nguyễn Văn A");
+        teacherForm.setPhoneNumber("0987654321");
+        teacherForm.setCvFileName("nguyen_van_a_cv.pdf");
+        teacherForm.setCvFileType("application/pdf");
+        teacherForm.setCvFileData("U2FtcGxlIENWIGZpbGUgY29udGVudC4gSW4gcmVhbCBpbXBsZW1lbnRhdGlvbiwgdGhpcyB3b3VsZCBiZSBhIGJhc2U2NCBlbmNvZGVkIHN0cmluZyBvZiBhIFBERiBmaWxlLg=="); // Sample base64 data
+        teacherForm.setCvFileUrl("/files/teachers/nguyen_van_a_cv.pdf"); // This would be set by the service after upload
+        teacherForm.setAdditionalInfo("Tôi đã có 5 năm kinh nghiệm giảng dạy Toán cấp trung học. Tôi từng làm việc tại trường THPT Chu Văn An và là giáo viên dạy thêm tại nhiều trung tâm luyện thi.");
+        
+        Request teacherRequest = new Request();
+        teacherRequest.setEmail(teacherForm.getEmail());
+        teacherRequest.setFullName(teacherForm.getFullName());
+        teacherRequest.setPhoneNumber(teacherForm.getPhoneNumber());
+        teacherRequest.setRequestedRole("TEACHER");
+        teacherRequest.setFormResponses(objectMapper.writeValueAsString(teacherForm));
+        teacherRequest.setStatus("PENDING");
+        teacherRequest.setCreatedAt(LocalDateTime.now().minusDays(3));
+        requestRepository.save(teacherRequest);
+        
+        // Create a student role request
+        StudentRequestFormDTO studentForm = new StudentRequestFormDTO();
+        studentForm.setEmail("tranvanB@gmail.com");
+        studentForm.setFullName("Trần Văn B");
+        studentForm.setPhoneNumber("0987123456");
+        studentForm.setGrade("Lớp 11");
+        studentForm.setParentContact("Phụ huynh: Trần Thị C, SĐT: 0912345678");
+        studentForm.setAdditionalInfo("Em muốn đăng ký học thêm môn Toán và Vật lý để chuẩn bị cho kỳ thi quốc gia.");
+        
+        Request studentRequest = new Request();
+        studentRequest.setEmail(studentForm.getEmail());
+        studentRequest.setFullName(studentForm.getFullName());
+        studentRequest.setPhoneNumber(studentForm.getPhoneNumber());
+        studentRequest.setRequestedRole("STUDENT");
+        studentRequest.setFormResponses(objectMapper.writeValueAsString(studentForm));
+        studentRequest.setStatus("PENDING");
+        studentRequest.setCreatedAt(LocalDateTime.now().minusDays(1));
+        requestRepository.save(studentRequest);
     }
 }

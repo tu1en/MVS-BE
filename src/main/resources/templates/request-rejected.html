@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Request Rejected</title>
+    <title>Yêu Cầu Bị Từ Chối</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -41,27 +41,27 @@
 </head>
 <body>
     <div class="header">
-        <h1>Request Status Update</h1>
+        <h1>Cập Nhật Trạng Thái Yêu Cầu</h1>
     </div>
     <div class="content">
-        <p>Dear <span th:text="${name}">User</span>,</p>
+        <p>Kính gửi <span th:text="${name}">User</span>,</p>
         
-        <p>We have reviewed your request to become a <strong th:text="${role}">ROLE</strong> in our system. Unfortunately, we are unable to approve your request at this time.</p>
+        <p>Chúng tôi đã xem xét yêu cầu trở thành <strong th:text="${role}">ROLE</strong> của bạn trong hệ thống. Rất tiếc, chúng tôi không thể chấp thuận yêu cầu của bạn vào lúc này.</p>
         
         <div class="reason-box">
-            <strong>Reason:</strong>
-            <p th:text="${reason}">Reason for rejection will appear here.</p>
+            <strong>Lý do:</strong>
+            <p th:text="${reason}">Lý do từ chối sẽ hiển thị ở đây.</p>
         </div>
         
-        <p>You are welcome to submit a new request after addressing the reasons mentioned above. If you believe there has been a mistake or would like to provide additional information, please contact our support team.</p>
+        <p>Bạn có thể gửi yêu cầu mới sau khi khắc phục các vấn đề được đề cập ở trên. Nếu bạn cho rằng đã có sự nhầm lẫn hoặc muốn cung cấp thêm thông tin, vui lòng liên hệ với đội ngũ hỗ trợ của chúng tôi.</p>
         
-        <p>Thank you for your interest in MVS Classroom.</p>
+        <p>Cảm ơn bạn đã quan tâm đến MVS Classroom.</p>
         
-        <p>Best regards,<br>
-        The MVS Classroom Team</p>
+        <p>Trân trọng,<br>
+        Đội ngũ MVS Classroom</p>
     </div>
     <div class="footer">
-        <p>&copy; MVS Classroom. All rights reserved.</p>
+        <p>&copy; MVS Classroom. Đã đăng ký bản quyền.</p>
     </div>
 </body>
 </html> 
