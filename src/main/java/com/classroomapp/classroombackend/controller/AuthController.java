@@ -29,7 +29,6 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import java.util.Date;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -90,7 +89,7 @@ public class AuthController {
         String username = credentials.get("username");
         String password = credentials.get("password");
     
-        log.info("Login attempt for user: {}", username);
+        System.out.println("Login attempt for user: " + username);
     
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -103,7 +102,7 @@ public class AuthController {
     
         // Chuyển đổi roleId thành tên vai trò để thêm vào token
         String roleName = jwtUtil.convertRoleIdToName(user.getRoleId());
-        log.info("Login successful for user: {} with role: {} (roleId: {})", username, roleName, user.getRoleId());
+        System.out.println("Login successful for user: " + username + " with role: " + roleName + " (roleId: " + user.getRoleId() + ")");
         
         // Thêm cả email và username vào claims
         Map<String, Object> claims = new HashMap<>();
@@ -112,8 +111,6 @@ public class AuthController {
         claims.put("username", user.getUsername());
         claims.put("role", user.getRoleId());
         claims.put("roles", new String[]{roleName});
-        claims.put("manual_login", true); // Thêm flag để đánh dấu đây là login thủ công
-        claims.put("login_time", System.currentTimeMillis()); // Thêm thời gian login
         
         // Generate JWT token mới với claims đầy đủ
         String token = Jwts.builder()
@@ -123,23 +120,14 @@ public class AuthController {
             .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)) // 24 giờ
             .signWith(SignatureAlgorithm.HS512, jwtUtil.getSecretKeyFromString())
             .compact();
-        log.info("Generated new token for user: {}", username);
+              System.out.println("Generated new token for user: " + username);
         
         response.put("role", roleName);
         response.put("roleId", user.getRoleId().toString());
         response.put("token", token);
         response.put("userId", user.getId().toString());
-        response.put("requiresManualLogin", "true"); // Thêm flag để frontend biết không tự động lưu
     
-        // Tạo header để ngăn cache
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("Cache-Control", "no-cache, no-store, must-revalidate");
-        headers.add("Pragma", "no-cache");
-        headers.add("Expires", "0");
-    
-        return ResponseEntity.ok()
-            .headers(headers)
-            .body(response);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/forgot-password")
@@ -194,7 +182,7 @@ public class AuthController {
     }
 
     @PostMapping("/google-login")
-    public ResponseEntity<Map<String, String>> googleLogin(@RequestBody Map<String, String> credentials) {
+    public ResponseEntity<Map<String, Object>> googleLogin(@RequestBody Map<String, String> credentials) {
         String idToken = credentials.get("idToken");
         
         // Verify Google ID token
@@ -202,20 +190,28 @@ public class AuthController {
         try {
             decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
         } catch (com.google.firebase.auth.FirebaseAuthException e) {
-            throw new IllegalArgumentException("Invalid Google ID token", e);
+            log.error("Invalid Google ID token", e);
+            throw new IllegalArgumentException("Token Google không hợp lệ", e);
         }
+        
         String email = decodedToken.getEmail();
+        log.info("Google login attempt with email: {}", email);
         
         // Check if user exists
-        User user = userRepository.findByEmail(email)
-            .orElseGet(() -> {
-                // Create new user if not exists
-                User newUser = new User();
-                newUser.setEmail(email);
-                newUser.setFullName(decodedToken.getName());
-                newUser.setRoleId(1); // Default role
-                return userRepository.save(newUser);
-            });
+        Map<String, Object> response = new HashMap<>();
+        
+        // Kiểm tra tài khoản tồn tại thay vì tự động tạo mới
+        boolean userExists = userRepository.findByEmail(email).isPresent();
+        if (!userExists) {
+            log.warn("Google login failed: No account found for email: {}", email);
+            response.put("success", false);
+            response.put("message", "Tài khoản này chưa được đăng ký trong hệ thống");
+            response.put("email", email);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+        
+        User user = userRepository.findByEmail(email).get();
+        log.info("User found with email {}, role: {}", email, user.getRoleId());
         
         // Generate JWT
         String roleName = jwtUtil.convertRoleIdToName(user.getRoleId());
@@ -224,8 +220,6 @@ public class AuthController {
         claims.put("email", user.getEmail());
         claims.put("role", user.getRoleId());
         claims.put("roles", new String[]{roleName});
-        claims.put("manual_login", true);
-        claims.put("login_time", System.currentTimeMillis());
         
         String token = Jwts.builder()
             .setClaims(claims)
@@ -234,22 +228,15 @@ public class AuthController {
             .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000))
             .signWith(SignatureAlgorithm.HS512, jwtUtil.getSecretKeyFromString())
             .compact();
-        Map<String, String> response = new HashMap<>();
+        
+        response.put("success", true);
+        response.put("message", "Đăng nhập thành công");
         response.put("role", roleName);
         response.put("roleId", user.getRoleId().toString());
         response.put("token", token);
         response.put("userId", user.getId().toString());
-        response.put("requiresManualLogin", "true");
         
-        // Tạo header để ngăn cache
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("Cache-Control", "no-cache, no-store, must-revalidate");
-        headers.add("Pragma", "no-cache");
-        headers.add("Expires", "0");
-        
-        return ResponseEntity.ok()
-            .headers(headers)
-            .body(response);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/change-password")
@@ -274,14 +261,18 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mật khẩu mới không được vượt quá 50 ký tự");
         }
         
+        // Get username from token
         String username = jwtUtil.getUsernameFromToken(token);
+        
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
-                
+        
+        // Verify old password
         if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mật khẩu cũ không chính xác");
         }
         
+        // Update password
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
         
