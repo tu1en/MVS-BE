@@ -28,9 +28,11 @@ import com.classroomapp.classroombackend.security.JwtUtil;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import java.util.Date;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/api/auth")
+@Slf4j
 public class AuthController {
 
     private final UserRepository userRepository;
@@ -180,7 +182,7 @@ public class AuthController {
     }
 
     @PostMapping("/google-login")
-    public ResponseEntity<Map<String, String>> googleLogin(@RequestBody Map<String, String> credentials) {
+    public ResponseEntity<Map<String, Object>> googleLogin(@RequestBody Map<String, String> credentials) {
         String idToken = credentials.get("idToken");
         
         // Verify Google ID token
@@ -188,20 +190,28 @@ public class AuthController {
         try {
             decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
         } catch (com.google.firebase.auth.FirebaseAuthException e) {
-            throw new IllegalArgumentException("Invalid Google ID token", e);
+            log.error("Invalid Google ID token", e);
+            throw new IllegalArgumentException("Token Google không hợp lệ", e);
         }
+        
         String email = decodedToken.getEmail();
+        log.info("Google login attempt with email: {}", email);
         
         // Check if user exists
-        User user = userRepository.findByEmail(email)
-            .orElseGet(() -> {
-                // Create new user if not exists
-                User newUser = new User();
-                newUser.setEmail(email);
-                newUser.setFullName(decodedToken.getName());
-                newUser.setRoleId(1); // Default role
-                return userRepository.save(newUser);
-            });
+        Map<String, Object> response = new HashMap<>();
+        
+        // Kiểm tra tài khoản tồn tại thay vì tự động tạo mới
+        boolean userExists = userRepository.findByEmail(email).isPresent();
+        if (!userExists) {
+            log.warn("Google login failed: No account found for email: {}", email);
+            response.put("success", false);
+            response.put("message", "Tài khoản này chưa được đăng ký trong hệ thống");
+            response.put("email", email);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+        
+        User user = userRepository.findByEmail(email).get();
+        log.info("User found with email {}, role: {}", email, user.getRoleId());
         
         // Generate JWT
         String roleName = jwtUtil.convertRoleIdToName(user.getRoleId());
@@ -218,7 +228,9 @@ public class AuthController {
             .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000))
             .signWith(SignatureAlgorithm.HS512, jwtUtil.getSecretKeyFromString())
             .compact();
-          Map<String, String> response = new HashMap<>();
+        
+        response.put("success", true);
+        response.put("message", "Đăng nhập thành công");
         response.put("role", roleName);
         response.put("roleId", user.getRoleId().toString());
         response.put("token", token);
