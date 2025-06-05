@@ -15,23 +15,15 @@ import java.util.List;
 public class WebConfig implements WebMvcConfigurer {
     
     @Override
-
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOriginPatterns("http://localhost:3000", "http://localhost:5173") // Use patterns instead of origins
+                .allowedOriginPatterns("http://localhost:3000", "http://localhost:5173") 
+                .allowedOrigins("http://localhost:3000", "http://localhost:3001", "http://localhost:8088", "http://localhost")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .exposedHeaders("Authorization", "Content-Type")
                 .allowCredentials(true)
                 .maxAge(3600);
-
-    public void addCorsMappings(CorsRegistry registry) {        registry.addMapping("/**")  // Match all endpoints
-            .allowedOrigins("http://localhost:3000", "http://localhost:3001", "http://localhost:8088", "http://localhost")
-            .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-            .allowedHeaders("*")
-            .allowCredentials(true)
-            .maxAge(3600);
-
     }
     
     @Bean
