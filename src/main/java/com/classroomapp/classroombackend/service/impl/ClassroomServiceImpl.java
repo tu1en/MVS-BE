@@ -10,6 +10,7 @@ import com.classroomapp.classroombackend.repository.UserRepository;
 import com.classroomapp.classroombackend.service.ClassroomService;
 import com.classroomapp.classroombackend.util.ModelMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ClassroomServiceImpl implements ClassroomService {
 
     private final ClassroomRepository classroomRepository;
@@ -50,6 +52,7 @@ public class ClassroomServiceImpl implements ClassroomService {
         classroom.setTeacher(teacher);
         
         Classroom savedClassroom = classroomRepository.save(classroom);
+        log.info("Created new classroom: {} with ID: {}", savedClassroom.getName(), savedClassroom.getId());
         return modelMapper.MapToClassroomDto(savedClassroom);
     }
 
@@ -65,6 +68,7 @@ public class ClassroomServiceImpl implements ClassroomService {
         classroom.setSubject(updateClassroomDto.getSubject());
         
         Classroom updatedClassroom = classroomRepository.save(classroom);
+        log.info("Updated classroom with ID: {}", updatedClassroom.getId());
         return modelMapper.MapToClassroomDto(updatedClassroom);
     }
 
@@ -73,6 +77,7 @@ public class ClassroomServiceImpl implements ClassroomService {
     public void DeleteClassroom(Long id) {
         Classroom classroom = FindClassroomById(id);
         classroomRepository.delete(classroom);
+        log.info("Deleted classroom with ID: {}", id);
     }
 
     @Override
@@ -81,6 +86,7 @@ public class ClassroomServiceImpl implements ClassroomService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", teacherId));
         
         List<Classroom> classrooms = classroomRepository.findByTeacher(teacher);
+        log.info("Found {} classrooms for teacher ID: {}", classrooms.size(), teacherId);
         return classrooms.stream()
                 .map(modelMapper::MapToClassroomDto)
                 .collect(Collectors.toList());
@@ -92,6 +98,7 @@ public class ClassroomServiceImpl implements ClassroomService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", studentId));
         
         List<Classroom> classrooms = classroomRepository.findByStudentsContaining(student);
+        log.info("Found {} classrooms for student ID: {}", classrooms.size(), studentId);
         return classrooms.stream()
                 .map(modelMapper::MapToClassroomDto)
                 .collect(Collectors.toList());
@@ -111,6 +118,7 @@ public class ClassroomServiceImpl implements ClassroomService {
         
         classroom.getStudents().add(student);
         classroomRepository.save(classroom);
+        log.info("Enrolled student ID: {} in classroom ID: {}", studentId, classroomId);
     }
 
     @Override
@@ -122,7 +130,9 @@ public class ClassroomServiceImpl implements ClassroomService {
         
         if (classroom.getStudents().remove(student)) {
             classroomRepository.save(classroom);
+            log.info("Unenrolled student ID: {} from classroom ID: {}", studentId, classroomId);
         } else {
+            log.warn("Student ID: {} was not enrolled in classroom ID: {}", studentId, classroomId);
             throw new IllegalArgumentException("Student is not enrolled in this classroom");
         }
     }
@@ -130,6 +140,7 @@ public class ClassroomServiceImpl implements ClassroomService {
     @Override
     public List<ClassroomDto> SearchClassroomsByName(String name) {
         List<Classroom> classrooms = classroomRepository.findByNameContainingIgnoreCase(name);
+        log.info("Found {} classrooms matching name: {}", classrooms.size(), name);
         return classrooms.stream()
                 .map(modelMapper::MapToClassroomDto)
                 .collect(Collectors.toList());
@@ -138,6 +149,7 @@ public class ClassroomServiceImpl implements ClassroomService {
     @Override
     public List<ClassroomDto> GetClassroomsBySubject(String subject) {
         List<Classroom> classrooms = classroomRepository.findBySubject(subject);
+        log.info("Found {} classrooms for subject: {}", classrooms.size(), subject);
         return classrooms.stream()
                 .map(modelMapper::MapToClassroomDto)
                 .collect(Collectors.toList());
