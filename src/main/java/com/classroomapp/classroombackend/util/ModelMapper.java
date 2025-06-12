@@ -1,19 +1,25 @@
 package com.classroomapp.classroombackend.util;
 
+import java.time.LocalDateTime;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Component;
+
 import com.classroomapp.classroombackend.dto.AssignmentDto;
+import com.classroomapp.classroombackend.dto.AttendanceDto;
+import com.classroomapp.classroombackend.dto.AttendanceSessionDto;
 import com.classroomapp.classroombackend.dto.ClassroomDto;
 import com.classroomapp.classroombackend.dto.SubmissionDto;
 import com.classroomapp.classroombackend.dto.UserDto;
 import com.classroomapp.classroombackend.model.Assignment;
+import com.classroomapp.classroombackend.model.Attendance;
+import com.classroomapp.classroombackend.model.AttendanceSession;
 import com.classroomapp.classroombackend.model.Classroom;
 import com.classroomapp.classroombackend.model.Submission;
 import com.classroomapp.classroombackend.model.User;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
-import java.time.LocalDateTime;
-import java.util.stream.Collectors;
 
 /**
  * Component for mapping between entities and DTOs
@@ -182,4 +188,66 @@ public class ModelMapper {
         log.debug("Mapping userDto to entity. DTO ID: {}", userDto.getId());
         return UserMapper.toEntity(userDto);
     }
-} 
+      /**
+     * Map Attendance entity to AttendanceDto
+     * @param attendance Attendance entity
+     * @return AttendanceDto
+     */
+    public AttendanceDto MapToAttendanceDto(Attendance attendance) {
+        if (attendance == null) {
+            log.debug("Attendance is null, returning null DTO");
+            return null;
+        }
+        
+        log.debug("Mapping attendance entity to DTO. Entity ID: {}", attendance.getId());
+          return AttendanceDto.builder()
+                .id(attendance.getId())
+                .userId(attendance.getStudent().getId())
+                .userName(attendance.getStudent().getFullName() != null ? attendance.getStudent().getFullName() : attendance.getStudent().getUsername())
+                .sessionId(attendance.getSession().getId())
+                .status(attendance.getStatus())
+                .markedAt(attendance.getCheckInTime())
+                .latitude(attendance.getLatitude())
+                .longitude(attendance.getLongitude())
+                .createdAt(attendance.getCreatedAt())
+                .updatedAt(attendance.getUpdatedAt())
+                .build();
+    }
+    
+    /**
+     * Map AttendanceSession entity to AttendanceSessionDto
+     * @param session AttendanceSession entity
+     * @return AttendanceSessionDto
+     */
+    public AttendanceSessionDto MapToAttendanceSessionDto(AttendanceSession session) {
+        if (session == null) {
+            log.debug("AttendanceSession is null, returning null DTO");
+            return null;
+        }
+        
+        log.debug("Mapping attendance session entity to DTO. Entity ID: {}", session.getId());        return AttendanceSessionDto.builder()
+                .id(session.getId())
+                .classroomId(session.getClassroom().getId())
+                .classroomName(session.getClassroom().getName())
+                .teacherId(session.getTeacher().getId())
+                .teacherName(session.getTeacher().getFullName() != null ? session.getTeacher().getFullName() : session.getTeacher().getUsername())
+                .sessionName(session.getSessionName())
+                .sessionDate(session.getSessionDate())
+                .description(session.getDescription())
+                .startTime(session.getStartTime())
+                .endTime(session.getEndTime())
+                .status(session.getStatus().name())
+                .locationRequired(session.getLocationRequired())
+                .locationLatitude(session.getLocationLatitude())
+                .locationLongitude(session.getLocationLongitude())
+                .locationRadiusMeters(session.getLocationRadiusMeters())
+                .autoMarkTeacherAttendance(session.getAutoMarkTeacherAttendance())
+                .attendanceRecords(session.getAttendanceRecords() != null ? 
+                    session.getAttendanceRecords().stream()
+                        .map(this::MapToAttendanceDto)
+                        .collect(Collectors.toList()) : null)
+                .createdAt(session.getCreatedAt())
+                .updatedAt(session.getUpdatedAt())
+                .build();
+    }
+}

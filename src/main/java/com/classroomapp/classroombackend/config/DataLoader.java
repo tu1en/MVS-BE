@@ -1,29 +1,27 @@
 package com.classroomapp.classroombackend.config;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import com.classroomapp.classroombackend.constants.RoleConstants;
-import com.classroomapp.classroombackend.model.Blog;
-import com.classroomapp.classroombackend.model.User;
-import com.classroomapp.classroombackend.repository.BlogRepository;
-import com.classroomapp.classroombackend.model.Request;
+import com.classroomapp.classroombackend.dto.StudentRequestFormDTO;
+import com.classroomapp.classroombackend.dto.TeacherRequestFormDTO;
 import com.classroomapp.classroombackend.model.Accomplishment;
+import com.classroomapp.classroombackend.model.Blog;
+import com.classroomapp.classroombackend.model.Request;
+import com.classroomapp.classroombackend.model.User;
+import com.classroomapp.classroombackend.repository.AccomplishmentRepository;
+import com.classroomapp.classroombackend.repository.BlogRepository;
 import com.classroomapp.classroombackend.repository.RequestRepository;
 import com.classroomapp.classroombackend.repository.UserRepository;
-import com.classroomapp.classroombackend.repository.AccomplishmentRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import com.classroomapp.classroombackend.dto.TeacherRequestFormDTO;
-import com.classroomapp.classroombackend.dto.StudentRequestFormDTO;
-
-import java.time.LocalDateTime;
-import java.time.LocalDate;
-
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Initialize test data when application starts
@@ -54,26 +52,22 @@ public class DataLoader implements CommandLineRunner {
         this.passwordEncoder = passwordEncoder;
         this.objectMapper = objectMapper;
     }
-    
-    @Override
+      @Override
     public void run(String... args) throws Exception {
-        // Clear existing data
-        userRepository.deleteAll();
-        blogRepository.deleteAll();
-        requestRepository.deleteAll();
-        accomplishmentRepository.deleteAll();
-        
-        // Create sample users
-        List<User> users = CreateUsers();
-        
-        // Create sample blogs
-        CreateSampleBlogs(users);
-        
-        // Create sample accomplishments
-        CreateAccomplishments();
-        
-        // Create sample requests
-        CreateRequests();
+        // Only run if no users exist (avoid conflicts with SampleDataInitializer)
+        if (userRepository.count() == 0) {
+            // Create sample users
+            List<User> users = CreateUsers();
+            
+            // Create sample blogs
+            CreateSampleBlogs(users);
+            
+            // Create sample accomplishments
+            CreateAccomplishments();
+            
+            // Create sample requests
+            CreateRequests();
+        }
     }
     
     /**

@@ -1,19 +1,17 @@
 package com.classroomapp.classroombackend.dto;
 
+import java.time.LocalDateTime;
+
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class AssignmentDto {
     
     private Long id;
@@ -37,4 +35,41 @@ public class AssignmentDto {
     private Long classroomId;
     
     private String classroomName;
+    
+    // Added for frontend integration
+    private String submissionStatus;
+    
+    // Added for frontend integration
+    private Double score;
+    
+    // Constructor with all fields
+    public AssignmentDto(Long id, String title, String description, LocalDateTime dueDate,
+                         Integer points, String fileAttachmentUrl, Long classroomId, 
+                         String classroomName, String submissionStatus, Double score) {
+        this.id = id;
+        this.title = title;
+        this.description = description;
+        this.dueDate = dueDate;
+        this.points = points;
+        this.fileAttachmentUrl = fileAttachmentUrl;
+        this.classroomId = classroomId;
+        this.classroomName = classroomName;
+        this.submissionStatus = submissionStatus;
+        this.score = score;
+    }
+    
+    // Constructor without submission status and score for backward compatibility
+    public AssignmentDto(Long id, String title, String description, LocalDateTime dueDate,
+                         Integer points, String fileAttachmentUrl, Long classroomId, String classroomName) {
+        this.id = id;
+        this.title = title;
+        this.description = description;
+        this.dueDate = dueDate;
+        this.points = points;
+        this.fileAttachmentUrl = fileAttachmentUrl;
+        this.classroomId = classroomId;
+        this.classroomName = classroomName;
+        this.submissionStatus = null;
+        this.score = null;
+    }
 } 

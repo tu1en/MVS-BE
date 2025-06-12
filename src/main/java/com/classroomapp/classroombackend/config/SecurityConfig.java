@@ -1,26 +1,26 @@
 package com.classroomapp.classroombackend.config;
 
+import java.util.Arrays;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import lombok.extern.slf4j.Slf4j;
-
-import java.util.Arrays;
-import java.util.Collections;
 
 import com.classroomapp.classroombackend.filter.JwtAuthenticationFilter;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpMethod;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Configuration
 @EnableWebSecurity
@@ -48,18 +48,19 @@ public class SecurityConfig {
                 .requestMatchers("/h2-console/**").permitAll()  // Allow H2 console
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
+                .requestMatchers("/api/test/**").permitAll() // Allow test endpoints for debugging
                 .requestMatchers("/api/role-requests/**").permitAll()
                 .requestMatchers("/role-requests/**").permitAll() // Allow both with and without /api prefix
                 .requestMatchers("/api/files/**").permitAll()
                 .requestMatchers("/files/**").permitAll() // Allow both with and without /api prefix
+                .requestMatchers("/api/timetable/**").permitAll() // Allow access to timetable for testing
+                .requestMatchers("/api/classrooms/**").permitAll() // Allow access to classrooms for testing
                 
                 // All other requests need authentication
                 .anyRequest().authenticated()
-            )
-
-            // Add the JWT filter before the standard authentication filter
+            )            // Add the JWT filter before the standard authentication filter
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-            .headers(headers -> headers.frameOptions().disable()) // For H2 console
+            .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable())) // For H2 console
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             );

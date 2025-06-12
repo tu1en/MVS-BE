@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -13,22 +15,9 @@ import com.classroomapp.classroombackend.model.User;
 import com.classroomapp.classroombackend.repository.UserRepository;
 import com.classroomapp.classroombackend.service.UserService;
 import com.classroomapp.classroombackend.util.UserMapper;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 
 @Service
 public class UserServiceImpl implements UserService {
-
-    
-    @Override
-    public void sendPasswordResetEmail(String email, String resetToken) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(email);
-        message.setSubject("Password Reset Request");
-        message.setText("To reset your password, click the link below:\n" +
-            "http://localhost:3000/reset-password?token=" + resetToken);
-        mailSender.send(message);
-    }
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -142,5 +131,23 @@ public class UserServiceImpl implements UserService {
     @Override
     public boolean IsEmailExists(String email) {
         return userRepository.existsByEmail(email);
+    }
+    
+    @Override
+    public List<UserDto> FindUsersByRole(Integer roleId) {
+        List<User> users = userRepository.findByRoleId(roleId);
+        return users.stream()
+                .map(UserMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public void sendPasswordResetEmail(String email, String resetLink) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(email);
+        message.setSubject("Password Reset Request");
+        message.setText("To reset your password, click the link below:\n" +
+            "http://localhost:3000/reset-password?token=" + resetLink);
+        mailSender.send(message);
     }
 }
