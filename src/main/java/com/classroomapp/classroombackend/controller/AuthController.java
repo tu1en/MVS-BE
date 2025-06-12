@@ -1,5 +1,10 @@
 package com.classroomapp.classroombackend.controller;
 
+import java.util.Date;
+// Thêm các import sau vào đầu file
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,20 +19,15 @@ import com.classroomapp.classroombackend.dto.RegisterDto;
 import com.classroomapp.classroombackend.dto.UserDto;
 import com.classroomapp.classroombackend.model.User;
 import com.classroomapp.classroombackend.repository.UserRepository;
+// Thêm import
+import com.classroomapp.classroombackend.security.JwtUtil;
 import com.classroomapp.classroombackend.service.UserService;
 import com.classroomapp.classroombackend.util.UserMapper;
-import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;
 
-// Thêm các import sau vào đầu file
-import java.util.HashMap;
-import java.util.Map;
-// Thêm import
-import com.classroomapp.classroombackend.security.JwtUtil;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import java.util.Date;
 import lombok.extern.slf4j.Slf4j;
 
 @RestController
@@ -118,7 +118,7 @@ public class AuthController {
             .setSubject(user.getUsername())
             .setIssuedAt(new Date(System.currentTimeMillis()))
             .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)) // 24 giờ
-            .signWith(SignatureAlgorithm.HS512, jwtUtil.getSecretKeyFromString())
+            .signWith(jwtUtil.getSecretKeyFromString(), SignatureAlgorithm.HS512)
             .compact();
               System.out.println("Generated new token for user: " + username);
         
@@ -150,7 +150,7 @@ public class AuthController {
             .setSubject(user.getUsername())
             .setIssuedAt(new Date(System.currentTimeMillis()))
             .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000))
-            .signWith(SignatureAlgorithm.HS512, jwtUtil.getSecretKeyFromString())
+            .signWith(jwtUtil.getSecretKeyFromString(), SignatureAlgorithm.HS512)
             .compact();
             
         userService.sendPasswordResetEmail(user.getEmail(), resetToken);
@@ -226,7 +226,7 @@ public class AuthController {
             .setSubject(user.getEmail())
             .setIssuedAt(new Date(System.currentTimeMillis()))
             .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000))
-            .signWith(SignatureAlgorithm.HS512, jwtUtil.getSecretKeyFromString())
+            .signWith(jwtUtil.getSecretKeyFromString(), SignatureAlgorithm.HS512)
             .compact();
         
         response.put("success", true);
