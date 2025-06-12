@@ -15,92 +15,46 @@ import com.classroomapp.classroombackend.dto.StudentRequestFormDTO;
 import com.classroomapp.classroombackend.dto.TeacherRequestFormDTO;
 import com.classroomapp.classroombackend.model.Accomplishment;
 import com.classroomapp.classroombackend.model.Blog;
-<<<<<<< HEAD
-import com.classroomapp.classroombackend.model.Accomplishment;
 import com.classroomapp.classroombackend.model.Request;
 import com.classroomapp.classroombackend.model.usermanagement.User;
-import com.classroomapp.classroombackend.repository.BlogRepository;
 import com.classroomapp.classroombackend.repository.AccomplishmentRepository;
+import com.classroomapp.classroombackend.repository.BlogRepository;
 import com.classroomapp.classroombackend.repository.requestmanagement.RequestRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
-import com.classroomapp.classroombackend.dto.TeacherRequestFormDTO;
-import com.classroomapp.classroombackend.dto.StudentRequestFormDTO;
-
-import java.time.LocalDateTime;
-import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.List;
-=======
-import com.classroomapp.classroombackend.model.Request;
-import com.classroomapp.classroombackend.model.User;
-import com.classroomapp.classroombackend.repository.AccomplishmentRepository;
-import com.classroomapp.classroombackend.repository.BlogRepository;
-import com.classroomapp.classroombackend.repository.RequestRepository;
-import com.classroomapp.classroombackend.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
->>>>>>> master
 
 /**
  * Initialize test data when application starts
  */
 @Component
 public class DataLoader implements CommandLineRunner {
-<<<<<<< HEAD
-      private final UserRepository userRepository;
-=======
 
     private final UserRepository userRepository;
     private final BlogRepository blogRepository;
->>>>>>> master
     private final RequestRepository requestRepository;
     private final AccomplishmentRepository accomplishmentRepository;
-    private final BlogRepository blogRepository;
     private final PasswordEncoder passwordEncoder;
-<<<<<<< HEAD
-      @Autowired
-    public DataLoader(
-        UserRepository userRepository,
-=======
     private final ObjectMapper objectMapper;
     
     @Autowired
     public DataLoader(
-        UserRepository userRepository, 
+        UserRepository userRepository,
         BlogRepository blogRepository,
->>>>>>> master
         RequestRepository requestRepository,
         AccomplishmentRepository accomplishmentRepository,
-        BlogRepository blogRepository,
-        PasswordEncoder passwordEncoder    ) {
+        PasswordEncoder passwordEncoder,
+        ObjectMapper objectMapper
+    ) {
         this.userRepository = userRepository;
         this.blogRepository = blogRepository;
-        this.requestRepository = requestRepository;
-        this.accomplishmentRepository = accomplishmentRepository;
-        this.blogRepository = blogRepository;
+        this.requestRepository = requestRepository;        this.accomplishmentRepository = accomplishmentRepository;
         this.passwordEncoder = passwordEncoder;
+        this.objectMapper = objectMapper;
     }
+    
     @Override
     public void run(String... args) throws Exception {
-<<<<<<< HEAD
-        // Clear existing data
-        userRepository.deleteAll();
-        blogRepository.deleteAll();
-        requestRepository.deleteAll();
-        accomplishmentRepository.deleteAll();
-        
-        // Create sample users
-        List<User> users = CreateUsers();
-        
-        // Create sample blogs
-        CreateSampleBlogs(users);
-        
-        // Create sample accomplishments
-        CreateAccomplishments();
-        
-        // Create sample requests
-        // CreateRequests();
-=======
-        // Only run if no users exist (avoid conflicts with SampleDataInitializer)
+        // Only run if no users exist to avoid conflicts with other data loaders
         if (userRepository.count() == 0) {
             // Create sample users
             List<User> users = CreateUsers();
@@ -114,7 +68,6 @@ public class DataLoader implements CommandLineRunner {
             // Create sample requests
             CreateRequests();
         }
->>>>>>> master
     }
     
     /**
@@ -129,50 +82,23 @@ public class DataLoader implements CommandLineRunner {
         admin.setEmail("admin@classroomapp.com");
         admin.setFullName("Administrator");
         admin.setRoleId(RoleConstants.ADMIN);
-        userRepository.save(admin);
-        
-<<<<<<< HEAD
-        // Create teacher user
-=======
+        userRepository.save(admin);        
         // Create manager user
->>>>>>> master
         User manager = new User();
         manager.setUsername("manager");
         manager.setPassword(passwordEncoder.encode("manager123"));
         manager.setEmail("manager@classroomapp.com");
-<<<<<<< HEAD
-        manager.setFullName("Nigga Cheese");
-=======
         manager.setFullName("Manager User");
->>>>>>> master
         manager.setRoleId(RoleConstants.MANAGER);
         userRepository.save(manager);
 
         // Create teacher user
         User teacher = new User();
         teacher.setUsername("teacher");
-        teacher.setPassword(passwordEncoder.encode("teacher123"));
-        teacher.setEmail("teacher@classroomapp.com");
-<<<<<<< HEAD
-        teacher.setFullName("Butt Slapper");
-        teacher.setRoleId(RoleConstants.TEACHER);
-        userRepository.save(teacher);
-        
-        // Create student user
-        User student = new User();
-        student.setUsername("student");
-        student.setPassword(passwordEncoder.encode("student123"));
-        student.setEmail("student@classroomapp.com");
-        student.setFullName("Ass Cracker");
-        student.setRoleId(RoleConstants.STUDENT);
-        userRepository.save(student);
-          // Manager user is already created earlier
-        // No need to create another manager user
-=======
+        teacher.setPassword(passwordEncoder.encode("teacher123"));        teacher.setEmail("teacher@classroomapp.com");
         teacher.setFullName("Teacher User");
         teacher.setRoleId(RoleConstants.TEACHER);
         userRepository.save(teacher);
->>>>>>> master
         
         // Create student user
         User student = new User();
