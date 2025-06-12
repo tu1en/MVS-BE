@@ -16,14 +16,14 @@ public class TeacherRequestFormDTO {
     @NotEmpty(message = "Số điện thoại không được để trống")
     private String phoneNumber;
     
-    @NotEmpty(message = "Trình độ chuyên môn không được để trống")
-    private String qualifications;
+    // Bỏ ràng buộc @NotEmpty vì trường này được tạo sau khi upload file
+    private String cvFileUrl;
     
-    @NotEmpty(message = "Kinh nghiệm không được để trống")
-    private String experience;
-    
-    @NotEmpty(message = "Môn học dạy không được để trống")
-    private String subjects;
+    // Các trường cho upload file base64
+    @NotEmpty(message = "File CV không được để trống")
+    private String cvFileData;
+    private String cvFileName;
+    private String cvFileType;
     
     private String additionalInfo;
 } 

@@ -60,10 +60,9 @@ public class SubmissionServiceImpl implements SubmissionService {
         if (classroom.getStudents() == null || !classroom.getStudents().contains(student)) {
             throw new IllegalArgumentException("Student is not enrolled in this classroom");
         }
-        
-        // Check if submission already exists
+          // Check if submission already exists
         submissionRepository.findByAssignmentAndStudent(assignment, student)
-                .ifPresent(s -> {
+                .ifPresent(existingSubmission -> {
                     throw new IllegalArgumentException("Student has already submitted this assignment");
                 });
         

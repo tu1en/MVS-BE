@@ -1,15 +1,18 @@
 package com.classroomapp.classroombackend.service.impl;
 
-import com.classroomapp.classroombackend.service.EmailService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
+
+import com.classroomapp.classroombackend.service.EmailService;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
@@ -17,6 +20,7 @@ import jakarta.mail.internet.MimeMessage;
 public class EmailServiceImpl implements EmailService {
     
     private final JavaMailSender mailSender;
+    private final TemplateEngine templateEngine;
     
     @Value("${spring.mail.from.email}")
     private String fromEmail;
@@ -42,114 +46,89 @@ public class EmailServiceImpl implements EmailService {
 
     @Override
     public void sendRequestStatusNotification(String to, String fullName, String requestedRole, String status, String reason) {
-        String subject = "Your " + requestedRole + " Role Request - " + status;
-        String body = generateStatusEmailBody(fullName, requestedRole, status, reason);
+        String subject;
+        String body;
+        
+        if ("APPROVED".equals(status)) {
+            subject = "Yêu cầu " + requestedRole + " của bạn đã được chấp thuận";
+            Context context = new Context();
+            context.setVariable("name", fullName);
+            context.setVariable("role", requestedRole);
+            body = templateEngine.process("request-approved", context);
+        } else {
+            subject = "Yêu cầu " + requestedRole + " của bạn đã bị từ chối";
+            Context context = new Context();
+            context.setVariable("name", fullName);
+            context.setVariable("role", requestedRole);
+            context.setVariable("reason", reason);
+            body = templateEngine.process("request-rejected", context);
+        }
+        
         sendEmail(to, subject, body);
     }
 
     @Override
     public void sendAccountInfoEmail(String to, String fullName, String role, String username, String password) {
-        String subject = "Your MVS Classroom Account Information";
+        String subject = "Thông tin tài khoản MVS Classroom của bạn";
         String body = generateAccountInfoEmailBody(fullName, role, username, password);
         sendEmail(to, subject, body);
     }
 
     @Override
     public void sendFormCompletionConfirmation(String to, String fullName, String requestedRole) {
-        String subject = "Request Received: " + requestedRole + " Role Application";
-        String body = generateConfirmationEmailBody(fullName, requestedRole);
+        String subject = "Đã nhận yêu cầu: Đăng ký vai trò " + requestedRole;
+        Context context = new Context();
+        context.setVariable("name", fullName);
+        context.setVariable("role", requestedRole);
+        String body = templateEngine.process("request-received", context);
         sendEmail(to, subject, body);
     }
     
+    // This method is kept for potential future use
     private String generateStatusEmailBody(String fullName, String role, String status, String reason) {
-        StringBuilder bodyBuilder = new StringBuilder();
-        bodyBuilder.append("<!DOCTYPE html><html><head><style>");
-        bodyBuilder.append("body {font-family: Arial, sans-serif; line-height: 1.6; color: #333;}");
-        
         if ("APPROVED".equals(status)) {
-            bodyBuilder.append(".header {background-color: #52c41a; color: white; padding: 20px; text-align: center;}");
-            bodyBuilder.append("</style></head><body>");
-            bodyBuilder.append("<div class='header'><h1>Your Request Has Been Approved!</h1></div>");
-            bodyBuilder.append("<div style='padding: 20px;'>");
-            bodyBuilder.append("<p>Dear ").append(fullName).append(",</p>");
-            bodyBuilder.append("<p>Congratulations! Your request to become a <strong>").append(role).append("</strong> ");
-            bodyBuilder.append("in our system has been approved.</p>");
-            bodyBuilder.append("<p>You can now login to the system with your account and access all features ");
-            bodyBuilder.append("available for ").append(role).append(" users.</p>");
-            bodyBuilder.append("<p>We're excited to have you as a part of our community!</p>");
-            bodyBuilder.append("<div style='text-align: center;'>");
-            bodyBuilder.append("<a href='https://mvsclassroom.com/login' style='display: inline-block; ");
-            bodyBuilder.append("background-color: #1677ff; color: white; padding: 10px 20px; ");
-            bodyBuilder.append("text-decoration: none; border-radius: 5px;'>Login Now</a></div>");
+            Context context = new Context();
+            context.setVariable("name", fullName);
+            context.setVariable("role", role);
+            return templateEngine.process("request-approved", context);
         } else {
-            bodyBuilder.append(".header {background-color: #f5222d; color: white; padding: 20px; text-align: center;}");
-            bodyBuilder.append(".reason-box {background-color: #f9f9f9; border-left: 4px solid #f5222d; padding: 15px; margin: 15px 0;}");
-            bodyBuilder.append("</style></head><body>");
-            bodyBuilder.append("<div class='header'><h1>Request Status Update</h1></div>");
-            bodyBuilder.append("<div style='padding: 20px;'>");
-            bodyBuilder.append("<p>Dear ").append(fullName).append(",</p>");
-            bodyBuilder.append("<p>We have reviewed your request to become a <strong>").append(role).append("</strong> ");
-            bodyBuilder.append("in our system. Unfortunately, we are unable to approve your request at this time.</p>");
-            bodyBuilder.append("<div class='reason-box'><strong>Reason:</strong><p>").append(reason).append("</p></div>");
-            bodyBuilder.append("<p>You are welcome to submit a new request after addressing the reasons mentioned above. ");
-            bodyBuilder.append("If you believe there has been a mistake or would like to provide additional information, ");
-            bodyBuilder.append("please contact our support team.</p>");
+            Context context = new Context();
+            context.setVariable("name", fullName);
+            context.setVariable("role", role);
+            context.setVariable("reason", reason);
+            return templateEngine.process("request-rejected", context);
         }
-        
-        bodyBuilder.append("<p>Best regards,<br>The MVS Classroom Team</p>");
-        bodyBuilder.append("</div><div style='margin-top: 20px; text-align: center; font-size: 12px; color: #666;'>");
-        bodyBuilder.append("<p>&copy; MVS Classroom. All rights reserved.</p></div></body></html>");
-        
-        return bodyBuilder.toString();
     }
     
+    // This method is kept for potential future use
     private String generateConfirmationEmailBody(String fullName, String role) {
-        StringBuilder bodyBuilder = new StringBuilder();
-        bodyBuilder.append("<!DOCTYPE html><html><head><style>");
-        bodyBuilder.append("body {font-family: Arial, sans-serif; line-height: 1.6; color: #333;}");
-        bodyBuilder.append(".header {background-color: #1677ff; color: white; padding: 20px; text-align: center;}");
-        bodyBuilder.append("</style></head><body>");
-        bodyBuilder.append("<div class='header'><h1>We've Received Your Request</h1></div>");
-        bodyBuilder.append("<div style='padding: 20px;'>");
-        bodyBuilder.append("<p>Dear ").append(fullName).append(",</p>");
-        bodyBuilder.append("<p>Thank you for submitting your request to become a <strong>").append(role).append("</strong> ");
-        bodyBuilder.append("in our system. We have received your application and it is now being reviewed by our administrators.</p>");
-        bodyBuilder.append("<p>Please note that the review process may take up to 48 hours. You will receive ");
-        bodyBuilder.append("another email notification once your request has been processed.</p>");
-        bodyBuilder.append("<p>If you have any questions or need to provide additional information, please reply ");
-        bodyBuilder.append("to this email or contact our support team.</p>");
-        bodyBuilder.append("<p>Best regards,<br>The MVS Classroom Team</p>");
-        bodyBuilder.append("</div><div style='margin-top: 20px; text-align: center; font-size: 12px; color: #666;'>");
-        bodyBuilder.append("<p>&copy; MVS Classroom. All rights reserved.</p></div></body></html>");
-        
-        return bodyBuilder.toString();
+        Context context = new Context();
+        context.setVariable("name", fullName);
+        context.setVariable("role", role);
+        return templateEngine.process("request-received", context);
     }
 
     private String generateAccountInfoEmailBody(String fullName, String role, String username, String password) {
         StringBuilder bodyBuilder = new StringBuilder();
         bodyBuilder.append("<!DOCTYPE html><html><head><style>");
         bodyBuilder.append("body {font-family: Arial, sans-serif; line-height: 1.6; color: #333;}");
-        bodyBuilder.append(".header {background-color: #1890ff; color: white; padding: 20px; text-align: center;}");
+        bodyBuilder.append(".header {background-color: #52c41a; color: white; padding: 20px; text-align: center;}");
         bodyBuilder.append(".credentials {background-color: #f9f9f9; border: 1px solid #ddd; padding: 15px; margin: 15px 0; border-radius: 5px;}");
-        bodyBuilder.append(".btn {display: inline-block; background-color: #1677ff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-top: 15px;}");
         bodyBuilder.append("</style></head><body>");
-        bodyBuilder.append("<div class='header'><h1>Your MVS Classroom Account</h1></div>");
+        bodyBuilder.append("<div class='header'><h1>Tài khoản MVS Classroom của bạn</h1></div>");
         bodyBuilder.append("<div style='padding: 20px;'>");
-        bodyBuilder.append("<p>Dear ").append(fullName).append(",</p>");
-        bodyBuilder.append("<p>Your account has been successfully created in our system with the role of <strong>").append(role).append("</strong>.</p>");
-        bodyBuilder.append("<p>Here are your account credentials:</p>");
+        bodyBuilder.append("<p>Kính gửi ").append(fullName).append(",</p>");
+        bodyBuilder.append("<p>Tài khoản của bạn đã được tạo thành công trong hệ thống với vai trò <strong>").append(role).append("</strong>.</p>");
+        bodyBuilder.append("<p>Đây là thông tin đăng nhập của bạn:</p>");
         bodyBuilder.append("<div class='credentials'>");
-        bodyBuilder.append("<p><strong>Username:</strong> ").append(username).append("</p>");
-        bodyBuilder.append("<p><strong>Temporary Password:</strong> ").append(password).append("</p>");
+        bodyBuilder.append("<p><strong>Tên đăng nhập:</strong> ").append(username).append("</p>");
+        bodyBuilder.append("<p><strong>Mật khẩu tạm thời:</strong> ").append(password).append("</p>");
         bodyBuilder.append("</div>");
-        bodyBuilder.append("<p>Please use these credentials to log in. For security reasons, we recommend changing your password after your first login.</p>");
-        bodyBuilder.append("<div style='text-align: center;'>");
-        bodyBuilder.append("<a href='https://mvsclassroom.com/login' class='btn'>Login Now</a>");
-        bodyBuilder.append("</div>");
-        bodyBuilder.append("<p>If you have any questions or need assistance, please contact our support team.</p>");
-        bodyBuilder.append("<p>Best regards,<br>The MVS Classroom Team</p>");
+        bodyBuilder.append("<p>Vui lòng sử dụng thông tin này để đăng nhập. Vì lý do bảo mật, chúng tôi khuyên bạn nên đổi mật khẩu sau lần đăng nhập đầu tiên.</p>");
+        bodyBuilder.append("<p>Nếu bạn có bất kỳ câu hỏi hoặc cần hỗ trợ, vui lòng liên hệ với đội ngũ hỗ trợ của chúng tôi.</p>");
+        bodyBuilder.append("<p>Trân trọng,<br>Đội ngũ MVS Classroom</p>");
         bodyBuilder.append("</div><div style='margin-top: 20px; text-align: center; font-size: 12px; color: #666;'>");
-        bodyBuilder.append("<p>&copy; MVS Classroom. All rights reserved.</p></div></body></html>");
+        bodyBuilder.append("<p>&copy; MVS Classroom. Đã đăng ký bản quyền.</p></div></body></html>");
         
         return bodyBuilder.toString();
     }

@@ -1,0 +1,46 @@
+Picked up JAVA_TOOL_OPTIONS: -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8
+[0.015s][warning][cds] A jar file is not the one used while building the shared archive file: C:\Users\darky\AppData\Roaming\Code\User\globalStorage\pleiades.java-extension-pack-jdk\java\21\lib\modules
+[0.015s][warning][cds] A jar file is not the one used while building the shared archive file: C:\Users\darky\AppData\Roaming\Code\User\globalStorage\pleiades.java-extension-pack-jdk\java\21\lib\modules
+[0.015s][warning][cds] C:\Users\darky\AppData\Roaming\Code\User\globalStorage\pleiades.java-extension-pack-jdk\java\21\lib\modules timestamp has changed.
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -----------------< com.classroomapp:classroom-backend >-----------------
+[INFO] Building classroom-backend 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.3.2:clean (default-clean) @ classroom-backend ---
+[INFO] Deleting c:\Users\darky\Downloads\SEP490\backend\doproject\target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ classroom-backend ---
+[INFO] Copying 5 resources from src\main\resources to target\classes
+[INFO] Copying 14 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.8.1:compile (default-compile) @ classroom-backend ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 189 source files to c:\Users\darky\Downloads\SEP490\backend\doproject\target\classes
+[INFO] /c:/Users/darky/Downloads/SEP490/backend/doproject/src/main/java/com/classroomapp/classroombackend/security/JwtUtil.java: Some input files use or override a deprecated API.
+[INFO] /c:/Users/darky/Downloads/SEP490/backend/doproject/src/main/java/com/classroomapp/classroombackend/security/JwtUtil.java: Recompile with -Xlint:deprecation for details.
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /c:/Users/darky/Downloads/SEP490/backend/doproject/src/main/java/com/classroomapp/classroombackend/service/impl/FirebaseStorageServiceImpl.java:[20,8] com.classroomapp.classroombackend.service.impl.FirebaseStorageServiceImpl is not abstract and does not override abstract method deleteFile(java.lang.String) in com.classroomapp.classroombackend.service.FileStorageService
+[ERROR] /c:/Users/darky/Downloads/SEP490/backend/doproject/src/main/java/com/classroomapp/classroombackend/service/impl/AssignmentServiceImpl.java:[22,8] com.classroomapp.classroombackend.service.impl.AssignmentServiceImpl is not abstract and does not override abstract method provideFeedback(java.lang.Long,com.classroomapp.classroombackend.dto.CreateFeedbackDto) in com.classroomapp.classroombackend.service.AssignmentService
+[INFO] 2 errors 
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  10.744 s
+[INFO] Finished at: 2025-06-11T13:11:03+07:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.8.1:compile (default-compile) on project classroom-backend: Compilation failure: Compilation failure: 
+[ERROR] /c:/Users/darky/Downloads/SEP490/backend/doproject/src/main/java/com/classroomapp/classroombackend/service/impl/FirebaseStorageServiceImpl.java:[20,8] com.classroomapp.classroombackend.service.impl.FirebaseStorageServiceImpl is not abstract and does not override abstract method deleteFile(java.lang.String) in com.classroomapp.classroombackend.service.FileStorageService
+[ERROR] /c:/Users/darky/Downloads/SEP490/backend/doproject/src/main/java/com/classroomapp/classroombackend/service/impl/AssignmentServiceImpl.java:[22,8] com.classroomapp.classroombackend.service.impl.AssignmentServiceImpl is not abstract and does not override abstract method provideFeedback(java.lang.Long,com.classroomapp.classroombackend.dto.CreateFeedbackDto) in com.classroomapp.classroombackend.service.AssignmentService
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
