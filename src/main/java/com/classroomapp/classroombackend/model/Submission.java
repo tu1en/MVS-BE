@@ -2,9 +2,12 @@ package com.classroomapp.classroombackend.model;
 
 import java.time.LocalDateTime;
 
+<<<<<<< HEAD
 import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 
+=======
+>>>>>>> master
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;

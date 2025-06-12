@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Request Approved</title>
+    <title>Yêu Cầu Được Chấp Thuận</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -25,15 +25,6 @@
             border-top: none;
             border-radius: 0 0 5px 5px;
         }
-        .button {
-            display: inline-block;
-            background-color: #1677ff;
-            color: white;
-            padding: 10px 20px;
-            text-decoration: none;
-            border-radius: 5px;
-            margin: 20px 0;
-        }
         .footer {
             margin-top: 20px;
             text-align: center;
@@ -44,28 +35,24 @@
 </head>
 <body>
     <div class="header">
-        <h1>Your Request Has Been Approved!</h1>
+        <h1>Yêu Cầu Của Bạn Đã Được Chấp Thuận!</h1>
     </div>
     <div class="content">
-        <p>Dear <span th:text="${name}">User</span>,</p>
+        <p>Kính gửi <span th:text="${name}">User</span>,</p>
         
-        <p>Congratulations! Your request to become a <strong th:text="${role}">ROLE</strong> in our system has been approved.</p>
+        <p>Chúc mừng! Yêu cầu trở thành <strong th:text="${role}">ROLE</strong> của bạn đã được chấp thuận.</p>
         
-        <p>You can now login to the system with your account and access all features available for <span th:text="${role}">ROLE</span> users.</p>
+        <p>Bây giờ bạn có thể đăng nhập vào hệ thống bằng tài khoản của mình và truy cập tất cả các tính năng dành cho người dùng <span th:text="${role}">ROLE</span>.</p>
         
-        <p>We're excited to have you as a part of our community!</p>
+        <p>Chúng tôi rất vui mừng khi bạn trở thành một phần của cộng đồng!</p>
         
-        <div style="text-align: center;">
-            <a href="https://mvsclassroom.com/login" class="button">Login Now</a>
-        </div>
+        <p>Nếu bạn có bất kỳ câu hỏi hoặc cần hỗ trợ, đừng ngại liên hệ với đội ngũ hỗ trợ của chúng tôi.</p>
         
-        <p>If you have any questions or need assistance, feel free to contact our support team.</p>
-        
-        <p>Best regards,<br>
-        The MVS Classroom Team</p>
+        <p>Trân trọng,<br>
+        Đội ngũ MVS Classroom</p>
     </div>
     <div class="footer">
-        <p>&copy; MVS Classroom. All rights reserved.</p>
+        <p>&copy; MVS Classroom. Đã đăng ký bản quyền.</p>
     </div>
 </body>
 </html> 

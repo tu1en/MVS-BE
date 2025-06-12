@@ -1,12 +1,21 @@
 package com.classroomapp.classroombackend.config;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import com.classroomapp.classroombackend.constants.RoleConstants;
+import com.classroomapp.classroombackend.dto.StudentRequestFormDTO;
+import com.classroomapp.classroombackend.dto.TeacherRequestFormDTO;
+import com.classroomapp.classroombackend.model.Accomplishment;
 import com.classroomapp.classroombackend.model.Blog;
+<<<<<<< HEAD
 import com.classroomapp.classroombackend.model.Accomplishment;
 import com.classroomapp.classroombackend.model.Request;
 import com.classroomapp.classroombackend.model.usermanagement.User;
@@ -21,25 +30,50 @@ import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
+=======
+import com.classroomapp.classroombackend.model.Request;
+import com.classroomapp.classroombackend.model.User;
+import com.classroomapp.classroombackend.repository.AccomplishmentRepository;
+import com.classroomapp.classroombackend.repository.BlogRepository;
+import com.classroomapp.classroombackend.repository.RequestRepository;
+import com.classroomapp.classroombackend.repository.UserRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+>>>>>>> master
 
 /**
  * Initialize test data when application starts
  */
 @Component
 public class DataLoader implements CommandLineRunner {
+<<<<<<< HEAD
       private final UserRepository userRepository;
+=======
+
+    private final UserRepository userRepository;
+    private final BlogRepository blogRepository;
+>>>>>>> master
     private final RequestRepository requestRepository;
     private final AccomplishmentRepository accomplishmentRepository;
     private final BlogRepository blogRepository;
     private final PasswordEncoder passwordEncoder;
+<<<<<<< HEAD
       @Autowired
     public DataLoader(
         UserRepository userRepository,
+=======
+    private final ObjectMapper objectMapper;
+    
+    @Autowired
+    public DataLoader(
+        UserRepository userRepository, 
+        BlogRepository blogRepository,
+>>>>>>> master
         RequestRepository requestRepository,
         AccomplishmentRepository accomplishmentRepository,
         BlogRepository blogRepository,
         PasswordEncoder passwordEncoder    ) {
         this.userRepository = userRepository;
+        this.blogRepository = blogRepository;
         this.requestRepository = requestRepository;
         this.accomplishmentRepository = accomplishmentRepository;
         this.blogRepository = blogRepository;
@@ -47,6 +81,7 @@ public class DataLoader implements CommandLineRunner {
     }
     @Override
     public void run(String... args) throws Exception {
+<<<<<<< HEAD
         // Clear existing data
         userRepository.deleteAll();
         blogRepository.deleteAll();
@@ -64,6 +99,22 @@ public class DataLoader implements CommandLineRunner {
         
         // Create sample requests
         // CreateRequests();
+=======
+        // Only run if no users exist (avoid conflicts with SampleDataInitializer)
+        if (userRepository.count() == 0) {
+            // Create sample users
+            List<User> users = CreateUsers();
+            
+            // Create sample blogs
+            CreateSampleBlogs(users);
+            
+            // Create sample accomplishments
+            CreateAccomplishments();
+            
+            // Create sample requests
+            CreateRequests();
+        }
+>>>>>>> master
     }
     
     /**
@@ -80,12 +131,20 @@ public class DataLoader implements CommandLineRunner {
         admin.setRoleId(RoleConstants.ADMIN);
         userRepository.save(admin);
         
+<<<<<<< HEAD
         // Create teacher user
+=======
+        // Create manager user
+>>>>>>> master
         User manager = new User();
         manager.setUsername("manager");
         manager.setPassword(passwordEncoder.encode("manager123"));
         manager.setEmail("manager@classroomapp.com");
+<<<<<<< HEAD
         manager.setFullName("Nigga Cheese");
+=======
+        manager.setFullName("Manager User");
+>>>>>>> master
         manager.setRoleId(RoleConstants.MANAGER);
         userRepository.save(manager);
 
@@ -94,6 +153,7 @@ public class DataLoader implements CommandLineRunner {
         teacher.setUsername("teacher");
         teacher.setPassword(passwordEncoder.encode("teacher123"));
         teacher.setEmail("teacher@classroomapp.com");
+<<<<<<< HEAD
         teacher.setFullName("Butt Slapper");
         teacher.setRoleId(RoleConstants.TEACHER);
         userRepository.save(teacher);
@@ -108,8 +168,22 @@ public class DataLoader implements CommandLineRunner {
         userRepository.save(student);
           // Manager user is already created earlier
         // No need to create another manager user
+=======
+        teacher.setFullName("Teacher User");
+        teacher.setRoleId(RoleConstants.TEACHER);
+        userRepository.save(teacher);
+>>>>>>> master
         
-        return Arrays.asList(admin, teacher, student, manager);
+        // Create student user
+        User student = new User();
+        student.setUsername("student");
+        student.setPassword(passwordEncoder.encode("student123"));
+        student.setEmail("student@classroomapp.com");
+        student.setFullName("Student User");
+        student.setRoleId(RoleConstants.STUDENT);
+        userRepository.save(student);
+        
+        return Arrays.asList(admin, manager, teacher, student);
     }
     
     /**
@@ -118,8 +192,8 @@ public class DataLoader implements CommandLineRunner {
      */
     private void CreateSampleBlogs(List<User> users) {
         User admin = users.get(0);
-        User teacher = users.get(1);
-        User manager = users.get(3);
+        User manager = users.get(1);
+        User teacher = users.get(2);
         
         // Blog 1 - Published by Admin
         Blog blog1 = new Blog();
@@ -221,5 +295,50 @@ public class DataLoader implements CommandLineRunner {
         programming.setGrade(88.5);
         programming.setCompletionDate(LocalDate.now().minusDays(7));
         accomplishmentRepository.save(programming);
+    }
+    
+    /**
+     * Create sample role requests for testing
+     */
+    private void CreateRequests() throws Exception {
+        // Create a teacher role request
+        TeacherRequestFormDTO teacherForm = new TeacherRequestFormDTO();
+        teacherForm.setEmail("nguyenvanA@gmail.com");
+        teacherForm.setFullName("Nguyễn Văn A");
+        teacherForm.setPhoneNumber("0987654321");
+        teacherForm.setCvFileName("nguyen_van_a_cv.pdf");
+        teacherForm.setCvFileType("application/pdf");
+        teacherForm.setCvFileData("U2FtcGxlIENWIGZpbGUgY29udGVudC4gSW4gcmVhbCBpbXBsZW1lbnRhdGlvbiwgdGhpcyB3b3VsZCBiZSBhIGJhc2U2NCBlbmNvZGVkIHN0cmluZyBvZiBhIFBERiBmaWxlLg=="); // Sample base64 data
+        teacherForm.setCvFileUrl("/files/teachers/nguyen_van_a_cv.pdf"); // This would be set by the service after upload
+        teacherForm.setAdditionalInfo("Tôi đã có 5 năm kinh nghiệm giảng dạy Toán cấp trung học. Tôi từng làm việc tại trường THPT Chu Văn An và là giáo viên dạy thêm tại nhiều trung tâm luyện thi.");
+        
+        Request teacherRequest = new Request();
+        teacherRequest.setEmail(teacherForm.getEmail());
+        teacherRequest.setFullName(teacherForm.getFullName());
+        teacherRequest.setPhoneNumber(teacherForm.getPhoneNumber());
+        teacherRequest.setRequestedRole("TEACHER");
+        teacherRequest.setFormResponses(objectMapper.writeValueAsString(teacherForm));
+        teacherRequest.setStatus("PENDING");
+        teacherRequest.setCreatedAt(LocalDateTime.now().minusDays(3));
+        requestRepository.save(teacherRequest);
+        
+        // Create a student role request
+        StudentRequestFormDTO studentForm = new StudentRequestFormDTO();
+        studentForm.setEmail("tranvanB@gmail.com");
+        studentForm.setFullName("Trần Văn B");
+        studentForm.setPhoneNumber("0987123456");
+        studentForm.setGrade("Lớp 11");
+        studentForm.setParentContact("Phụ huynh: Trần Thị C, SĐT: 0912345678");
+        studentForm.setAdditionalInfo("Em muốn đăng ký học thêm môn Toán và Vật lý để chuẩn bị cho kỳ thi quốc gia.");
+        
+        Request studentRequest = new Request();
+        studentRequest.setEmail(studentForm.getEmail());
+        studentRequest.setFullName(studentForm.getFullName());
+        studentRequest.setPhoneNumber(studentForm.getPhoneNumber());
+        studentRequest.setRequestedRole("STUDENT");
+        studentRequest.setFormResponses(objectMapper.writeValueAsString(studentForm));
+        studentRequest.setStatus("PENDING");
+        studentRequest.setCreatedAt(LocalDateTime.now().minusDays(1));
+        requestRepository.save(studentRequest);
     }
 }

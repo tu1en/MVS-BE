@@ -101,4 +101,22 @@ public class UserController {
         userService.DeleteUser(id);
         return ResponseEntity.noContent().build();
     }
-} 
+    
+    /**
+     * Get all teachers
+     * @return list of all teachers
+     */
+    @GetMapping("/teachers")
+    public ResponseEntity<List<UserDto>> GetAllTeachers() {
+        return ResponseEntity.ok(userService.FindUsersByRole(2)); // Role 2 = TEACHER
+    }
+    
+    /**
+     * Get all students
+     * @return list of all students
+     */
+    @GetMapping("/students")
+    public ResponseEntity<List<UserDto>> GetAllStudents() {
+        return ResponseEntity.ok(userService.FindUsersByRole(1)); // Role 1 = STUDENT
+    }
+}
