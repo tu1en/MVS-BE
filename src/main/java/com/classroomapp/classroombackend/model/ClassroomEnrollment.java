@@ -2,6 +2,7 @@ package com.classroomapp.classroombackend.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import com.classroomapp.classroombackend.model.usermanagement.User;
 
 @Data
 @Entity

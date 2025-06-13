@@ -1,31 +1,39 @@
 package com.classroomapp.classroombackend.filter;
 
-import com.classroomapp.classroombackend.security.JwtUtil;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
-import org.springframework.web.filter.OncePerRequestFilter;
-
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import com.classroomapp.classroombackend.security.JwtUtil;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * JWT authentication filter for validating tokens in request header
+ * This filter is executed for every request to validate JWT tokens
+ * and set up security context if the token is valid.
+ */
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    @Autowired
-    private JwtUtil jwtUtil;
+    private final JwtUtil jwtUtil;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -97,10 +105,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 log.info("JWT Filter - Authorities: {}", authorities.stream()
                         .map(auth -> auth.getAuthority())
                         .collect(Collectors.joining(", ")));
-                
-                // Tạo đối tượng Authentication và đặt vào SecurityContext
+                  // Create Authentication object and set into SecurityContext
                 UsernamePasswordAuthenticationToken authentication = 
                         new UsernamePasswordAuthenticationToken(subject, null, authorities);
+                
+                // Set request details in authentication object
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                
+                // Set the authentication in the Security context
                 SecurityContextHolder.getContext().setAuthentication(authentication);
                 
                 log.info("JWT Filter - Authentication set: {} with role: {}", subject, role);

@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+  
+  <!-- Offline Mode: Set to false to download dependencies -->
+  <offline>false</offline>
+  
+  <!-- Main Central Repository, with mirrors -->
+  <mirrors>
+    <!-- Google's Maven Repository Mirror -->
+    <mirror>
+      <id>google-maven-central</id>
+      <name>Google Maven Central</name>
+      <url>https://maven-central.storage.googleapis.com/maven2/</url>
+      <mirrorOf>central</mirrorOf>
+    </mirror>
+    
+    <!-- Maven Central Repository (Cloudflare) -->
+    <mirror>
+      <id>central-cloudflare</id>
+      <name>Maven Central Cloudflare</name>
+      <url>https://repo1.maven.org/maven2/</url>
+      <mirrorOf>central</mirrorOf>
+    </mirror>
+    
+    <!-- Maven Central Repository (Sonatype) -->
+    <mirror>
+      <id>central-sonatype</id>
+      <name>Maven Central Sonatype</name>
+      <url>https://s01.oss.sonatype.org/content/repositories/releases/</url>
+      <mirrorOf>central</mirrorOf>
+    </mirror>
+    
+    <!-- JBoss Repository -->
+    <mirror>
+      <id>jboss-public</id>
+      <name>JBoss Public Repository Group</name>
+      <url>https://repository.jboss.org/nexus/content/groups/public/</url>
+      <mirrorOf>central</mirrorOf>
+    </mirror>
+    
+    <!-- Aliyun Repository (Fast in Asia) -->
+    <mirror>
+      <id>aliyun-central</id>
+      <name>Aliyun Maven Central</name>
+      <url>https://maven.aliyun.com/repository/central</url>
+      <mirrorOf>central</mirrorOf>
+    </mirror>
+  </mirrors>
+  
+  <profiles>
+    <profile>
+      <id>global-repos</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <repositories>
+        <!-- Spring Repositories -->
+        <repository>
+          <id>spring-releases</id>
+          <name>Spring Releases</name>
+          <url>https://repo.spring.io/release</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>false</enabled></snapshots>
+        </repository>
+        <repository>
+          <id>spring-milestones</id>
+          <name>Spring Milestones</name>
+          <url>https://repo.spring.io/milestone</url>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+        </repository>
+        
+        <!-- JitPack for Github-hosted dependencies -->
+        <repository>
+          <id>jitpack-repo</id>
+          <name>JitPack Repository</name>
+          <url>https://jitpack.io</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>false</enabled></snapshots>
+        </repository>
+        
+        <!-- Maven Central Direct - Last Resort -->
+        <repository>
+          <id>maven-central-direct</id>
+          <name>Maven Central Direct</name>
+          <url>https://repo.maven.apache.org/maven2/</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>false</enabled></snapshots>
+        </repository>
+      </repositories>
+      
+      <pluginRepositories>
+        <pluginRepository>
+          <id>spring-releases-plugins</id>
+          <name>Spring Releases Plugins</name>
+          <url>https://repo.spring.io/plugins-release</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>false</enabled></snapshots>
+        </pluginRepository>
+        <pluginRepository>
+          <id>maven-central-plugins</id>
+          <name>Maven Central Plugins</name>
+          <url>https://repo1.maven.org/maven2/</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>false</enabled></snapshots>
+        </pluginRepository>
+      </pluginRepositories>
+    </profile>
+  </profiles>
+  
+  <!-- Active Profiles -->
+  <activeProfiles>
+    <activeProfile>global-repos</activeProfile>
+  </activeProfiles>
+  
+  <!-- HTTP Client Settings for Timeouts and Retries -->
+  <httpClient>
+    <!-- Increase timeouts for slow connections -->
+    <connectionTimeout>180000</connectionTimeout> <!-- 3 minutes -->
+    <readTimeout>180000</readTimeout> <!-- 3 minutes -->
+    <retry>
+      <count>5</count> <!-- Increased retries -->
+      <nonRetryableClasses>
+        <nonRetryableClass>java.io.InterruptedIOException</nonRetryableClass>
+        <nonRetryableClass>java.net.UnknownHostException</nonRetryableClass>
+      </nonRetryableClasses>
+    </retry>
+  </httpClient>
+  
+  <!-- Local Repository Path -->
+  <localRepository>${user.home}/.m2/repository</localRepository>
+</settings>

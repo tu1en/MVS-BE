@@ -1,3 +1,5 @@
+<<<<<<< HEAD
+=======
 package com.classroomapp.classroombackend.config;
 
 import com.google.firebase.FirebaseApp;
@@ -50,3 +52,4 @@ public class FirebaseConfig {
         }
     }
 }
+>>>>>>> master

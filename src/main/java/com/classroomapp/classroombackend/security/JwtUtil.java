@@ -1,22 +1,27 @@
 package com.classroomapp.classroombackend.security;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.SignatureException;
-import io.jsonwebtoken.UnsupportedJwtException;
-import io.jsonwebtoken.security.Keys;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.crypto.SecretKey;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
+<<<<<<< HEAD
+=======
+import io.jsonwebtoken.SignatureAlgorithm;
+>>>>>>> master
+import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SecurityException;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Slf4j
@@ -34,9 +39,7 @@ public class JwtUtil {
     // Tạo SecretKey từ chuỗi secret để đảm bảo nhất quán
     public SecretKey getSecretKeyFromString() {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
-    }
-
-    public String generateToken(String username, Integer roleId) {
+    }    public String generateToken(String username, Integer roleId) {
         log.info("Generating token for user: {} with role ID: {}", username, roleId);
         
         Map<String, Object> claims = new HashMap<>();
@@ -48,16 +51,18 @@ public class JwtUtil {
             .setSubject(username)
             .setIssuedAt(new Date(System.currentTimeMillis()))
             .setExpiration(new Date(System.currentTimeMillis() + JWT_TOKEN_VALIDITY * 1000))
-            .signWith(SignatureAlgorithm.HS512, getSecretKeyFromString())
+<<<<<<< HEAD
+            .signWith(getSecretKeyFromString())
+=======
+            .signWith(getSecretKeyFromString(), SignatureAlgorithm.HS512)
+>>>>>>> master
             .compact();
             
         log.info("Token generated successfully for user: {} (first 20 chars): {}", 
             username, token.substring(0, Math.min(20, token.length())));
         
         return token;
-    }
-
-    public boolean validateToken(String token) {
+    }    public boolean validateToken(String token) {
         if (token == null) {
             log.error("JWT validation failed: token is null");
             return false;
@@ -65,11 +70,20 @@ public class JwtUtil {
         
         try {
             log.debug("Validating JWT token");
-            Jwts.parser().setSigningKey(getSecretKeyFromString()).parseClaimsJws(token);
+<<<<<<< HEAD
+            Jwts.parserBuilder().setSigningKey(getSecretKeyFromString()).build().parseClaimsJws(token);
             log.debug("JWT token validated successfully");
             return true;
-        } catch (SignatureException e) {
+        } catch (SecurityException e) {
             log.error("JWT validation failed: Invalid signature: {}", e.getMessage());
+=======
+            Jwts.parserBuilder()
+                .setSigningKey(getSecretKeyFromString())
+                .build()
+                .parseClaimsJws(token);
+            log.debug("JWT token validated successfully");
+            return true;
+>>>>>>> master
         } catch (MalformedJwtException e) {
             log.error("JWT validation failed: Malformed token: {}", e.getMessage());
         } catch (ExpiredJwtException e) {
@@ -82,12 +96,19 @@ public class JwtUtil {
             log.error("JWT validation failed: Unknown error: {}", e.getMessage());
         }
         return false;
-    }
-
-    public String getUsernameFromToken(String token) {
+    }    public String getUsernameFromToken(String token) {
         try {
-            String username = Jwts.parser().setSigningKey(getSecretKeyFromString())
+<<<<<<< HEAD
+            String username = Jwts.parserBuilder().setSigningKey(getSecretKeyFromString()).build()
                     .parseClaimsJws(token).getBody().getSubject();
+=======
+            String username = Jwts.parserBuilder()
+                    .setSigningKey(getSecretKeyFromString())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody()
+                    .getSubject();
+>>>>>>> master
             log.debug("Extracted username from token: {}", username);
             return username;
         } catch (Exception e) {
@@ -95,11 +116,18 @@ public class JwtUtil {
             return null;
         }
     }
-    
-    public Integer getRoleFromToken(String token) {
+      public Integer getRoleFromToken(String token) {
         try {
-            Claims claims = Jwts.parser().setSigningKey(getSecretKeyFromString())
+<<<<<<< HEAD
+            Claims claims = Jwts.parserBuilder().setSigningKey(getSecretKeyFromString()).build()
                     .parseClaimsJws(token).getBody();
+=======
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(getSecretKeyFromString())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+>>>>>>> master
             
             Integer roleId = claims.get("role", Integer.class);
             log.debug("Extracted role ID from token: {}", roleId);

@@ -1,19 +1,49 @@
 package com.classroomapp.classroombackend.util;
 
+import java.time.LocalDateTime;
+<<<<<<< HEAD
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Component;
+
+import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto;
+import com.classroomapp.classroombackend.dto.assignmentmanagement.SubmissionDto;
+import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDetailsDto;
+import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
+import com.classroomapp.classroombackend.dto.classroommanagement.ScheduleDto;
+import com.classroomapp.classroombackend.dto.classroommanagement.SyllabusDto;
+import com.classroomapp.classroombackend.dto.usermanagement.UserDetailsDto;
+import com.classroomapp.classroombackend.dto.usermanagement.UserDto;
+import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
+import com.classroomapp.classroombackend.model.assignmentmanagement.Submission;
+import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
+import com.classroomapp.classroombackend.model.classroommanagement.Schedule;
+import com.classroomapp.classroombackend.model.classroommanagement.Syllabus;
+import com.classroomapp.classroombackend.model.usermanagement.User;
+
+import lombok.RequiredArgsConstructor;
+=======
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Component;
+
 import com.classroomapp.classroombackend.dto.AssignmentDto;
+import com.classroomapp.classroombackend.dto.AttendanceDto;
+import com.classroomapp.classroombackend.dto.AttendanceSessionDto;
 import com.classroomapp.classroombackend.dto.ClassroomDto;
 import com.classroomapp.classroombackend.dto.SubmissionDto;
 import com.classroomapp.classroombackend.dto.UserDto;
 import com.classroomapp.classroombackend.model.Assignment;
+import com.classroomapp.classroombackend.model.Attendance;
+import com.classroomapp.classroombackend.model.AttendanceSession;
 import com.classroomapp.classroombackend.model.Classroom;
 import com.classroomapp.classroombackend.model.Submission;
 import com.classroomapp.classroombackend.model.User;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
-import java.time.LocalDateTime;
-import java.util.stream.Collectors;
+>>>>>>> master
 
 /**
  * Component for mapping between entities and DTOs
@@ -182,4 +212,192 @@ public class ModelMapper {
         log.debug("Mapping userDto to entity. DTO ID: {}", userDto.getId());
         return UserMapper.toEntity(userDto);
     }
-} 
+<<<<<<< HEAD
+    
+    /**
+     * Map Classroom entity to ClassroomDetailsDto with syllabus and schedule
+     * @param classroom Classroom entity
+     * @param syllabus Syllabus entity
+     * @param schedules List of Schedule entities
+     * @return ClassroomDetailsDto
+     */
+    public ClassroomDetailsDto MapToClassroomDetailsDto(Classroom classroom, Syllabus syllabus, List<Schedule> schedules) {
+        if (classroom == null) {
+            return null;
+        }
+        
+        ClassroomDetailsDto dto = new ClassroomDetailsDto();
+        dto.setId(classroom.getId());
+        dto.setName(classroom.getName());
+        dto.setDescription(classroom.getDescription());
+        dto.setSection(classroom.getSection());
+        dto.setSubject(classroom.getSubject());
+        
+        // Map teacher detailed information if available
+        if (classroom.getTeacher() != null) {
+            dto.setTeacher(MapToUserDetailsDto(classroom.getTeacher()));
+        }
+        
+        // Map student information
+        if (classroom.getStudents() != null && !classroom.getStudents().isEmpty()) {
+            dto.setStudentIds(classroom.getStudents().stream()
+                    .map(User::getId)
+                    .collect(Collectors.toSet()));
+            dto.setStudentCount(classroom.getStudents().size());
+        } else {
+            dto.setStudentCount(0);
+        }
+        
+        // Map syllabus information if available
+        if (syllabus != null) {
+            dto.setSyllabus(MapToSyllabusDto(syllabus));
+        }
+        
+        // Map schedules information if available
+        if (schedules != null && !schedules.isEmpty()) {
+            dto.setSchedules(schedules.stream()
+                    .map(this::MapToScheduleDto)
+                    .collect(Collectors.toList()));
+        }
+        
+        return dto;
+    }
+    
+    /**
+     * Map Syllabus entity to SyllabusDto
+     * @param syllabus Syllabus entity
+     * @return SyllabusDto
+     */
+    public SyllabusDto MapToSyllabusDto(Syllabus syllabus) {
+        if (syllabus == null) {
+            return null;
+        }
+        
+        SyllabusDto dto = new SyllabusDto();
+        dto.setId(syllabus.getId());
+        dto.setTitle(syllabus.getTitle());
+        dto.setContent(syllabus.getContent());
+        dto.setLearningObjectives(syllabus.getLearningObjectives());
+        dto.setRequiredMaterials(syllabus.getRequiredMaterials());
+        dto.setGradingCriteria(syllabus.getGradingCriteria());
+        
+        if (syllabus.getClassroom() != null) {
+            dto.setClassroomId(syllabus.getClassroom().getId());
+        }
+        
+        return dto;
+    }
+    
+    /**
+     * Map Schedule entity to ScheduleDto
+     * @param schedule Schedule entity
+     * @return ScheduleDto
+     */
+    public ScheduleDto MapToScheduleDto(Schedule schedule) {
+        if (schedule == null) {
+            return null;
+        }
+        
+        ScheduleDto dto = new ScheduleDto();
+        dto.setId(schedule.getId());
+        dto.setDayOfWeek(schedule.getDayOfWeek());
+        dto.setStartTime(schedule.getStartTime());
+        dto.setEndTime(schedule.getEndTime());
+        dto.setLocation(schedule.getLocation());
+        dto.setNotes(schedule.getNotes());
+        dto.setRecurring(schedule.isRecurring());
+        
+        if (schedule.getClassroom() != null) {
+            dto.setClassroomId(schedule.getClassroom().getId());
+        }
+        
+        return dto;
+    }
+    
+    /**
+     * Map User entity to UserDetailsDto
+     * @param user User entity
+     * @return UserDetailsDto
+     */
+    public UserDetailsDto MapToUserDetailsDto(User user) {
+        if (user == null) {
+            return null;
+        }
+        
+        UserDetailsDto dto = new UserDetailsDto();
+        dto.setId(user.getId());
+        dto.setUsername(user.getUsername());
+        dto.setEmail(user.getEmail());
+        dto.setFullName(user.getFullName());
+        dto.setRole(user.getRole());
+        dto.setRoleId(user.getRoleId());
+        dto.setHireDate(user.getHireDate());
+        dto.setDepartment(user.getDepartment());
+        dto.setStatus(user.getStatus());
+        
+        return dto;
+=======
+      /**
+     * Map Attendance entity to AttendanceDto
+     * @param attendance Attendance entity
+     * @return AttendanceDto
+     */
+    public AttendanceDto MapToAttendanceDto(Attendance attendance) {
+        if (attendance == null) {
+            log.debug("Attendance is null, returning null DTO");
+            return null;
+        }
+        
+        log.debug("Mapping attendance entity to DTO. Entity ID: {}", attendance.getId());
+          return AttendanceDto.builder()
+                .id(attendance.getId())
+                .userId(attendance.getStudent().getId())
+                .userName(attendance.getStudent().getFullName() != null ? attendance.getStudent().getFullName() : attendance.getStudent().getUsername())
+                .sessionId(attendance.getSession().getId())
+                .status(attendance.getStatus())
+                .markedAt(attendance.getCheckInTime())
+                .latitude(attendance.getLatitude())
+                .longitude(attendance.getLongitude())
+                .createdAt(attendance.getCreatedAt())
+                .updatedAt(attendance.getUpdatedAt())
+                .build();
+    }
+    
+    /**
+     * Map AttendanceSession entity to AttendanceSessionDto
+     * @param session AttendanceSession entity
+     * @return AttendanceSessionDto
+     */
+    public AttendanceSessionDto MapToAttendanceSessionDto(AttendanceSession session) {
+        if (session == null) {
+            log.debug("AttendanceSession is null, returning null DTO");
+            return null;
+        }
+        
+        log.debug("Mapping attendance session entity to DTO. Entity ID: {}", session.getId());        return AttendanceSessionDto.builder()
+                .id(session.getId())
+                .classroomId(session.getClassroom().getId())
+                .classroomName(session.getClassroom().getName())
+                .teacherId(session.getTeacher().getId())
+                .teacherName(session.getTeacher().getFullName() != null ? session.getTeacher().getFullName() : session.getTeacher().getUsername())
+                .sessionName(session.getSessionName())
+                .sessionDate(session.getSessionDate())
+                .description(session.getDescription())
+                .startTime(session.getStartTime())
+                .endTime(session.getEndTime())
+                .status(session.getStatus().name())
+                .locationRequired(session.getLocationRequired())
+                .locationLatitude(session.getLocationLatitude())
+                .locationLongitude(session.getLocationLongitude())
+                .locationRadiusMeters(session.getLocationRadiusMeters())
+                .autoMarkTeacherAttendance(session.getAutoMarkTeacherAttendance())
+                .attendanceRecords(session.getAttendanceRecords() != null ? 
+                    session.getAttendanceRecords().stream()
+                        .map(this::MapToAttendanceDto)
+                        .collect(Collectors.toList()) : null)
+                .createdAt(session.getCreatedAt())
+                .updatedAt(session.getUpdatedAt())
+                .build();
+>>>>>>> master
+    }
+}

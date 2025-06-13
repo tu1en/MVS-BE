@@ -1,21 +1,23 @@
 package com.classroomapp.classroombackend.service.impl;
 
-import com.classroomapp.classroombackend.dto.RequestDTO;
-import com.classroomapp.classroombackend.dto.RequestResponseDTO;
-import com.classroomapp.classroombackend.model.Request;
-import com.classroomapp.classroombackend.repository.RequestRepository;
-import com.classroomapp.classroombackend.service.EmailService;
-import com.classroomapp.classroombackend.service.RequestService;
-import com.classroomapp.classroombackend.service.UserServiceExtension;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.classroomapp.classroombackend.dto.RequestDTO;
+import com.classroomapp.classroombackend.dto.RequestResponseDTO;
+import com.classroomapp.classroombackend.model.Request;
+import com.classroomapp.classroombackend.repository.requestmanagement.RequestRepository;
+import com.classroomapp.classroombackend.service.EmailService;
+import com.classroomapp.classroombackend.service.RequestService;
+import com.classroomapp.classroombackend.service.UserServiceExtension;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor

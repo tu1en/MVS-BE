@@ -1,5 +1,10 @@
 package com.classroomapp.classroombackend.model;
 
+import java.util.HashSet;
+import java.util.Set;
+
+import com.classroomapp.classroombackend.model.usermanagement.User;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -15,9 +20,6 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.HashSet;
-import java.util.Set;
 
 @Entity
 @Table(name = "classrooms")
@@ -41,12 +43,12 @@ public class Classroom {
     private String subject;
 
     // The teacher who created/owns this classroom
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "teacher_id")
     private User teacher;
 
     // Students enrolled in this classroom
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "classroom_enrollments",
         joinColumns = @JoinColumn(name = "classroom_id"),
