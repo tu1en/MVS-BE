@@ -1,20 +1,20 @@
 package com.classroomapp.classroombackend.service.impl;
 
+import java.io.IOException;
+import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.classroomapp.classroombackend.service.FileStorageService;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.firebase.cloud.StorageClient;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
-import java.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Service
 public class FirebaseStorageServiceImpl implements FileStorageService {
@@ -47,10 +47,14 @@ public class FirebaseStorageServiceImpl implements FileStorageService {
             BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
                     .setContentType(file.getContentType())
                     .build();
-            
-            // Upload the file to Firebase Storage
+              // Upload the file to Firebase Storage
             logger.info("Uploading file to Firebase Storage...");
             Blob blob = storage.create(blobInfo, file.getBytes());
+            
+            // Verify upload was successful
+            if (blob == null || !blob.exists()) {
+                throw new Exception("Failed to upload file to Firebase Storage - blob creation failed");
+            }
             
             // Return the download URL
             String downloadUrl = String.format("https://storage.googleapis.com/%s/%s", bucketName, fullPath);
@@ -59,6 +63,52 @@ public class FirebaseStorageServiceImpl implements FileStorageService {
         } catch (IOException e) {
             logger.error("Error uploading file to Firebase Storage", e);
             throw new Exception("Failed to upload file to Firebase Storage: " + e.getMessage(), e);
+        }
+    }
+    
+    @Override
+    public String storeFile(MultipartFile file) throws Exception {
+        return uploadFile(file, "uploads");
+    }
+    
+    @Override
+    public String getFileStorageLocation() {
+        return "https://storage.googleapis.com/" + bucketName;
+    }
+    
+    @Override
+    public byte[] getFileContent(String filePath) throws Exception {
+        try {
+            Storage storage = StorageClient.getInstance().bucket().getStorage();
+            BlobId blobId = BlobId.of(bucketName, filePath);
+            Blob blob = storage.get(blobId);
+            
+            if (blob == null || !blob.exists()) {
+                throw new Exception("File not found: " + filePath);
+            }
+            
+            return blob.getContent();
+        } catch (Exception e) {
+            logger.error("Error retrieving file content from Firebase Storage", e);
+            throw new Exception("Failed to retrieve file content: " + e.getMessage(), e);
+        }
+    }
+      @Override
+    public boolean deleteFile(String filePath) {
+        try {
+            Storage storage = StorageClient.getInstance().bucket().getStorage();
+            BlobId blobId = BlobId.of(bucketName, filePath);
+            
+            boolean deleted = storage.delete(blobId);
+            if (!deleted) {
+                logger.warn("File not found or already deleted: {}", filePath);
+            } else {
+                logger.info("Successfully deleted file: {}", filePath);
+            }
+            return deleted;
+        } catch (Exception e) {
+            logger.error("Error deleting file from Firebase Storage", e);
+            return false;
         }
     }
     
@@ -74,4 +124,4 @@ public class FirebaseStorageServiceImpl implements FileStorageService {
         logger.info("Generated unique filename: {}", uniqueName);
         return uniqueName;
     }
-} 
+}

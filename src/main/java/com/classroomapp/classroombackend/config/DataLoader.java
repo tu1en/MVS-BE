@@ -1,29 +1,27 @@
 package com.classroomapp.classroombackend.config;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import com.classroomapp.classroombackend.constants.RoleConstants;
-import com.classroomapp.classroombackend.model.Blog;
-import com.classroomapp.classroombackend.model.User;
-import com.classroomapp.classroombackend.repository.BlogRepository;
-import com.classroomapp.classroombackend.model.Request;
-import com.classroomapp.classroombackend.model.Accomplishment;
-import com.classroomapp.classroombackend.repository.RequestRepository;
-import com.classroomapp.classroombackend.repository.UserRepository;
-import com.classroomapp.classroombackend.repository.AccomplishmentRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import com.classroomapp.classroombackend.dto.TeacherRequestFormDTO;
 import com.classroomapp.classroombackend.dto.StudentRequestFormDTO;
-
-import java.time.LocalDateTime;
-import java.time.LocalDate;
-
-import java.util.Arrays;
-import java.util.List;
+import com.classroomapp.classroombackend.dto.TeacherRequestFormDTO;
+import com.classroomapp.classroombackend.model.Accomplishment;
+import com.classroomapp.classroombackend.model.Blog;
+import com.classroomapp.classroombackend.model.Request;
+import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.AccomplishmentRepository;
+import com.classroomapp.classroombackend.repository.BlogRepository;
+import com.classroomapp.classroombackend.repository.requestmanagement.RequestRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Initialize test data when application starts
@@ -40,7 +38,7 @@ public class DataLoader implements CommandLineRunner {
     
     @Autowired
     public DataLoader(
-        UserRepository userRepository, 
+        UserRepository userRepository,
         BlogRepository blogRepository,
         RequestRepository requestRepository,
         AccomplishmentRepository accomplishmentRepository,
@@ -49,31 +47,27 @@ public class DataLoader implements CommandLineRunner {
     ) {
         this.userRepository = userRepository;
         this.blogRepository = blogRepository;
-        this.requestRepository = requestRepository;
-        this.accomplishmentRepository = accomplishmentRepository;
+        this.requestRepository = requestRepository;        this.accomplishmentRepository = accomplishmentRepository;
         this.passwordEncoder = passwordEncoder;
         this.objectMapper = objectMapper;
     }
     
     @Override
     public void run(String... args) throws Exception {
-        // Clear existing data
-        userRepository.deleteAll();
-        blogRepository.deleteAll();
-        requestRepository.deleteAll();
-        accomplishmentRepository.deleteAll();
-        
-        // Create sample users
-        List<User> users = CreateUsers();
-        
-        // Create sample blogs
-        CreateSampleBlogs(users);
-        
-        // Create sample accomplishments
-        CreateAccomplishments();
-        
-        // Create sample requests
-        CreateRequests();
+        // Only run if no users exist to avoid conflicts with other data loaders
+        if (userRepository.count() == 0) {
+            // Create sample users
+            List<User> users = CreateUsers();
+            
+            // Create sample blogs
+            CreateSampleBlogs(users);
+            
+            // Create sample accomplishments
+            CreateAccomplishments();
+            
+            // Create sample requests
+            CreateRequests();
+        }
     }
     
     /**
@@ -88,8 +82,7 @@ public class DataLoader implements CommandLineRunner {
         admin.setEmail("admin@classroomapp.com");
         admin.setFullName("Administrator");
         admin.setRoleId(RoleConstants.ADMIN);
-        userRepository.save(admin);
-        
+        userRepository.save(admin);        
         // Create manager user
         User manager = new User();
         manager.setUsername("manager");
@@ -102,8 +95,7 @@ public class DataLoader implements CommandLineRunner {
         // Create teacher user
         User teacher = new User();
         teacher.setUsername("teacher");
-        teacher.setPassword(passwordEncoder.encode("teacher123"));
-        teacher.setEmail("teacher@classroomapp.com");
+        teacher.setPassword(passwordEncoder.encode("teacher123"));        teacher.setEmail("teacher@classroomapp.com");
         teacher.setFullName("Teacher User");
         teacher.setRoleId(RoleConstants.TEACHER);
         userRepository.save(teacher);

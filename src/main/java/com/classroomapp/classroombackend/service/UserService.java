@@ -2,8 +2,11 @@ package com.classroomapp.classroombackend.service;
 
 import java.util.List;
 
+<<<<<<< HEAD
+import com.classroomapp.classroombackend.dto.usermanagement.UserDto;
+=======
 import com.classroomapp.classroombackend.dto.UserDto;
-import com.classroomapp.classroombackend.model.User;
+>>>>>>> master
 
 public interface UserService {
     
@@ -61,6 +64,13 @@ public interface UserService {
      * @return true if email exists
      */
     boolean IsEmailExists(String email);
+    
+    /**
+     * Find users by role ID
+     * @param roleId role ID to filter by
+     * @return list of users with specified role
+     */
+    List<UserDto> FindUsersByRole(Integer roleId);
 
     void sendPasswordResetEmail(String email, String resetLink);
-} 
+}

@@ -1,0 +1,1 @@
+{"role":"TEACHER","roleId":"2","userId":"3","token":"eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ0ZWFjaGVyIiwicm9sZSI6Miwicm9sZXMiOlsiVEVBQ0hFUiJdLCJlbWFpbCI6InRlYWNoZXJAY2xhc3Nyb29tYXBwLmNvbSIsInVzZXJuYW1lIjoidGVhY2hlciIsImlhdCI6MTc0OTY2OTIzMCwiZXhwIjoxNzQ5NzU1NjMwfQ.h3_sWDPouEVXGgH8cCJSpsonNlZ2esnI3re9FQvdE-iL1KRgaX8vXcEA2bNmQ33wic2c8iibyO4loR_ofO1esQ"}

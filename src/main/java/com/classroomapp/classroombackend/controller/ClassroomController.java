@@ -1,7 +1,8 @@
 package com.classroomapp.classroombackend.controller;
 
-import com.classroomapp.classroombackend.dto.ClassroomDto;
-import com.classroomapp.classroombackend.dto.CreateClassroomDto;
+import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
+import com.classroomapp.classroombackend.dto.classroommanagement.CourseDetailsDto;
+import com.classroomapp.classroombackend.dto.classroommanagement.CreateClassroomDto;
 import com.classroomapp.classroombackend.service.ClassroomService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -77,5 +78,10 @@ public class ClassroomController {
     @GetMapping("/subject/{subject}")
     public ResponseEntity<List<ClassroomDto>> GetClassroomsBySubject(@PathVariable String subject) {
         return ResponseEntity.ok(classroomService.GetClassroomsBySubject(subject));
+    }
+    
+    @GetMapping("/{id}/details")
+    public ResponseEntity<CourseDetailsDto> GetCourseDetails(@PathVariable Long id) {
+        return ResponseEntity.ok(classroomService.GetCourseDetails(id));
     }
 } 

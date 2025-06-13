@@ -1,0 +1,29 @@
+# ============================================================
+# SQL Server Connection Alternatives for Spring Boot
+# ============================================================
+
+# Option 1: SQL Server with SA account (Current Configuration)
+spring.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=SchoolManagementDB;encrypt=false;trustServerCertificate=true;loginTimeout=30;socketTimeout=30
+spring.datasource.username=sa
+spring.datasource.password=123456
+
+# Option 2: SQL Server Express with SA account
+# spring.datasource.url=jdbc:sqlserver://localhost\\SQLEXPRESS:1433;databaseName=SchoolManagementDB;encrypt=false;trustServerCertificate=true;loginTimeout=30;socketTimeout=30
+# spring.datasource.username=sa
+# spring.datasource.password=123456
+
+# Option 3: SQL Server with custom user
+# spring.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=SchoolManagementDB;encrypt=false;trustServerCertificate=true;loginTimeout=30;socketTimeout=30
+# spring.datasource.username=your_username
+# spring.datasource.password=your_password
+
+# Option 4: Windows Authentication (requires sqljdbc_auth.dll)
+# spring.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=SchoolManagementDB;encrypt=false;trustServerCertificate=true;integratedSecurity=true;loginTimeout=30;socketTimeout=30
+
+# ============================================================
+# Instructions:
+# 1. Uncomment the option that matches your SQL Server setup
+# 2. Comment out the other options
+# 3. Update credentials as needed
+# 4. Restart the application
+# ============================================================

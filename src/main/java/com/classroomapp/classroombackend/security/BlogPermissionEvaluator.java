@@ -2,6 +2,7 @@ package com.classroomapp.classroombackend.security;
 
 import com.classroomapp.classroombackend.model.Blog;
 import com.classroomapp.classroombackend.repository.BlogRepository;
+import com.classroomapp.classroombackend.model.usermanagement.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;

@@ -1,7 +1,7 @@
 package com.classroomapp.classroombackend.repository;
 
 import com.classroomapp.classroombackend.model.Accomplishment;
-import com.classroomapp.classroombackend.model.User;
+import com.classroomapp.classroombackend.model.usermanagement.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import java.util.List;
