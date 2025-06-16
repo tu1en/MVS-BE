@@ -124,37 +124,43 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // Cho phép origin từ frontend React và các nguồn khác
-        configuration.setAllowedOrigins(Arrays.asList(
+        // Use allowedOriginPatterns instead of allowedOrigins
+        configuration.setAllowedOriginPatterns(Arrays.asList(
             "http://localhost:3000", 
             "http://localhost:3001", 
+            "http://localhost:5173", 
             "http://localhost:8088", 
-            "http://localhost", 
-            "https://mvsclassroom.com"
+            "http://localhost"
         ));
         
-        // Cho phép các phương thức HTTP
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        // Allow all common HTTP methods
+        configuration.setAllowedMethods(Arrays.asList(
+            "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
+        ));
         
-        // Cho phép các header HTTP
+        // Allow all common headers
         configuration.setAllowedHeaders(Arrays.asList(
             "Authorization", 
             "Cache-Control", 
             "Content-Type", 
             "Accept", 
-            "X-Requested-With"
+            "X-Requested-With",
+            "Access-Control-Allow-Origin",
+            "Access-Control-Allow-Headers"
         ));
         
-        // Cho phép gửi thông tin xác thực
+        // Allow credentials
         configuration.setAllowCredentials(true);
         
-        // Thời gian cache preflight request
+        // Expose Authorization header
+        configuration.setExposedHeaders(Arrays.asList("Authorization"));
+        
+        // Cache preflight requests for 1 hour
         configuration.setMaxAge(3600L);
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        // Áp dụng cấu hình cho tất cả các đường dẫn
         source.registerCorsConfiguration("/**", configuration);
-        log.info("CORS configuration registered");
+        log.info("CORS configuration registered with patterns: {}", configuration.getAllowedOriginPatterns());
         return source;
     }
 }
