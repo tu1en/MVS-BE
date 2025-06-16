@@ -18,7 +18,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Entity(name = "SubmissionManagement")
+@Entity
 @Table(name = "submissions")
 @Data
 @NoArgsConstructor

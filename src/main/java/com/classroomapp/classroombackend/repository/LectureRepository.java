@@ -5,8 +5,8 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.classroomapp.classroombackend.model.Classroom;
 import com.classroomapp.classroombackend.model.Lecture;
+import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 
 @Repository
 public interface LectureRepository extends JpaRepository<Lecture, Long> {

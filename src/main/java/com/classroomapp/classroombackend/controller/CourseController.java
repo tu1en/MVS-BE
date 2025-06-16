@@ -9,9 +9,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -208,6 +210,59 @@ public class CourseController {
         lecturesByCourse.computeIfAbsent(courseId, k -> new ArrayList<>()).add(lectureDto);
         
         return ResponseEntity.status(HttpStatus.CREATED).body(lectureDto);
+    }
+
+    // NEW API: Cập nhật bài giảng
+    @PutMapping("/{courseId}/lectures/{lectureId}")
+    public ResponseEntity<LectureDto> updateLecture(
+            @PathVariable Long courseId, 
+            @PathVariable Long lectureId, 
+            @RequestBody LectureDto lectureDto) {
+        System.out.println("Yêu cầu cập nhật bài giảng ID: " + lectureId + " cho khóa học ID: " + courseId);
+        
+        List<LectureDto> lectures = lecturesByCourse.get(courseId);
+        if (lectures == null) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        // Tìm và cập nhật bài giảng
+        for (int i = 0; i < lectures.size(); i++) {
+            LectureDto existingLecture = lectures.get(i);
+            if (existingLecture.getId().equals(lectureId)) {
+                // Giữ lại ID và courseId gốc
+                lectureDto.setId(lectureId);
+                lectureDto.setClassroomId(courseId);
+                
+                // Cập nhật bài giảng trong danh sách
+                lectures.set(i, lectureDto);
+                
+                System.out.println("Đã cập nhật bài giảng ID: " + lectureId + " với tiêu đề: " + lectureDto.getTitle());
+                return ResponseEntity.ok(lectureDto);
+            }
+        }
+        
+        return ResponseEntity.notFound().build();
+    }
+
+    // NEW API: Xóa bài giảng
+    @DeleteMapping("/{courseId}/lectures/{lectureId}")
+    public ResponseEntity<Void> deleteLecture(@PathVariable Long courseId, @PathVariable Long lectureId) {
+        System.out.println("Yêu cầu xóa bài giảng ID: " + lectureId + " khỏi khóa học ID: " + courseId);
+        
+        List<LectureDto> lectures = lecturesByCourse.get(courseId);
+        if (lectures == null) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        // Tìm và xóa bài giảng
+        boolean removed = lectures.removeIf(lecture -> lecture.getId().equals(lectureId));
+        
+        if (removed) {
+            System.out.println("Đã xóa bài giảng ID: " + lectureId);
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     // Lấy danh sách bài giảng của một khóa học

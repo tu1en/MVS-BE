@@ -4,27 +4,30 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.classroomapp.classroombackend.dto.ApiResponse;
 import com.classroomapp.classroombackend.dto.AttendanceDto;
 import com.classroomapp.classroombackend.dto.AttendanceSessionDto;
+import com.classroomapp.classroombackend.dto.LocationDataDto;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
-import com.classroomapp.classroombackend.model.Attendance;
-import com.classroomapp.classroombackend.model.Attendance.AttendanceStatus;
-import com.classroomapp.classroombackend.model.AttendanceSession;
-import com.classroomapp.classroombackend.model.AttendanceSession.SessionStatus;
-import com.classroomapp.classroombackend.model.Classroom;
-import com.classroomapp.classroombackend.model.ClassroomEnrollment;
-import com.classroomapp.classroombackend.model.User;
-import com.classroomapp.classroombackend.repository.AttendanceRepository;
-import com.classroomapp.classroombackend.repository.AttendanceSessionRepository;
+import com.classroomapp.classroombackend.model.attendancemanagement.Attendance;
+import com.classroomapp.classroombackend.model.attendancemanagement.Attendance.AttendanceStatus;
+import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSession;
+import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSession.SessionStatus;
+import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
+import com.classroomapp.classroombackend.model.classroommanagement.ClassroomEnrollment;
+import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.ClassroomEnrollmentRepository;
-import com.classroomapp.classroombackend.repository.ClassroomRepository;
-import com.classroomapp.classroombackend.repository.UserRepository;
+import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceRepository;
+import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceSessionRepository;
+import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.AttendanceService;
 import com.classroomapp.classroombackend.util.ModelMapper;
 
@@ -263,11 +266,10 @@ public class AttendanceServiceImpl implements AttendanceService {
     }
 
     @Override
-    public List<AttendanceDto> getAttendanceByUserAndDateRange(Long userId, LocalDateTime startDate, LocalDateTime endDate) {
-        User user = userRepository.findById(userId)
+    public List<AttendanceDto> getAttendanceByUserAndDateRange(Long userId, LocalDateTime startDate, LocalDateTime endDate) {        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
         
-        List<Attendance> attendanceList = attendanceRepository.findByStudentAndDateRange(user, startDate, endDate);
+        List<Attendance> attendanceList = attendanceRepository.findByStudentAndCheckInTimeBetween(user, startDate, endDate);
         return attendanceList.stream()
                 .map(modelMapper::MapToAttendanceDto)
                 .collect(Collectors.toList());
@@ -279,9 +281,7 @@ public class AttendanceServiceImpl implements AttendanceService {
         return attendanceList.stream()
                 .map(modelMapper::MapToAttendanceDto)
                 .collect(Collectors.toList());
-    }
-
-    @Override
+    }    @Override
     public Map<AttendanceStatus, Long> getAttendanceSummaryBySession(Long sessionId) {
         AttendanceSession session = findAttendanceSessionById(sessionId);
         List<Object[]> summary = attendanceRepository.getAttendanceSummaryBySession(session);
@@ -343,7 +343,8 @@ public class AttendanceServiceImpl implements AttendanceService {
         log.debug("Processing scheduled sessions");
         
         LocalDateTime now = LocalDateTime.now();
-        List<AttendanceSession> sessionsToActivate = attendanceSessionRepository.findScheduledSessionsToActivate(now);
+        List<AttendanceSession> sessionsToActivate = attendanceSessionRepository.findByStatusAndStartTimeLessThanEqual(
+            AttendanceSession.SessionStatus.SCHEDULED, now);
         
         for (AttendanceSession session : sessionsToActivate) {
             try {
@@ -364,7 +365,8 @@ public class AttendanceServiceImpl implements AttendanceService {
         log.debug("Processing active sessions");
         
         LocalDateTime now = LocalDateTime.now();
-        List<AttendanceSession> sessionsToComplete = attendanceSessionRepository.findActiveSessionsToComplete(now);
+        List<AttendanceSession> sessionsToComplete = attendanceSessionRepository.findByStatusAndEndTimeLessThanEqual(
+            AttendanceSession.SessionStatus.ACTIVE, now);
         
         for (AttendanceSession session : sessionsToComplete) {
             try {
@@ -475,13 +477,141 @@ public class AttendanceServiceImpl implements AttendanceService {
         final int R = 6371; // Radius of the earth in km
         
         double latDistance = Math.toRadians(lat2 - lat1);
-        double lonDistance = Math.toRadians(lon2 - lon1);
-        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+        double lonDistance = Math.toRadians(lon2 - lon1);        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
                 + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
                 * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         double distance = R * c * 1000; // convert to meters
         
         return distance;
+    }
+    
+    // Implementation of missing methods required by AttendanceController
+    
+    @Override
+    public ApiResponse PerformCheckInLogic(String username, LocationDataDto locationData, String clientIpAddress) {
+        try {
+            // Find user by username
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+            
+            // Basic GPS accuracy validation
+            if (locationData.getAccuracy() > 100.0) {
+                return new ApiResponse(false, "Độ chính xác vị trí GPS quá thấp. Vui lòng thử lại.");
+            }
+            
+            // Location validation (example coordinates for classroom)
+            double allowedLat = 21.028511;
+            double allowedLon = 105.804817;
+            double allowedRadius = 100.0; // 100 meters
+            
+            if (!isWithinLocationRadius(locationData.getLatitude(), locationData.getLongitude(),
+                    allowedLat, allowedLon, allowedRadius)) {
+                return new ApiResponse(false, "Bạn đang ở vị trí nằm ngoài phạm vi cho phép để điểm danh.");
+            }
+            
+            // IP whitelist validation (example)
+            List<String> allowedIPs = List.of("127.0.0.1", "192.168.1.0/24", "10.0.0.0/8");
+            if (!isIpAllowed(clientIpAddress, allowedIPs)) {
+                return new ApiResponse(false, "IP address không được phép truy cập hệ thống điểm danh.");
+            }
+            
+            return new ApiResponse(true, "Điểm danh thành công. Vị trí và thông tin hợp lệ.");
+            
+        } catch (Exception e) {
+            log.error("Error in PerformCheckInLogic: {}", e.getMessage(), e);
+            return new ApiResponse(false, "Đã xảy ra lỗi trong quá trình xử lý điểm danh.");
+        }
+    }
+    
+    @Override
+    public List<AttendanceDto> GetStudentsForAttendance(Long sessionId, Long teacherId) {
+        log.info("Getting students for attendance session {} by teacher {}", sessionId, teacherId);
+        
+        // Validate session exists and teacher has access
+        AttendanceSession session = findAttendanceSessionById(sessionId);
+        if (!session.getTeacher().getId().equals(teacherId)) {
+            throw new IllegalArgumentException("Teacher does not have access to this session");
+        }
+        
+        // Get all students in the classroom
+        List<ClassroomEnrollment> enrollments = enrollmentRepository.findByClassroom(session.getClassroom());
+        
+        return enrollments.stream()
+                .map(enrollment -> {
+                    User student = enrollment.getUser();
+                    // Check if attendance already exists
+                    boolean alreadyMarked = attendanceRepository.existsByStudentAndSession(student, session);
+                    
+                    AttendanceDto dto = new AttendanceDto();
+                    dto.setUserId(student.getId());
+                    dto.setUserName(student.getFullName() != null ? student.getFullName() : student.getUsername());
+                    dto.setSessionId(sessionId);
+                      if (alreadyMarked) {
+                        Optional<Attendance> existingOpt = attendanceRepository.findByStudentAndSession(student, session);
+                        if (existingOpt.isPresent()) {
+                            Attendance existing = existingOpt.get();
+                            dto.setStatus(existing.getStatus());
+                            dto.setMarkedAt(existing.getCheckInTime());
+                        }
+                    } else {
+                        dto.setStatus(AttendanceStatus.ABSENT); // Default status
+                    }
+                    
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+    
+    @Override
+    @Transactional
+    public ApiResponse MarkStudentAttendance(AttendanceDto attendanceDto, Long teacherId) {
+        log.info("Marking attendance for student {} by teacher {}", attendanceDto.getUserId(), teacherId);
+        
+        try {
+            // Validate session and teacher access
+            AttendanceSession session = findAttendanceSessionById(attendanceDto.getSessionId());
+            if (!session.getTeacher().getId().equals(teacherId)) {
+                return new ApiResponse(false, "Teacher does not have access to this session");
+            }
+            
+            User student = userRepository.findById(attendanceDto.getUserId())
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", attendanceDto.getUserId()));
+              // Check if attendance already exists
+            Optional<Attendance> attendanceOpt = attendanceRepository.findByStudentAndSession(student, session);
+            Attendance attendance;
+            
+            if (attendanceOpt.isPresent()) {
+                // Update existing attendance
+                attendance = attendanceOpt.get();
+                attendance.setStatus(attendanceDto.getStatus());
+                attendance.setCheckInTime(LocalDateTime.now());
+            } else {
+                // Create new attendance record
+                attendance = Attendance.builder()
+                        .student(student)
+                        .session(session)
+                        .status(attendanceDto.getStatus())
+                        .checkInTime(LocalDateTime.now())
+                        .build();
+            }
+            
+            attendance = attendanceRepository.save(attendance);
+            return new ApiResponse(true, "Attendance marked successfully");
+        } catch (Exception e) {
+            log.error("Error marking attendance: {}", e.getMessage(), e);
+            return new ApiResponse(false, e.getMessage());
+        }
+    }
+    
+    // Helper method for IP validation
+    private boolean isIpAllowed(String clientIp, List<String> allowedIPs) {
+        // Simple IP validation - localhost is always allowed
+        if ("127.0.0.1".equals(clientIp) || "localhost".equals(clientIp)) {
+            return true;
+        }
+        
+        // For more sophisticated IP range checking, you would implement CIDR notation parsing
+        return allowedIPs.contains(clientIp);
     }
 }
