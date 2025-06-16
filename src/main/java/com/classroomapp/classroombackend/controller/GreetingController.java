@@ -10,6 +10,6 @@ public class GreetingController {
 
     @GetMapping("/hello")
     public String sayHello() {
-        return "Xin chào! Backend Spring Boot cho ứng dụng quản lý lớp học đã sẵn sàng!";
+        return "Xin chào! Backend Spring Boot cho ứng dụng quản lý lớp học đã sẵn sàng tại hello controller!";
     }
 } 

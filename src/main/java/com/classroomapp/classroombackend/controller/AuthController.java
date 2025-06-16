@@ -1,5 +1,11 @@
 package com.classroomapp.classroombackend.controller;
 
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,45 +16,46 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.classroomapp.classroombackend.dto.PasswordConfirmationDto;
 import com.classroomapp.classroombackend.dto.RegisterDto;
-import com.classroomapp.classroombackend.dto.UserDto;
-import com.classroomapp.classroombackend.model.User;
-import com.classroomapp.classroombackend.repository.UserRepository;
+import com.classroomapp.classroombackend.dto.usermanagement.UserDto;
+import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.classroomapp.classroombackend.security.JwtUtil;
+import com.classroomapp.classroombackend.service.AuthService;
 import com.classroomapp.classroombackend.service.UserService;
-import com.classroomapp.classroombackend.util.UserMapper;
-import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;
 
-// Thêm các import sau vào đầu file
-import java.util.HashMap;
-import java.util.Map;
-// Thêm import
-import com.classroomapp.classroombackend.security.JwtUtil;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import java.util.Date;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Controller for authentication-related endpoints
+ */
 @RestController
 @RequestMapping("/api/auth")
 @Slf4j
 public class AuthController {
 
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
+
+    private final AuthService authService;
     private final UserRepository userRepository;
     private final UserService userService;
+    private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    // Thêm vào constructor
-    private final JwtUtil jwtUtil;
-
-    public AuthController(UserRepository userRepository, UserService userService, PasswordEncoder passwordEncoder,
-            JwtUtil jwtUtil) {
+    public AuthController(AuthService authService, UserRepository userRepository, 
+                         UserService userService, JwtUtil jwtUtil, PasswordEncoder passwordEncoder) {
+        this.authService = authService;
         this.userRepository = userRepository;
         this.userService = userService;
-        this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
+        this.passwordEncoder = passwordEncoder;
     }
 
     /**
@@ -58,48 +65,35 @@ public class AuthController {
      * @return created user
      */
     @PostMapping("/register")
-    public ResponseEntity<UserDto> RegisterUser(@RequestBody RegisterDto registerDto) {
-        // Check if username already exists
-        if (userService.IsUsernameExists(registerDto.getUsername())) {
-            throw new IllegalArgumentException("Username already taken");
-        }
-
-        // Check if email already exists
-        if (userService.IsEmailExists(registerDto.getEmail())) {
-            throw new IllegalArgumentException("Email already registered");
-        }
-
-        // Create new user
-        User user = new User();
-        user.setUsername(registerDto.getUsername());
-        user.setPassword(passwordEncoder.encode(registerDto.getPassword()));
-        user.setEmail(registerDto.getEmail());
-        user.setFullName(registerDto.getFullName());
-
-        // Set default role if not provided
-        user.setRoleId(registerDto.getRoleId() != null ? registerDto.getRoleId() : 1);
-
-        User savedUser = userRepository.save(user);
-
-        return new ResponseEntity<>(UserMapper.toDto(savedUser), HttpStatus.CREATED);
+    public ResponseEntity<UserDto> registerUser(@Valid @RequestBody RegisterDto registerDto) {
+        log.info("Registration request received for username: {}", registerDto.getUsername());
+        UserDto registeredUser = authService.registerUser(registerDto);
+        log.info("Registration successful for username: {}", registerDto.getUsername());
+        return new ResponseEntity<>(registeredUser, HttpStatus.CREATED);
     }
 
+    /**
+     * Authenticate user with username and password
+     * 
+     * @param loginRequest login information
+     * @return login response with JWT token
+     */
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> loginUser(@RequestBody Map<String, String> credentials) {
         String username = credentials.get("username");
         String password = credentials.get("password");
-    
+
         System.out.println("Login attempt for user: " + username);
-    
+
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
-    
+
         if (!passwordEncoder.matches(password, user.getPassword())) {
             throw new IllegalArgumentException("Invalid password");
         }
-    
+
         Map<String, String> response = new HashMap<>();
-    
+
         // Chuyển đổi roleId thành tên vai trò để thêm vào token
         String roleName = jwtUtil.convertRoleIdToName(user.getRoleId());
         System.out.println("Login successful for user: " + username + " with role: " + roleName + " (roleId: " + user.getRoleId() + ")");
@@ -118,25 +112,30 @@ public class AuthController {
             .setSubject(user.getUsername())
             .setIssuedAt(new Date(System.currentTimeMillis()))
             .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)) // 24 giờ
-            .signWith(SignatureAlgorithm.HS512, jwtUtil.getSecretKeyFromString())
+            .signWith(jwtUtil.getSecretKeyFromString(), SignatureAlgorithm.HS512)
             .compact();
-              System.out.println("Generated new token for user: " + username);
+        
+        System.out.println("Generated new token for user: " + username);
         
         response.put("role", roleName);
         response.put("roleId", user.getRoleId().toString());
         response.put("token", token);
         response.put("userId", user.getId().toString());
-    
-        return ResponseEntity.ok(response);
-    }
 
+        return ResponseEntity.ok(response);
+    }    /**
+     * Request password reset
+     * 
+     * @param request password reset information
+     * @return success message
+     */
     @PostMapping("/forgot-password")
     public ResponseEntity<String> forgotPassword(@RequestBody Map<String, String> request) {
         String email = request.get("email");
-    
+
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
-    
+
         // Generate a password reset token with claims
         String roleName = jwtUtil.convertRoleIdToName(user.getRoleId());
         Map<String, Object> claims = new HashMap<>();
@@ -150,37 +149,31 @@ public class AuthController {
             .setSubject(user.getUsername())
             .setIssuedAt(new Date(System.currentTimeMillis()))
             .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000))
-            .signWith(SignatureAlgorithm.HS512, jwtUtil.getSecretKeyFromString())
+            .signWith(jwtUtil.getSecretKeyFromString(), SignatureAlgorithm.HS512)
             .compact();
             
         userService.sendPasswordResetEmail(user.getEmail(), resetToken);
-    
+
         return ResponseEntity.ok("Password reset email sent successfully.");
     }
 
+    /**
+     * Reset password with token
+     * 
+     * @param passwordConfirmation password confirmation information
+     * @return success message
+     */
     @PostMapping("/reset-password")
-    public ResponseEntity<String> resetPassword(@RequestBody Map<String, String> request) {
-        String token = request.get("token");
-        String newPassword = request.get("newPassword");
-    
-        // Validate token
-        if (!jwtUtil.validateToken(token)) {
-            throw new IllegalArgumentException("Invalid or expired token");
-        }
-    
-        // Get username from token
-        String username = jwtUtil.getUsernameFromToken(token);
-    
-        // Update password
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-    
-        user.setPassword(passwordEncoder.encode(newPassword));
-        userRepository.save(user);
-    
+    public ResponseEntity<String> resetPassword(@Valid @RequestBody PasswordConfirmationDto passwordConfirmation) {
+        log.info("Password reset confirmation received");
+        authService.resetPassword(passwordConfirmation);
         return ResponseEntity.ok("Password reset successfully.");
-    }
-
+    }    /**
+     * Authenticate with Google ID token
+     * 
+     * @param credentials Google authentication information
+     * @return login response with JWT token
+     */
     @PostMapping("/google-login")
     public ResponseEntity<Map<String, Object>> googleLogin(@RequestBody Map<String, String> credentials) {
         String idToken = credentials.get("idToken");
@@ -226,7 +219,7 @@ public class AuthController {
             .setSubject(user.getEmail())
             .setIssuedAt(new Date(System.currentTimeMillis()))
             .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000))
-            .signWith(SignatureAlgorithm.HS512, jwtUtil.getSecretKeyFromString())
+            .signWith(jwtUtil.getSecretKeyFromString(), SignatureAlgorithm.HS512)
             .compact();
         
         response.put("success", true);

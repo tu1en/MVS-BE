@@ -1,18 +1,22 @@
 package com.classroomapp.classroombackend.config;
 
-import jakarta.servlet.*;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-// import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 // Temporarily disabled - using WebConfig and SecurityConfig for CORS instead
 // @Component

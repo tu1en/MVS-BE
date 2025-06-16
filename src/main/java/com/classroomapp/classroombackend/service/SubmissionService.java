@@ -1,8 +1,8 @@
 package com.classroomapp.classroombackend.service;
 
-import com.classroomapp.classroombackend.dto.CreateSubmissionDto;
-import com.classroomapp.classroombackend.dto.GradeSubmissionDto;
-import com.classroomapp.classroombackend.dto.SubmissionDto;
+import com.classroomapp.classroombackend.dto.assignmentmanagement.CreateSubmissionDto;
+import com.classroomapp.classroombackend.dto.assignmentmanagement.GradeSubmissionDto;
+import com.classroomapp.classroombackend.dto.assignmentmanagement.SubmissionDto;
 
 import java.util.List;
 

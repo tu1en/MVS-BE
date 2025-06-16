@@ -1,5 +1,22 @@
 package com.classroomapp.classroombackend.controller;
 
+import java.util.Base64;
+import java.util.List;
+import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.classroomapp.classroombackend.dto.RequestDTO;
 import com.classroomapp.classroombackend.dto.RequestResponseDTO;
 import com.classroomapp.classroombackend.dto.StudentRequestFormDTO;
@@ -7,19 +24,9 @@ import com.classroomapp.classroombackend.dto.TeacherRequestFormDTO;
 import com.classroomapp.classroombackend.service.FileStorageService;
 import com.classroomapp.classroombackend.service.RequestService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.mock.web.MockMultipartFile;
 
 import jakarta.validation.Valid;
-import java.io.IOException;
-import java.util.Base64;
-import java.util.List;
-import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/role-requests")
