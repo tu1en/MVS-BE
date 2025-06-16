@@ -10,9 +10,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.classroomapp.classroombackend.dto.StudentQuestionDto;
 import com.classroomapp.classroombackend.model.StudentQuestion;
-import com.classroomapp.classroombackend.model.User;
+import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.StudentQuestionRepository;
-import com.classroomapp.classroombackend.repository.UserRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.StudentQuestionService;
 
 @Service

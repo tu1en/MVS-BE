@@ -8,7 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.classroomapp.classroombackend.model.StudentMessage;
-import com.classroomapp.classroombackend.model.User;
+import com.classroomapp.classroombackend.model.usermanagement.User;
 
 @Repository
 public interface StudentMessageRepository extends JpaRepository<StudentMessage, Long> {

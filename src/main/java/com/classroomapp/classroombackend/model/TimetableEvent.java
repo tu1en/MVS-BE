@@ -2,6 +2,9 @@ package com.classroomapp.classroombackend.model;
 
 import java.time.LocalDateTime;
 
+import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
+import com.classroomapp.classroombackend.model.usermanagement.User;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

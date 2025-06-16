@@ -1,32 +1,18 @@
 package com.classroomapp.classroombackend.service.impl;
 
-<<<<<<< HEAD
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-=======
-import com.classroomapp.classroombackend.dto.ClassroomDto;
-import com.classroomapp.classroombackend.dto.CreateClassroomDto;
-import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
-import com.classroomapp.classroombackend.model.Classroom;
-import com.classroomapp.classroombackend.model.User;
-import com.classroomapp.classroombackend.repository.ClassroomRepository;
-import com.classroomapp.classroombackend.repository.UserRepository;
-import com.classroomapp.classroombackend.service.ClassroomService;
-import com.classroomapp.classroombackend.util.ModelMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
->>>>>>> master
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.CourseDetailsDto;
+import com.classroomapp.classroombackend.dto.classroommanagement.CreateClassroomDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.ScheduleDto;
 import com.classroomapp.classroombackend.dto.usermanagement.UserDto;
-import com.classroomapp.classroombackend.dto.classroommanagement.CreateClassroomDto;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
 import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
@@ -39,6 +25,7 @@ import com.classroomapp.classroombackend.service.ClassroomService;
 import com.classroomapp.classroombackend.util.ModelMapper;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor

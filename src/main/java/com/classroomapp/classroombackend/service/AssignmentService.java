@@ -1,26 +1,20 @@
 package com.classroomapp.classroombackend.service;
 
-<<<<<<< HEAD
-import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto;
-import com.classroomapp.classroombackend.dto.assignmentmanagement.CreateAssignmentDto;
-
-=======
->>>>>>> master
 import java.util.List;
 
-import com.classroomapp.classroombackend.dto.AssignmentDto;
 import com.classroomapp.classroombackend.dto.AssignmentRubricDto;
 import com.classroomapp.classroombackend.dto.AssignmentSubmissionDto;
 import com.classroomapp.classroombackend.dto.BulkGradingDto;
 import com.classroomapp.classroombackend.dto.BulkGradingResultDto;
-import com.classroomapp.classroombackend.dto.CreateAssignmentDto;
 import com.classroomapp.classroombackend.dto.CreateFeedbackDto;
 import com.classroomapp.classroombackend.dto.CreateRubricDto;
 import com.classroomapp.classroombackend.dto.FeedbackDto;
 import com.classroomapp.classroombackend.dto.GradeDto;
-import com.classroomapp.classroombackend.dto.GradeSubmissionDto;
 import com.classroomapp.classroombackend.dto.GradingAnalyticsDto;
-import com.classroomapp.classroombackend.model.Assignment;
+import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto;
+import com.classroomapp.classroombackend.dto.assignmentmanagement.CreateAssignmentDto;
+import com.classroomapp.classroombackend.dto.assignmentmanagement.GradeSubmissionDto;
+import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
 
 public interface AssignmentService {
     
