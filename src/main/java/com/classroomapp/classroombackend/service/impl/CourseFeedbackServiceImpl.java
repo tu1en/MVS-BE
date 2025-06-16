@@ -9,12 +9,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.classroomapp.classroombackend.dto.CourseFeedbackDto;
-import com.classroomapp.classroombackend.model.Classroom;
 import com.classroomapp.classroombackend.model.CourseFeedback;
-import com.classroomapp.classroombackend.model.User;
-import com.classroomapp.classroombackend.repository.ClassroomRepository;
+import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
+import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.CourseFeedbackRepository;
-import com.classroomapp.classroombackend.repository.UserRepository;
+import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.CourseFeedbackService;
 
 @Service

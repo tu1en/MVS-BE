@@ -1,6 +1,6 @@
 package com.classroomapp.classroombackend.controller;
 
-<<<<<<< HEAD
+
 import com.classroomapp.classroombackend.dto.RequestResponseDTO;
 import com.classroomapp.classroombackend.service.RequestService;
 import lombok.Data;
@@ -9,8 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-=======
->>>>>>> master
+
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;

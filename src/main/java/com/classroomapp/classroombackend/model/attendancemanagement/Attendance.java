@@ -2,11 +2,12 @@ package com.classroomapp.classroombackend.model.attendancemanagement;
 
 import java.time.LocalDateTime;
 
-import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -15,12 +16,14 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Entity(name = "AttendanceRecord")
+@Entity
 @Table(name = "attendances")
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Attendance {
@@ -32,44 +35,42 @@ public class Attendance {
     // The user (student or teacher) this attendance record belongs to
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id")
-    private User user;
+    private User student;
 
-    // The classroom this attendance belongs to
+    // The session this attendance belongs to
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "classroom_id")
-    private Classroom classroom;
+    @JoinColumn(name = "session_id")
+    private AttendanceSession session;
 
-    // The session date for this attendance record
-    private LocalDateTime sessionDate;
+    // Attendance status
+    @Enumerated(EnumType.STRING)
+    private AttendanceStatus status;
 
-    // Whether the user is present or absent
-    private boolean isPresent;
+    // The check-in time
+    private LocalDateTime checkInTime;
 
-    // Type of attendance: "ONLINE" or "OFFLINE"
-    private String attendanceType;
-
-    // Optional comment for the attendance record
-    @Column(length = 500)
-    private String comment;
-
-    // URL to student's photo (if applicable)
-    private String photoUrl;
+    // The check-out time (optional)
+    private LocalDateTime checkOutTime;
 
     // Geolocation data (if applicable for offline sessions)
     private Double latitude;
     private Double longitude;
     
-    // IP address used for attendance (if applicable for online sessions)
-    private String ipAddress;
-    
-    // The teacher who marked this attendance
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "marked_by_id")
-    private User markedBy;
+    // Notes or comments
+    @Column(length = 500)
+    private String notes;
     
     // When the attendance was recorded
     private LocalDateTime createdAt;
     
-    // Whether this is a teacher or student attendance record
-    private boolean isTeacherRecord;
+    // When the attendance was updated
+    private LocalDateTime updatedAt;
+
+    // Attendance status enum
+    public enum AttendanceStatus {
+        PRESENT,
+        ABSENT,
+        LATE,
+        EXCUSED
+    }
 }

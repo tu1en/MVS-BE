@@ -6,9 +6,9 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.classroomapp.classroombackend.model.Classroom;
-import com.classroomapp.classroombackend.model.ClassroomEnrollment;
-import com.classroomapp.classroombackend.model.User;
+import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
+import com.classroomapp.classroombackend.model.classroommanagement.ClassroomEnrollment;
+import com.classroomapp.classroombackend.model.usermanagement.User;
 
 @Repository
 public interface ClassroomEnrollmentRepository extends JpaRepository<ClassroomEnrollment, Long> {

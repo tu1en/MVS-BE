@@ -1,12 +1,21 @@
 package com.classroomapp.classroombackend.model;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
+import java.time.LocalDateTime;
+
+import com.classroomapp.classroombackend.model.usermanagement.User;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "event_attendees")
@@ -19,15 +28,12 @@ public class EventAttendee {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotNull
     @Column(name = "event_id", nullable = false)
     private Long eventId;
 
-    @NotNull
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "attendance_status")
     private AttendanceStatus attendanceStatus = AttendanceStatus.INVITED;
 

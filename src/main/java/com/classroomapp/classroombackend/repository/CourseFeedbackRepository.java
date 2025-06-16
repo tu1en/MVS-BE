@@ -8,9 +8,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.classroomapp.classroombackend.model.Classroom;
 import com.classroomapp.classroombackend.model.CourseFeedback;
-import com.classroomapp.classroombackend.model.User;
+import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
+import com.classroomapp.classroombackend.model.usermanagement.User;
 
 @Repository
 public interface CourseFeedbackRepository extends JpaRepository<CourseFeedback, Long> {

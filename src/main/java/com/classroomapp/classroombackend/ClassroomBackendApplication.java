@@ -18,13 +18,21 @@ import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @SpringBootApplication
-@EntityScan("com.classroomapp.classroombackend.model")
+@EntityScan(basePackages = {
+    "com.classroomapp.classroombackend.model",
+    "com.classroomapp.classroombackend.model.usermanagement",
+    "com.classroomapp.classroombackend.model.classroommanagement",
+    "com.classroomapp.classroombackend.model.attendancemanagement",
+    "com.classroomapp.classroombackend.model.assignmentmanagement",
+    "com.classroomapp.classroombackend.model.requestmanagement"
+})
 @EnableJpaRepositories(basePackages = {
     "com.classroomapp.classroombackend.repository.usermanagement",
-    "com.classroomapp.classroombackend.repository.classroommanagement",
+    "com.classroomapp.classroombackend.repository.classroommanagement", 
     "com.classroomapp.classroombackend.repository.attendancemanagement",
     "com.classroomapp.classroombackend.repository.assignmentmanagement",
-    "com.classroomapp.classroombackend.repository.requestmanagement"
+    "com.classroomapp.classroombackend.repository.requestmanagement",
+    "com.classroomapp.classroombackend.repository"
 })
 public class ClassroomBackendApplication {
 
@@ -46,23 +54,8 @@ public class ClassroomBackendApplication {
         config.setExposedHeaders(Arrays.asList("Authorization"));
         config.setMaxAge(3600L);
         config.setAllowCredentials(true);
-        
-        source.registerCorsConfiguration("/**", config);
-        return new CorsFilter(source);
-    }
+          source.registerCorsConfiguration("/**", config);
+        return new CorsFilter(source);    }
 
-    @Configuration
-    public class EncodingConfig implements WebMvcConfigurer {
-        @Bean
-        public HttpMessageConverter<String> responseBodyConverter() {
-            StringHttpMessageConverter converter = new StringHttpMessageConverter(StandardCharsets.UTF_8);
-            converter.setWriteAcceptCharset(false);
-            return converter;
-        }
-
-        @Override
-        public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
-            converters.add(0, responseBodyConverter());
-        }
-    }
-} 
+    // Removed duplicate EncodingConfig - already handled in WebConfig.java
+}
