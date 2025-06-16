@@ -1,71 +1,45 @@
 package com.classroomapp.classroombackend.service.impl;
 
-<<<<<<< HEAD
-import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto;
-import com.classroomapp.classroombackend.dto.assignmentmanagement.CreateAssignmentDto;
-import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
-import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
-import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
-import com.classroomapp.classroombackend.repository.assignmentmanagement.AssignmentRepository;
-import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
-import com.classroomapp.classroombackend.service.AssignmentService;
-import com.classroomapp.classroombackend.util.ModelMapper;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-=======
->>>>>>> master
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.classroomapp.classroombackend.dto.AssignmentDto;
 import com.classroomapp.classroombackend.dto.AssignmentRubricDto;
 import com.classroomapp.classroombackend.dto.AssignmentSubmissionDto;
 import com.classroomapp.classroombackend.dto.BulkGradingDto;
 import com.classroomapp.classroombackend.dto.BulkGradingResultDto;
-import com.classroomapp.classroombackend.dto.CreateAssignmentDto;
 import com.classroomapp.classroombackend.dto.CreateFeedbackDto;
 import com.classroomapp.classroombackend.dto.CreateRubricDto;
 import com.classroomapp.classroombackend.dto.FeedbackDto;
 import com.classroomapp.classroombackend.dto.GradeDto;
-import com.classroomapp.classroombackend.dto.GradeSubmissionDto;
 import com.classroomapp.classroombackend.dto.GradingAnalyticsDto;
+import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto;
+import com.classroomapp.classroombackend.dto.assignmentmanagement.CreateAssignmentDto;
+import com.classroomapp.classroombackend.dto.assignmentmanagement.GradeSubmissionDto;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
-import com.classroomapp.classroombackend.model.Assignment;
-import com.classroomapp.classroombackend.model.Classroom;
-import com.classroomapp.classroombackend.model.User;
-import com.classroomapp.classroombackend.repository.AssignmentRepository;
-import com.classroomapp.classroombackend.repository.ClassroomRepository;
-import com.classroomapp.classroombackend.repository.UserRepository;
+import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
+import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
+import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.assignmentmanagement.AssignmentRepository;
+import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.AssignmentService;
 import com.classroomapp.classroombackend.util.ModelMapper;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class AssignmentServiceImpl implements AssignmentService {
 
     private final AssignmentRepository assignmentRepository;
     private final ClassroomRepository classroomRepository;
     private final UserRepository userRepository;
     private final ModelMapper modelMapper;
-
-    @Autowired
-    public AssignmentServiceImpl(
-            AssignmentRepository assignmentRepository,
-            ClassroomRepository classroomRepository,
-            UserRepository userRepository,
-            ModelMapper modelMapper) {
-        this.assignmentRepository = assignmentRepository;
-        this.classroomRepository = classroomRepository;
-        this.userRepository = userRepository;
-        this.modelMapper = modelMapper;
-    }
 
     /**
      * Find Assignment entity by ID

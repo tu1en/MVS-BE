@@ -7,6 +7,8 @@ import java.util.Map;
 
 import javax.crypto.SecretKey;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -14,10 +16,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
-<<<<<<< HEAD
-=======
 import io.jsonwebtoken.SignatureAlgorithm;
->>>>>>> master
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SecurityException;
@@ -26,6 +25,8 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @Slf4j
 public class JwtUtil {
+
+    private static final Logger log = LoggerFactory.getLogger(JwtUtil.class);
 
     // Sử dụng một secret key cố định từ application.properties
     @Value("${jwt.secret:defaultSecretKeyForDevThatShouldBeChangedInProduction}")
@@ -51,11 +52,7 @@ public class JwtUtil {
             .setSubject(username)
             .setIssuedAt(new Date(System.currentTimeMillis()))
             .setExpiration(new Date(System.currentTimeMillis() + JWT_TOKEN_VALIDITY * 1000))
-<<<<<<< HEAD
-            .signWith(getSecretKeyFromString())
-=======
             .signWith(getSecretKeyFromString(), SignatureAlgorithm.HS512)
->>>>>>> master
             .compact();
             
         log.info("Token generated successfully for user: {} (first 20 chars): {}", 
@@ -70,20 +67,14 @@ public class JwtUtil {
         
         try {
             log.debug("Validating JWT token");
-<<<<<<< HEAD
-            Jwts.parserBuilder().setSigningKey(getSecretKeyFromString()).build().parseClaimsJws(token);
-            log.debug("JWT token validated successfully");
-            return true;
-        } catch (SecurityException e) {
-            log.error("JWT validation failed: Invalid signature: {}", e.getMessage());
-=======
             Jwts.parserBuilder()
                 .setSigningKey(getSecretKeyFromString())
                 .build()
                 .parseClaimsJws(token);
             log.debug("JWT token validated successfully");
             return true;
->>>>>>> master
+        } catch (SecurityException e) {
+            log.error("JWT validation failed: Invalid signature: {}", e.getMessage());
         } catch (MalformedJwtException e) {
             log.error("JWT validation failed: Malformed token: {}", e.getMessage());
         } catch (ExpiredJwtException e) {
@@ -98,17 +89,12 @@ public class JwtUtil {
         return false;
     }    public String getUsernameFromToken(String token) {
         try {
-<<<<<<< HEAD
-            String username = Jwts.parserBuilder().setSigningKey(getSecretKeyFromString()).build()
-                    .parseClaimsJws(token).getBody().getSubject();
-=======
             String username = Jwts.parserBuilder()
                     .setSigningKey(getSecretKeyFromString())
                     .build()
                     .parseClaimsJws(token)
                     .getBody()
                     .getSubject();
->>>>>>> master
             log.debug("Extracted username from token: {}", username);
             return username;
         } catch (Exception e) {
@@ -116,18 +102,14 @@ public class JwtUtil {
             return null;
         }
     }
-      public Integer getRoleFromToken(String token) {
+    
+    public Integer getRoleFromToken(String token) {
         try {
-<<<<<<< HEAD
-            Claims claims = Jwts.parserBuilder().setSigningKey(getSecretKeyFromString()).build()
-                    .parseClaimsJws(token).getBody();
-=======
             Claims claims = Jwts.parserBuilder()
                     .setSigningKey(getSecretKeyFromString())
                     .build()
                     .parseClaimsJws(token)
                     .getBody();
->>>>>>> master
             
             Integer roleId = claims.get("role", Integer.class);
             log.debug("Extracted role ID from token: {}", roleId);

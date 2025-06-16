@@ -1,12 +1,13 @@
 package com.classroomapp.classroombackend.util;
 
 import java.time.LocalDateTime;
-<<<<<<< HEAD
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
+import com.classroomapp.classroombackend.dto.AttendanceDto;
+import com.classroomapp.classroombackend.dto.AttendanceSessionDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.SubmissionDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDetailsDto;
@@ -17,33 +18,15 @@ import com.classroomapp.classroombackend.dto.usermanagement.UserDetailsDto;
 import com.classroomapp.classroombackend.dto.usermanagement.UserDto;
 import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
 import com.classroomapp.classroombackend.model.assignmentmanagement.Submission;
+import com.classroomapp.classroombackend.model.attendancemanagement.Attendance;
+import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSession;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.classroommanagement.Schedule;
 import com.classroomapp.classroombackend.model.classroommanagement.Syllabus;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 
 import lombok.RequiredArgsConstructor;
-=======
-import java.util.stream.Collectors;
-
-import org.springframework.stereotype.Component;
-
-import com.classroomapp.classroombackend.dto.AssignmentDto;
-import com.classroomapp.classroombackend.dto.AttendanceDto;
-import com.classroomapp.classroombackend.dto.AttendanceSessionDto;
-import com.classroomapp.classroombackend.dto.ClassroomDto;
-import com.classroomapp.classroombackend.dto.SubmissionDto;
-import com.classroomapp.classroombackend.dto.UserDto;
-import com.classroomapp.classroombackend.model.Assignment;
-import com.classroomapp.classroombackend.model.Attendance;
-import com.classroomapp.classroombackend.model.AttendanceSession;
-import com.classroomapp.classroombackend.model.Classroom;
-import com.classroomapp.classroombackend.model.Submission;
-import com.classroomapp.classroombackend.model.User;
-
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
->>>>>>> master
 
 /**
  * Component for mapping between entities and DTOs
@@ -212,7 +195,6 @@ public class ModelMapper {
         log.debug("Mapping userDto to entity. DTO ID: {}", userDto.getId());
         return UserMapper.toEntity(userDto);
     }
-<<<<<<< HEAD
     
     /**
      * Map Classroom entity to ClassroomDetailsDto with syllabus and schedule
@@ -332,12 +314,12 @@ public class ModelMapper {
         dto.setRole(user.getRole());
         dto.setRoleId(user.getRoleId());
         dto.setHireDate(user.getHireDate());
-        dto.setDepartment(user.getDepartment());
-        dto.setStatus(user.getStatus());
+        dto.setDepartment(user.getDepartment());        dto.setStatus(user.getStatus());
         
         return dto;
-=======
-      /**
+    }
+
+    /**
      * Map Attendance entity to AttendanceDto
      * @param attendance Attendance entity
      * @return AttendanceDto
@@ -350,9 +332,7 @@ public class ModelMapper {
         
         log.debug("Mapping attendance entity to DTO. Entity ID: {}", attendance.getId());
           return AttendanceDto.builder()
-                .id(attendance.getId())
-                .userId(attendance.getStudent().getId())
-                .userName(attendance.getStudent().getFullName() != null ? attendance.getStudent().getFullName() : attendance.getStudent().getUsername())
+                .id(attendance.getId())                .userId(attendance.getStudent().getId())                .userName(attendance.getStudent().getFullName() != null ? attendance.getStudent().getFullName() : attendance.getStudent().getUsername())
                 .sessionId(attendance.getSession().getId())
                 .status(attendance.getStatus())
                 .markedAt(attendance.getCheckInTime())
@@ -372,9 +352,9 @@ public class ModelMapper {
         if (session == null) {
             log.debug("AttendanceSession is null, returning null DTO");
             return null;
-        }
-        
-        log.debug("Mapping attendance session entity to DTO. Entity ID: {}", session.getId());        return AttendanceSessionDto.builder()
+        }        
+        log.debug("Mapping attendance session entity to DTO. Entity ID: {}", session.getId());
+          return AttendanceSessionDto.builder()
                 .id(session.getId())
                 .classroomId(session.getClassroom().getId())
                 .classroomName(session.getClassroom().getName())
@@ -386,18 +366,14 @@ public class ModelMapper {
                 .startTime(session.getStartTime())
                 .endTime(session.getEndTime())
                 .status(session.getStatus().name())
-                .locationRequired(session.getLocationRequired())
+                .locationRequired(session.getLocationLatitude() != null && session.getLocationLongitude() != null)
                 .locationLatitude(session.getLocationLatitude())
                 .locationLongitude(session.getLocationLongitude())
                 .locationRadiusMeters(session.getLocationRadiusMeters())
-                .autoMarkTeacherAttendance(session.getAutoMarkTeacherAttendance())
-                .attendanceRecords(session.getAttendanceRecords() != null ? 
-                    session.getAttendanceRecords().stream()
-                        .map(this::MapToAttendanceDto)
-                        .collect(Collectors.toList()) : null)
+                .autoMarkTeacherAttendance(session.isAutoMarkTeacherAttendance())
+                .attendanceRecords(null) // AttendanceSession doesn't have attendanceRecords field
                 .createdAt(session.getCreatedAt())
-                .updatedAt(session.getUpdatedAt())
+                .updatedAt(session.getCreatedAt()) // AttendanceSession doesn't have updatedAt field, using createdAt
                 .build();
->>>>>>> master
     }
 }

@@ -1,0 +1,16 @@
+{
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.compile.nullAnalysis.mode": "automatic",
+    "java.project.sourcePaths": [
+        "src/main/java"
+    ],
+    "java.project.outputPath": "target/classes",
+    "java.project.referencedLibraries": [
+        "lib/**/*.jar",
+        "target/dependency/**/*.jar"
+    ],
+    "java.configuration.maven.userSettings": null,
+    "java.import.maven.enabled": true,
+    "java.maven.downloadSources": true,
+    "java.maven.downloadJavadoc": true
+}

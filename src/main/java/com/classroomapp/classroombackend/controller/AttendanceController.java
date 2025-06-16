@@ -1,6 +1,7 @@
 package com.classroomapp.classroombackend.controller;
 
-<<<<<<< HEAD
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,19 +10,6 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-=======
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,17 +18,18 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
->>>>>>> master
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-<<<<<<< HEAD
 import com.classroomapp.classroombackend.dto.ApiResponse;
-import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceDto;
+import com.classroomapp.classroombackend.dto.AttendanceDto;
+import com.classroomapp.classroombackend.dto.AttendanceSessionDto;
 import com.classroomapp.classroombackend.dto.LocationDataDto;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
 import com.classroomapp.classroombackend.model.attendancemanagement.Attendance;
+import com.classroomapp.classroombackend.model.attendancemanagement.Attendance.AttendanceStatus;
 import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSession;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceRepository;
@@ -49,12 +38,14 @@ import com.classroomapp.classroombackend.repository.usermanagement.UserRepositor
 import com.classroomapp.classroombackend.service.AttendanceService;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * REST Controller xử lý các API liên quan đến điểm danh
  */
 @RestController
 @RequestMapping("/api/attendance")
+@Slf4j
 public class AttendanceController {
 
     private static final Logger logger = LoggerFactory.getLogger(AttendanceController.class);
@@ -168,23 +159,10 @@ public class AttendanceController {
             @RequestBody AttendanceDto attendanceDto,
             @RequestParam Long teacherId) {
         
-        logger.info("Nhận được yêu cầu đánh dấu điểm danh cho sinh viên {} từ giáo viên {}", 
-                attendanceDto.getUserId(), teacherId);
+        log.info("Marking attendance for student {} by teacher {}", attendanceDto.getUserId(), teacherId);
         
-        try {
-            ApiResponse response = attendanceService.MarkStudentAttendance(attendanceDto, teacherId);
-            
-            if (response.isSuccess()) {
-                return ResponseEntity.ok(response);
-            } else {
-                return ResponseEntity.badRequest().body(response);
-            }
-        } catch (Exception e) {
-            logger.error("Lỗi khi đánh dấu điểm danh cho sinh viên: {}", e.getMessage(), e);
-            return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse(false, "Đã xảy ra lỗi máy chủ nội bộ. Vui lòng thử lại sau."));
-        }
+        ApiResponse response = attendanceService.MarkStudentAttendance(attendanceDto, teacherId);
+        return ResponseEntity.ok(response);
     }
     
     /**
@@ -198,94 +176,95 @@ public class AttendanceController {
         String xForwardedForHeader = request.getHeader("X-Forwarded-For");
         
         if (xForwardedForHeader != null && !xForwardedForHeader.isEmpty()) {
-            // Lấy địa chỉ IP đầu tiên (thường là IP client gốc)
-            logger.debug("X-Forwarded-For header: {}", xForwardedForHeader);
+            // Lấy địa chỉ IP đầu tiên trong chuỗi (IP của client ban đầu)
             return xForwardedForHeader.split(",")[0].trim();
         }
         
-        // Sử dụng getRemoteAddr() nếu không có X-Forwarded-For
-        logger.debug("Sử dụng request.getRemoteAddr(): {}", request.getRemoteAddr());
+        // Kiểm tra các header khác liên quan đến proxy
+        String proxyClientIp = request.getHeader("Proxy-Client-IP");
+        if (proxyClientIp != null && !proxyClientIp.isEmpty() && !"unknown".equalsIgnoreCase(proxyClientIp)) {
+            return proxyClientIp;
+        }
+        
+        String wlProxyClientIp = request.getHeader("WL-Proxy-Client-IP");
+        if (wlProxyClientIp != null && !wlProxyClientIp.isEmpty() && !"unknown".equalsIgnoreCase(wlProxyClientIp)) {
+            return wlProxyClientIp;
+        }
+        
+        // Sử dụng địa chỉ Remote của request (giải pháp cuối cùng)
         return request.getRemoteAddr();
     }
-
+    
     /**
-     * Endpoint test để giả lập điểm danh với các IP khác nhau
+     * Kiểm tra API với địa chỉ IP được chỉ định
+     * 
      * @param locationData Dữ liệu vị trí
-     * @param simulatedIP IP giả lập để test
-     * @return Kết quả điểm danh
+     * @param simulatedIP IP giả lập
+     * @return Kết quả kiểm tra
      */
     @PostMapping("/test-with-ip")
     public ResponseEntity<ApiResponse> TestAttendanceWithSimulatedIp(
             @RequestBody LocationDataDto locationData,
             @RequestParam String simulatedIP) {
         
-        logger.info("Yêu cầu điểm danh test với IP giả lập: {}", simulatedIP);
+        logger.info("Thử nghiệm điểm danh với IP giả lập: {}", simulatedIP);
         
-        // Giả định user là "test_user"
-        String username = "test_user";
+        // Giả lập người dùng
+        String testUsername = "test_user_ip_simulation";
         
-        // Gọi service để xử lý logic điểm danh với IP giả lập
-        ApiResponse result = attendanceService.PerformCheckInLogic(username, locationData, simulatedIP);
+        // Gọi service với IP đã chỉ định
+        ApiResponse response = attendanceService.PerformCheckInLogic(testUsername, locationData, simulatedIP);
         
-        // Trả về kết quả
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(response);
     }
     
     /**
-     * Endpoint test cho IP được phép (test case IP hợp lệ)
+     * Kiểm tra API với địa chỉ IP được cho phép
+     * 
      * @param locationData Dữ liệu vị trí
-     * @return Kết quả điểm danh
+     * @return Kết quả kiểm tra
      */
     @PostMapping("/test-allowed-ip")
     public ResponseEntity<ApiResponse> TestWithAllowedIP(@RequestBody LocationDataDto locationData) {
-        // Sử dụng IP đã có trong whitelist
-        String allowedIP = "123.16.226.86";
-        logger.info("Yêu cầu điểm danh test với IP ĐƯỢC PHÉP: {}", allowedIP);
         
-        // Giả định user là "test_user"
-        String username = "test_user_allowed";
+        logger.info("Thử nghiệm điểm danh với IP được cho phép");
         
-        // Gọi service để xử lý logic điểm danh
-        ApiResponse result = attendanceService.PerformCheckInLogic(username, locationData, allowedIP);
+        // IP được cho phép để kiểm tra
+        String allowedTestIp = "192.168.1.100";
+        String testUsername = "test_user_allowed_ip";
         
-        // Trả về kết quả
-        return ResponseEntity.ok(result);
+        // Gọi service với IP đã chỉ định
+        ApiResponse response = attendanceService.PerformCheckInLogic(testUsername, locationData, allowedTestIp);
+        
+        return ResponseEntity.ok(response);
     }
     
     /**
-     * Endpoint test cho IP không được phép (test case IP không hợp lệ)
+     * Kiểm tra API với địa chỉ IP không được cho phép
+     * 
      * @param locationData Dữ liệu vị trí
-     * @return Kết quả điểm danh
+     * @return Kết quả kiểm tra
      */
     @PostMapping("/test-denied-ip")
     public ResponseEntity<ApiResponse> TestWithDeniedIP(@RequestBody LocationDataDto locationData) {
-        // Sử dụng IP không có trong whitelist
-        String deniedIP = "8.8.8.8";
-        logger.info("Yêu cầu điểm danh test với IP KHÔNG ĐƯỢC PHÉP: {}", deniedIP);
         
-        try {
-            // Giả định user là "test_user"
-            String username = "test_user_denied";
-            
-            // Gọi service để xử lý logic điểm danh
-            ApiResponse result = attendanceService.PerformCheckInLogic(username, locationData, deniedIP);
-            
-            // Trả về kết quả
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            // Xử lý ngoại lệ
-            logger.error("Lỗi khi thực hiện test với IP không được phép: {}", e.getMessage(), e);
-            return ResponseEntity
-                    .status(HttpStatus.OK)  // Vẫn trả về 200 OK thay vì 500 để frontend dễ xử lý
-                    .body(new ApiResponse(false, "IP không được phép (8.8.8.8): " + e.getMessage()));
-        }
+        logger.info("Thử nghiệm điểm danh với IP không được cho phép");
+        
+        // IP không được cho phép để kiểm tra
+        String deniedTestIp = "10.0.0.50";
+        String testUsername = "test_user_denied_ip";
+        
+        // Gọi service với IP đã chỉ định
+        ApiResponse response = attendanceService.PerformCheckInLogic(testUsername, locationData, deniedTestIp);
+        
+        return ResponseEntity.ok(response);
     }
-
+    
     /**
-     * Endpoint để kiểm tra trạng thái điểm danh của giáo viên
+     * Kiểm tra trạng thái điểm danh của giáo viên
      * 
-     * @param sessionId ID của phiên học
-     * @param teacherId ID của giáo viên
+     * @param sessionId ID phiên điểm danh
+     * @param teacherId ID giáo viên
      * @return Trạng thái điểm danh của giáo viên
      */
     @GetMapping("/teacher-status")
@@ -296,7 +275,6 @@ public class AttendanceController {
         logger.info("Kiểm tra trạng thái điểm danh của giáo viên {} cho phiên {}", teacherId, sessionId);
         
         try {
-            // Lấy phiên học từ database
             AttendanceSession session = sessionRepository.findById(sessionId)
                     .orElseThrow(() -> new ResourceNotFoundException("AttendanceSession", "id", sessionId));
             
@@ -304,9 +282,8 @@ public class AttendanceController {
             User teacher = userRepository.findById(teacherId)
                     .orElseThrow(() -> new ResourceNotFoundException("User", "id", teacherId));
             
-            // Kiểm tra xem giáo viên đã được điểm danh cho phiên này chưa
-            Optional<Attendance> teacherAttendance = attendanceRepository.findByUserAndClassroomAndSessionDateBetweenAndIsTeacherRecordTrue(
-                    teacher, session.getClassroom(), session.getStartTime(), session.getEndTime());
+            // Just check if teacher attendance exists
+            Optional<Attendance> teacherAttendance = attendanceRepository.findByStudentAndSession(teacher, session);
             
             // Tạo response
             Map<String, Object> response = new HashMap<>();
@@ -315,8 +292,8 @@ public class AttendanceController {
             if (teacherAttendance.isPresent()) {
                 Attendance attendance = teacherAttendance.get();
                 response.put("attendanceId", attendance.getId());
-                response.put("attendanceTime", attendance.getCreatedAt());
-                response.put("attendanceType", attendance.getAttendanceType());
+                response.put("attendanceTime", attendance.getCheckInTime());
+                response.put("attendanceStatus", attendance.getStatus().toString());
             }
             
             return ResponseEntity.ok(response);
@@ -327,23 +304,6 @@ public class AttendanceController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
-} 
-=======
-import com.classroomapp.classroombackend.dto.AttendanceDto;
-import com.classroomapp.classroombackend.dto.AttendanceSessionDto;
-import com.classroomapp.classroombackend.model.Attendance.AttendanceStatus;
-import com.classroomapp.classroombackend.service.AttendanceService;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
-@RestController
-@RequestMapping("/api/attendance")
-@RequiredArgsConstructor
-@Slf4j
-public class AttendanceController {
-
-    private final AttendanceService attendanceService;
 
     // Attendance Session Management
     @PostMapping("/sessions")
@@ -504,7 +464,8 @@ public class AttendanceController {
             @RequestParam Double sessionLon,
             @RequestParam Double radius) {
         
-        boolean isWithinRadius = attendanceService.isWithinLocationRadius(userLat, userLon, sessionLat, sessionLon, radius);
+        boolean isWithinRadius = attendanceService.isWithinLocationRadius(
+            userLat, userLon, sessionLat, sessionLon, radius);
         return ResponseEntity.ok(isWithinRadius);
     }
 
@@ -513,42 +474,30 @@ public class AttendanceController {
         boolean canMark = attendanceService.canMarkAttendance(sessionId, userId);
         return ResponseEntity.ok(canMark);
     }
-    
-    // Add a new endpoint to get attendance records for the current student
+
     @GetMapping("/student")
     public ResponseEntity<Map<String, Object>> getStudentAttendance() {
-        log.info("Getting attendance records for current student");
+        // This is a mock endpoint for testing
+        Map<String, Object> mockData = new HashMap<>();
+        mockData.put("success", true);
+        mockData.put("message", "This is a mock endpoint for student attendance");
         
-        // In a real implementation, you would get the student ID from the security context
-        // For demonstration, we'll create some sample attendance records
-        List<AttendanceDto> attendanceRecords = new ArrayList<>();
+        List<Map<String, Object>> attendanceRecords = new ArrayList<>();
+        Map<String, Object> record1 = new HashMap<>();
+        record1.put("date", "2023-05-01");
+        record1.put("status", "PRESENT");
+        record1.put("course", "Mathematics");
         
-        // Create sample data
-        for (int i = 1; i <= 10; i++) {
-            // Create a new instance of AttendanceDto using builder pattern instead of setters
-            AttendanceDto record = AttendanceDto.builder()
-                .id((long) i)
-                .sessionId((long) (i % 3) + 1)
-                .userId(4L) // Assuming student ID 4 is the current user
-                
-                // Vary the status for demonstration
-                .status(i % 4 == 0 ? AttendanceStatus.ABSENT : 
-                       (i % 4 == 1 ? AttendanceStatus.LATE : AttendanceStatus.PRESENT))
-                
-                // Set dates
-                .createdAt(LocalDateTime.now().minusDays(i))
-                .markedAt(LocalDateTime.now().minusDays(i))
-                .build();
-            
-            attendanceRecords.add(record);
-        }
+        Map<String, Object> record2 = new HashMap<>();
+        record2.put("date", "2023-05-02");
+        record2.put("status", "ABSENT");
+        record2.put("course", "Physics");
         
-        Map<String, Object> response = new HashMap<>();
-        response.put("status", "success");
-        response.put("message", "Retrieved student attendance records successfully");
-        response.put("data", attendanceRecords);
+        attendanceRecords.add(record1);
+        attendanceRecords.add(record2);
+        mockData.put("records", attendanceRecords);
         
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(mockData);
     }
 }
->>>>>>> master
+

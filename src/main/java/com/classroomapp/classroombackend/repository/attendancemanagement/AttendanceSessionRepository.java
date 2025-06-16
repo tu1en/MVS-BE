@@ -2,41 +2,49 @@ package com.classroomapp.classroombackend.repository.attendancemanagement;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSession;
+import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSession.SessionStatus;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 
 @Repository
 public interface AttendanceSessionRepository extends JpaRepository<AttendanceSession, Long> {
     
-    // Find active sessions for a classroom
-    List<AttendanceSession> findByClassroomAndIsActiveTrue(Classroom classroom);
-    
-    // Find active sessions for a teacher
-    List<AttendanceSession> findByTeacherAndIsActiveTrue(User teacher);
-    
-    // Find sessions between two dates
-    List<AttendanceSession> findByStartTimeBetween(LocalDateTime startDate, LocalDateTime endDate);
-    
-    // Find all sessions for a classroom
+    // Find sessions by classroom
     List<AttendanceSession> findByClassroom(Classroom classroom);
     
-    // Find all sessions for a teacher
+    // Find sessions by teacher
     List<AttendanceSession> findByTeacher(User teacher);
     
-    // Find active session by ID and classroom
-    Optional<AttendanceSession> findByIdAndClassroomAndIsActiveTrue(Long id, Classroom classroom);
+    // Find sessions by status
+    List<AttendanceSession> findByStatus(SessionStatus status);
+      // Find sessions by classroom and status
+    List<AttendanceSession> findByClassroomAndStatus(Classroom classroom, SessionStatus status);
+      // Find sessions within a date range
+    List<AttendanceSession> findByStartTimeBetween(LocalDateTime startDate, LocalDateTime endDate);
     
-    // Find if a teacher has any active session currently
-    boolean existsByTeacherAndIsActiveTrueAndStartTimeBeforeAndEndTimeAfter(
-        User teacher, LocalDateTime currentTime, LocalDateTime currentTime2);
+    // Find sessions for a classroom within date range
+    List<AttendanceSession> findByClassroomAndStartTimeBetween(Classroom classroom, LocalDateTime startDate, LocalDateTime endDate);
     
-    // Find active sessions that overlap with the given time
-    List<AttendanceSession> findByIsActiveTrueAndStartTimeBeforeAndEndTimeAfter(
-        LocalDateTime currentTime, LocalDateTime currentTime2);
+    // Find current active session for a classroom
+    List<AttendanceSession> findByClassroomAndStatusOrderByStartTimeDesc(Classroom classroom, SessionStatus status);
+    
+    // Find scheduled sessions that should be activated
+    List<AttendanceSession> findByStatusAndStartTimeLessThanEqual(SessionStatus status, LocalDateTime currentTime);
+    
+    // Find active sessions that should be completed
+    List<AttendanceSession> findByStatusAndEndTimeLessThanEqual(SessionStatus status, LocalDateTime currentTime);
+    
+    // Count sessions for a classroom
+    long countByClassroom(Classroom classroom);
+    
+    // Count sessions by teacher
+    long countByTeacher(User teacher);
+    
+    // Find sessions for teacher within date range
+    List<AttendanceSession> findByTeacherAndStartTimeBetween(User teacher, LocalDateTime startDate, LocalDateTime endDate);
 }
