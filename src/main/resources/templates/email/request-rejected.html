@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+        .header {
+            background-color: #ff4d4f;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .content {
+            padding: 20px;
+        }
+        .reason {
+            background-color: #fff1f0;
+            border: 1px solid #ffccc7;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Thông báo về yêu cầu của bạn</h1>
+    </div>
+    <div class="content">
+        <p>Kính gửi <span th:text="${name}"></span>,</p>
+        
+        <p>Chúng tôi rất tiếc phải thông báo rằng yêu cầu đăng ký vai trò <strong th:text="${role}"></strong> của bạn đã bị từ chối.</p>
+        
+        <div class="reason">
+            <p><strong>Lý do:</strong></p>
+            <p th:text="${reason}"></p>
+        </div>
+        
+        <p>Nếu bạn có bất kỳ thắc mắc nào hoặc muốn biết thêm thông tin, vui lòng liên hệ với chúng tôi.</p>
+        
+        <p>Trân trọng,<br>
+        Đội ngũ MVS Classroom</p>
+    </div>
+</body>
+</html> 

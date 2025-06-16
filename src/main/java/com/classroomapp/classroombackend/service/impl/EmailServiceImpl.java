@@ -1,5 +1,6 @@
 package com.classroomapp.classroombackend.service.impl;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -12,17 +13,18 @@ import com.classroomapp.classroombackend.service.EmailService;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 @ConditionalOnProperty(name = "email.service.enabled", havingValue = "true", matchIfMissing = false)
 public class EmailServiceImpl implements EmailService {
     
-    private final JavaMailSender mailSender;
-    private final TemplateEngine templateEngine;
+    @Autowired
+    private JavaMailSender mailSender;
+    
+    @Autowired
+    private TemplateEngine templateEngine;
     
     @Value("${spring.mail.from.email}")
     private String fromEmail;
