@@ -1,21 +1,24 @@
 package com.classroomapp.classroombackend.service.impl;
 
-import com.classroomapp.classroombackend.service.EmailService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import com.classroomapp.classroombackend.service.EmailService;
+
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "email.service.enabled", havingValue = "true", matchIfMissing = false)
 public class EmailServiceImpl implements EmailService {
     
     private final JavaMailSender mailSender;
@@ -83,6 +86,7 @@ public class EmailServiceImpl implements EmailService {
         sendEmail(to, subject, body);
     }
     
+    // This method is kept for potential future use
     private String generateStatusEmailBody(String fullName, String role, String status, String reason) {
         if ("APPROVED".equals(status)) {
             Context context = new Context();
@@ -98,6 +102,7 @@ public class EmailServiceImpl implements EmailService {
         }
     }
     
+    // This method is kept for potential future use
     private String generateConfirmationEmailBody(String fullName, String role) {
         Context context = new Context();
         context.setVariable("name", fullName);
