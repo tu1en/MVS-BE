@@ -49,4 +49,13 @@ public class Notification {
     public void markAsRead() {
         this.isRead = true;
     }
+    
+    // Explicit getters and setters to resolve compilation issues
+    public Long getId() { return id; }
+    public String getMessage() { return message; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public Boolean getIsRead() { return isRead; }
+    public String getSender() { return sender; }
+    
+    public void setIsRead(Boolean isRead) { this.isRead = isRead; }
 }

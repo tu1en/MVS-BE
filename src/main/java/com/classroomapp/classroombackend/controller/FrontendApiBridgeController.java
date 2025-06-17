@@ -320,4 +320,18 @@ public class FrontendApiBridgeController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
     }
+
+    /**
+     * Bridge endpoint for getting current student's assignments
+     * Frontend calls: /assignments/student
+     * Gets assignments for current authenticated student
+     */
+    @GetMapping("/assignments/student")
+    public ResponseEntity<List<AssignmentDto>> getCurrentStudentAssignments(Authentication authentication) {
+        // Extract user ID from JWT token
+        String username = authentication.getName();
+        User currentUser = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+        return ResponseEntity.ok(assignmentService.GetAssignmentsByStudent(currentUser.getId()));
+    }
 }

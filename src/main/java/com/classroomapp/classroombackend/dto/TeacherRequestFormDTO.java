@@ -26,4 +26,29 @@ public class TeacherRequestFormDTO {
     private String cvFileType;
     
     private String additionalInfo;
-} 
+    
+    // Explicit getters and setters to resolve compilation issues
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    
+    public String getFullName() { return fullName; }
+    public void setFullName(String fullName) { this.fullName = fullName; }
+    
+    public String getPhoneNumber() { return phoneNumber; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+    
+    public String getCvFileUrl() { return cvFileUrl; }
+    public void setCvFileUrl(String cvFileUrl) { this.cvFileUrl = cvFileUrl; }
+    
+    public String getCvFileData() { return cvFileData; }
+    public void setCvFileData(String cvFileData) { this.cvFileData = cvFileData; }
+    
+    public String getCvFileName() { return cvFileName; }
+    public void setCvFileName(String cvFileName) { this.cvFileName = cvFileName; }
+    
+    public String getCvFileType() { return cvFileType; }
+    public void setCvFileType(String cvFileType) { this.cvFileType = cvFileType; }
+    
+    public String getAdditionalInfo() { return additionalInfo; }
+    public void setAdditionalInfo(String additionalInfo) { this.additionalInfo = additionalInfo; }
+}

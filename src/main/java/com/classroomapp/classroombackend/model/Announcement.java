@@ -2,8 +2,6 @@ package com.classroomapp.classroombackend.model;
 
 import java.time.LocalDateTime;
 
-import com.classroomapp.classroombackend.model.Announcement.AnnouncementStatus;
-import com.classroomapp.classroombackend.model.Announcement.TargetAudience;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 
@@ -22,12 +20,14 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "announcements")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class Announcement {
