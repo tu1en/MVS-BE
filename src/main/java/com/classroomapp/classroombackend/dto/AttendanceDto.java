@@ -37,5 +37,8 @@ public class AttendanceDto {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private boolean isTeacherRecord;
+    
+    // Explicit getter to resolve compilation issues
+    public Long getUserId() { return userId; }
 }
 

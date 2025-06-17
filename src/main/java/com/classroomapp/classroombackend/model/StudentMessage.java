@@ -105,4 +105,32 @@ public class StudentMessage {
         this.status = "ARCHIVED";
         this.updatedAt = LocalDateTime.now();
     }
+    
+    // Explicit getters to resolve compilation issues
+    public Long getId() { return id; }
+    public User getSender() { return sender; }
+    public User getRecipient() { return recipient; }
+    public String getSubject() { return subject; }
+    public String getContent() { return content; }
+    public String getMessageType() { return messageType; }
+    public String getPriority() { return priority; }
+    public String getStatus() { return status; }
+    public Boolean getIsRead() { return isRead; }
+    public LocalDateTime getReadAt() { return readAt; }
+    public String getReply() { return reply; }
+    public LocalDateTime getRepliedAt() { return repliedAt; }
+    public User getRepliedBy() { return repliedBy; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    
+    // Explicit setters for compilation issues  
+    public void setSender(User sender) { this.sender = sender; }
+    public void setRecipient(User recipient) { this.recipient = recipient; }
+    public void setSubject(String subject) { this.subject = subject; }
+    public void setContent(String content) { this.content = content; }
+    public void setMessageType(String messageType) { this.messageType = messageType; }
+    public void setPriority(String priority) { this.priority = priority; }
+    public void setStatus(String status) { this.status = status; }
+    public void setIsRead(Boolean isRead) { this.isRead = isRead; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 }

@@ -74,14 +74,12 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             // Add the JWT filter before the standard authentication filter
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-            .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable())) // For H2 console
             // Then configure authorization rules
             .authorizeHttpRequests(authorize -> authorize
                 // Allow OPTIONS requests for CORS preflight
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 
                 // Public endpoints
-                .requestMatchers("/h2-console/**").permitAll()  // Allow H2 console
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
                 .requestMatchers("/api/test/**").permitAll() // Allow test endpoints for debugging

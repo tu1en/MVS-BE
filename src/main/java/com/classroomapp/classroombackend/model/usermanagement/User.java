@@ -14,13 +14,14 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-
+import lombok.Setter;
 
 @Entity
 @Table(name = "users")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class User {
@@ -49,7 +50,9 @@ public class User {
     private Integer roleId;
 
     @Column(name = "enrollment_date")
-    private LocalDate enrollmentDate;    @Column(name = "hire_date")
+    private LocalDate enrollmentDate;
+
+    @Column(name = "hire_date")
     private LocalDate hireDate;
 
     @Column(length = 100)
@@ -95,4 +98,18 @@ public class User {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+    
+    // Explicit getters to resolve compilation issues
+    public Long getId() { return id; }
+    public String getUsername() { return username; }
+    public String getPassword() { return password; }
+    public String getEmail() { return email; }
+    public String getFullName() { return fullName; }
+    public Integer getRoleId() { return roleId; }
+    public LocalDate getEnrollmentDate() { return enrollmentDate; }
+    public LocalDate getHireDate() { return hireDate; }
+    public String getDepartment() { return department; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public String getStatus() { return status; }
 }

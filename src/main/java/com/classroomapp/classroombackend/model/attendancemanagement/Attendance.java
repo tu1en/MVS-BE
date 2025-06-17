@@ -73,4 +73,9 @@ public class Attendance {
         LATE,
         EXCUSED
     }
+    
+    // Explicit getters to resolve compilation issues
+    public Long getId() { return id; }
+    public LocalDateTime getCheckInTime() { return checkInTime; }
+    public AttendanceStatus getStatus() { return status; }
 }

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+        .header {
+            background-color: #52c41a;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .content {
+            padding: 20px;
+        }
+        .success {
+            color: #52c41a;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Yêu cầu đã được chấp thuận</h1>
+    </div>
+    <div class="content">
+        <p>Kính gửi <span th:text="${name}"></span>,</p>
+        
+        <p>Chúng tôi vui mừng thông báo rằng yêu cầu đăng ký vai trò <strong th:text="${role}"></strong> của bạn đã được chấp thuận.</p>
+        
+        <p class="success">Tài khoản của bạn đã được cập nhật với vai trò mới.</p>
+        
+        <p>Bạn có thể đăng nhập vào hệ thống ngay bây giờ để sử dụng các tính năng mới.</p>
+        
+        <p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi.</p>
+        
+        <p>Trân trọng,<br>
+        Đội ngũ MVS Classroom</p>
+    </div>
+</body>
+</html> 
