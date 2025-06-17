@@ -74,14 +74,12 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             // Add the JWT filter before the standard authentication filter
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-            .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable())) // For H2 console
             // Then configure authorization rules
             .authorizeHttpRequests(authorize -> authorize
                 // Allow OPTIONS requests for CORS preflight
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 
                 // Public endpoints
-                .requestMatchers("/h2-console/**").permitAll()  // Allow H2 console
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
                 .requestMatchers("/api/test/**").permitAll() // Allow test endpoints for debugging
@@ -124,43 +122,37 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // Use allowedOriginPatterns instead of allowedOrigins
-        configuration.setAllowedOriginPatterns(Arrays.asList(
+        // Cho phép origin từ frontend React và các nguồn khác
+        configuration.setAllowedOrigins(Arrays.asList(
             "http://localhost:3000", 
             "http://localhost:3001", 
-            "http://localhost:5173", 
             "http://localhost:8088", 
-            "http://localhost"
+            "http://localhost", 
+            "https://mvsclassroom.com"
         ));
         
-        // Allow all common HTTP methods
-        configuration.setAllowedMethods(Arrays.asList(
-            "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
-        ));
+        // Cho phép các phương thức HTTP
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         
-        // Allow all common headers
+        // Cho phép các header HTTP
         configuration.setAllowedHeaders(Arrays.asList(
             "Authorization", 
             "Cache-Control", 
             "Content-Type", 
             "Accept", 
-            "X-Requested-With",
-            "Access-Control-Allow-Origin",
-            "Access-Control-Allow-Headers"
+            "X-Requested-With"
         ));
         
-        // Allow credentials
+        // Cho phép gửi thông tin xác thực
         configuration.setAllowCredentials(true);
         
-        // Expose Authorization header
-        configuration.setExposedHeaders(Arrays.asList("Authorization"));
-        
-        // Cache preflight requests for 1 hour
+        // Thời gian cache preflight request
         configuration.setMaxAge(3600L);
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        // Áp dụng cấu hình cho tất cả các đường dẫn
         source.registerCorsConfiguration("/**", configuration);
-        log.info("CORS configuration registered with patterns: {}", configuration.getAllowedOriginPatterns());
+        log.info("CORS configuration registered");
         return source;
     }
 }

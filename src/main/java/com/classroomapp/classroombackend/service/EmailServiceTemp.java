@@ -3,7 +3,7 @@ package com.classroomapp.classroombackend.service;
 /**
  * Service interface for email operations
  */
-public interface EmailService {
+public interface EmailServiceTemp {
     /**
      * Send an email notification
      * @param to Recipient email address

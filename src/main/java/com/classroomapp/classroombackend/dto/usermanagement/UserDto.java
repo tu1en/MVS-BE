@@ -45,4 +45,17 @@ public class UserDto {
 
     // Password is not included in response DTO for security
     // When needed, a separate DTO should be used for password changes
+    
+    // Explicit getters to resolve compilation issues
+    public Long getId() { return id; }
+    public String getUsername() { return username; }
+    public String getEmail() { return email; }
+    public String getFullName() { return fullName; }
+    public Integer getRoleId() { return roleId; }
+    public LocalDate getEnrollmentDate() { return enrollmentDate; }
+    public LocalDate getHireDate() { return hireDate; }
+    public String getDepartment() { return department; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public String getStatus() { return status; }
 }

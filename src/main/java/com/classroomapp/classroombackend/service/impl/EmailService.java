@@ -1,8 +1,5 @@
-package com.classroomapp.classroombackend.service;
+package com.classroomapp.classroombackend.service.impl;
 
-/**
- * Service interface for email operations
- */
 public interface EmailService {
     /**
      * Send an email notification
@@ -39,4 +36,4 @@ public interface EmailService {
      * @param requestedRole The role that was requested
      */
     void sendFormCompletionConfirmation(String to, String fullName, String requestedRole);
-}
+} 
