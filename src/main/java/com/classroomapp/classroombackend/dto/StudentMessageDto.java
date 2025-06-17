@@ -42,4 +42,12 @@ public class StudentMessageDto {
     
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    
+    // Explicit getters to resolve compilation issues
+    public Long getSenderId() { return senderId; }
+    public Long getRecipientId() { return recipientId; }
+    public String getSubject() { return subject; }
+    public String getContent() { return content; }
+    public String getMessageType() { return messageType; }
+    public String getPriority() { return priority; }
 }

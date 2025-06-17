@@ -6,11 +6,15 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,6 +22,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.classroomapp.classroombackend.dto.NotificationDto;
 import com.classroomapp.classroombackend.model.Announcement;
 import com.classroomapp.classroombackend.repository.AnnouncementRepository;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/announcements")
@@ -29,6 +35,86 @@ public class AnnouncementController {
     @Autowired
     public AnnouncementController(AnnouncementRepository announcementRepository) {
         this.announcementRepository = announcementRepository;
+    }    // Create a new announcement
+    @PostMapping
+    public ResponseEntity<Announcement> createAnnouncement(@Valid @RequestBody Announcement announcement) {
+        System.out.println("Tạo thông báo mới: " + announcement.getTitle());
+        try {
+            // Set default values if not provided
+            if (announcement.getStatus() == null) {
+                announcement.setStatus(Announcement.AnnouncementStatus.ACTIVE);
+            }
+            if (announcement.getIsPinned() == null) {
+                announcement.setIsPinned(false);
+            }
+            if (announcement.getPriority() == null) {
+                announcement.setPriority(Announcement.Priority.NORMAL);
+            }
+            if (announcement.getTargetAudience() == null) {
+                announcement.setTargetAudience(Announcement.TargetAudience.ALL);
+            }
+            
+            Announcement savedAnnouncement = announcementRepository.save(announcement);
+            return ResponseEntity.status(HttpStatus.CREATED).body(savedAnnouncement);
+        } catch (Exception e) {
+            System.err.println("Error creating announcement: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
+    // Update an existing announcement
+    @PutMapping("/{announcementId}")
+    public ResponseEntity<Announcement> updateAnnouncement(
+            @PathVariable Long announcementId, 
+            @Valid @RequestBody Announcement updatedAnnouncement) {
+        System.out.println("Cập nhật thông báo ID: " + announcementId);
+        
+        try {
+            Optional<Announcement> existingAnnouncementOpt = announcementRepository.findById(announcementId);
+            
+            if (existingAnnouncementOpt.isPresent()) {
+                Announcement existingAnnouncement = existingAnnouncementOpt.get();
+                  // Update fields
+                existingAnnouncement.setTitle(updatedAnnouncement.getTitle());
+                existingAnnouncement.setContent(updatedAnnouncement.getContent());
+                existingAnnouncement.setPriority(updatedAnnouncement.getPriority());
+                existingAnnouncement.setStatus(updatedAnnouncement.getStatus());
+                existingAnnouncement.setIsPinned(updatedAnnouncement.getIsPinned());
+                existingAnnouncement.setTargetAudience(updatedAnnouncement.getTargetAudience());
+                if (updatedAnnouncement.getScheduledDate() != null) {
+                    existingAnnouncement.setScheduledDate(updatedAnnouncement.getScheduledDate());
+                }
+                if (updatedAnnouncement.getExpiryDate() != null) {
+                    existingAnnouncement.setExpiryDate(updatedAnnouncement.getExpiryDate());
+                }
+                
+                Announcement savedAnnouncement = announcementRepository.save(existingAnnouncement);
+                return ResponseEntity.ok(savedAnnouncement);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            System.err.println("Error updating announcement: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
+    // Delete an announcement
+    @DeleteMapping("/{announcementId}")
+    public ResponseEntity<Void> deleteAnnouncement(@PathVariable Long announcementId) {
+        System.out.println("Xóa thông báo ID: " + announcementId);
+        
+        try {
+            if (announcementRepository.existsById(announcementId)) {
+                announcementRepository.deleteById(announcementId);
+                return ResponseEntity.ok().build();
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            System.err.println("Error deleting announcement: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     // Get announcements for specific user with filters

@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -47,8 +45,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping("/api/attendance")
 @Slf4j
 public class AttendanceController {
-
-    private static final Logger logger = LoggerFactory.getLogger(AttendanceController.class);
     
     private final AttendanceService attendanceService;
     private final AttendanceRepository attendanceRepository;
@@ -89,18 +85,18 @@ public class AttendanceController {
         
         // Mô phỏng thông tin người dùng (trong ứng dụng thực tế sẽ lấy từ context bảo mật)
         String demoUsername = "teacher_demo_user";
-        logger.info("Nhận được yêu cầu điểm danh cho người dùng (mô phỏng): {}", demoUsername);
+        log.info("Nhận được yêu cầu điểm danh cho người dùng (mô phỏng): {}", demoUsername);
         
         // Lấy địa chỉ IP client
         String clientIpAddress = ExtractClientIpAddress(request);
-        logger.info("Địa chỉ IP của client: {}", clientIpAddress);
+        log.info("Địa chỉ IP của client: {}", clientIpAddress);
         
         // Xác thực dữ liệu đầu vào
         if (locationData == null ||
             locationData.getLatitude() < -90 || locationData.getLatitude() > 90 ||
             locationData.getLongitude() < -180 || locationData.getLongitude() > 180 ||
             locationData.getAccuracy() <= 0) {
-            logger.warn("Dữ liệu vị trí không hợp lệ: {}", locationData);
+            log.warn("Dữ liệu vị trí không hợp lệ: {}", locationData);
             return ResponseEntity.badRequest().body(new ApiResponse(false, "Dữ liệu vị trí không hợp lệ."));
         }
         
@@ -116,7 +112,7 @@ public class AttendanceController {
             }
         } catch (Exception e) {
             // Xử lý ngoại lệ
-            logger.error("Lỗi máy chủ khi xử lý điểm danh: {}", e.getMessage(), e);
+            log.error("Lỗi máy chủ khi xử lý điểm danh: {}", e.getMessage(), e);
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse(false, "Đã xảy ra lỗi máy chủ nội bộ. Vui lòng thử lại sau."));
@@ -135,14 +131,14 @@ public class AttendanceController {
             @PathVariable Long sessionId,
             @RequestParam Long teacherId) {
         
-        logger.info("Nhận được yêu cầu lấy danh sách sinh viên để điểm danh cho phiên {}, từ giáo viên {}", 
+        log.info("Nhận được yêu cầu lấy danh sách sinh viên để điểm danh cho phiên {}, từ giáo viên {}", 
                 sessionId, teacherId);
         
         try {
             List<AttendanceDto> students = attendanceService.GetStudentsForAttendance(sessionId, teacherId);
             return ResponseEntity.ok(students);
         } catch (Exception e) {
-            logger.error("Lỗi khi lấy danh sách sinh viên để điểm danh: {}", e.getMessage(), e);
+            log.error("Lỗi khi lấy danh sách sinh viên để điểm danh: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -207,7 +203,7 @@ public class AttendanceController {
             @RequestBody LocationDataDto locationData,
             @RequestParam String simulatedIP) {
         
-        logger.info("Thử nghiệm điểm danh với IP giả lập: {}", simulatedIP);
+        log.info("Thử nghiệm điểm danh với IP giả lập: {}", simulatedIP);
         
         // Giả lập người dùng
         String testUsername = "test_user_ip_simulation";
@@ -227,7 +223,7 @@ public class AttendanceController {
     @PostMapping("/test-allowed-ip")
     public ResponseEntity<ApiResponse> TestWithAllowedIP(@RequestBody LocationDataDto locationData) {
         
-        logger.info("Thử nghiệm điểm danh với IP được cho phép");
+        log.info("Thử nghiệm điểm danh với IP được cho phép");
         
         // IP được cho phép để kiểm tra
         String allowedTestIp = "192.168.1.100";
@@ -248,7 +244,7 @@ public class AttendanceController {
     @PostMapping("/test-denied-ip")
     public ResponseEntity<ApiResponse> TestWithDeniedIP(@RequestBody LocationDataDto locationData) {
         
-        logger.info("Thử nghiệm điểm danh với IP không được cho phép");
+        log.info("Thử nghiệm điểm danh với IP không được cho phép");
         
         // IP không được cho phép để kiểm tra
         String deniedTestIp = "10.0.0.50";
@@ -272,7 +268,7 @@ public class AttendanceController {
             @RequestParam Long sessionId,
             @RequestParam Long teacherId) {
         
-        logger.info("Kiểm tra trạng thái điểm danh của giáo viên {} cho phiên {}", teacherId, sessionId);
+        log.info("Kiểm tra trạng thái điểm danh của giáo viên {} cho phiên {}", teacherId, sessionId);
         
         try {
             AttendanceSession session = sessionRepository.findById(sessionId)
@@ -298,7 +294,7 @@ public class AttendanceController {
             
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            logger.error("Lỗi khi kiểm tra trạng thái điểm danh của giáo viên: {}", e.getMessage(), e);
+            log.error("Lỗi khi kiểm tra trạng thái điểm danh của giáo viên: {}", e.getMessage(), e);
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("error", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);

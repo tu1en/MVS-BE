@@ -104,13 +104,6 @@ public class EmailServiceImpl implements EmailService {
         }
     }
     
-    // This method is kept for potential future use
-    private String generateConfirmationEmailBody(String fullName, String role) {
-        Context context = new Context();
-        context.setVariable("name", fullName);
-        context.setVariable("role", role);
-        return templateEngine.process("request-received", context);
-    }
 
     private String generateAccountInfoEmailBody(String fullName, String role, String username, String password) {
         StringBuilder bodyBuilder = new StringBuilder();
