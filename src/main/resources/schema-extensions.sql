@@ -250,7 +250,7 @@ CREATE TABLE student_quiz_answers (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     submission_id BIGINT NOT NULL,
     question_id BIGINT NOT NULL,
-    selected_options JSON, -- For multiple choice answers
+    selected_options NVARCHAR(MAX), -- For multiple choice answers
     text_answer TEXT, -- For text-based answers
     points_earned DECIMAL(10,2) DEFAULT 0.00,
     is_correct BOOLEAN,

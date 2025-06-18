@@ -38,7 +38,7 @@ public class StudentQuizAnswer {
     @Column(name = "question_id", nullable = false)
     private Long questionId;
 
-    @Column(name = "selected_options", columnDefinition = "JSON")
+    @Column(name = "selected_options", columnDefinition = "NVARCHAR(MAX)")
     private String selectedOptions; // JSON array for multiple choice
 
     @Column(name = "text_answer", columnDefinition = "TEXT")
