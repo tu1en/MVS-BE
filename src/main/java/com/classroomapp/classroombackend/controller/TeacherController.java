@@ -6,18 +6,25 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.classroomapp.classroombackend.dto.ScheduleDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.ClassroomService;
+import com.classroomapp.classroombackend.service.ScheduleService;
+import com.classroomapp.classroombackend.service.impl.ScheduleServiceImpl;
 
 /**
  * Teacher-specific controller for teacher dashboard, schedule, and courses
@@ -32,70 +39,97 @@ public class TeacherController {
     
     @Autowired
     private UserRepository userRepository;
+    
+    @Autowired
+    private ScheduleService scheduleService;
+    
+    @Autowired
+    private ScheduleServiceImpl scheduleServiceImpl; // Using implementation for sample data generation
 
     /**
      * Get teacher's schedule
      * Frontend calls: /teacher/schedule
      */
     @GetMapping("/schedule")
-    public ResponseEntity<List<Map<String, Object>>> getTeacherSchedule(Authentication authentication) {
+    public ResponseEntity<?> getTeacherSchedule(Authentication authentication) {
         try {
             String username = authentication.getName();
             User currentUser = userRepository.findByUsername(username)
                     .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
             
-            // Mock schedule data for teacher
-            List<Map<String, Object>> schedule = new ArrayList<>();
+            System.out.println("Teacher schedule requested by: " + username + ", id: " + currentUser.getId());
             
-            // Thứ 2
-            Map<String, Object> schedule1 = new HashMap<>();
-            schedule1.put("id", 1);
-            schedule1.put("day", 1); // Monday
-            schedule1.put("className", "Lớp Java Advanced");
-            schedule1.put("subject", "Lập trình Java");
-            schedule1.put("start", "08:00");
-            schedule1.put("end", "10:00");
-            schedule1.put("teacherName", currentUser.getFullName());
-            schedule1.put("room", "P.101");
-            schedule1.put("studentCount", 25);
-            schedule1.put("materialsUrl", "#");
-            schedule1.put("meetUrl", null);
-            schedule.add(schedule1);
+            // Get schedules from database
+            List<ScheduleDto> schedules = scheduleService.getSchedulesByTeacher(currentUser.getId());
             
-            // Thứ 3
-            Map<String, Object> schedule2 = new HashMap<>();
-            schedule2.put("id", 2);
-            schedule2.put("day", 2); // Tuesday
-            schedule2.put("className", "Lớp Database Design");
-            schedule2.put("subject", "Thiết kế CSDL");
-            schedule2.put("start", "14:00");
-            schedule2.put("end", "16:00");
-            schedule2.put("teacherName", currentUser.getFullName());
-            schedule2.put("room", "P.205");
-            schedule2.put("studentCount", 30);
-            schedule2.put("materialsUrl", null);
-            schedule2.put("meetUrl", "#");
-            schedule.add(schedule2);
+            // If no schedules found, add sample data
+            if (schedules.isEmpty()) {
+                System.out.println("No schedules found, adding sample data");
+                schedules = scheduleServiceImpl.addSampleDataForTeacher(currentUser.getId());
+            }
             
-            // Thứ 4
-            Map<String, Object> schedule3 = new HashMap<>();
-            schedule3.put("id", 3);
-            schedule3.put("day", 3); // Wednesday
-            schedule3.put("className", "Lớp Web Development");
-            schedule3.put("subject", "Phát triển Web");
-            schedule3.put("start", "10:00");
-            schedule3.put("end", "12:00");
-            schedule3.put("teacherName", currentUser.getFullName());
-            schedule3.put("room", "Lab.A1");
-            schedule3.put("studentCount", 20);
-            schedule3.put("materialsUrl", "#");
-            schedule3.put("meetUrl", "#");
-            schedule.add(schedule3);
-            
-            return ResponseEntity.ok(schedule);
+            System.out.println("Returning " + schedules.size() + " schedules");
+            return ResponseEntity.ok(schedules);
             
         } catch (Exception e) {
-            return ResponseEntity.status(500).build();
+            System.err.println("Error in getTeacherSchedule: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Get teacher's schedule by day
+     * Frontend calls: /teacher/schedule/day/{dayOfWeek}
+     */
+    @GetMapping("/schedule/day/{dayOfWeek}")
+    public ResponseEntity<?> getTeacherScheduleByDay(
+            Authentication authentication,
+            @PathVariable Integer dayOfWeek) {
+        try {
+            String username = authentication.getName();
+            User currentUser = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+            
+            // Validate day of week
+            if (dayOfWeek < 0 || dayOfWeek > 6) {
+                return ResponseEntity.badRequest().body("Day of week must be between 0 and 6");
+            }
+            
+            // Get schedules for teacher and day
+            List<ScheduleDto> schedules = scheduleService.getSchedulesByTeacherAndDay(
+                    currentUser.getId(), dayOfWeek);
+            
+            return ResponseEntity.ok(schedules);
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Create a new schedule entry
+     * Frontend calls: POST /teacher/schedule
+     */
+    @PostMapping("/schedule")
+    public ResponseEntity<?> createSchedule(
+            Authentication authentication,
+            @RequestBody ScheduleDto scheduleDto) {
+        try {
+            String username = authentication.getName();
+            User currentUser = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+            
+            // Ensure the teacher ID is set to the current user
+            scheduleDto.setTeacherId(currentUser.getId());
+            
+            // Create schedule
+            ScheduleDto createdSchedule = scheduleService.createScheduleEntry(scheduleDto);
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdSchedule);
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
         }
     }
 

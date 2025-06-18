@@ -20,8 +20,15 @@ public interface ClassroomRepository extends JpaRepository<Classroom, Long> {
     
     // Find classrooms by name containing search term (case-insensitive)
     List<Classroom> findByNameContainingIgnoreCase(String name);
-    
-    // Find classrooms by student ID using the students relationship
+      // Find classrooms by student ID using the students relationship
     @Query("SELECT c FROM Classroom c JOIN c.students s WHERE s.id = :studentId")
     List<Classroom> findClassroomsByStudentId(@Param("studentId") Long studentId);
+    
+    // Optimized query to fetch classrooms with students in one query to avoid N+1 problem
+    @Query("SELECT DISTINCT c FROM Classroom c LEFT JOIN FETCH c.students WHERE c.teacher = :teacher")
+    List<Classroom> findByTeacherWithStudents(@Param("teacher") User teacher);
+    
+    // Alternative query using teacher ID directly
+    @Query("SELECT DISTINCT c FROM Classroom c LEFT JOIN FETCH c.students WHERE c.teacher.id = :teacherId")
+    List<Classroom> findByTeacherIdWithStudents(@Param("teacherId") Long teacherId);
 }

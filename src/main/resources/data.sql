@@ -1,14 +1,3 @@
--- Enhanced test data for SEP490 Classroom Management System
--- Clean up tables for H2 referential integrity
-DELETE FROM submissions;
-DELETE FROM assignments;
-DELETE FROM attendances;
-DELETE FROM attendance_sessions;
-DELETE FROM classroom_enrollments;
-DELETE FROM classrooms;
-DELETE FROM users;
-DELETE FROM allowed_ips;
-
 -- Add comprehensive sample users (password: 123456 - encrypted with BCrypt)
 -- Admin users
 INSERT INTO users (username, password, full_name, email, role_id, department, status) VALUES
@@ -86,3 +75,11 @@ INSERT INTO allowed_ips (ip_address, description) VALUES
 ('10.0.0.0/8', 'VPN Network'),
 ('172.16.0.0/16', 'Lab Network'),
 ('203.162.4.0/24', 'University Public IP Range');
+
+-- Add sample announcements
+INSERT INTO announcements (title, content, created_by, classroom_id, target_audience, priority, status, is_pinned, created_at, updated_at) VALUES
+('Thông báo về lịch học môn Java Spring Boot', 'Lịch học môn Java Spring Boot tuần tới sẽ thay đổi do giáo viên có công tác. Các bạn vui lòng theo dõi thông báo tiếp theo.', 2, 1, 'STUDENTS', 'HIGH', 'ACTIVE', false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Bài tập lớn môn React', 'Các bạn sinh viên cần hoàn thành bài tập lớn về React trước ngày 15/12. Nộp bài qua email của giáo viên.', 3, 2, 'STUDENTS', 'NORMAL', 'ACTIVE', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Thông báo nghỉ học', 'Do thời tiết xấu, các lớp học hôm nay sẽ tạm nghỉ. Thời gian học bù sẽ được thông báo sau.', 2, NULL, 'ALL', 'URGENT', 'ACTIVE', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Cuộc thi lập trình', 'Khoa CNTT tổ chức cuộc thi lập trình dành cho sinh viên. Thời gian đăng ký từ ngày 1/12 đến 10/12.', 4, NULL, 'STUDENTS', 'NORMAL', 'ACTIVE', false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Họp phụ huynh', 'Thông báo tới phụ huynh sinh viên về buổi họp định kỳ vào cuối tháng 12.', 2, 1, 'ALL', 'NORMAL', 'ACTIVE', false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);

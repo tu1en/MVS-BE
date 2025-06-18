@@ -1,9 +1,11 @@
 package com.classroomapp.classroombackend.service.impl;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,7 +13,6 @@ import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.CourseDetailsDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.CreateClassroomDto;
-import com.classroomapp.classroombackend.dto.classroommanagement.ScheduleDto;
 import com.classroomapp.classroombackend.dto.usermanagement.UserDto;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
 import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
@@ -104,14 +105,11 @@ public class ClassroomServiceImpl implements ClassroomService {
         Classroom classroom = FindClassroomById(id);
         classroomRepository.delete(classroom);
         log.info("Deleted classroom with ID: {}", id);
-    }
-
-    @Override
+    }    @Override
+    @Cacheable(value = "classroomsByTeacher", key = "#teacherId")
     public List<ClassroomDto> GetClassroomsByTeacher(Long teacherId) {
-        User teacher = userRepository.findById(teacherId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", teacherId));
-        
-        List<Classroom> classrooms = classroomRepository.findByTeacher(teacher);
+        // Use optimized query to fetch classrooms with students in one query
+        List<Classroom> classrooms = classroomRepository.findByTeacherIdWithStudents(teacherId);
         log.info("Found {} classrooms for teacher ID: {}", classrooms.size(), teacherId);
         return classrooms.stream()
                 .map(modelMapper::MapToClassroomDto)
@@ -206,11 +204,49 @@ public class ClassroomServiceImpl implements ClassroomService {
             courseDetails.setSyllabus(modelMapper.MapToSyllabusDto(classroom.getSyllabus()));
         }
         
-        // Map schedules
-        List<ScheduleDto> schedules = classroom.getSchedules().stream()
-                .map(modelMapper::MapToScheduleDto)
-                .collect(Collectors.toList());
-        courseDetails.setSchedules(schedules);
+        // Map schedules - Convert to compatible ScheduleDto
+        List<com.classroomapp.classroombackend.dto.classroommanagement.ScheduleDto> scheduleDtos = new ArrayList<>();
+        if (classroom.getSchedules() != null && !classroom.getSchedules().isEmpty()) {
+            // Classroom.getSchedules() returns List<com.classroomapp.classroombackend.model.Schedule>
+            // But CourseDetailsDto expects List<com.classroomapp.classroombackend.dto.classroommanagement.ScheduleDto>
+            // Need to convert manually since model types are incompatible
+            classroom.getSchedules().forEach(schedule -> {
+                // Create compatible ScheduleDto manually
+                com.classroomapp.classroombackend.dto.classroommanagement.ScheduleDto dto = 
+                    new com.classroomapp.classroombackend.dto.classroommanagement.ScheduleDto();
+                
+                dto.setId(schedule.getId());
+                
+                // Convert Integer dayOfWeek to DayOfWeek enum
+                // 0=Monday, 1=Tuesday, 2=Wednesday, 3=Thursday, 4=Friday, 5=Saturday, 6=Sunday
+                Integer day = schedule.getDayOfWeek();
+                if (day != null) {
+                    switch (day) {
+                        case 0: dto.setDayOfWeek(java.time.DayOfWeek.MONDAY); break;
+                        case 1: dto.setDayOfWeek(java.time.DayOfWeek.TUESDAY); break;
+                        case 2: dto.setDayOfWeek(java.time.DayOfWeek.WEDNESDAY); break;
+                        case 3: dto.setDayOfWeek(java.time.DayOfWeek.THURSDAY); break;
+                        case 4: dto.setDayOfWeek(java.time.DayOfWeek.FRIDAY); break;
+                        case 5: dto.setDayOfWeek(java.time.DayOfWeek.SATURDAY); break;
+                        case 6: dto.setDayOfWeek(java.time.DayOfWeek.SUNDAY); break;
+                        default: dto.setDayOfWeek(java.time.DayOfWeek.MONDAY);
+                    }
+                }
+                
+                dto.setStartTime(schedule.getStartTime());
+                dto.setEndTime(schedule.getEndTime());
+                dto.setLocation(schedule.getRoom()); // Map room to location
+                dto.setNotes(schedule.getSubject()); // Map subject as notes
+                dto.setRecurring(true); // Default to true
+                
+                if (schedule.getClassroom() != null) {
+                    dto.setClassroomId(schedule.getClassroom().getId());
+                }
+                
+                scheduleDtos.add(dto);
+            });
+        }
+        courseDetails.setSchedules(scheduleDtos);
         
         // Get assignments for this classroom
         List<Assignment> assignments = assignmentRepository.findByClassroom(classroom);

@@ -51,27 +51,24 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public void sendRequestStatusNotification(String to, String fullName, String requestedRole, String status, String reason) {
         String subject;
-        String body;
-        
+        String body;        
         if ("APPROVED".equals(status)) {
             subject = "Yêu cầu " + requestedRole + " của bạn đã được chấp thuận";
             Context context = new Context();
             context.setVariable("name", fullName);
             context.setVariable("role", requestedRole);
-            body = templateEngine.process("request-approved", context);
+            body = templateEngine.process("email/request-approved", context);
         } else {
             subject = "Yêu cầu " + requestedRole + " của bạn đã bị từ chối";
             Context context = new Context();
             context.setVariable("name", fullName);
             context.setVariable("role", requestedRole);
             context.setVariable("reason", reason);
-            body = templateEngine.process("request-rejected", context);
+            body = templateEngine.process("email/request-rejected", context);
         }
         
         sendEmail(to, subject, body);
-    }
-
-    @Override
+    }    @Override
     public void sendAccountInfoEmail(String to, String fullName, String role, String username, String password) {
         String subject = "Thông tin tài khoản MVS Classroom của bạn";
         String body = generateAccountInfoEmailBody(fullName, role, username, password);
@@ -84,23 +81,22 @@ public class EmailServiceImpl implements EmailService {
         Context context = new Context();
         context.setVariable("name", fullName);
         context.setVariable("role", requestedRole);
-        String body = templateEngine.process("request-received", context);
+        String body = templateEngine.process("email/request-received", context);
         sendEmail(to, subject, body);
     }
-    
-    // This method is kept for potential future use
+      // This method is kept for potential future use
     private String generateStatusEmailBody(String fullName, String role, String status, String reason) {
         if ("APPROVED".equals(status)) {
             Context context = new Context();
             context.setVariable("name", fullName);
             context.setVariable("role", role);
-            return templateEngine.process("request-approved", context);
+            return templateEngine.process("email/request-approved", context);
         } else {
             Context context = new Context();
             context.setVariable("name", fullName);
             context.setVariable("role", role);
             context.setVariable("reason", reason);
-            return templateEngine.process("request-rejected", context);
+            return templateEngine.process("email/request-rejected", context);
         }
     }
     

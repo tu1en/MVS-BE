@@ -19,11 +19,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "schedules")
+@Table(name = "classroom_schedules")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Schedule {
+public class ClassroomSchedule {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

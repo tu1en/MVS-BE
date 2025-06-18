@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.classroomapp.classroombackend.dto.RequestDTO;
 import com.classroomapp.classroombackend.dto.RequestResponseDTO;
+import com.classroomapp.classroombackend.exception.BusinessLogicException;
 import com.classroomapp.classroombackend.model.Request;
 import com.classroomapp.classroombackend.repository.requestmanagement.RequestRepository;
 import com.classroomapp.classroombackend.service.EmailService;
@@ -27,14 +28,12 @@ public class RequestServiceImpl implements RequestService {
     private final EmailService emailService;
     private final UserServiceExtension userService;
     
-    private static final DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
-
-    @Override
-    @Transactional
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;    @Override
+    @Transactional(noRollbackFor = BusinessLogicException.class)
     public RequestResponseDTO createRequest(RequestDTO requestDTO) {
         // Check if there's already an active request
         if (hasActiveRequest(requestDTO.getEmail(), requestDTO.getRequestedRole())) {
-            throw new RuntimeException("Already has an active request for this role");
+            throw new BusinessLogicException("Already has an active request for this role");
         }
 
         Request request = new Request();
