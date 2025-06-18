@@ -7,14 +7,13 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Component;
 
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 
-@Component
+// @Component
 public class SampleDataInitializer implements CommandLineRunner {
 
     @Autowired
@@ -124,7 +123,10 @@ public class SampleDataInitializer implements CommandLineRunner {
     }
     
     private void createBasicClassrooms(List<User> teachers) {
-        if (teachers.isEmpty()) return;
+        if (teachers.isEmpty()) {
+            System.out.println("⚠️  No teachers available to create classrooms");
+            return;
+        }
         
         // Classroom 1: Math
         Classroom mathClass = new Classroom();

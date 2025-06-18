@@ -20,13 +20,19 @@ import javax.annotation.PostConstruct;
 public class FirebaseConfig {
     
     private static final Logger logger = LoggerFactory.getLogger(FirebaseConfig.class);
-    
-    @Value("${firebase.bucket-name}")
+      @Value("${firebase.bucket-name:}")
     private String storageBucket;
-      @PostConstruct
+    
+    @PostConstruct
     public void init() {
         try {
-            logger.info("Initializing Firebase with bucket: {}", storageBucket);
+            logger.info("Attempting to initialize Firebase with bucket: {}", storageBucket);
+            
+            // Skip Firebase initialization if bucket name is not configured
+            if (storageBucket == null || storageBucket.trim().isEmpty()) {
+                logger.info("Firebase bucket name not configured. Skipping Firebase initialization.");
+                return;
+            }
             
             // Check if Firebase is already initialized
             if (FirebaseApp.getApps().isEmpty()) {

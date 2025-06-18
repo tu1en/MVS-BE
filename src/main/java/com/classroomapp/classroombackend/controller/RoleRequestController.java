@@ -114,37 +114,46 @@ public class RoleRequestController {
             // Chuyển đổi form data thành JSON để lưu trữ
             String formDataJson = objectMapper.writeValueAsString(teacherForm);
             requestDTO.setFormResponses(formDataJson);
-            
-            RequestResponseDTO response = requestService.createRequest(requestDTO);
+              RequestResponseDTO response = requestService.createRequest(requestDTO);
             logger.info("Teacher registration successful for: {}", teacherForm.getEmail());
             return ResponseEntity.ok(response);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            logger.error("JSON processing error for teacher request: {}", e.getMessage());
+            throw new RuntimeException("Lỗi xử lý dữ liệu form", e);
         } catch (Exception e) {
-            logger.error("Error processing teacher request", e);
-            throw new RuntimeException("Lỗi khi xử lý yêu cầu đăng ký giáo viên", e);
+            logger.error("Error processing teacher request for {}: {}", teacherForm.getEmail(), e.getMessage(), e);
+            // Let the global exception handler deal with this
+            throw e;
         }
-    }
-
-    /**
+    }    /**
      * Xử lý đăng ký yêu cầu làm học sinh
      */
     @PostMapping("/student")
     public ResponseEntity<RequestResponseDTO> submitStudentRequest(
             @Valid @RequestBody StudentRequestFormDTO studentForm) {
         
+        logger.info("Received student registration request: {}", studentForm.getEmail());
+        
         RequestDTO requestDTO = new RequestDTO();
         requestDTO.setEmail(studentForm.getEmail());
         requestDTO.setFullName(studentForm.getFullName());
         requestDTO.setPhoneNumber(studentForm.getPhoneNumber());
         requestDTO.setRequestedRole("STUDENT");
-        
-        try {
+          try {
             // Chuyển đổi form data thành JSON để lưu trữ
             String formDataJson = objectMapper.writeValueAsString(studentForm);
             requestDTO.setFormResponses(formDataJson);
             
-            return ResponseEntity.ok(requestService.createRequest(requestDTO));
+            RequestResponseDTO response = requestService.createRequest(requestDTO);
+            logger.info("Student registration successful for: {}", studentForm.getEmail());
+            return ResponseEntity.ok(response);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            logger.error("JSON processing error for student request: {}", e.getMessage());
+            throw new RuntimeException("Lỗi xử lý dữ liệu form", e);
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi xử lý yêu cầu đăng ký học sinh", e);
+            logger.error("Error processing student request for {}: {}", studentForm.getEmail(), e.getMessage(), e);
+            // Let the global exception handler deal with this
+            throw e;
         }
     }
     

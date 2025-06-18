@@ -100,6 +100,12 @@ public class SecurityConfig {
                 .requestMatchers("/api/blogs/{id:[\\d]+}/publish").authenticated()
                 .requestMatchers("/api/blogs/{id:[\\d]+}/unpublish").authenticated()
                 
+                // User and Assignment endpoints for testing/debugging
+                .requestMatchers("/api/v1/users/**").permitAll()
+                .requestMatchers("/api/v1/assignments/**").permitAll()
+                .requestMatchers("/api/assignments/**").permitAll()
+                .requestMatchers("/api/users/**").permitAll()
+                
                 // Protected endpoints
                 .requestMatchers("/api/admin/requests/**").hasAnyRole("ADMIN", "MANAGER")
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
@@ -123,6 +129,11 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         
         // Cho phép origin từ frontend React và các nguồn khác
+        configuration.setAllowedOriginPatterns(Arrays.asList(
+            "http://localhost:*", 
+            "https://localhost:*"
+        ));
+        
         configuration.setAllowedOrigins(Arrays.asList(
             "http://localhost:3000", 
             "http://localhost:3001", 
@@ -132,15 +143,18 @@ public class SecurityConfig {
         ));
         
         // Cho phép các phương thức HTTP
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"));
         
         // Cho phép các header HTTP
-        configuration.setAllowedHeaders(Arrays.asList(
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        
+        // Expose headers
+        configuration.setExposedHeaders(Arrays.asList(
             "Authorization", 
             "Cache-Control", 
             "Content-Type", 
-            "Accept", 
-            "X-Requested-With"
+            "Access-Control-Allow-Origin",
+            "Access-Control-Allow-Credentials"
         ));
         
         // Cho phép gửi thông tin xác thực
@@ -152,7 +166,7 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         // Áp dụng cấu hình cho tất cả các đường dẫn
         source.registerCorsConfiguration("/**", configuration);
-        log.info("CORS configuration registered");
+        log.info("CORS configuration registered with enhanced settings");
         return source;
     }
 }

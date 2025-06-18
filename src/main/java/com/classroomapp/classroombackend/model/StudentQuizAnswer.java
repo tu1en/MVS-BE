@@ -36,12 +36,10 @@ public class StudentQuizAnswer {
 
     @NotNull
     @Column(name = "question_id", nullable = false)
-    private Long questionId;
-
-    @Column(name = "selected_options", columnDefinition = "JSON")
+    private Long questionId;    @Column(name = "selected_options", columnDefinition = "NVARCHAR(MAX)")
     private String selectedOptions; // JSON array for multiple choice
 
-    @Column(name = "text_answer", columnDefinition = "TEXT")
+    @Column(name = "text_answer", columnDefinition = "NVARCHAR(MAX)")
     private String textAnswer;
 
     @Column(name = "points_earned", precision = 10, scale = 2)

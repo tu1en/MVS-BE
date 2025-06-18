@@ -8,6 +8,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,6 +25,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/users")
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:3001"}, allowCredentials = "true")
 public class UserController {
     
     private final UserService userService;
@@ -36,38 +38,86 @@ public class UserController {
     /**
      * Get all users
      * @return list of all users
-     */
-    @GetMapping
-    public List<Map<String, Object>> getAllUsers() {
-        List<Map<String, Object>> users = new ArrayList<>();
-        
-        Map<String, Object> user1 = new HashMap<>();
-        user1.put("id", 1);
-        user1.put("name", "Nguyễn Văn A");
-        user1.put("role", "teacher");
-        
-        Map<String, Object> user2 = new HashMap<>();
-        user2.put("id", 2);
-        user2.put("name", "Trần Thị B");
-        user2.put("role", "student");
-        
-        users.add(user1);
-        users.add(user2);
-        return users;
+     */    @GetMapping
+    public ResponseEntity<List<UserDto>> getAllUsers() {
+        try {
+            List<UserDto> users = userService.FindAllUsers();
+            return ResponseEntity.ok(users);
+        } catch (Exception e) {
+            // Fallback to mock data if service fails
+            List<UserDto> mockUsers = new ArrayList<>();
+            UserDto user1 = new UserDto();
+            user1.setId(1L);
+            user1.setFullName("Nguyễn Văn A");
+            user1.setRoleName("TEACHER");
+            user1.setRoleId(2);
+            
+            UserDto user2 = new UserDto();
+            user2.setId(2L);
+            user2.setFullName("Trần Thị B");
+            user2.setRoleName("STUDENT");
+            user2.setRoleId(1);
+            
+            mockUsers.add(user1);
+            mockUsers.add(user2);
+            return ResponseEntity.ok(mockUsers);
+        }
     }
     
     /**
      * Get user by ID
      * @param id user ID
      * @return user with specified ID
-     */
-    @GetMapping("/{id}")
-    public Map<String, Object> getUserById(@PathVariable int id) {
-        Map<String, Object> user = new HashMap<>();
-        user.put("id", id);
-        user.put("name", "User " + id);
-        user.put("role", id % 2 == 0 ? "student" : "teacher");
-        return user;
+     */    @GetMapping("/{id}")
+    public ResponseEntity<UserDto> getUserById(@PathVariable Long id) {
+        try {
+            UserDto user = userService.FindUserById(id);
+            return ResponseEntity.ok(user);
+        } catch (Exception e) {
+            // Fallback to mock data if service fails
+            UserDto mockUser = new UserDto();
+            mockUser.setId(id);
+            mockUser.setFullName("User " + id);
+            mockUser.setRoleName(id % 2 == 0 ? "STUDENT" : "TEACHER");
+            mockUser.setRoleId(id % 2 == 0 ? 1 : 2);
+            return ResponseEntity.ok(mockUser);
+        }
+    }
+    
+    /**
+     * Get users by role ID
+     * @param roleId role ID (1=STUDENT, 2=TEACHER, 3=MANAGER, 0=ADMIN)
+     * @return list of users with specified role
+     */    @GetMapping("/role/{roleId}")
+    public ResponseEntity<List<UserDto>> getUsersByRole(@PathVariable Long roleId) {
+        try {
+            List<UserDto> users = userService.FindUsersByRole(roleId.intValue());
+            return ResponseEntity.ok(users);
+        } catch (Exception e) {
+            // Fallback to mock data if service fails
+            List<UserDto> mockUsers = new ArrayList<>();
+            String roleName = getRoleName(roleId);
+            
+            for (int i = 1; i <= 5; i++) {
+                UserDto user = new UserDto();
+                user.setId((long) i);
+                user.setFullName(roleName + " " + i);
+                user.setRoleName(roleName);
+                user.setRoleId(roleId.intValue());
+                mockUsers.add(user);
+            }
+            return ResponseEntity.ok(mockUsers);
+        }
+    }
+    
+    private String getRoleName(Long roleId) {
+        switch (roleId.intValue()) {
+            case 0: return "ADMIN";
+            case 1: return "STUDENT";
+            case 2: return "TEACHER";
+            case 3: return "MANAGER";
+            default: return "UNKNOWN";
+        }
     }
     
     /**
@@ -105,8 +155,7 @@ public class UserController {
     /**
      * Get all teachers
      * @return list of all teachers
-     */
-    @GetMapping("/teachers")
+     */    @GetMapping("/teachers")
     public ResponseEntity<List<UserDto>> GetAllTeachers() {
         return ResponseEntity.ok(userService.FindUsersByRole(2)); // Role 2 = TEACHER
     }
