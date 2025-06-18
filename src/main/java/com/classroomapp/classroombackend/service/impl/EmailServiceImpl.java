@@ -58,14 +58,14 @@ public class EmailServiceImpl implements EmailService {
             Context context = new Context();
             context.setVariable("name", fullName);
             context.setVariable("role", requestedRole);
-            body = templateEngine.process("request-approved", context);
+            body = templateEngine.process("email/request-approved", context);
         } else {
             subject = "Yêu cầu " + requestedRole + " của bạn đã bị từ chối";
             Context context = new Context();
             context.setVariable("name", fullName);
             context.setVariable("role", requestedRole);
             context.setVariable("reason", reason);
-            body = templateEngine.process("request-rejected", context);
+            body = templateEngine.process("email/request-rejected", context);
         }
         
         sendEmail(to, subject, body);
@@ -84,7 +84,7 @@ public class EmailServiceImpl implements EmailService {
         Context context = new Context();
         context.setVariable("name", fullName);
         context.setVariable("role", requestedRole);
-        String body = templateEngine.process("request-received", context);
+        String body = templateEngine.process("email/request-received", context);
         sendEmail(to, subject, body);
     }
     
@@ -94,13 +94,13 @@ public class EmailServiceImpl implements EmailService {
             Context context = new Context();
             context.setVariable("name", fullName);
             context.setVariable("role", role);
-            return templateEngine.process("request-approved", context);
+            return templateEngine.process("email/request-approved", context);
         } else {
             Context context = new Context();
             context.setVariable("name", fullName);
             context.setVariable("role", role);
             context.setVariable("reason", reason);
-            return templateEngine.process("request-rejected", context);
+            return templateEngine.process("email/request-rejected", context);
         }
     }
     

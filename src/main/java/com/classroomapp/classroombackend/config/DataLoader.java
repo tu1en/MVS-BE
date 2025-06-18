@@ -47,27 +47,45 @@ public class DataLoader implements CommandLineRunner {
     ) {
         this.userRepository = userRepository;
         this.blogRepository = blogRepository;
-        this.requestRepository = requestRepository;        this.accomplishmentRepository = accomplishmentRepository;
+        this.requestRepository = requestRepository;
+        this.accomplishmentRepository = accomplishmentRepository;
         this.passwordEncoder = passwordEncoder;
         this.objectMapper = objectMapper;
     }
     
     @Override
     public void run(String... args) throws Exception {
-        // Only run if no users exist to avoid conflicts with other data loaders
-        if (userRepository.count() == 0) {
-            // Create sample users
-            List<User> users = CreateUsers();
-            
-            // Create sample blogs
-            CreateSampleBlogs(users);
-            
-            // Create sample accomplishments
-            CreateAccomplishments();
-            
-            // Create sample requests
-            CreateRequests();
-        }
+        // Always clear existing data and reload fresh data
+        clearAllData();
+        
+        // Create sample users
+        List<User> users = CreateUsers();
+        
+        // Create sample blogs
+        CreateSampleBlogs(users);
+        
+        // Create sample accomplishments
+        CreateAccomplishments();
+        
+        // Create sample requests
+        CreateRequests();
+        
+        System.out.println("✅ DataLoader: All data has been reset and reloaded successfully!");
+    }
+    
+    /**
+     * Clear all existing data from database
+     */
+    private void clearAllData() {
+        System.out.println("🗑️ DataLoader: Clearing all existing data...");
+        
+        // Clear data in reverse order of dependencies to avoid foreign key constraints
+        accomplishmentRepository.deleteAll();
+        requestRepository.deleteAll();
+        blogRepository.deleteAll();
+        userRepository.deleteAll();
+        
+        System.out.println("✅ DataLoader: All existing data cleared successfully!");
     }
     
     /**
@@ -95,7 +113,8 @@ public class DataLoader implements CommandLineRunner {
         // Create teacher user
         User teacher = new User();
         teacher.setUsername("teacher");
-        teacher.setPassword(passwordEncoder.encode("teacher123"));        teacher.setEmail("teacher@classroomapp.com");
+        teacher.setPassword(passwordEncoder.encode("teacher123"));  
+        teacher.setEmail("teacher@classroomapp.com");
         teacher.setFullName("Teacher User");
         teacher.setRoleId(RoleConstants.TEACHER);
         userRepository.save(teacher);
