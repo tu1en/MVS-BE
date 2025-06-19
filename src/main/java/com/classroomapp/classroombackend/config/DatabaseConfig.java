@@ -1,8 +1,5 @@
 package com.classroomapp.classroombackend.config;
 
-import javax.sql.DataSource;
-
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -35,8 +32,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 })
 public class DatabaseConfig {
 
-    @Autowired
-    private DataSource dataSource;
-    
-    // We rely on the EntityScanVerifier component to check entities
+    // Configuration is handled by application.properties
+    // No hardcoded DataSource bean needed
 }
