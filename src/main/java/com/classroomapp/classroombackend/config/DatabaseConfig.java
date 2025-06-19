@@ -6,6 +6,7 @@ import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import com.zaxxer.hikari.HikariDataSource;
 
 @Configuration
 public class DatabaseConfig {
@@ -13,11 +14,15 @@ public class DatabaseConfig {
     @Bean
     @Primary
     public DataSource dataSource() {
-        return DataSourceBuilder.create()
-              .driverClassName("com.microsoft.sqlserver.jdbc.SQLServerDriver")
-              .url("jdbc:sqlserver://localhost:1433;databaseName=SchoolManagementDB;encrypt=true;trustServerCertificate=true;characterEncoding=UTF-8;useUnicode=true;")
-                .username("sa")
-                .password("Hoangduc02@")
-                .build();
+        HikariDataSource dataSource = new HikariDataSource();
+        dataSource.setDriverClassName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+        dataSource.setJdbcUrl("jdbc:sqlserver://localhost:1433;databaseName=SchoolManagementDB;encrypt=true;trustServerCertificate=true;characterEncoding=UTF-8;useUnicode=true;sendTimeAsDateTime=false;");
+        dataSource.setUsername("sa");
+        dataSource.setPassword("Hoangduc02@");
+        dataSource.setAutoCommit(false);
+        dataSource.setTransactionIsolation("TRANSACTION_READ_COMMITTED");
+        dataSource.setMaximumPoolSize(10);
+        dataSource.setMinimumIdle(5);
+        return dataSource;
     }
 }
