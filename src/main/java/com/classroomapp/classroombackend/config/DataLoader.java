@@ -1,7 +1,9 @@
 package com.classroomapp.classroombackend.config;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -14,12 +16,32 @@ import com.classroomapp.classroombackend.constants.RoleConstants;
 import com.classroomapp.classroombackend.dto.StudentRequestFormDTO;
 import com.classroomapp.classroombackend.dto.TeacherRequestFormDTO;
 import com.classroomapp.classroombackend.model.Accomplishment;
+import com.classroomapp.classroombackend.model.Announcement;
+import com.classroomapp.classroombackend.model.AnnouncementAttachment;
 import com.classroomapp.classroombackend.model.Blog;
 import com.classroomapp.classroombackend.model.Request;
+import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
+import com.classroomapp.classroombackend.model.assignmentmanagement.Submission;
+import com.classroomapp.classroombackend.model.attendancemanagement.Attendance;
+import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSession;
+import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
+import com.classroomapp.classroombackend.model.classroommanagement.ClassroomEnrollment;
+import com.classroomapp.classroombackend.model.classroommanagement.ClassroomEnrollmentId;
+import com.classroomapp.classroombackend.model.classroommanagement.Schedule;
+import com.classroomapp.classroombackend.model.classroommanagement.Syllabus;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.AccomplishmentRepository;
+import com.classroomapp.classroombackend.repository.AnnouncementAttachmentRepository;
+import com.classroomapp.classroombackend.repository.AnnouncementRepository;
 import com.classroomapp.classroombackend.repository.BlogRepository;
 import com.classroomapp.classroombackend.repository.requestmanagement.RequestRepository;
+import com.classroomapp.classroombackend.repository.assignmentmanagement.AssignmentRepository;
+import com.classroomapp.classroombackend.repository.assignmentmanagement.SubmissionRepository;
+import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceRepository;
+import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceSessionRepository;
+import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
+import com.classroomapp.classroombackend.repository.classroommanagement.ScheduleRepository;
+import com.classroomapp.classroombackend.repository.classroommanagement.SyllabusRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -33,6 +55,15 @@ public class DataLoader implements CommandLineRunner {
     private final BlogRepository blogRepository;
     private final RequestRepository requestRepository;
     private final AccomplishmentRepository accomplishmentRepository;
+    private final ClassroomRepository classroomRepository;
+    private final AssignmentRepository assignmentRepository;
+    private final SubmissionRepository submissionRepository;
+    private final AttendanceSessionRepository attendanceSessionRepository;
+    private final AttendanceRepository attendanceRepository;
+    private final AnnouncementRepository announcementRepository;
+    private final AnnouncementAttachmentRepository announcementAttachmentRepository;
+    private final ScheduleRepository scheduleRepository;
+    private final SyllabusRepository syllabusRepository;
     private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper;
     
@@ -42,6 +73,15 @@ public class DataLoader implements CommandLineRunner {
         BlogRepository blogRepository,
         RequestRepository requestRepository,
         AccomplishmentRepository accomplishmentRepository,
+        ClassroomRepository classroomRepository,
+        AssignmentRepository assignmentRepository,
+        SubmissionRepository submissionRepository,
+        AttendanceSessionRepository attendanceSessionRepository,
+        AttendanceRepository attendanceRepository,
+        AnnouncementRepository announcementRepository,
+        AnnouncementAttachmentRepository announcementAttachmentRepository,
+        ScheduleRepository scheduleRepository,
+        SyllabusRepository syllabusRepository,
         PasswordEncoder passwordEncoder,
         ObjectMapper objectMapper
     ) {
@@ -49,6 +89,15 @@ public class DataLoader implements CommandLineRunner {
         this.blogRepository = blogRepository;
         this.requestRepository = requestRepository;
         this.accomplishmentRepository = accomplishmentRepository;
+        this.classroomRepository = classroomRepository;
+        this.assignmentRepository = assignmentRepository;
+        this.submissionRepository = submissionRepository;
+        this.attendanceSessionRepository = attendanceSessionRepository;
+        this.attendanceRepository = attendanceRepository;
+        this.announcementRepository = announcementRepository;
+        this.announcementAttachmentRepository = announcementAttachmentRepository;
+        this.scheduleRepository = scheduleRepository;
+        this.syllabusRepository = syllabusRepository;
         this.passwordEncoder = passwordEncoder;
         this.objectMapper = objectMapper;
     }
@@ -69,6 +118,18 @@ public class DataLoader implements CommandLineRunner {
         
         // Create sample requests
         CreateRequests();
+
+        // Create sample classrooms and enrollments
+        CreateClassrooms(users);
+
+        // Create sample assignments and submissions
+        CreateAssignments(users);
+
+        // Create sample attendance records
+        CreateAttendance(users);
+
+        // Create sample announcements
+        CreateAnnouncements(users);
         
         System.out.println("✅ DataLoader: All data has been reset and reloaded successfully!");
     }
@@ -80,9 +141,16 @@ public class DataLoader implements CommandLineRunner {
         System.out.println("🗑️ DataLoader: Clearing all existing data...");
         
         // Clear data in reverse order of dependencies to avoid foreign key constraints
+        announcementAttachmentRepository.deleteAll();
+        attendanceRepository.deleteAll();
+        attendanceSessionRepository.deleteAll();
+        submissionRepository.deleteAll();
+        assignmentRepository.deleteAll();
+        announcementRepository.deleteAll();
         accomplishmentRepository.deleteAll();
         requestRepository.deleteAll();
         blogRepository.deleteAll();
+        classroomRepository.deleteAll();
         userRepository.deleteAll();
         
         System.out.println("✅ DataLoader: All existing data cleared successfully!");
@@ -301,5 +369,226 @@ public class DataLoader implements CommandLineRunner {
         studentRequest.setStatus("PENDING");
         studentRequest.setCreatedAt(LocalDateTime.now().minusDays(1));
         requestRepository.save(studentRequest);
+    }
+
+    private void CreateClassrooms(List<User> users) {
+        User teacher = users.get(2); // Get teacher user
+        User student = users.get(3); // Get student user
+
+        // Create a Mathematics classroom
+        Classroom mathClass = new Classroom();
+        mathClass.setName("Advanced Mathematics 2024");
+        mathClass.setDescription("Advanced mathematics course covering calculus, linear algebra, and probability theory");
+        mathClass.setSubject("Mathematics");
+        mathClass.setTeacher(teacher);
+        mathClass.setSection("Section A");
+        mathClass.getStudents().add(student);
+        classroomRepository.save(mathClass);
+
+        // Create a Physics classroom
+        Classroom physicsClass = new Classroom();
+        physicsClass.setName("Classical Physics");
+        physicsClass.setDescription("Introduction to classical mechanics and thermodynamics");
+        physicsClass.setSubject("Physics");
+        physicsClass.setTeacher(teacher);
+        physicsClass.setSection("Section B");
+        physicsClass.getStudents().add(student);
+        classroomRepository.save(physicsClass);
+
+        // Create schedules for math class
+        Schedule mathSchedule1 = new Schedule();
+        mathSchedule1.setClassroom(mathClass);
+        mathSchedule1.setDayOfWeek(DayOfWeek.MONDAY);
+        mathSchedule1.setStartTime(LocalTime.of(9, 0));
+        mathSchedule1.setEndTime(LocalTime.of(11, 0));
+        mathSchedule1.setLocation("Room 101");
+        scheduleRepository.save(mathSchedule1);
+
+        Schedule mathSchedule2 = new Schedule();
+        mathSchedule2.setClassroom(mathClass);
+        mathSchedule2.setDayOfWeek(DayOfWeek.WEDNESDAY);
+        mathSchedule2.setStartTime(LocalTime.of(9, 0));
+        mathSchedule2.setEndTime(LocalTime.of(11, 0));
+        mathSchedule2.setLocation("Room 101");
+        scheduleRepository.save(mathSchedule2);
+
+        // Create schedules for physics class
+        Schedule physicsSchedule1 = new Schedule();
+        physicsSchedule1.setClassroom(physicsClass);
+        physicsSchedule1.setDayOfWeek(DayOfWeek.TUESDAY);
+        physicsSchedule1.setStartTime(LocalTime.of(13, 0));
+        physicsSchedule1.setEndTime(LocalTime.of(15, 0));
+        physicsSchedule1.setLocation("Room 102");
+        scheduleRepository.save(physicsSchedule1);
+
+        Schedule physicsSchedule2 = new Schedule();
+        physicsSchedule2.setClassroom(physicsClass);
+        physicsSchedule2.setDayOfWeek(DayOfWeek.THURSDAY);
+        physicsSchedule2.setStartTime(LocalTime.of(13, 0));
+        physicsSchedule2.setEndTime(LocalTime.of(15, 0));
+        physicsSchedule2.setLocation("Room 102");
+        scheduleRepository.save(physicsSchedule2);
+
+        // Create syllabus for math class
+        Syllabus mathSyllabus = new Syllabus();
+        mathSyllabus.setClassroom(mathClass);
+        mathSyllabus.setTitle("Advanced Mathematics 2024 Syllabus");
+        mathSyllabus.setContent("1. Introduction to Calculus\n2. Limits and Continuity\n3. Derivatives\n4. Integration\n5. Linear Algebra Basics\n6. Matrices and Determinants\n7. Vector Spaces\n8. Probability Theory");
+        syllabusRepository.save(mathSyllabus);
+
+        // Create syllabus for physics class
+        Syllabus physicsSyllabus = new Syllabus();
+        physicsSyllabus.setClassroom(physicsClass);
+        physicsSyllabus.setTitle("Classical Physics Syllabus");
+        physicsSyllabus.setContent("1. Introduction to Classical Mechanics\n2. Newton's Laws\n3. Work and Energy\n4. Momentum\n5. Rotational Motion\n6. Thermodynamics Laws\n7. Heat Transfer\n8. Ideal Gas Laws");
+        syllabusRepository.save(physicsSyllabus);
+    }
+
+    private void CreateAssignments(List<User> users) {
+        User teacher = users.get(2);
+        User student = users.get(3);
+        
+        // Find math classroom
+        List<Classroom> mathClasses = classroomRepository.findByTeacher(teacher);
+        Classroom mathClass = mathClasses.stream()
+                .filter(c -> "Mathematics".equals(c.getSubject()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Math classroom not found"));
+
+        // Create a math assignment
+        Assignment mathAssignment = new Assignment();
+        mathAssignment.setTitle("Calculus Integration Problems");
+        mathAssignment.setDescription("Solve the following integration problems. Show all your work and explain your steps.");
+        mathAssignment.setClassroom(mathClass);
+        mathAssignment.setDueDate(LocalDateTime.now().plusDays(7));
+        mathAssignment.setPoints(100);
+        assignmentRepository.save(mathAssignment);
+
+        // Create a submission for the math assignment
+        Submission mathSubmission = new Submission();
+        mathSubmission.setAssignment(mathAssignment);
+        mathSubmission.setStudent(student);
+        mathSubmission.setSubmittedAt(LocalDateTime.now().minusDays(1));
+        mathSubmission.setComment("Here are my solutions to the integration problems...");
+        mathSubmission.setScore(85);
+        mathSubmission.setFeedback("Good work! Remember to explain your steps more clearly.");
+        mathSubmission.setGradedAt(LocalDateTime.now().minusHours(2));
+        mathSubmission.setGradedBy(teacher);
+        submissionRepository.save(mathSubmission);
+
+        // Create another assignment
+        Assignment mathAssignment2 = new Assignment();
+        mathAssignment2.setTitle("Linear Algebra Quiz");
+        mathAssignment2.setDescription("Complete the following problems on matrices and vector spaces.");
+        mathAssignment2.setClassroom(mathClass);
+        mathAssignment2.setDueDate(LocalDateTime.now().plusDays(14));
+        mathAssignment2.setPoints(50);
+        assignmentRepository.save(mathAssignment2);
+    }
+
+    private void CreateAttendance(List<User> users) {
+        User teacher = users.get(2);
+        User student = users.get(3);
+        
+        // Find math classroom
+        List<Classroom> mathClasses = classroomRepository.findByTeacher(teacher);
+        Classroom mathClass = mathClasses.stream()
+                .filter(c -> "Mathematics".equals(c.getSubject()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Math classroom not found"));
+
+        // Create attendance session for yesterday's class
+        AttendanceSession yesterdaySession = new AttendanceSession();
+        yesterdaySession.setClassroom(mathClass);
+        yesterdaySession.setTeacher(teacher);
+        yesterdaySession.setSessionName("Integration by Parts Lecture");
+        yesterdaySession.setTitle("Integration by Parts");
+        yesterdaySession.setDescription("Learning the technique of integration by parts and its applications");
+        yesterdaySession.setSessionDate(LocalDateTime.now().minusDays(1));
+        yesterdaySession.setStartTime(LocalDateTime.now().minusDays(1).withHour(9).withMinute(0));
+        yesterdaySession.setEndTime(LocalDateTime.now().minusDays(1).withHour(11).withMinute(0));
+        yesterdaySession.setSessionType("OFFLINE");
+        yesterdaySession.setStatus(AttendanceSession.SessionStatus.COMPLETED);
+        yesterdaySession.setCreatedAt(LocalDateTime.now().minusDays(2));
+        attendanceSessionRepository.save(yesterdaySession);
+
+        // Mark student's attendance for yesterday
+        Attendance yesterdayAttendance = new Attendance();
+        yesterdayAttendance.setSession(yesterdaySession);
+        yesterdayAttendance.setStudent(student);
+        yesterdayAttendance.setStatus(Attendance.AttendanceStatus.PRESENT);
+        yesterdayAttendance.setCheckInTime(LocalDateTime.now().minusDays(1).withHour(9).withMinute(0));
+        yesterdayAttendance.setCheckOutTime(LocalDateTime.now().minusDays(1).withHour(11).withMinute(0));
+        yesterdayAttendance.setCreatedAt(LocalDateTime.now().minusDays(1));
+        attendanceRepository.save(yesterdayAttendance);
+
+        // Create attendance session for last week
+        AttendanceSession lastWeekSession = new AttendanceSession();
+        lastWeekSession.setClassroom(mathClass);
+        lastWeekSession.setTeacher(teacher);
+        lastWeekSession.setSessionName("Limits and Continuity Lecture");
+        lastWeekSession.setTitle("Limits and Continuity");
+        lastWeekSession.setDescription("Understanding limits and continuity in calculus");
+        lastWeekSession.setSessionDate(LocalDateTime.now().minusDays(7));
+        lastWeekSession.setStartTime(LocalDateTime.now().minusDays(7).withHour(9).withMinute(0));
+        lastWeekSession.setEndTime(LocalDateTime.now().minusDays(7).withHour(11).withMinute(0));
+        lastWeekSession.setSessionType("OFFLINE");
+        lastWeekSession.setStatus(AttendanceSession.SessionStatus.COMPLETED);
+        lastWeekSession.setCreatedAt(LocalDateTime.now().minusDays(8));
+        attendanceSessionRepository.save(lastWeekSession);
+
+        // Mark student's attendance for last week
+        Attendance lastWeekAttendance = new Attendance();
+        lastWeekAttendance.setSession(lastWeekSession);
+        lastWeekAttendance.setStudent(student);
+        lastWeekAttendance.setStatus(Attendance.AttendanceStatus.PRESENT);
+        lastWeekAttendance.setCheckInTime(LocalDateTime.now().minusDays(7).withHour(9).withMinute(0));
+        lastWeekAttendance.setCheckOutTime(LocalDateTime.now().minusDays(7).withHour(11).withMinute(0));
+        lastWeekAttendance.setCreatedAt(LocalDateTime.now().minusDays(7));
+        attendanceRepository.save(lastWeekAttendance);
+    }
+
+    private void CreateAnnouncements(List<User> users) {
+        User teacher = users.get(2);
+        
+        // Find math classroom
+        List<Classroom> mathClasses = classroomRepository.findByTeacher(teacher);
+        Classroom mathClass = mathClasses.stream()
+                .filter(c -> "Mathematics".equals(c.getSubject()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Math classroom not found"));
+
+        // Create an important announcement
+        Announcement announcement1 = new Announcement();
+        announcement1.setTitle("Thay đổi lịch học tuần tới");
+        announcement1.setContent("Do trùng với lịch thi giữa kỳ, lớp học tuần sau sẽ được dời sang thứ 5 thay vì thứ 4 như thường lệ. Mong các em lưu ý và sắp xếp thời gian phù hợp.");
+        announcement1.setClassroomId(mathClass.getId());
+        announcement1.setCreatedBy(teacher.getId());
+        announcement1.setPriority(Announcement.Priority.HIGH);
+        announcement1.setCreatedAt(LocalDateTime.now());
+        announcement1.setStatus(Announcement.AnnouncementStatus.ACTIVE);
+        announcementRepository.save(announcement1);
+
+        // Create an announcement with attachment
+        Announcement announcement2 = new Announcement();
+        announcement2.setTitle("Tài liệu ôn tập Giải tích");
+        announcement2.setContent("Các em tham khảo tài liệu ôn tập đính kèm để chuẩn bị cho bài kiểm tra tuần sau. Tài liệu bao gồm các dạng bài tập quan trọng và một số ví dụ minh họa.");
+        announcement2.setClassroomId(mathClass.getId());
+        announcement2.setCreatedBy(teacher.getId());
+        announcement2.setPriority(Announcement.Priority.NORMAL);
+        announcement2.setCreatedAt(LocalDateTime.now().minusDays(2));
+        announcement2.setStatus(Announcement.AnnouncementStatus.ACTIVE);
+        announcement2.setAttachmentsCount(1);
+        announcementRepository.save(announcement2);
+
+        // Create attachment for announcement2
+        AnnouncementAttachment attachment = new AnnouncementAttachment();
+        attachment.setAnnouncementId(announcement2.getId());
+        attachment.setFileName("on_tap_giai_tich.pdf");
+        attachment.setFileType("application/pdf");
+        attachment.setFilePath("/files/announcements/on_tap_giai_tich.pdf");
+        attachment.setFileSize(1024L); // 1KB sample size
+        attachment.setUploadedAt(LocalDateTime.now().minusDays(2));
+        announcementAttachmentRepository.save(attachment);
     }
 }
