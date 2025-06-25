@@ -34,11 +34,10 @@ public class StudentMessage {
     @ManyToOne
     @JoinColumn(name = "recipient_id", nullable = false)
     private User recipient;
-    
-    @Column(nullable = false, length = 255)
+      @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
     private String subject;
     
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(columnDefinition = "NTEXT", nullable = false)
     private String content;
     
     @Column(length = 50)
@@ -55,8 +54,7 @@ public class StudentMessage {
     
     @Column
     private LocalDateTime readAt;
-    
-    @Column(columnDefinition = "TEXT")
+      @Column(columnDefinition = "NTEXT")
     private String reply;
     
     @Column

@@ -198,6 +198,23 @@ public class CourseController {
         courseSchedules.put(2L, scheduleCourse2);
     }
 
+    // Get all courses
+    @GetMapping
+    public ResponseEntity<List<CourseDetailsDto>> getAllCourses() {
+        System.out.println("Yêu cầu lấy danh sách tất cả khóa học");
+        List<CourseDetailsDto> courses = new ArrayList<>(courseDetails.values());
+        
+        // Update statistics for each course
+        for (CourseDetailsDto course : courses) {
+            Long courseId = course.getId();
+            course.setTotalStudents(studentsByCourse.getOrDefault(courseId, new ArrayList<>()).size());
+            course.setTotalLectures(lecturesByCourse.getOrDefault(courseId, new ArrayList<>()).size());
+            course.setProgressPercentage(75); // Mock progress
+        }
+        
+        return ResponseEntity.ok(courses);
+    }
+
     // Task 30: Tạo bài giảng mới cho một khóa học
     @PostMapping("/{courseId}/lectures")
     public ResponseEntity<LectureDto> createLecture(@PathVariable Long courseId, @RequestBody LectureDto lectureDto) {

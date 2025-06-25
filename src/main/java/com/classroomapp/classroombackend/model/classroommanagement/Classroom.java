@@ -39,13 +39,16 @@ public class Classroom {
     private Long id;
 
     @NotBlank
+    @Column(columnDefinition = "NVARCHAR(255)")
     private String name;
 
-    @Column(length = 1000)
+    @Column(columnDefinition = "NVARCHAR(1000)")
     private String description;
 
+    @Column(columnDefinition = "NVARCHAR(50)")
     private String section;
 
+    @Column(columnDefinition = "NVARCHAR(100)")
     private String subject;    // The teacher who created/owns this classroom
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "teacher_id")
