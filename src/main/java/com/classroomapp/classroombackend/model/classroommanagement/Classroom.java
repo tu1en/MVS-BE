@@ -5,7 +5,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.classroomapp.classroombackend.model.Schedule;
 import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -37,31 +39,33 @@ public class Classroom {
     private Long id;
 
     @NotBlank
+    @Column(columnDefinition = "NVARCHAR(255)")
     private String name;
 
-    @Column(length = 1000)
+    @Column(columnDefinition = "NVARCHAR(1000)")
     private String description;
 
+    @Column(columnDefinition = "NVARCHAR(50)")
     private String section;
 
-    private String subject;
-
-    // The teacher who created/owns this classroom
+    @Column(columnDefinition = "NVARCHAR(100)")
+    private String subject;    // The teacher who created/owns this classroom
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "teacher_id")
-    private User teacher;
-
-    // Students enrolled in this classroom
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password"})
+    private User teacher;    // Students enrolled in this classroom
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "classroom_enrollments",
         joinColumns = @JoinColumn(name = "classroom_id"),
         inverseJoinColumns = @JoinColumn(name = "user_id")
     )
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password"})
     private Set<User> students = new HashSet<>();
     
     // Syllabus for this classroom - one classroom has one syllabus
     @OneToOne(mappedBy = "classroom", fetch = FetchType.LAZY)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "classroom"})
     private Syllabus syllabus;
     
     // Schedules for this classroom - one classroom has many schedule entries

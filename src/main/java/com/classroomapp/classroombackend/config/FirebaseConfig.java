@@ -1,67 +1,56 @@
-
-
 package com.classroomapp.classroombackend.config;
 
-import com.google.firebase.FirebaseApp;
-import com.google.firebase.FirebaseOptions;
-import com.google.auth.oauth2.GoogleCredentials;
+import java.io.InputStream;
+
+import javax.annotation.PostConstruct;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-
-import javax.annotation.PostConstruct;
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.FirebaseOptions;
 
 @Configuration
 public class FirebaseConfig {
     
     private static final Logger logger = LoggerFactory.getLogger(FirebaseConfig.class);
-    
+
     @Value("${firebase.bucket-name}")
     private String storageBucket;
-      @PostConstruct
+    
+    @PostConstruct
     public void init() {
         try {
-            logger.info("Initializing Firebase with bucket: {}", storageBucket);
-            
-            // Check if Firebase is already initialized
             if (FirebaseApp.getApps().isEmpty()) {
-                // Try to load the service account JSON file
-                String serviceAccountPath = "src/main/resources/sep490-e5896-firebase-adminsdk-fbsvc-402079bade.json";
-                
-                // Check if file exists before trying to load
-                java.io.File serviceAccountFile = new java.io.File(serviceAccountPath);
-                if (!serviceAccountFile.exists()) {
-                    logger.warn("Firebase service account file not found at: {}. Firebase will not be initialized.", serviceAccountPath);
-                    logger.warn("Firebase-dependent features (file upload) may not work properly.");
-                    return; // Skip Firebase initialization
+                logger.info("Initializing Firebase for project with bucket: {}", storageBucket);
+
+                // This file should be in src/main/resources
+                String serviceAccountPath = "sep490-e5896-firebase-adminsdk-fbsvc-402079bade.json";
+                ClassPathResource resource = new ClassPathResource(serviceAccountPath);
+
+                if (!resource.exists()) {
+                    logger.error("!!! CRITICAL: Firebase service account file not found at classpath: {}. Firebase features will fail.", serviceAccountPath);
+                    return;
                 }
                 
-                FileInputStream serviceAccount = new FileInputStream(serviceAccountPath);
-                
-                // Build Firebase options with storage bucket
-                FirebaseOptions options = FirebaseOptions.builder()
-                    .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-                    .setStorageBucket(storageBucket)
-                    .build();
-                
-                // Initialize the Firebase app
-                FirebaseApp.initializeApp(options);
-                logger.info("Firebase has been initialized successfully");
+                try (InputStream serviceAccount = resource.getInputStream()) {
+                    FirebaseOptions options = FirebaseOptions.builder()
+                        .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+                        .setStorageBucket(storageBucket)
+                        .build();
+                    
+                    FirebaseApp.initializeApp(options);
+                    logger.info(">>>> Firebase has been initialized successfully! <<<<");
+                }
             } else {
-                logger.info("Firebase is already initialized");
+                logger.info("Firebase is already initialized.");
             }
-        } catch (IOException e) {
-            logger.error("Failed to initialize Firebase: {}", e.getMessage());
-            logger.warn("Firebase will not be available. File upload features may not work.");
-            // Don't throw exception, just log the error to allow app to start
         } catch (Exception e) {
-            logger.error("Unexpected error during Firebase initialization: {}", e.getMessage());
-            logger.warn("Firebase will not be available. File upload features may not work.");
+            logger.error("!!! CRITICAL: Failed to initialize Firebase. All Firebase-dependent features will fail.", e);
         }
     }
 }

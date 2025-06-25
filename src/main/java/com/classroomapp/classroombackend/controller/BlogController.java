@@ -1,18 +1,28 @@
 package com.classroomapp.classroombackend.controller;
 
-import com.classroomapp.classroombackend.dto.BlogDto;
-import com.classroomapp.classroombackend.dto.CreateBlogDto;
-import com.classroomapp.classroombackend.service.BlogService;
-import jakarta.validation.Valid;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import com.classroomapp.classroombackend.dto.BlogDto;
+import com.classroomapp.classroombackend.dto.CreateBlogDto;
+import com.classroomapp.classroombackend.service.BlogService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/blogs")
@@ -103,8 +113,27 @@ public class BlogController {
 
     @GetMapping("/search")
     public ResponseEntity<List<BlogDto>> searchBlogs(@RequestParam String keyword) {
-        List<BlogDto> blogs = blogService.searchBlogs(keyword);
-        return ResponseEntity.ok(blogs);
+        try {
+            // Log the received search keyword
+            System.out.println("Received search request with keyword: " + keyword);
+            
+            // Sanitize input - prevent potential injection or bad requests
+            if (keyword == null || keyword.isEmpty()) {
+                // Return published blogs if no keyword provided
+                return ResponseEntity.ok(blogService.getPublishedBlogs());
+            }
+            
+            List<BlogDto> blogs = blogService.searchBlogs(keyword);
+            System.out.println("Search completed, returning " + blogs.size() + " results");
+            return ResponseEntity.ok(blogs);
+        } catch (Exception e) {
+            // Log the error with more details
+            System.err.println("Error in /search endpoint for keyword '" + keyword + "': " + e.getMessage());
+            e.printStackTrace();
+            
+            // Return empty list instead of error
+            return ResponseEntity.ok(List.of());
+        }
     }
 
     @GetMapping("/tag/{tag}")

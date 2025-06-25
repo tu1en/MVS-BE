@@ -52,4 +52,10 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
     // Get average score for an assignment
     @Query("SELECT AVG(s.score) FROM Submission s WHERE s.assignment = :assignment AND s.score IS NOT NULL")
     Optional<Double> getAverageScoreByAssignment(@Param("assignment") Assignment assignment);
+
+    List<Submission> findByAssignmentId(Long assignmentId);
+    
+    Optional<Submission> findByAssignmentIdAndStudentId(Long assignmentId, Long studentId);
+    
+    List<Submission> findByStudentId(Long studentId);
 }
