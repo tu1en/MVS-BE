@@ -1,16 +1,17 @@
 package com.classroomapp.classroombackend.controller;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,9 +30,11 @@ import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
 import com.classroomapp.classroombackend.model.attendancemanagement.Attendance;
 import com.classroomapp.classroombackend.model.attendancemanagement.Attendance.AttendanceStatus;
 import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSession;
+import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceRepository;
 import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceSessionRepository;
+import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.AttendanceService;
 
@@ -50,6 +53,7 @@ public class AttendanceController {
     private final AttendanceRepository attendanceRepository;
     private final AttendanceSessionRepository sessionRepository;
     private final UserRepository userRepository;
+    private final ClassroomRepository classroomRepository;
     
     /**
      * Constructor với tham số
@@ -58,17 +62,20 @@ public class AttendanceController {
      * @param attendanceRepository Repository cho bản ghi điểm danh
      * @param sessionRepository Repository cho phiên điểm danh
      * @param userRepository Repository cho người dùng
+     * @param classroomRepository Repository cho lớp học
      */
     @Autowired
     public AttendanceController(
             AttendanceService attendanceService,
             AttendanceRepository attendanceRepository,
             AttendanceSessionRepository sessionRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            ClassroomRepository classroomRepository) {
         this.attendanceService = attendanceService;
         this.attendanceRepository = attendanceRepository;
         this.sessionRepository = sessionRepository;
         this.userRepository = userRepository;
+        this.classroomRepository = classroomRepository;
     }
     
     /**
@@ -323,6 +330,59 @@ public class AttendanceController {
         return new ResponseEntity<>(session, HttpStatus.CREATED);
     }
 
+    /**
+     * Get all attendance sessions
+     * @return List of all attendance sessions
+     */
+    @GetMapping("/sessions")
+    public ResponseEntity<List<AttendanceSessionDto>> getAllAttendanceSessions(Authentication authentication) {
+        try {
+            log.info("Getting all attendance sessions");
+            
+            // Get current user from authentication
+            String username = authentication != null ? authentication.getName() : null;
+            if (username == null) {
+                log.warn("No authentication provided when getting all attendance sessions");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(List.of());
+            }
+            
+            User currentUser = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+            
+            List<AttendanceSessionDto> sessions;
+            
+            // If user is a teacher, get their sessions
+            if (currentUser.getRoleId() == 2) { // Teacher role
+                sessions = attendanceService.getAttendanceSessionsByTeacher(currentUser.getId());
+            } 
+            // If user is a student, get sessions from their enrolled classrooms
+            else if (currentUser.getRoleId() == 3) { // Student role
+                // Get all classrooms where the student is enrolled
+                List<Classroom> enrolledClassrooms = classroomRepository.findClassroomsByStudentId(currentUser.getId());
+                
+                // Get sessions for each enrolled classroom
+                sessions = enrolledClassrooms.stream()
+                    .flatMap(classroom -> attendanceService.getAttendanceSessionsByClassroom(classroom.getId()).stream())
+                    .collect(Collectors.toList());
+            } 
+            // If user is admin or manager, get all sessions
+            else {
+                // Get all sessions from all classrooms
+                List<Classroom> classrooms = classroomRepository.findAll();
+                sessions = classrooms.stream()
+                    .flatMap(classroom -> attendanceService.getAttendanceSessionsByClassroom(classroom.getId()).stream())
+                    .collect(Collectors.toList());
+            }
+            
+            return ResponseEntity.ok(sessions);
+        } catch (Exception e) {
+            log.error("Error getting all attendance sessions: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(List.of());
+        }
+    }
+
     @GetMapping("/sessions/{sessionId}")
     public ResponseEntity<AttendanceSessionDto> getAttendanceSession(@PathVariable Long sessionId) {
         AttendanceSessionDto session = attendanceService.getAttendanceSessionById(sessionId);
@@ -451,6 +511,89 @@ public class AttendanceController {
         boolean isInClassroom = attendanceService.isUserInClassroom(userId, classroomId);
         return ResponseEntity.ok(isInClassroom);
     }
+    
+    /**
+     * API endpoint để sinh viên xem điểm danh của mình
+     * @param authentication Thông tin xác thực của người dùng
+     * @return Danh sách điểm danh của sinh viên
+     */
+    @GetMapping("/student/view")
+    public ResponseEntity<?> getStudentAttendanceView(Authentication authentication) {
+        try {
+            if (authentication == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ApiResponse(false, "Không có quyền truy cập. Vui lòng đăng nhập."));
+            }
+
+            String username = authentication.getName();
+            User currentUser = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+            
+            // Lấy danh sách điểm danh của sinh viên
+            List<AttendanceDto> attendanceRecords = attendanceService.getAttendanceByUser(currentUser.getId());
+            
+            return ResponseEntity.ok(new HashMap<String, Object>() {{
+                put("success", true);
+                put("records", attendanceRecords);
+            }});
+        } catch (Exception e) {
+            log.error("Lỗi khi lấy thông tin điểm danh của sinh viên: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ApiResponse(false, "Đã xảy ra lỗi khi lấy thông tin điểm danh."));
+        }
+    }
+
+    /**
+     * API endpoint để đếm số buổi đi học, vắng học của sinh viên
+     * @param authentication Thông tin xác thực của người dùng
+     * @return Thống kê điểm danh của sinh viên
+     */
+    @GetMapping("/student/summary")
+    public ResponseEntity<?> getStudentAttendanceSummary(Authentication authentication) {
+        try {
+            if (authentication == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ApiResponse(false, "Không có quyền truy cập. Vui lòng đăng nhập."));
+            }
+
+            String username = authentication.getName();
+            User currentUser = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+            
+            // Lấy danh sách điểm danh của sinh viên
+            List<AttendanceDto> attendanceRecords = attendanceService.getAttendanceByUser(currentUser.getId());
+            
+            // Tính toán thống kê
+            long totalSessions = attendanceRecords.size();
+            long presentCount = attendanceRecords.stream()
+                .filter(record -> record.getStatus() == AttendanceStatus.PRESENT)
+                .count();
+            long lateCount = attendanceRecords.stream()
+                .filter(record -> record.getStatus() == AttendanceStatus.LATE)
+                .count();
+            long absentCount = attendanceRecords.stream()
+                .filter(record -> record.getStatus() == AttendanceStatus.ABSENT)
+                .count();
+            long excusedCount = attendanceRecords.stream()
+                .filter(record -> record.getStatus() == AttendanceStatus.EXCUSED)
+                .count();
+            
+            return ResponseEntity.ok(new HashMap<String, Object>() {{
+                put("success", true);
+                put("totalSessions", totalSessions);
+                put("presentCount", presentCount);
+                put("lateCount", lateCount);
+                put("absentCount", absentCount);
+                put("excusedCount", excusedCount);
+                put("attendancePercentage", totalSessions > 0 ? 
+                    Math.round(((double) (presentCount + lateCount) / totalSessions) * 100) : 0);
+            }});
+        } catch (Exception e) {
+            log.error("Lỗi khi lấy thống kê điểm danh của sinh viên: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ApiResponse(false, "Đã xảy ra lỗi khi lấy thống kê điểm danh."));
+        }
+    }
 
     @GetMapping("/validate/location")
     public ResponseEntity<Boolean> isWithinLocationRadius(
@@ -471,29 +614,6 @@ public class AttendanceController {
         return ResponseEntity.ok(canMark);
     }
 
-    @GetMapping("/student")
-    public ResponseEntity<Map<String, Object>> getStudentAttendance() {
-        // This is a mock endpoint for testing
-        Map<String, Object> mockData = new HashMap<>();
-        mockData.put("success", true);
-        mockData.put("message", "This is a mock endpoint for student attendance");
-        
-        List<Map<String, Object>> attendanceRecords = new ArrayList<>();
-        Map<String, Object> record1 = new HashMap<>();
-        record1.put("date", "2023-05-01");
-        record1.put("status", "PRESENT");
-        record1.put("course", "Mathematics");
-        
-        Map<String, Object> record2 = new HashMap<>();
-        record2.put("date", "2023-05-02");
-        record2.put("status", "ABSENT");
-        record2.put("course", "Physics");
-        
-        attendanceRecords.add(record1);
-        attendanceRecords.add(record2);
-        mockData.put("records", attendanceRecords);
-        
-        return ResponseEntity.ok(mockData);
-    }
+
 }
 

@@ -144,7 +144,17 @@
         <dependency>
             <groupId>com.google.firebase</groupId>
             <artifactId>firebase-admin</artifactId>
-            <version>9.4.3</version>
+            <version>9.2.0</version>
+        </dependency>
+
+        <!-- Flyway Migration -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-sqlserver</artifactId>
         </dependency>
 
         <!-- Google Cloud Storage -->
@@ -186,6 +196,7 @@
                     <excludes>
                         <!-- Remove Lombok exclusion -->
                     </excludes>
+                    <mainClass>com.classroomapp.classroombackend.ClassroomBackendApplication</mainClass>
                 </configuration>
             </plugin>
 

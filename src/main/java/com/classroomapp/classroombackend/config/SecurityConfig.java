@@ -83,6 +83,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
                 .requestMatchers("/api/test/**").permitAll() // Allow test endpoints for debugging
+                .requestMatchers("/api/v1/greetings/**").permitAll() // Allow greeting endpoints
+                .requestMatchers("/api/greetings/**").permitAll() // Allow greeting endpoints
                 .requestMatchers("/api/role-requests/**").permitAll()
                 .requestMatchers("/role-requests/**").permitAll() // Allow both with and without /api prefix
                 .requestMatchers("/api/files/**").permitAll()
@@ -105,6 +107,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/assignments/**").permitAll()
                 .requestMatchers("/api/assignments/**").permitAll()
                 .requestMatchers("/api/users/**").permitAll()
+                .requestMatchers("/api/messages/**").permitAll() // Allow messages API for testing
+                .requestMatchers("/api/student-messages/**").permitAll() // Allow student messages API for testing
                 
                 // Protected endpoints
                 .requestMatchers("/api/admin/requests/**").hasAnyRole("ADMIN", "MANAGER")

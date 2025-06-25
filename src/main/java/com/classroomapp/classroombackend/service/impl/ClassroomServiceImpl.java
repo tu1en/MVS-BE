@@ -247,9 +247,8 @@ public class ClassroomServiceImpl implements ClassroomService {
             });
         }
         courseDetails.setSchedules(scheduleDtos);
-        
-        // Get assignments for this classroom
-        List<Assignment> assignments = assignmentRepository.findByClassroom(classroom);
+          // Get assignments for this classroom with optimized query to avoid N+1 problem
+        List<Assignment> assignments = assignmentRepository.findByClassroomWithClassroom(classroom);
         List<AssignmentDto> assignmentDtos = assignments.stream()
                 .map(modelMapper::MapToAssignmentDto)
                 .collect(Collectors.toList());

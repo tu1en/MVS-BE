@@ -28,22 +28,20 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @NotBlank
-    @Column(nullable = false, length = 100)
+    private Long id;    @NotBlank
+    @Column(nullable = false, columnDefinition = "NVARCHAR(100)")
     private String username;
 
     @NotBlank
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
     private String password;
 
     @NotBlank
     @Email
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
     private String email;
 
-    @Column(name = "full_name", length = 255)
+    @Column(name = "full_name", columnDefinition = "NVARCHAR(255)")
     private String fullName;
 
     @Column(name = "role_id")
@@ -53,9 +51,7 @@ public class User {
     private LocalDate enrollmentDate;
 
     @Column(name = "hire_date")
-    private LocalDate hireDate;
-
-    @Column(length = 100)
+    private LocalDate hireDate;    @Column(columnDefinition = "NVARCHAR(100)")
     private String department;
     
     @Column(name = "created_at")
@@ -64,7 +60,7 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(length = 10, columnDefinition = "nvarchar(10) default 'active'")
+    @Column(columnDefinition = "NVARCHAR(10) default 'active'")
     private String status = "active";
     
     /**
