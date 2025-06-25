@@ -43,7 +43,7 @@ public class Lecture {
     @JoinColumn(name = "classroom_id", nullable = false)
     private Classroom classroom;
     
-    @OneToMany(mappedBy = "lecture", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "lecture", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<LectureMaterial> materials = new ArrayList<>();
     
     @Column(nullable = false)

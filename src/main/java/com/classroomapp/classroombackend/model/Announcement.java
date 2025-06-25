@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -77,15 +78,15 @@ public class Announcement {
     private LocalDateTime updatedAt = LocalDateTime.now();
 
     @Enumerated(EnumType.STRING)
-    private AnnouncementStatus status = AnnouncementStatus.ACTIVE;
-
-    // JPA relationships
+    private AnnouncementStatus status = AnnouncementStatus.ACTIVE;    // JPA relationships
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "classroom_id", insertable = false, updatable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "teacher", "students", "syllabus"})
     private Classroom classroom;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", insertable = false, updatable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password"})
     private User creator;
 
     public enum TargetAudience {

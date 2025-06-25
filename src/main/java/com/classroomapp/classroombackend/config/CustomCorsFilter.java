@@ -8,6 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+// Enable CORS filter
+import org.springframework.stereotype.Component;
 
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -17,9 +19,7 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
-// Temporarily disabled - using WebConfig and SecurityConfig for CORS instead
-// @Component
+@Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class CustomCorsFilter implements Filter {
 
@@ -28,7 +28,8 @@ public class CustomCorsFilter implements Filter {
     // List of allowed origins
     private final List<String> allowedOrigins = Arrays.asList(
         "http://localhost:3000", 
-        "http://localhost:5173"
+        "http://localhost:5173",
+        "http://localhost:8088"
     );
 
     @Override

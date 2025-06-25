@@ -6,14 +6,15 @@ import java.util.List;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
-import org.springframework.context.annotation.Bean;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-@SpringBootApplication
+@SpringBootApplication(exclude = {})
+@EnableCaching
 @EntityScan(basePackages = {
     "com.classroomapp.classroombackend.model",
     "com.classroomapp.classroombackend.model.usermanagement",
@@ -32,19 +33,14 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 })
 @Configuration
 public class ClassroomBackendApplication implements WebMvcConfigurer {
-
+    
     public static void main(String[] args) {
         System.setProperty("file.encoding", "UTF-8");
         SpringApplication.run(ClassroomBackendApplication.class, args);
     }
 
-    @Bean
-    public HttpMessageConverter<String> responseBodyConverter() {
-        return new StringHttpMessageConverter(StandardCharsets.UTF_8);
-    }
-
     @Override
     public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
-        converters.add(responseBodyConverter());
+        converters.add(new StringHttpMessageConverter(StandardCharsets.UTF_8));
     }
 }

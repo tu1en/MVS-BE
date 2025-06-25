@@ -3,6 +3,7 @@ package com.classroomapp.classroombackend.controller;
 import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.CourseDetailsDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.CreateClassroomDto;
+import com.classroomapp.classroombackend.dto.usermanagement.UserDto;
 import com.classroomapp.classroombackend.service.ClassroomService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -84,4 +86,27 @@ public class ClassroomController {
     public ResponseEntity<CourseDetailsDto> GetCourseDetails(@PathVariable Long id) {
         return ResponseEntity.ok(classroomService.GetCourseDetails(id));
     }
-} 
+      /**
+     * Get students in a classroom
+     * @param classroomId classroom ID
+     * @return list of students in the classroom
+     */
+    @GetMapping("/{classroomId}/students")
+    public ResponseEntity<List<UserDto>> GetClassroomStudents(@PathVariable Long classroomId) {
+        try {
+            // For now, return mock data until the service method is implemented
+            List<UserDto> mockStudents = new ArrayList<>();
+            for (int i = 1; i <= 3; i++) {
+                UserDto student = new UserDto();
+                student.setId((long) i);
+                student.setFullName("Student " + i + " (Class " + classroomId + ")");
+                student.setRoleName("STUDENT");
+                student.setRoleId(1);
+                mockStudents.add(student);
+            }
+            return ResponseEntity.ok(mockStudents);
+        } catch (Exception e) {
+            return ResponseEntity.ok(new ArrayList<>());
+        }
+    }
+}

@@ -8,20 +8,21 @@ import org.springframework.stereotype.Component;
 
 import com.classroomapp.classroombackend.dto.AttendanceDto;
 import com.classroomapp.classroombackend.dto.AttendanceSessionDto;
+// Import với tên đầy đủ để tránh xung đột
+import com.classroomapp.classroombackend.dto.ScheduleDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.SubmissionDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDetailsDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
-import com.classroomapp.classroombackend.dto.classroommanagement.ScheduleDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.SyllabusDto;
 import com.classroomapp.classroombackend.dto.usermanagement.UserDetailsDto;
 import com.classroomapp.classroombackend.dto.usermanagement.UserDto;
+import com.classroomapp.classroombackend.model.Schedule;
 import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
 import com.classroomapp.classroombackend.model.assignmentmanagement.Submission;
 import com.classroomapp.classroombackend.model.attendancemanagement.Attendance;
 import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSession;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
-import com.classroomapp.classroombackend.model.classroommanagement.Schedule;
 import com.classroomapp.classroombackend.model.classroommanagement.Syllabus;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 
@@ -203,7 +204,7 @@ public class ModelMapper {
      * @param schedules List of Schedule entities
      * @return ClassroomDetailsDto
      */
-    public ClassroomDetailsDto MapToClassroomDetailsDto(Classroom classroom, Syllabus syllabus, List<Schedule> schedules) {
+    public ClassroomDetailsDto MapToClassroomDetailsDto(Classroom classroom, Syllabus syllabus, List<com.classroomapp.classroombackend.model.classroommanagement.ClassroomSchedule> schedules) {
         if (classroom == null) {
             return null;
         }
@@ -235,11 +236,30 @@ public class ModelMapper {
             dto.setSyllabus(MapToSyllabusDto(syllabus));
         }
         
-        // Map schedules information if available
+        // Map schedules information if available (using full qualified name)
         if (schedules != null && !schedules.isEmpty()) {
-            dto.setSchedules(schedules.stream()
-                    .map(this::MapToScheduleDto)
-                    .collect(Collectors.toList()));
+            List<com.classroomapp.classroombackend.dto.classroommanagement.ScheduleDto> scheduleDtos = 
+                schedules.stream()
+                    .map(schedule -> {
+                        // Manual mapping for each Schedule entity
+                        com.classroomapp.classroombackend.dto.classroommanagement.ScheduleDto scheduleDto = new com.classroomapp.classroombackend.dto.classroommanagement.ScheduleDto();
+                        scheduleDto.setId(schedule.getId());
+                        scheduleDto.setDayOfWeek(schedule.getDayOfWeek());
+                        scheduleDto.setStartTime(schedule.getStartTime());
+                        scheduleDto.setEndTime(schedule.getEndTime());
+                        scheduleDto.setLocation(schedule.getLocation());
+                        scheduleDto.setNotes(schedule.getNotes());
+                        scheduleDto.setRecurring(schedule.isRecurring());
+                        
+                        if (schedule.getClassroom() != null) {
+                            scheduleDto.setClassroomId(schedule.getClassroom().getId());
+                        }
+                        
+                        return scheduleDto;
+                    })
+                    .collect(Collectors.toList());
+            
+            dto.setSchedules(scheduleDtos);
         }
         
         return dto;
@@ -271,8 +291,8 @@ public class ModelMapper {
     }
     
     /**
-     * Map Schedule entity to ScheduleDto
-     * @param schedule Schedule entity
+     * Map Schedule entity from model package to ScheduleDto
+     * @param schedule Schedule entity from model package
      * @return ScheduleDto
      */
     public ScheduleDto MapToScheduleDto(Schedule schedule) {
@@ -280,7 +300,42 @@ public class ModelMapper {
             return null;
         }
         
-        ScheduleDto dto = new ScheduleDto();
+        int studentCount = 0;
+        try {
+            studentCount = schedule.getClassroom().getStudents().size();
+        } catch (Exception e) {
+            // In case students collection is null or empty
+            studentCount = 0;
+        }
+        
+        return new ScheduleDto(
+            schedule.getId(),
+            schedule.getTeacher().getId(),
+            schedule.getTeacher().getFullName(),
+            schedule.getClassroom().getId(),
+            schedule.getClassroom().getName(),
+            schedule.getDayOfWeek(),
+            schedule.getStartTime(),
+            schedule.getEndTime(),
+            schedule.getRoom(),
+            schedule.getSubject(),
+            schedule.getMaterialsUrl(),
+            schedule.getMeetUrl(),
+            studentCount
+        );
+    }
+      /**
+     * Maps classroommanagement.ClassroomSchedule to classroommanagement.ScheduleDto
+     */public com.classroomapp.classroombackend.dto.classroommanagement.ScheduleDto MapToClassroomScheduleDto(
+            com.classroomapp.classroombackend.model.classroommanagement.ClassroomSchedule schedule) {
+        
+        if (schedule == null) {
+            return null;
+        }
+        
+        com.classroomapp.classroombackend.dto.classroommanagement.ScheduleDto dto = 
+            new com.classroomapp.classroombackend.dto.classroommanagement.ScheduleDto();
+        
         dto.setId(schedule.getId());
         dto.setDayOfWeek(schedule.getDayOfWeek());
         dto.setStartTime(schedule.getStartTime());

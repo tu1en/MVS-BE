@@ -110,38 +110,32 @@ public class AssignmentServiceImpl implements AssignmentService {
     public void DeleteAssignment(Long id) {
         Assignment assignment = findEntityById(id);
         assignmentRepository.delete(assignment);
-    }
-
-    @Override
+    }    @Override
     public List<AssignmentDto> GetAssignmentsByClassroom(Long classroomId) {
         Classroom classroom = classroomRepository.findById(classroomId)
                 .orElseThrow(() -> new ResourceNotFoundException("Classroom", "id", classroomId));
         
-        List<Assignment> assignments = assignmentRepository.findByClassroomOrderByDueDateAsc(classroom);
+        List<Assignment> assignments = assignmentRepository.findByClassroomWithClassroomOrderByDueDateAsc(classroom);
         return assignments.stream()
                 .map(modelMapper::MapToAssignmentDto)
                 .collect(Collectors.toList());
-    }
-
-    @Override
+    }    @Override
     public List<AssignmentDto> GetUpcomingAssignmentsByClassroom(Long classroomId) {
         Classroom classroom = classroomRepository.findById(classroomId)
                 .orElseThrow(() -> new ResourceNotFoundException("Classroom", "id", classroomId));
         
-        List<Assignment> assignments = assignmentRepository.findByClassroomAndDueDateAfterOrderByDueDateAsc(
+        List<Assignment> assignments = assignmentRepository.findByClassroomAndDueDateAfterOrderByDueDateAscWithClassroom(
                 classroom, LocalDateTime.now());
         
         return assignments.stream()
                 .map(modelMapper::MapToAssignmentDto)
                 .collect(Collectors.toList());
-    }
-
-    @Override
+    }    @Override
     public List<AssignmentDto> GetPastAssignmentsByClassroom(Long classroomId) {
         Classroom classroom = classroomRepository.findById(classroomId)
                 .orElseThrow(() -> new ResourceNotFoundException("Classroom", "id", classroomId));
         
-        List<Assignment> assignments = assignmentRepository.findByClassroomAndDueDateBeforeOrderByDueDateDesc(
+        List<Assignment> assignments = assignmentRepository.findByClassroomAndDueDateBeforeOrderByDueDateDescWithClassroom(
                 classroom, LocalDateTime.now());
         
         return assignments.stream()
@@ -232,23 +226,22 @@ public class AssignmentServiceImpl implements AssignmentService {
         return assignments.stream()
                 .map(modelMapper::MapToAssignmentDto)
                 .collect(Collectors.toList());
-    }
-      @Override
+    }      @Override
     public List<AssignmentDto> GetAssignmentsByStudent(Long studentId) {
         // Get all classrooms the student is enrolled in
         List<Classroom> studentClassrooms = classroomRepository.findClassroomsByStudentId(studentId);
         
-        // Get all assignments from those classrooms
-        List<Assignment> assignments = new ArrayList<>();
-        for (Classroom classroom : studentClassrooms) {
-            assignments.addAll(assignmentRepository.findByClassroomOrderByDueDateAsc(classroom));
+        if (studentClassrooms.isEmpty()) {
+            return new ArrayList<>();
         }
+        
+        // Get all assignments from those classrooms using bulk query to avoid N+1
+        List<Assignment> assignments = assignmentRepository.findByClassroomInWithClassroomOrderByDueDateAsc(studentClassrooms);
         
         return assignments.stream()
                 .map(modelMapper::MapToAssignmentDto)
                 .collect(Collectors.toList());
-    }
-      @Override
+    }      @Override
     public List<AssignmentDto> GetAssignmentsByTeacher(Long teacherId) {
         // Get the teacher user entity
         User teacher = userRepository.findById(teacherId)
@@ -257,11 +250,12 @@ public class AssignmentServiceImpl implements AssignmentService {
         // Get all classrooms where the user is the teacher
         List<Classroom> teacherClassrooms = classroomRepository.findByTeacher(teacher);
         
-        // Get all assignments from those classrooms
-        List<Assignment> assignments = new ArrayList<>();
-        for (Classroom classroom : teacherClassrooms) {
-            assignments.addAll(assignmentRepository.findByClassroomOrderByDueDateAsc(classroom));
+        if (teacherClassrooms.isEmpty()) {
+            return new ArrayList<>();
         }
+        
+        // Get all assignments from those classrooms using bulk query to avoid N+1
+        List<Assignment> assignments = assignmentRepository.findByClassroomInWithClassroomOrderByDueDateAsc(teacherClassrooms);
         
         return assignments.stream()
                 .map(modelMapper::MapToAssignmentDto)

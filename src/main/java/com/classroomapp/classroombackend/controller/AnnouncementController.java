@@ -3,7 +3,6 @@ package com.classroomapp.classroombackend.controller;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -19,7 +18,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.classroomapp.classroombackend.dto.NotificationDto;
 import com.classroomapp.classroombackend.model.Announcement;
 import com.classroomapp.classroombackend.repository.AnnouncementRepository;
 
@@ -115,11 +113,9 @@ public class AnnouncementController {
             System.err.println("Error deleting announcement: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-    }
-
-    // Get announcements for specific user with filters
+    }    // Get announcements for specific user with filters
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<NotificationDto>> getAnnouncementsForUser(
+    public ResponseEntity<List<Announcement>> getAnnouncementsForUser(
             @PathVariable Long userId,
             @RequestParam(required = false, defaultValue = "all") String filter) {
         System.out.println("Yêu cầu lấy thông báo cho user ID: " + userId + ", filter: " + filter);
@@ -134,12 +130,11 @@ public class AnnouncementController {
             announcements = new ArrayList<>();
         }
         
-        return ResponseEntity.ok(convertToNotificationDtoList(announcements));
+        return ResponseEntity.ok(announcements);
     }
-    
-    // Get all announcements
+      // Get all announcements
     @GetMapping
-    public ResponseEntity<List<NotificationDto>> getAllAnnouncements() {
+    public ResponseEntity<List<Announcement>> getAllAnnouncements() {
         System.out.println("Yêu cầu lấy tất cả thông báo");
         List<Announcement> announcements;
         
@@ -150,7 +145,7 @@ public class AnnouncementController {
             announcements = new ArrayList<>();
         }
         
-        return ResponseEntity.ok(convertToNotificationDtoList(announcements));
+        return ResponseEntity.ok(announcements);
     }
     
     // Mark announcement as read
@@ -189,20 +184,6 @@ public class AnnouncementController {
             System.err.println("Error counting unread announcements: " + e.getMessage());
             unreadCount = 0;
         }
-        
-        return ResponseEntity.ok(unreadCount);
-    }
-    
-    // Helper method to convert entity to DTO
-    private List<NotificationDto> convertToNotificationDtoList(List<Announcement> announcements) {
-        return announcements.stream()
-            .map(announcement -> new NotificationDto(
-                announcement.getId(),
-                announcement.getContent(),
-                announcement.getCreatedAt(),
-                announcement.getIsPinned(), // Using isPinned as a temporary field for isRead
-                "System" // For now, use default sender name since we don't have user relationship set up
-            ))
-            .collect(Collectors.toList());
+          return ResponseEntity.ok(unreadCount);
     }
 }
