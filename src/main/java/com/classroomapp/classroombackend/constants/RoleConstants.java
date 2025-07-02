@@ -6,5 +6,4 @@ public class RoleConstants {
     public static final int MANAGER = 3;
     public static final int ADMIN = 4;
     public static final int ACCOUNTANT = 5;
-   
 }

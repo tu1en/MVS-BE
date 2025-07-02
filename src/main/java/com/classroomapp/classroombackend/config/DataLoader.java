@@ -1,62 +1,273 @@
 package com.classroomapp.classroombackend.config;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import com.classroomapp.classroombackend.constants.RoleConstants;
-import com.classroomapp.classroombackend.model.Request;
-import com.classroomapp.classroombackend.model.User;
-import com.classroomapp.classroombackend.repository.RequestRepository;
-import com.classroomapp.classroombackend.repository.UserRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.classroomapp.classroombackend.dto.TeacherRequestFormDTO;
 import com.classroomapp.classroombackend.dto.StudentRequestFormDTO;
-
-import java.time.LocalDateTime;
+import com.classroomapp.classroombackend.dto.TeacherRequestFormDTO;
+import com.classroomapp.classroombackend.model.Accomplishment;
+import com.classroomapp.classroombackend.model.Blog;
+import com.classroomapp.classroombackend.model.Request;
+import com.classroomapp.classroombackend.model.Schedule;
+import com.classroomapp.classroombackend.model.StudentMessage;
+import com.classroomapp.classroombackend.model.TimetableEvent;
+import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
+import com.classroomapp.classroombackend.model.assignmentmanagement.Submission;
+import com.classroomapp.classroombackend.model.attendancemanagement.Attendance;
+import com.classroomapp.classroombackend.model.attendancemanagement.Attendance.AttendanceStatus;
+import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSession;
+import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSession.SessionStatus;
+import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
+import com.classroomapp.classroombackend.model.classroommanagement.ClassroomEnrollment;
+import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.AccomplishmentRepository;
+import com.classroomapp.classroombackend.repository.AnnouncementRepository;
+import com.classroomapp.classroombackend.repository.BlogRepository;
+import com.classroomapp.classroombackend.repository.ClassroomEnrollmentRepository;
+import com.classroomapp.classroombackend.repository.ScheduleRepository;
+import com.classroomapp.classroombackend.repository.StudentMessageRepository;
+import com.classroomapp.classroombackend.repository.TimetableEventRepository;
+import com.classroomapp.classroombackend.repository.assignmentmanagement.AssignmentRepository;
+import com.classroomapp.classroombackend.repository.assignmentmanagement.SubmissionRepository;
+import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceRepository;
+import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceSessionRepository;
+import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
+import com.classroomapp.classroombackend.repository.requestmanagement.RequestRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Initialize test data when application starts
  */
 @Component
 public class DataLoader implements CommandLineRunner {
+    @Autowired
+    private com.classroomapp.classroombackend.accountant.repository.LaborContractRepository laborContractRepository;
+
+    /**
+     * Tạo dữ liệu mẫu hợp đồng lao động cho module kế toán
+     */
+    private void createSampleLaborContracts() {
+        try {
+            java.util.List<com.classroomapp.classroombackend.accountant.model.LaborContract> contracts = new java.util.ArrayList<>();
+            java.time.LocalDate now = java.time.LocalDate.now();
+            contracts.add(makeLaborContract("Nguyễn Văn A", "TEACHER", "HD001", now.minusYears(1), now.plusYears(1), "Hợp đồng dài hạn", com.classroomapp.classroombackend.accountant.model.ContractStatus.ACTIVE));
+            contracts.add(makeLaborContract("Trần Thị B", "STAFF", "HD002", now.minusMonths(6), now.plusMonths(6), "Hợp đồng thử việc", com.classroomapp.classroombackend.accountant.model.ContractStatus.ACTIVE));
+            contracts.add(makeLaborContract("Lê Văn C", "TEACHER", "HD003", now.minusMonths(2), now.plusMonths(10), "Hợp đồng thời vụ", com.classroomapp.classroombackend.accountant.model.ContractStatus.ACTIVE));
+            contracts.add(makeLaborContract("Phạm Thị D", "STAFF", "HD004", now.minusMonths(8), now.plusMonths(4), "Hợp đồng bán thời gian", com.classroomapp.classroombackend.accountant.model.ContractStatus.ACTIVE));
+            contracts.add(makeLaborContract("Hoàng Văn E", "TEACHER", "HD005", now.minusMonths(3), now.plusMonths(9), "Hợp đồng giảng viên thỉnh giảng", com.classroomapp.classroombackend.accountant.model.ContractStatus.ACTIVE));
+            laborContractRepository.saveAll(contracts);
+            System.out.println("✅ Đã tạo dữ liệu mẫu hợp đồng lao động cho module kế toán!");
+        } catch (Exception e) {
+            System.err.println("❌ Lỗi khi tạo dữ liệu mẫu hợp đồng lao động: " + e.getMessage());
+        }
+    }
+
+    private com.classroomapp.classroombackend.accountant.model.LaborContract makeLaborContract(String name, String type, String number, java.time.LocalDate start, java.time.LocalDate end, String desc, com.classroomapp.classroombackend.accountant.model.ContractStatus status) {
+        com.classroomapp.classroombackend.accountant.model.LaborContract c = new com.classroomapp.classroombackend.accountant.model.LaborContract();
+        c.setEmployeeName(name);
+        c.setEmployeeType(type);
+        c.setContractNumber(number);
+        c.setStartDate(start);
+        c.setEndDate(end);
+        c.setDescription(desc);
+        c.setStatus(status);
+        return c;
+    }
 
     private final UserRepository userRepository;
+    private final BlogRepository blogRepository;
     private final RequestRepository requestRepository;
+    private final AccomplishmentRepository accomplishmentRepository;
     private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper;
-    
+    private final ClassroomEnrollmentRepository classroomEnrollmentRepository;
+    private final AnnouncementRepository announcementRepository;
+    private final ClassroomRepository classroomRepository;
+    private final ScheduleRepository scheduleRepository;
+    private final AssignmentRepository assignmentRepository;
+    private final SubmissionRepository submissionRepository;
+    private final StudentMessageRepository studentMessageRepository;
+    private final TimetableEventRepository timetableEventRepository;
+    private final AttendanceSessionRepository attendanceSessionRepository;
+    private final AttendanceRepository attendanceRepository;
+
     @Autowired
-    public DataLoader(
-        UserRepository userRepository, 
-        RequestRepository requestRepository,
-        PasswordEncoder passwordEncoder,
-        ObjectMapper objectMapper
-    ) {
+    public DataLoader(UserRepository userRepository,
+            BlogRepository blogRepository,
+            RequestRepository requestRepository,
+            AccomplishmentRepository accomplishmentRepository,
+            PasswordEncoder passwordEncoder,
+            ObjectMapper objectMapper,
+            ClassroomEnrollmentRepository classroomEnrollmentRepository,
+            AnnouncementRepository announcementRepository,
+            ClassroomRepository classroomRepository,
+            ScheduleRepository scheduleRepository,
+            AssignmentRepository assignmentRepository,
+            SubmissionRepository submissionRepository,
+            StudentMessageRepository studentMessageRepository,
+            TimetableEventRepository timetableEventRepository,
+            AttendanceSessionRepository attendanceSessionRepository,
+            AttendanceRepository attendanceRepository) {
         this.userRepository = userRepository;
+        this.blogRepository = blogRepository;
         this.requestRepository = requestRepository;
+        this.accomplishmentRepository = accomplishmentRepository;
         this.passwordEncoder = passwordEncoder;
         this.objectMapper = objectMapper;
+        this.classroomEnrollmentRepository = classroomEnrollmentRepository;
+        this.announcementRepository = announcementRepository;
+        this.classroomRepository = classroomRepository;
+        this.scheduleRepository = scheduleRepository;
+        this.assignmentRepository = assignmentRepository;
+        this.submissionRepository = submissionRepository;
+        this.studentMessageRepository = studentMessageRepository;
+        this.timetableEventRepository = timetableEventRepository;
+        this.attendanceSessionRepository = attendanceSessionRepository;
+        this.attendanceRepository = attendanceRepository;
     }
-    
+
     @Override
     public void run(String... args) throws Exception {
-        // Clear existing data
-        userRepository.deleteAll();
-        requestRepository.deleteAll();
-        
-        // Create sample users
-        CreateUsers();
-        
-        // Create sample requests
-        // CreateRequests();
+        createSampleLaborContracts();
+        createSampleLaborContracts();
+        try {
+            // Set UTF-8 encoding for Vietnamese text
+            System.setProperty("file.encoding", "UTF-8");
+            System.setProperty("console.encoding", "UTF-8");
+            System.setProperty("sun.jnu.encoding", "UTF-8");
+            System.setProperty("java.awt.headless", "true");
+            
+            // Configure database for UTF-8
+            configureUTF8Database();
+            
+            // Always clear existing data and reload fresh data
+            clearAllData();
+            System.out.println("🔤 DataLoader: Thiết lập character encoding UTF-8 cho tiếng Việt");
+            // Create sample users
+            List<User> users = CreateUsers();
+            // Create sample classrooms
+            List<Classroom> classrooms = CreateSampleClassrooms(users);        
+            // Create classroom enrollments  
+            CreateClassroomEnrollments(users, classrooms);
+            // Create sample messages (with error handling)
+            CreateSampleMessages(users);
+            // Create sample messages for manager
+            CreateManagerMessages(users);
+            // Create sample reports for manager
+            CreateManagerReports();
+            // Create sample schedules for manager
+            CreateManagerSchedules(users, classrooms);
+            // Create sample schedules
+            CreateSampleSchedules(users, classrooms);
+            
+            // Create sample timetable events
+            CreateSampleTimetableEvents(users, classrooms);
+            
+            // Create sample attendance sessions and records
+            CreateSampleAttendance(users, classrooms);
+            
+            // Create sample blogs
+            CreateSampleBlogs(users);
+            // Create sample accomplishments
+            CreateAccomplishments();
+            // Create sample requests
+            CreateRequests();
+            // Create sample assignments
+            CreateSampleAssignments(classrooms);
+            // Create sample submissions for assignments
+            CreateSampleSubmissions(users);
+            System.out.println("✅ DataLoader: All data has been reset and reloaded successfully!");
+        } catch (Exception e) {
+            System.err.println("❌ Error in DataLoader: " + e.getMessage());
+            e.printStackTrace();
+            // Continue with application startup even if data loading fails
+        }
     }
-    
+
+    /**
+     * Configure database connection for UTF-8 support
+     */
+    private void configureUTF8Database() {
+        try {
+            System.out.println("🗄️ DataLoader: Configuring database for UTF-8 Vietnamese text support");
+            // This will be handled by the connection string and Hibernate properties
+            // The actual UTF-8 configuration is done in application.properties
+        } catch (Exception e) {
+            System.err.println("⚠️ Warning: Could not configure UTF-8 database settings: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Clear all existing data from database
+     */
+    private void clearAllData() {
+        System.out.println("🗑️ DataLoader: Clearing all existing data...");
+        // Clear data in reverse order of dependencies to avoid foreign key constraints
+        accomplishmentRepository.deleteAll();
+        requestRepository.deleteAll();
+        blogRepository.deleteAll();
+        // Delete submissions before assignments to avoid constraint violations
+        submissionRepository.deleteAll();
+        assignmentRepository.deleteAll();
+        scheduleRepository.deleteAll();
+        timetableEventRepository.deleteAll();
+        announcementRepository.deleteAll();
+        attendanceRepository.deleteAll();
+        attendanceSessionRepository.deleteAll();
+        classroomEnrollmentRepository.deleteAll();
+        studentMessageRepository.deleteAll();
+        classroomRepository.deleteAll();
+        userRepository.deleteAll();
+        System.out.println("✅ DataLoader: All existing data cleared successfully!");
+    }
+
     /**
      * Create sample users for testing
+     * 
+     * @return List of created users {
      */
-    private void CreateUsers() {
+    private List<User> CreateUsers() {
+        // Create student user
+        User student = new User();
+        student.setUsername("student");
+        student.setPassword(passwordEncoder.encode("student123"));
+        student.setEmail("student@classroomapp.com");
+        student.setFullName("Student User");
+        student.setRoleId(RoleConstants.STUDENT);
+        userRepository.save(student);
+        
+        // Create teacher user
+        User teacher = new User();
+        teacher.setUsername("teacher");
+        teacher.setPassword(passwordEncoder.encode("teacher123"));
+        teacher.setEmail("teacher@classroomapp.com");
+        teacher.setFullName("Teacher User");
+        teacher.setRoleId(RoleConstants.TEACHER);
+        userRepository.save(teacher);
+
+        // Create manager user
+        User manager = new User();
+        manager.setUsername("manager");
+        manager.setPassword(passwordEncoder.encode("manager123"));
+        manager.setEmail("fonkunn@gmail.com");
+        manager.setFullName("Manager User");
+        manager.setRoleId(RoleConstants.MANAGER);
+        userRepository.save(manager);
+        
         // Create admin user
         User admin = new User();
         admin.setUsername("admin");
@@ -65,35 +276,25 @@ public class DataLoader implements CommandLineRunner {
         admin.setFullName("Administrator");
         admin.setRoleId(RoleConstants.ADMIN);
         userRepository.save(admin);
-        
-        // Create teacher user
-        User manager = new User();
-        manager.setUsername("manager");
-        manager.setPassword(passwordEncoder.encode("manager123"));
-        manager.setEmail("manager@classroomapp.com");
-        manager.setFullName("Nigga Cheese");
-        manager.setRoleId(RoleConstants.MANAGER);
-        userRepository.save(manager);
 
-        // Create teacher user
-        User teacher = new User();
-        teacher.setUsername("teacher");
-        teacher.setPassword(passwordEncoder.encode("teacher123"));
-        teacher.setEmail("teacher@classroomapp.com");
-        teacher.setFullName("Butt Slapper");
-        teacher.setRoleId(RoleConstants.TEACHER);
-        userRepository.save(teacher);
+        // Create accountant user
+        User accountant = new User();
+        accountant.setUsername("accountant");
+        accountant.setPassword(passwordEncoder.encode("accountant123"));
+        accountant.setEmail("accountant@classroomapp.com");
+        accountant.setFullName("Accountant User");
+        accountant.setRoleId(RoleConstants.ACCOUNTANT);
+        userRepository.save(accountant);
+
+        // Create additional test users
+        User extraStudent1 = new User();
+        extraStudent1.setUsername("student2");
+        extraStudent1.setPassword(passwordEncoder.encode("student123"));
+        extraStudent1.setEmail("student2@classroomapp.com");
+        extraStudent1.setFullName("Alice Johnson");
+        extraStudent1.setRoleId(RoleConstants.STUDENT);
+        userRepository.save(extraStudent1);
         
-<<<<<<< Updated upstream
-        // Create student user
-        User student = new User();
-        student.setUsername("student");
-        student.setPassword(passwordEncoder.encode("student123"));
-        student.setEmail("student@classroomapp.com");
-        student.setFullName("Ass Cracker");
-        student.setRoleId(RoleConstants.STUDENT);
-        userRepository.save(student);
-=======
         User extraStudent2 = new User();
         extraStudent2.setUsername("student3");
         extraStudent2.setPassword(passwordEncoder.encode("student123"));
@@ -134,19 +335,10 @@ public class DataLoader implements CommandLineRunner {
         extraTeacher2.setRoleId(RoleConstants.TEACHER);
         userRepository.save(extraTeacher2);
         
-        // Create accountant user
-        User accountant = new User();
-        accountant.setUsername("accountant");
-        accountant.setPassword(passwordEncoder.encode("accountant123"));
-        accountant.setEmail("accountant@classroomapp.com");
-        accountant.setFullName("Accountant User");
-        accountant.setRoleId(RoleConstants.ACCOUNTANT);
-        userRepository.save(accountant);
-
         // Note: Frontend should use actual user IDs instead of hardcoded values
         System.out.println("✅ Created 11 users (4 students, 3 teachers, 1 manager, 1 admin, 1 accountant, 1 extra student) for comprehensive testing");
-        return Arrays.asList(student, teacher, manager, admin, extraStudent1, extraStudent2, 
-                            extraStudent3, extraStudent4, extraTeacher1, extraTeacher2, accountant);
+        return Arrays.asList(student, teacher, manager, admin, accountant, extraStudent1, extraStudent2, 
+                            extraStudent3, extraStudent4, extraTeacher1, extraTeacher2);
     }
 
     /**
@@ -504,7 +696,6 @@ public class DataLoader implements CommandLineRunner {
                     case 2: roleName = "TEACHER"; break; 
                     case 3: roleName = "MANAGER"; break;
                     case 4: roleName = "ADMIN"; break;
-                    case 55: roleName = "ACCOUNTANT"; break;
                 }
                 System.out.println("User " + i + ": " + user.getUsername() + " (ID: " + user.getId() + ", Role: " + roleName + ")");
             }
@@ -1571,6 +1762,5 @@ public class DataLoader implements CommandLineRunner {
             System.err.println("❌ Error creating sample schedules for manager: " + e.getMessage());
             e.printStackTrace();
         }
->>>>>>> Stashed changes
     }
 }

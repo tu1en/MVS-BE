@@ -53,4 +53,11 @@ public class LaborContractController {
         laborContractService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/{id}/terminate")
+    @PreAuthorize("hasAuthority('ACCOUNTANT')")
+    public ResponseEntity<LaborContract> terminateContract(@PathVariable Long id) {
+        LaborContract terminated = laborContractService.terminateContract(id);
+        return ResponseEntity.ok(terminated);
+    }
 }

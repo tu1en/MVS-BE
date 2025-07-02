@@ -76,7 +76,6 @@ public class User {
             case 2: return "TEACHER";
             case 3: return "MANAGER";
             case 4: return "ADMIN";
-            case 5: return "ACCOUNTANT";
             default: return "USER";
         }
     }

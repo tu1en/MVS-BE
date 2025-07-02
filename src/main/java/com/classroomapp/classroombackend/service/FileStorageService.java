@@ -2,34 +2,44 @@ package com.classroomapp.classroombackend.service;
 
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.util.List;
-
-/**
- * Service interface for file storage operations
- */
 public interface FileStorageService {
+    /**
+     * Upload a file to storage
+     * 
+     * @param file The file to upload
+     * @param folder The destination folder in storage
+     * @return The URL to access the uploaded file
+     */
+    String uploadFile(MultipartFile file, String folder) throws Exception;
     
     /**
-     * Store a file and return its URL
-     * @param file the file to store
-     * @return the URL of the stored file
-     * @throws IOException if an I/O error occurs
+     * Store a file and return the file name
+     * 
+     * @param file The file to store
+     * @return The stored file name
      */
-    String storeFile(MultipartFile file) throws IOException;
+    String storeFile(MultipartFile file) throws Exception;
     
     /**
-     * Store multiple files and return their URLs
-     * @param files the files to store
-     * @return list of URLs of the stored files
-     * @throws IOException if an I/O error occurs
+     * Get the file storage location path
+     * 
+     * @return The file storage location
      */
-    List<String> storeFiles(List<MultipartFile> files) throws IOException;
+    String getFileStorageLocation();
     
     /**
-     * Delete a file by its URL
-     * @param fileUrl the URL of the file to delete
-     * @return true if the file was deleted successfully
+     * Get file content as byte array
+     * 
+     * @param filePath The path to the file
+     * @return The file content as byte array
      */
-    boolean deleteFile(String fileUrl);
+    byte[] getFileContent(String filePath) throws Exception;
+    
+    /**
+     * Delete a file from storage
+     * 
+     * @param filePath The path to the file to delete
+     * @return true if deleted successfully
+     */
+    boolean deleteFile(String filePath);
 }

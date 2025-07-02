@@ -2,11 +2,12 @@ package com.classroomapp.classroombackend.service;
 
 import com.classroomapp.classroombackend.dto.AccomplishmentDto;
 import com.classroomapp.classroombackend.model.Accomplishment;
-import com.classroomapp.classroombackend.model.User;
+import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.AccomplishmentRepository;
-import com.classroomapp.classroombackend.repository.UserRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -14,22 +15,21 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
+@Slf4j
 public class AccomplishmentService {
     private final AccomplishmentRepository accomplishmentRepository;
     private final UserRepository userRepository;
     
-    @Autowired
-    public AccomplishmentService(AccomplishmentRepository accomplishmentRepository, UserRepository userRepository) {
-        this.accomplishmentRepository = accomplishmentRepository;
-        this.userRepository = userRepository;
-    }
-    
     public List<AccomplishmentDto> getStudentAccomplishments(Long userId) {
+        log.info("Fetching accomplishments for user ID: {}", userId);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
         
-        return accomplishmentRepository.findByUserOrderByCompletionDateDesc(user)
-            .stream()
+        List<Accomplishment> accomplishments = accomplishmentRepository.findByUserOrderByCompletionDateDesc(user);
+        log.info("Found {} accomplishments for user ID: {}", accomplishments.size(), userId);
+        
+        return accomplishments.stream()
             .map(this::convertToDto)
             .collect(Collectors.toList());
     }
@@ -49,6 +49,7 @@ public class AccomplishmentService {
     
     @Transactional
     public AccomplishmentDto createAccomplishment(AccomplishmentDto dto) {
+        log.info("Creating new accomplishment for user ID: {}", dto.getUserId());
         User user = userRepository.findById(dto.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", dto.getUserId()));
         
@@ -61,11 +62,13 @@ public class AccomplishmentService {
         accomplishment.setCompletionDate(dto.getCompletionDate());
         
         Accomplishment saved = accomplishmentRepository.save(accomplishment);
+        log.info("Created accomplishment with ID: {} for user ID: {}", saved.getId(), user.getId());
         return convertToDto(saved);
     }
     
     @Transactional
     public AccomplishmentDto updateAccomplishment(Long id, AccomplishmentDto dto) {
+        log.info("Updating accomplishment with ID: {}", id);
         Accomplishment accomplishment = accomplishmentRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Accomplishment", "id", id));
         
@@ -77,11 +80,14 @@ public class AccomplishmentService {
         accomplishment.setCompletionDate(dto.getCompletionDate());
         
         Accomplishment updated = accomplishmentRepository.save(accomplishment);
+        log.info("Updated accomplishment with ID: {}", updated.getId());
         return convertToDto(updated);
     }
     
     @Transactional
     public void deleteAccomplishment(Long id) {
+        log.info("Deleting accomplishment with ID: {}", id);
         accomplishmentRepository.deleteById(id);
+        log.info("Deleted accomplishment with ID: {}", id);
     }
 }

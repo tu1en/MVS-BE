@@ -1,12 +1,23 @@
 package com.classroomapp.classroombackend.model;
 
-import jakarta.persistence.*;
+import java.time.LocalDateTime;
+
+import com.classroomapp.classroombackend.model.usermanagement.User;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "blogs")
@@ -17,13 +28,11 @@ public class Blog {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @NotBlank
-    @Column(nullable = false, length = 200)
+    private Long id;    @NotBlank
+    @Column(nullable = false, columnDefinition = "NVARCHAR(200)")
     private String title;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "NTEXT")
     private String description;
 
     @Column(name = "image_url", length = 500)
@@ -48,18 +57,19 @@ public class Blog {
 
     @Column(name = "is_published", columnDefinition = "bit default 0")
     private Boolean isPublished = false;
-    
-    @Column(columnDefinition = "nvarchar(50) default 'draft'")
+      @Column(columnDefinition = "NVARCHAR(50) default 'draft'")
     private String status;
     
-    @Column(name = "tags", length = 255)
+    @Column(name = "tags", columnDefinition = "NVARCHAR(255)")
     private String tags;
     
     @Column(name = "thumbnail_url", length = 500)
     private String thumbnailUrl;
     
     @Column(name = "view_count")
-    private Integer viewCount = 0;
+    private Integer viewCount = 0;    @Lob
+    @Column(columnDefinition = "NTEXT")
+    private String content;
 
     // Getters and Setters
     public Long getId() {
@@ -173,4 +183,12 @@ public class Blog {
     public void setViewCount(Integer viewCount) {
         this.viewCount = viewCount;
     }
-} 
+
+    public String getContent() {
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+}

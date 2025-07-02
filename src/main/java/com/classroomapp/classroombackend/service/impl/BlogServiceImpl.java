@@ -1,19 +1,21 @@
 package com.classroomapp.classroombackend.service.impl;
 
-import com.classroomapp.classroombackend.dto.BlogDto;
-import com.classroomapp.classroombackend.dto.CreateBlogDto;
-import com.classroomapp.classroombackend.model.Blog;
-import com.classroomapp.classroombackend.model.User;
-import com.classroomapp.classroombackend.repository.BlogRepository;
-import com.classroomapp.classroombackend.repository.UserRepository;
-import com.classroomapp.classroombackend.service.BlogService;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
+import com.classroomapp.classroombackend.dto.BlogDto;
+import com.classroomapp.classroombackend.dto.CreateBlogDto;
+import com.classroomapp.classroombackend.model.Blog;
+import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.BlogRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.classroomapp.classroombackend.service.BlogService;
 
 @Service
 public class BlogServiceImpl implements BlogService {
@@ -191,10 +193,29 @@ public class BlogServiceImpl implements BlogService {
 
     @Override
     public List<BlogDto> searchBlogs(String keyword) {
-        List<Blog> blogs = blogRepository.searchBlogs(keyword);
-        return blogs.stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
+        // Safely handle null or empty keyword
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return getPublishedBlogs(); // Return all published blogs if no search term
+        }
+        
+        try {
+            // Sanitize the keyword and perform search
+            String sanitizedKeyword = keyword.trim();
+            System.out.println("Searching blogs with keyword: " + sanitizedKeyword);
+            
+            List<Blog> blogs = blogRepository.searchBlogs(sanitizedKeyword);
+            System.out.println("Found " + blogs.size() + " blogs matching the search criteria");
+            
+            return blogs.stream()
+                   .map(this::convertToDto)
+                   .collect(Collectors.toList());
+        } catch (Exception e) {
+            // Log the error with more details
+            System.err.println("Error searching blogs with keyword '" + keyword + "': " + e.getMessage());
+            e.printStackTrace();
+            // Return empty list instead of throwing exception
+            return new ArrayList<>();
+        }
     }
 
     @Override

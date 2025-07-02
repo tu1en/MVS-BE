@@ -27,6 +27,10 @@ public class LaborContract {
     @Column(length = 2000)
     private String description;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ContractStatus status = ContractStatus.ACTIVE;
+
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -42,4 +46,7 @@ public class LaborContract {
     public void setContractNumber(String contractNumber) { this.contractNumber = contractNumber; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+
+    public ContractStatus getStatus() { return status; }
+    public void setStatus(ContractStatus status) { this.status = status; }
 }

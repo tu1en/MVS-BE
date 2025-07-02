@@ -3,6 +3,7 @@ package com.classroomapp.classroombackend.accountant.service;
 import com.classroomapp.classroombackend.accountant.model.LaborContract;
 import com.classroomapp.classroombackend.accountant.repository.LaborContractRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.classroomapp.classroombackend.accountant.model.ContractStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -27,5 +28,12 @@ public class LaborContractService {
 
     public void deleteById(Long id) {
         laborContractRepository.deleteById(id);
+    }
+
+    public LaborContract terminateContract(Long id) {
+        LaborContract contract = laborContractRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Contract not found"));
+        contract.setStatus(ContractStatus.TERMINATED);
+        return laborContractRepository.save(contract);
     }
 }
