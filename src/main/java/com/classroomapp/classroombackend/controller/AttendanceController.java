@@ -48,6 +48,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping("/api/attendance")
 @Slf4j
 public class AttendanceController {
+    private final com.classroomapp.classroombackend.accountant.repository.AttendanceExplanationRepository attendanceExplanationRepository;
     
     private final AttendanceService attendanceService;
     private final AttendanceRepository attendanceRepository;
@@ -70,12 +71,14 @@ public class AttendanceController {
             AttendanceRepository attendanceRepository,
             AttendanceSessionRepository sessionRepository,
             UserRepository userRepository,
-            ClassroomRepository classroomRepository) {
+            ClassroomRepository classroomRepository,
+            com.classroomapp.classroombackend.accountant.repository.AttendanceExplanationRepository attendanceExplanationRepository) {
         this.attendanceService = attendanceService;
         this.attendanceRepository = attendanceRepository;
         this.sessionRepository = sessionRepository;
         this.userRepository = userRepository;
         this.classroomRepository = classroomRepository;
+        this.attendanceExplanationRepository = attendanceExplanationRepository;
     }
     
     /**
@@ -548,52 +551,71 @@ public class AttendanceController {
      * @param authentication Thông tin xác thực của người dùng
      * @return Thống kê điểm danh của sinh viên
      */
-    @GetMapping("/student/summary")
-    public ResponseEntity<?> getStudentAttendanceSummary(Authentication authentication) {
+    /**
+     * API: Báo cáo chấm công theo ca, trả về lý do đi trễ nếu có giải trình
+     * Params: from, to, shift
+     */
+    @GetMapping("/shift-report")
+    public ResponseEntity<?> getShiftAttendanceReport(
+            @RequestParam String from,
+            @RequestParam String to,
+            @RequestParam(required = false) String shift) {
         try {
-            if (authentication == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new ApiResponse(false, "Không có quyền truy cập. Vui lòng đăng nhập."));
+            java.time.LocalDateTime fromDate = java.time.LocalDateTime.parse(from + "T00:00:00");
+            java.time.LocalDateTime toDate = java.time.LocalDateTime.parse(to + "T23:59:59");
+            // Lấy danh sách Attendance theo ngày (không lọc shift ở DB)
+            java.util.List<Attendance> attendances = attendanceRepository.findByDateRange(fromDate, toDate);
+            // Nếu FE truyền shift, lọc ở Java (giả sử shift lưu ở sessionName hoặc title)
+            if (shift != null && !shift.isEmpty()) {
+                attendances = attendances.stream().filter(a -> {
+                    String sessionShift = null;
+                    if (a.getSession().getSessionName() != null) sessionShift = a.getSession().getSessionName();
+                    else if (a.getSession().getTitle() != null) sessionShift = a.getSession().getTitle();
+                    if (sessionShift == null) return false;
+                    return sessionShift.equalsIgnoreCase(shift);
+                }).toList();
             }
-
-            String username = authentication.getName();
-            User currentUser = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
-            
-            // Lấy danh sách điểm danh của sinh viên
-            List<AttendanceDto> attendanceRecords = attendanceService.getAttendanceByUser(currentUser.getId());
-            
-            // Tính toán thống kê
-            long totalSessions = attendanceRecords.size();
-            long presentCount = attendanceRecords.stream()
-                .filter(record -> record.getStatus() == AttendanceStatus.PRESENT)
-                .count();
-            long lateCount = attendanceRecords.stream()
-                .filter(record -> record.getStatus() == AttendanceStatus.LATE)
-                .count();
-            long absentCount = attendanceRecords.stream()
-                .filter(record -> record.getStatus() == AttendanceStatus.ABSENT)
-                .count();
-            long excusedCount = attendanceRecords.stream()
-                .filter(record -> record.getStatus() == AttendanceStatus.EXCUSED)
-                .count();
-            
-            return ResponseEntity.ok(new HashMap<String, Object>() {{
-                put("success", true);
-                put("totalSessions", totalSessions);
-                put("presentCount", presentCount);
-                put("lateCount", lateCount);
-                put("absentCount", absentCount);
-                put("excusedCount", excusedCount);
-                put("attendancePercentage", totalSessions > 0 ? 
-                    Math.round(((double) (presentCount + lateCount) / totalSessions) * 100) : 0);
-            }});
+            // Chuẩn bị map để lấy lý do đi trễ
+            java.util.List<Long> userIds = attendances.stream()
+                .filter(a -> a.getStatus() == Attendance.AttendanceStatus.LATE)
+                .map(a -> a.getStudent().getId())
+                .distinct().toList();
+            java.util.Map<Long, String> lateReasons = new java.util.HashMap<>();
+            if (!userIds.isEmpty()) {
+                // Lấy giải trình đã được duyệt cho các user này trong khoảng ngày
+                java.util.List<com.classroomapp.classroombackend.accountant.model.AttendanceExplanation> explanations =
+                    attendanceExplanationRepository.findByEmployeeIdInAndExplanationTypeAndStatus(
+                        userIds, "LATE", "APPROVED");
+                for (var exp : explanations) {
+                    lateReasons.put(exp.getEmployeeId(), exp.getContent());
+                }
+            }
+            // Trả về dữ liệu cho FE
+            java.util.List<java.util.Map<String, Object>> result = attendances.stream().map(a -> {
+                java.util.Map<String, Object> row = new java.util.HashMap<>();
+                row.put("id", a.getId());
+                row.put("employeeName", a.getStudent().getFullName());
+                // shift lấy từ sessionName hoặc title nếu có
+                String sessionShift = null;
+                if (a.getSession().getSessionName() != null) sessionShift = a.getSession().getSessionName();
+                else if (a.getSession().getTitle() != null) sessionShift = a.getSession().getTitle();
+                row.put("shift", sessionShift);
+                row.put("date", a.getCheckInTime().toLocalDate());
+                row.put("checkIn", a.getCheckInTime());
+                row.put("checkOut", a.getCheckOutTime());
+                boolean isLate = a.getStatus() == Attendance.AttendanceStatus.LATE;
+                row.put("isLate", isLate);
+                row.put("lateReason", isLate ? lateReasons.getOrDefault(a.getStudent().getId(), null) : null);
+                return row;
+            }).toList();
+            return ResponseEntity.ok(result);
         } catch (Exception e) {
-            log.error("Lỗi khi lấy thống kê điểm danh của sinh viên: {}", e.getMessage(), e);
+            log.error("Lỗi lấy báo cáo chấm công theo ca: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ApiResponse(false, "Đã xảy ra lỗi khi lấy thống kê điểm danh."));
+                .body(new ApiResponse(false, "Lỗi lấy báo cáo chấm công theo ca."));
         }
     }
+
 
     @GetMapping("/validate/location")
     public ResponseEntity<Boolean> isWithinLocationRadius(

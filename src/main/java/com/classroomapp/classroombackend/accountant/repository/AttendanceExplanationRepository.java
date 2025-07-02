@@ -6,4 +6,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface AttendanceExplanationRepository extends JpaRepository<AttendanceExplanation, Long> {
+    java.util.List<AttendanceExplanation> findByEmployeeIdInAndExplanationTypeAndStatus(
+        java.util.List<Long> employeeIds, String explanationType, String status);
+
 }

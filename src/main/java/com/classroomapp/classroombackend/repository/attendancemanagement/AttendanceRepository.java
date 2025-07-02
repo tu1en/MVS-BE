@@ -69,4 +69,7 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
         @Param("classroom") Classroom classroom, 
         @Param("startDate") LocalDateTime startDate, 
         @Param("endDate") LocalDateTime endDate);
+    // Lấy attendance theo khoảng ngày (không lọc shift vì không có trường shift)
+    @Query("SELECT a FROM Attendance a WHERE a.checkInTime BETWEEN :from AND :to")
+    List<Attendance> findByDateRange(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 }
