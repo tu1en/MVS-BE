@@ -69,4 +69,31 @@ public interface UserService {
     List<UserDto> FindUsersByRole(Integer roleId);
 
     void sendPasswordResetEmail(String email, String resetLink);
+
+    /**
+     * Update user role
+     * @param id user ID
+     * @param newRole new role string
+     * @return updated user DTO
+     */
+    UserDto updateUserRole(Long id, String newRole);
+
+    /**
+     * Reset password (admin)
+     * @param id user ID
+     * @return new password
+     */
+    String resetPassword(Long id);
+
+    /**
+     * Lock user account
+     * @param id user ID
+     */
+    void lockUser(Long id);
+
+    /**
+     * Unlock user account
+     * @param id user ID
+     */
+    void unlockUser(Long id);
 }

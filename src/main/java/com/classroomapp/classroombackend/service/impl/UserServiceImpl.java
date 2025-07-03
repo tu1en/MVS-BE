@@ -150,4 +150,61 @@ public class UserServiceImpl implements UserService {
             "http://localhost:3000/reset-password?token=" + resetLink);
         mailSender.send(message);
     }
+
+    @Override
+    public UserDto updateUserRole(Long id, String newRole) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        // Giả sử roleId: 1=STUDENT, 2=TEACHER, 3=MANAGER, 4=ADMIN
+        int roleId;
+        switch (newRole.toUpperCase()) {
+            case "STUDENT": roleId = 1; break;
+            case "TEACHER": roleId = 2; break;
+            case "MANAGER": roleId = 3; break;
+            case "ADMIN": roleId = 4; break;
+            default: throw new IllegalArgumentException("Invalid role: " + newRole);
+        }
+        user.setRoleId(roleId);
+        User updated = userRepository.save(user);
+        return UserMapper.toDto(updated);
+    }
+
+    @Override
+    public String resetPassword(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        // Sinh mật khẩu mới
+        String newPassword = generateRandomPassword(10);
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        return newPassword;
+    }
+
+    // Hàm sinh mật khẩu ngẫu nhiên (private helper)
+    private String generateRandomPassword(int length) {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%";
+        StringBuilder sb = new StringBuilder();
+        java.util.Random random = new java.util.Random();
+        for (int i = 0; i < length; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return sb.toString();
+    }
+
+    @Override
+    public void lockUser(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        // Nếu User chưa có trường isLocked, dùng status=0 là locked
+        user.setStatus("0"); // 0 = locked, 1 = active
+        userRepository.save(user);
+    }
+
+    @Override
+    public void unlockUser(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        user.setStatus("1"); // 1 = active
+        userRepository.save(user);
+    }
 }
