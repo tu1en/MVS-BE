@@ -61,21 +61,23 @@ public class UserServiceImpl implements UserService {
     public UserDto CreateUser(UserDto userDto) {
         // Check if username or email already exists
         if (userRepository.existsByUsername(userDto.getUsername())) {
-            throw new IllegalArgumentException("Username already taken");
+            throw new IllegalArgumentException("Tên đăng nhập đã tồn tại");
         }
-        
         if (userRepository.existsByEmail(userDto.getEmail())) {
-            throw new IllegalArgumentException("Email already registered");
+            throw new IllegalArgumentException("Email đã được đăng ký");
         }
         
         // Convert DTO to entity
         User user = UserMapper.toEntity(userDto);
         
         // Encode password before saving
-        // Note: In a real application, you would receive the password in a separate DTO
-        if (user.getPassword() != null) {
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        if (user.getPassword() == null || user.getPassword().trim().isEmpty()) {
+            throw new IllegalArgumentException("Mật khẩu không được để trống");
         }
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        
+        // Set default status to active (1)
+        user.setStatus("1");
         
         // Save user and return as DTO
         User savedUser = userRepository.save(user);
