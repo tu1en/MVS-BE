@@ -2,6 +2,7 @@ package com.classroomapp.classroombackend.service.impl;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import com.classroomapp.classroombackend.constants.RoleConstants;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
@@ -155,15 +156,29 @@ public class UserServiceImpl implements UserService {
     public UserDto updateUserRole(Long id, String newRole) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
-        // Giả sử roleId: 1=STUDENT, 2=TEACHER, 3=MANAGER, 4=ADMIN
+        
+        // Sử dụng RoleConstants để đảm bảo nhất quán
         int roleId;
         switch (newRole.toUpperCase()) {
-            case "STUDENT": roleId = 1; break;
-            case "TEACHER": roleId = 2; break;
-            case "MANAGER": roleId = 3; break;
-            case "ADMIN": roleId = 4; break;
-            default: throw new IllegalArgumentException("Invalid role: " + newRole);
+            case "STUDENT": 
+                roleId = RoleConstants.STUDENT; 
+                break;
+            case "TEACHER": 
+                roleId = RoleConstants.TEACHER; 
+                break;
+            case "MANAGER": 
+                roleId = RoleConstants.MANAGER; 
+                break;
+            case "ACCOUNTANT": 
+                roleId = RoleConstants.ACCOUNTANT; 
+                break;
+            case "ADMIN":
+                roleId = RoleConstants.ADMIN;
+                break;
+            default: 
+                throw new IllegalArgumentException("Vai trò không hợp lệ. Vui lòng chọn một trong các vai trò: STUDENT, TEACHER, MANAGER, ACCOUNTANT, ADMIN");
         }
+        
         user.setRoleId(roleId);
         User updated = userRepository.save(user);
         return UserMapper.toDto(updated);
