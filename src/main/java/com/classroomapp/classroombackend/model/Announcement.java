@@ -38,11 +38,11 @@ public class Announcement {
     private Long id;
 
     @NotBlank
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
     private String title;
 
     @NotBlank
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(nullable = false, columnDefinition = "NTEXT")
     private String content;
 
     @Column(name = "classroom_id")

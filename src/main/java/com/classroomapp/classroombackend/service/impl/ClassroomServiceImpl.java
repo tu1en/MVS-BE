@@ -26,8 +26,6 @@ import com.classroomapp.classroombackend.model.classroommanagement.ClassroomEnro
 import com.classroomapp.classroombackend.model.classroommanagement.ClassroomEnrollmentId;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.StudentProgressRepository;
-import com.classroomapp.classroombackend.repository.assignmentmanagement.AssignmentRepository;
-import com.classroomapp.classroombackend.repository.assignmentmanagement.SubmissionRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomEnrollmentRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
@@ -46,8 +44,6 @@ public class ClassroomServiceImpl implements ClassroomService {
 
     private final ClassroomRepository classroomRepository;
     private final UserRepository userRepository;
-    private final AssignmentRepository assignmentRepository;
-    private final SubmissionRepository submissionRepository;
     private final ClassroomEnrollmentRepository classroomEnrollmentRepository;
     private final StudentProgressRepository studentProgressRepository;
     private final ModelMapper modelMapper;

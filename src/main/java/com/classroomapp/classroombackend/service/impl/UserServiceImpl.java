@@ -5,14 +5,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,21 +24,15 @@ import com.classroomapp.classroombackend.repository.usermanagement.RoleRepositor
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.UserService;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
-    private final RoleRepository roleRepository; // Injected RoleRepository
-    private final PasswordEncoder passwordEncoder;
+    private final RoleRepository roleRepository;
     private final JavaMailSender mailSender;
-
-    @Autowired
-    public UserServiceImpl(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder, JavaMailSender mailSender) {
-        this.userRepository = userRepository;
-        this.roleRepository = roleRepository; // Initialized RoleRepository
-        this.passwordEncoder = passwordEncoder;
-        this.mailSender = mailSender;
-    }
 
     private UserDto convertToUserDto(User user) {
         UserDto dto = new UserDto();
@@ -50,6 +42,13 @@ public class UserServiceImpl implements UserService {
         dto.setEnabled("active".equalsIgnoreCase(user.getStatus()));
         dto.setRoles(Collections.singleton(user.getRole()));
         return dto;
+    }
+
+    @Override
+    public List<UserDto> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(this::convertToUserDto)
+                .collect(Collectors.toList());
     }
 
     @Override

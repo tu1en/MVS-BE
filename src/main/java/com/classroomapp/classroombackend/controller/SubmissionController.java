@@ -88,7 +88,7 @@ public class SubmissionController {
         return ResponseEntity.ok(submissionService.GetSubmissionsByStudent(studentId));
     }
     
-    @GetMapping("/assignment/{assignmentId}/student/{studentId}")
+    @GetMapping(value = "/assignment/{assignmentId}/student/{studentId}", produces = "application/json;charset=UTF-8")
     public ResponseEntity<SubmissionDto> GetStudentSubmissionForAssignment(
             @PathVariable Long assignmentId,
             @PathVariable Long studentId) {

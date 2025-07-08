@@ -6,19 +6,18 @@ import java.util.stream.Collectors;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.classroomapp.classroombackend.security.CustomUserDetailsService;
 import com.classroomapp.classroombackend.security.JwtUtil;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -28,11 +27,15 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Component
 @Slf4j
-@RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
-    private final CustomUserDetailsService customUserDetailsService;
+    private final UserDetailsService userDetailsService;
+
+    public JwtAuthenticationFilter(JwtUtil jwtUtil, UserDetailsService userDetailsService) {
+        this.jwtUtil = jwtUtil;
+        this.userDetailsService = userDetailsService;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -75,7 +78,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 
                 // Tải thông tin người dùng đầy đủ từ database bằng email
                 org.springframework.security.core.userdetails.UserDetails userDetails = 
-                        customUserDetailsService.loadUserByUsername(subject); // Custom service handles email lookup
+                        userDetailsService.loadUserByUsername(subject); // Custom service handles email lookup
 
                 // Kiểm tra nếu người dùng hợp lệ và có thể xác thực
                 if (userDetails != null) {

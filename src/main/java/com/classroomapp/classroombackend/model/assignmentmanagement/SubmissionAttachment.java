@@ -31,18 +31,19 @@ public class SubmissionAttachment {
     @Column(nullable = false)
     private String fileName;
 
-    @Column(nullable = false)
+    @Column(nullable = true)  // Made nullable to avoid DDL error with existing data
     private String fileUrl;
 
     private String fileType;
 
-    private long fileSize;
+    @Column(nullable = true)  // Made nullable to avoid DDL error with existing data
+    private Long fileSize;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "submission_id", nullable = false)
     private Submission submission;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist

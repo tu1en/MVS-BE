@@ -161,4 +161,17 @@ public class LectureServiceImpl implements LectureService {
                 .map(material -> modelMapper.map(material, LectureMaterialDto.class))
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public LectureDto addMaterialToLecture(Long lectureId, LectureMaterialDto materialDto) {
+        Lecture lecture = lectureRepository.findById(lectureId)
+                .orElseThrow(() -> new ResourceNotFoundException("Lecture not found with id: " + lectureId));
+
+        LectureMaterial material = modelMapper.map(materialDto, LectureMaterial.class);
+        lecture.getLectureMaterials().add(material);
+        material.setLecture(lecture);
+
+        Lecture updatedLecture = lectureRepository.save(lecture);
+        return modelMapper.map(updatedLecture, LectureDto.class);
+    }
 } 

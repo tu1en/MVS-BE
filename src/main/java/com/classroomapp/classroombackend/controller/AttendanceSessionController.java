@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceResultDto;
 import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceSessionDto;
 import com.classroomapp.classroombackend.dto.attendancemanagement.CreateAttendanceSessionDto;
-import com.classroomapp.classroombackend.service.AttendanceService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,8 +21,6 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/attendance-sessions")
 @RequiredArgsConstructor
 public class AttendanceSessionController {
-
-    private final AttendanceService attendanceService;
 
     @PostMapping
     @PreAuthorize("hasRole('TEACHER')")

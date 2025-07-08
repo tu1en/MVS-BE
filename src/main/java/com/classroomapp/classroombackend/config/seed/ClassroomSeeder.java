@@ -6,11 +6,11 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.classroomapp.classroombackend.model.Course;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
+import com.classroomapp.classroombackend.model.classroommanagement.Course;
 import com.classroomapp.classroombackend.model.usermanagement.User;
-import com.classroomapp.classroombackend.repository.CourseRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
+import com.classroomapp.classroombackend.repository.classroommanagement.CourseRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 
 @Component

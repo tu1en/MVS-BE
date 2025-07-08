@@ -15,8 +15,16 @@ import com.classroomapp.classroombackend.model.usermanagement.User;
 @Repository
 public interface SubmissionRepository extends JpaRepository<Submission, Long> {
     
-    // Find submission by assignment and student
-    Optional<Submission> findByAssignmentAndStudent(Assignment assignment, User student);
+    // Find submission by assignment and student (returns first if multiple exist due to legacy data)
+    @Query("SELECT s FROM Submission s WHERE s.assignment = :assignment AND s.student = :student ORDER BY s.submittedAt DESC")
+    List<Submission> findByAssignmentAndStudentList(@Param("assignment") Assignment assignment, @Param("student") User student);
+    
+    // Find submission by assignment and student - for backward compatibility
+    // If multiple submissions exist, returns the most recent one
+    default Optional<Submission> findByAssignmentAndStudent(Assignment assignment, User student) {
+        List<Submission> submissions = findByAssignmentAndStudentList(assignment, student);
+        return submissions.isEmpty() ? Optional.empty() : Optional.of(submissions.get(0));
+    }
     
     // Find all submissions for an assignment
     List<Submission> findByAssignment(Assignment assignment);

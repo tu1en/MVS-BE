@@ -3,12 +3,12 @@ package com.classroomapp.classroombackend.config.seed;
 import java.util.List;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.classroomapp.classroombackend.dto.CreateAnnouncementDto;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.AnnouncementRepository;
-import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.AnnouncementService;
 
@@ -17,16 +17,15 @@ public class AnnouncementSeeder {
 
     private final AnnouncementRepository announcementRepository;
     private final UserRepository userRepository;
-    private final ClassroomRepository classroomRepository;
     private final AnnouncementService announcementService;
 
-    public AnnouncementSeeder(AnnouncementRepository announcementRepository, UserRepository userRepository, ClassroomRepository classroomRepository, AnnouncementService announcementService) {
+    public AnnouncementSeeder(AnnouncementRepository announcementRepository, UserRepository userRepository, AnnouncementService announcementService) {
         this.announcementRepository = announcementRepository;
         this.userRepository = userRepository;
-        this.classroomRepository = classroomRepository;
         this.announcementService = announcementService;
     }
 
+    @Transactional
     public void seed(List<Classroom> classrooms) {
         if (announcementRepository.count() == 0) {
             User admin = userRepository.findByEmail("admin@test.com").orElseThrow(() -> new RuntimeException("Admin user not found"));

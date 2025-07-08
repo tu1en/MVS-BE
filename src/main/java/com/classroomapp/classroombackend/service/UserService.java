@@ -89,4 +89,6 @@ public interface UserService {
      * @return User entity if found, null otherwise
      */
     User findUserEntityByEmail(String email);
+
+    List<UserDto> getAllUsers();
 }

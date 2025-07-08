@@ -15,7 +15,7 @@ import com.classroomapp.classroombackend.repository.usermanagement.UserRepositor
 
 import lombok.RequiredArgsConstructor;
 
-@Component // Re-enabled to run the seeder
+@Component // Re-enabled with lazy AssignmentSeeder
 @RequiredArgsConstructor
 public class MasterSeeder implements CommandLineRunner {
     private static final Logger log = LoggerFactory.getLogger(MasterSeeder.class);
@@ -38,6 +38,8 @@ public class MasterSeeder implements CommandLineRunner {
     private final CourseMaterialSeeder courseMaterialSeeder;
     private final ExamSeeder examSeeder;
     private final StudentProgressSeeder studentProgressSeeder;
+    private final ComprehensiveGradingSeeder comprehensiveGradingSeeder;
+    private final AssignmentTestDataSeeder assignmentTestDataSeeder;
 
     @Override
     @Transactional
@@ -71,6 +73,12 @@ public class MasterSeeder implements CommandLineRunner {
         log.info("============== Checking for new submissions to seed ==============");
         submissionSeeder.seed();
         log.info("============== Submission seeding complete ==============");
+
+        // Always run comprehensive grading seeder for classroom 54
+        log.info("============== Seeding Comprehensive Grading Data ==============");
+        assignmentTestDataSeeder.seedAssignmentTestData();
+        comprehensiveGradingSeeder.seedGradingData();
+        log.info("============== Comprehensive Grading Seeding Complete ==============");
 
         if (courseMaterialRepository.count() == 0) {
             log.info("============== Seeding Course Materials ==============");

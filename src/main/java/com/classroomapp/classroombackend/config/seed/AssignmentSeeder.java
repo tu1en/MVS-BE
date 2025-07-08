@@ -4,13 +4,14 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.classroomapp.classroombackend.dto.assignmentmanagement.CreateAssignmentDto;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.repository.assignmentmanagement.AssignmentRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
-import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.AssignmentService;
 
 @Component
@@ -23,11 +24,10 @@ public class AssignmentSeeder {
     private ClassroomRepository classroomRepository;
 
     @Autowired
+    @Lazy
     private AssignmentService assignmentService;
 
-    @Autowired
-    private UserRepository userRepository;
-
+    @Transactional
     public void seed() {
         if (assignmentRepository.count() == 0) {
             List<Classroom> classrooms = classroomRepository.findAll();

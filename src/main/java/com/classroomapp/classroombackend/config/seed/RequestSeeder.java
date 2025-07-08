@@ -8,24 +8,16 @@ import com.classroomapp.classroombackend.dto.StudentRequestFormDTO;
 import com.classroomapp.classroombackend.dto.TeacherRequestFormDTO;
 import com.classroomapp.classroombackend.model.Request;
 import com.classroomapp.classroombackend.repository.requestmanagement.RequestRepository;
-import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
-import com.classroomapp.classroombackend.service.EmailService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import lombok.RequiredArgsConstructor;
+
 @Component
+@RequiredArgsConstructor
 public class RequestSeeder {
 
     private final RequestRepository requestRepository;
-    private final UserRepository userRepository;
-    private final EmailService emailService;
     private final ObjectMapper objectMapper;
-
-    public RequestSeeder(RequestRepository requestRepository, UserRepository userRepository, EmailService emailService, ObjectMapper objectMapper) {
-        this.requestRepository = requestRepository;
-        this.userRepository = userRepository;
-        this.emailService = emailService;
-        this.objectMapper = objectMapper;
-    }
 
     public void seed() {
         if (requestRepository.count() > 0) {

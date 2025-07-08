@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.classroomapp.classroombackend.model.Lecture;
 import com.classroomapp.classroombackend.model.LectureMaterial;
@@ -24,6 +25,7 @@ public class LectureSeeder {
     @Autowired
     private ClassroomRepository classroomRepository;
 
+    @Transactional
     public void seed(List<Classroom> classrooms) {
         if (lectureRepository.count() == 0) {
             

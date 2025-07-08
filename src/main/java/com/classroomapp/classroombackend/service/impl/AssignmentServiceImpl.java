@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.Authentication;
@@ -48,6 +49,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 @Service
+@Lazy
 @RequiredArgsConstructor
 public class AssignmentServiceImpl implements AssignmentService {
 
@@ -57,6 +59,7 @@ public class AssignmentServiceImpl implements AssignmentService {
     private final ClassroomEnrollmentRepository classroomEnrollmentRepository;
     private final SubmissionRepository submissionRepository;
     private final ModelMapper modelMapper;
+    @Lazy
     private final ClassroomSecurityService classroomSecurityService;
     private static final Logger log = LoggerFactory.getLogger(AssignmentServiceImpl.class);
 

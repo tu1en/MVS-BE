@@ -1,5 +1,7 @@
 package com.classroomapp.classroombackend.controller;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -486,7 +488,6 @@ public class AssignmentController {
             }
             
             // Check file type
-            String contentType = file.getContentType();
             String filename = file.getOriginalFilename();
             if (filename == null || (!filename.endsWith(".pdf") && !filename.endsWith(".docx") 
                 && !filename.endsWith(".doc") && !filename.endsWith(".txt") && !filename.endsWith(".zip"))) {
@@ -495,6 +496,10 @@ public class AssignmentController {
                 return ResponseEntity.badRequest().body(response);
             }
             
+            // Save file to a temporary location
+            Path tempFile = Files.createTempFile("upload-", ".tmp");
+            file.transferTo(tempFile);
+
             // Upload file to Firebase Storage
             FileUploadResponse uploadResponse;
             try {

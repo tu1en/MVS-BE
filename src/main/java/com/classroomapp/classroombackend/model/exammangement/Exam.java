@@ -15,7 +15,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Data;
 
-@Entity
+@Entity(name = "Exam")
 @Table(name = "exams")
 @Data
 public class Exam {
@@ -24,7 +24,7 @@ public class Exam {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(columnDefinition = "NVARCHAR(255)", nullable = false)
     private String title;
 
     @ManyToOne(fetch = FetchType.LAZY)

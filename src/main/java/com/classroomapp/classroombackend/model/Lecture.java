@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -24,6 +25,7 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Entity
 @Table(name = "lectures")
@@ -51,21 +53,22 @@ public class Lecture {
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "classroom_id", nullable = false)
+    @ToString.Exclude
     private Classroom classroom;
     
-    @OneToMany(mappedBy = "lecture", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private List<LectureMaterial> materials = new ArrayList<>();
+    @OneToMany(mappedBy = "lecture", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties("lecture")
+    private List<LectureMaterial> lectureMaterials = new ArrayList<>();
     
-    @Column(nullable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     
-    @Column
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
     }
     
     @PreUpdate

@@ -95,14 +95,17 @@ public class SubmissionSeeder {
      */
     private boolean createSubmissionIfNotExists(Assignment assignment, User student) {
         // Check if a submission already exists to avoid duplicates
-        Optional<Submission> existingSubmission = submissionRepository.findByAssignmentAndStudent(assignment, student);
-        if (existingSubmission.isEmpty()) {
+        List<Submission> existingSubmissions = submissionRepository.findByStudentAndAssignment(student, assignment);
+        if (existingSubmissions.isEmpty()) {
             int studentIndex = student.getFullName().hashCode() % 3; // Deterministic variation
             createSubmission(assignment, student, studentIndex);
             log.debug("Created submission for assignment {} and student {}", assignment.getId(), student.getId());
             return true;
+        } else {
+            log.debug("Submission already exists for assignment {} and student {} (found {} submissions)", 
+                     assignment.getId(), student.getId(), existingSubmissions.size());
+            return false;
         }
-        return false;
     }
 
     private void createSubmission(Assignment assignment, User student, int studentIndex) {

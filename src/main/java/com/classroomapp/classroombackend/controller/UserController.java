@@ -44,6 +44,11 @@ public class UserController {
     public ResponseEntity<UserDto> getCurrentUserProfile() {
         try {
             Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+            if (principal == null) {
+                logger.severe("Principal is null. User is likely not authenticated.");
+                return ResponseEntity.status(401).build(); // Unauthorized
+            }
             
             // Log principal type for diagnostic purposes
             logger.info("Principal class: " + (principal != null ? principal.getClass().getName() : "null"));
@@ -134,16 +139,6 @@ public class UserController {
         return ResponseEntity.ok(userService.FindUsersByRole(2));
     }
 
-    private String getRoleName(Long roleId) {
-        switch (roleId.intValue()) {
-            case 0: return "ADMIN";
-            case 1: return "STUDENT";
-            case 2: return "TEACHER";
-            case 3: return "MANAGER";
-            default: return "UNKNOWN";
-        }
-    }
-
     /**
      * Delete user
      * @param id user ID
@@ -160,5 +155,10 @@ public class UserController {
         // This should use the new service method with pagination
         // For now, returning empty list.
         return new ArrayList<>();
+    }
+
+    public ResponseEntity<List<UserDto>> getAllUsers() {
+        List<UserDto> users = userService.getAllUsers();
+        return ResponseEntity.ok(users);
     }
 }

@@ -3,8 +3,8 @@ package com.classroomapp.classroombackend.config.seed;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.classroomapp.classroombackend.model.Course;
-import com.classroomapp.classroombackend.repository.CourseRepository;
+import com.classroomapp.classroombackend.model.classroommanagement.Course;
+import com.classroomapp.classroombackend.repository.classroommanagement.CourseRepository;
 
 import lombok.RequiredArgsConstructor;
 

@@ -18,7 +18,6 @@ import com.classroomapp.classroombackend.exception.BusinessLogicException;
 import com.classroomapp.classroombackend.model.Request;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.requestmanagement.RequestRepository;
-import com.classroomapp.classroombackend.repository.usermanagement.RoleRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.EmailService;
 import com.classroomapp.classroombackend.service.RequestService;
@@ -31,9 +30,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class RequestServiceImpl implements RequestService {
     private final RequestRepository requestRepository;
-    private final EmailService emailService;
     private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
+    private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;

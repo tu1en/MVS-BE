@@ -24,19 +24,19 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class JwtUtil {
 
-    // Sử dụng một secret key cố định từ application.properties
-    @Value("${jwt.secret:defaultSecretKeyForDevThatShouldBeChangedInProduction}")
+    @Value("${jwt.secret}")
     private String jwtSecret;
+
+    @Value("${jwt.expiration.ms}")
+    private long jwtExpirationMs;
 
     private static final long JWT_TOKEN_VALIDITY = 24 * 60 * 60; // 24 hours
 
-    @Value("${jwt.expiration:86400}")
-    private int expiration;
-
-    // Tạo SecretKey từ chuỗi secret để đảm bảo nhất quán
     public SecretKey getSecretKeyFromString() {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
-    }    public String generateToken(String username, Integer roleId) {
+    }
+
+    public String generateToken(String username, Integer roleId) {
         log.info("Generating token for user: {} with role ID: {}", username, roleId);
         
         Map<String, Object> claims = new HashMap<>();
@@ -55,7 +55,9 @@ public class JwtUtil {
             username, token.substring(0, Math.min(20, token.length())));
         
         return token;
-    }    public boolean validateToken(String token) {
+    }
+
+    public boolean validateToken(String token) {
         if (token == null) {
             log.error("JWT validation failed: token is null");
             return false;
@@ -83,7 +85,9 @@ public class JwtUtil {
             log.error("JWT validation failed: Unknown error: {}", e.getMessage());
         }
         return false;
-    }    public String getSubjectFromToken(String token) {
+    }
+
+    public String getSubjectFromToken(String token) {
         try {
             String subject = Jwts.parserBuilder()
                     .setSigningKey(getSecretKeyFromString())

@@ -2,13 +2,13 @@ package com.classroomapp.classroombackend.service.impl;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.modelmapper.ModelMapper;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -29,36 +29,24 @@ import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSe
 import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceStatus;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.usermanagement.User;
-import com.classroomapp.classroombackend.repository.LectureRepository;
-import com.classroomapp.classroombackend.repository.ScheduleRepository;
 import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceRepository;
 import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceSessionRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomEnrollmentRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
-import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.AttendanceService;
 import com.classroomapp.classroombackend.service.ClassroomSecurityService;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class AttendanceServiceImpl implements AttendanceService {
 
     private final AttendanceRepository attendanceRepository;
     private final AttendanceSessionRepository attendanceSessionRepository;
     private final ClassroomEnrollmentRepository enrollmentRepository;
-    private final LectureRepository lectureRepository;
-    private final ScheduleRepository scheduleRepository;
-    private final UserRepository userRepository;
     private final ClassroomRepository classroomRepository;
     private final ClassroomSecurityService classroomSecurityService;
-    private final ModelMapper modelMapper;
-    
-    // Định nghĩa khoảng thời gian cho phép điểm danh hợp lệ (15 phút)
-    private static final int CLOCK_IN_GRACE_PERIOD_MINUTES = 15;
 
     @Override
     @Transactional
@@ -132,7 +120,23 @@ public class AttendanceServiceImpl implements AttendanceService {
 
     @Override
     public List<MyAttendanceHistoryDto> getMyAttendanceHistory(Long studentId, Long classroomId) {
-        return attendanceRepository.findStudentAttendanceHistoryByCourse(studentId, classroomId);
+        try {
+            System.out.println("Service: Getting attendance history for student " + studentId + " in classroom " + classroomId);
+            
+            // First try the simpler query to check if data exists
+            List<Attendance> debugRecords = attendanceRepository.findAttendanceRecordsForDebugging(studentId, classroomId);
+            System.out.println("Service: Found " + debugRecords.size() + " raw attendance records");
+            
+            // If we have records, try the DTO query
+            List<MyAttendanceHistoryDto> result = attendanceRepository.findStudentAttendanceHistoryByCourse(studentId, classroomId);
+            System.out.println("Service: Found " + result.size() + " DTO records");
+            return result;
+        } catch (Exception e) {
+            System.err.println("Service error in getMyAttendanceHistory: " + e.getMessage());
+            e.printStackTrace();
+            // Return empty list instead of throwing to avoid 500 error
+            return new ArrayList<>();
+        }
     }
     
     @Override

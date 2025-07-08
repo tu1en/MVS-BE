@@ -23,9 +23,7 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Table(name = "attendance_sessions")
@@ -33,8 +31,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Getter
-@Setter
 public class AttendanceSession {
     public enum SessionStatus {
         OPEN,
@@ -53,13 +49,14 @@ public class AttendanceSession {
     @JoinColumn(name = "classroom_id", nullable = false)
     private Classroom classroom;
 
-    @Column(nullable = true)
+    @Column(name = "created_at", nullable = true)
     private LocalDateTime createdAt;
 
-    @Column(nullable = true)
+    @Column(name = "expires_at", nullable = true)
     private LocalDateTime expiresAt;
 
     @Column(nullable = true)
+    @Builder.Default
     private Boolean isOpen = true;
 
     private String qrCodeData; // Can store a unique identifier for the QR code
@@ -81,9 +78,11 @@ public class AttendanceSession {
     private LocalDate sessionDate;
 
     @Column(name = "auto_mark_teacher_attendance", nullable = false)
+    @Builder.Default
     private boolean autoMarkTeacherAttendance = false;
 
     @Column(name = "is_active", nullable = false)
+    @Builder.Default
     private boolean isActive = true;
     
     @Column(name = "teacher_clock_in_time", nullable = true)

@@ -70,6 +70,13 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
     Optional<Attendance> findBySession_IdAndStudent_Id(Long sessionId, Long studentId);
 
+    // Alternative simpler query for debugging
+    @Query("SELECT a FROM Attendance a " +
+           "JOIN a.session s " +
+           "WHERE a.student.id = :studentId AND s.classroom.id = :classroomId " +
+           "ORDER BY s.sessionDate DESC")
+    List<Attendance> findAttendanceRecordsForDebugging(@Param("studentId") Long studentId, @Param("classroomId") Long classroomId);
+
     @Query("SELECT new com.classroomapp.classroombackend.dto.attendancemanagement.MyAttendanceHistoryDto(l.id, l.title, s.sessionDate, a.status) " +
            "FROM Attendance a " +
            "JOIN a.session s " +

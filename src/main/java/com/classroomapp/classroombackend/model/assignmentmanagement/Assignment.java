@@ -47,6 +47,7 @@ public class Assignment {
 
     @NotNull
     @Future // Must be a future date
+    @Column(name = "due_date")
     private LocalDateTime dueDate;
 
     @Min(0) // Points must be positive

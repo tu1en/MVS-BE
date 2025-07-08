@@ -1,5 +1,6 @@
 package com.classroomapp.classroombackend.controller;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
@@ -70,12 +71,25 @@ public class AttendanceController {
     @GetMapping("/my-history")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<MyAttendanceHistoryDto>> getMyAttendanceHistory(@RequestParam Long classroomId) {
-        UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        User currentUser = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found from security context"));
+        try {
+            UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            System.out.println("User from security context: " + userDetails.getUsername());
+            
+            User currentUser = userRepository.findByEmail(userDetails.getUsername())
+                    .orElseThrow(() -> new RuntimeException("User not found from security context: " + userDetails.getUsername()));
+            
+            System.out.println("Found user: " + currentUser.getId() + " - " + currentUser.getEmail());
+            System.out.println("Requesting attendance history for classroom: " + classroomId);
 
-        List<MyAttendanceHistoryDto> history = attendanceService.getMyAttendanceHistory(currentUser.getId(), classroomId);
-        return ResponseEntity.ok(history);
+            List<MyAttendanceHistoryDto> history = attendanceService.getMyAttendanceHistory(currentUser.getId(), classroomId);
+            System.out.println("Found " + history.size() + " attendance records");
+            
+            return ResponseEntity.ok(history);
+        } catch (Exception e) {
+            System.err.println("Error in getMyAttendanceHistory: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(new ArrayList<>());
+        }
     }
 
     /**
