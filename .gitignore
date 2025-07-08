@@ -53,3 +53,4 @@ Thumbs.db
 application-dev.properties
 application-prod.properties
 application-local.properties
+"src/main/resources/mve-1-firebase-adminsdk.json" 
