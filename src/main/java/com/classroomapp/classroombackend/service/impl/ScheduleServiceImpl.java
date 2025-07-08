@@ -1,5 +1,7 @@
 package com.classroomapp.classroombackend.service.impl;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,11 +11,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.classroomapp.classroombackend.dto.ScheduleDto;
+import com.classroomapp.classroombackend.dto.TimetableEventDto;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
 import com.classroomapp.classroombackend.model.Schedule;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
+import com.classroomapp.classroombackend.model.classroommanagement.ClassroomEnrollment;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.ScheduleRepository;
+import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomEnrollmentRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.ScheduleService;
@@ -31,6 +36,9 @@ public class ScheduleServiceImpl implements ScheduleService {
     
     @Autowired
     private ClassroomRepository classroomRepository;
+
+    @Autowired
+    private ClassroomEnrollmentRepository classroomEnrollmentRepository;
 
     @Override
     public Schedule createSchedule(Schedule schedule) {
@@ -64,21 +72,6 @@ public class ScheduleServiceImpl implements ScheduleService {
     public void deleteSchedule(Long id) {
         Schedule schedule = getScheduleById(id);
         scheduleRepository.delete(schedule);
-    }
-
-    @Override
-    public List<ScheduleDto> getSchedulesByTeacher(Long teacherId) {
-        // Check if teacher exists
-        User teacher = userRepository.findById(teacherId)
-                .orElseThrow(() -> new ResourceNotFoundException("Teacher", "id", teacherId));
-        
-        // Get schedules for teacher
-        List<Schedule> schedules = scheduleRepository.findByTeacherIdOrderByDayAndTime(teacherId);
-        
-        // Convert to DTOs
-        return schedules.stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
     }
 
     @Override
@@ -223,6 +216,55 @@ public class ScheduleServiceImpl implements ScheduleService {
         
         // Return DTO of updated schedule
         return convertToDto(updatedSchedule);
+    }
+
+    @Override
+    public List<TimetableEventDto> getTimetableForUser(Long userId, LocalDate startDate, LocalDate endDate) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        List<Schedule> userSchedules = new ArrayList<>();
+        boolean isTeacher = user.getRole().equals("TEACHER");
+
+        if (isTeacher) {
+            userSchedules.addAll(scheduleRepository.findByTeacherId(userId));
+        } else {
+            List<ClassroomEnrollment> enrollments = classroomEnrollmentRepository.findById_UserId(userId);
+            List<Long> classroomIds = enrollments.stream()
+                                                 .map(enrollment -> enrollment.getId().getClassroomId())
+                                                 .collect(Collectors.toList());
+            if (!classroomIds.isEmpty()) {
+                userSchedules.addAll(scheduleRepository.findByClassroomIdIn(classroomIds));
+            }
+        }
+
+        List<TimetableEventDto> events = new ArrayList<>();
+        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+            final LocalDate currentDate = date;
+            for (Schedule schedule : userSchedules) {
+                // DayOfWeek in Java's LocalDate is 1 (Monday) to 7 (Sunday).
+                // Our schedule's dayOfWeek is 0 (Monday) to 6 (Sunday).
+                if (currentDate.getDayOfWeek().getValue() -1 == schedule.getDayOfWeek()) {
+                    LocalDateTime startDateTime = LocalDateTime.of(currentDate, schedule.getStartTime());
+                    LocalDateTime endDateTime = LocalDateTime.of(currentDate, schedule.getEndTime());
+                    
+                    TimetableEventDto event = new TimetableEventDto();
+                    event.setId(schedule.getId());
+                    event.setTitle(schedule.getSubject());
+                    event.setDescription("Class with " + schedule.getTeacher().getFullName() + " in room " + schedule.getRoom());
+                    event.setStartDatetime(startDateTime);
+                    event.setEndDatetime(endDateTime);
+                    event.setEventType("CLASS_SESSION");
+                    event.setClassroomId(schedule.getClassroom().getId());
+                    event.setClassroomName(schedule.getClassroom().getName());
+                    event.setLocation(schedule.getRoom());
+                    event.setColor("#3788d8"); // Blue for classes
+                    events.add(event);
+                }
+            }
+        }
+
+        return events;
     }
     
     // Helper method to convert Schedule entity to ScheduleDto

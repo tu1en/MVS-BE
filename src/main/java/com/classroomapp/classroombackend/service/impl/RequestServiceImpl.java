@@ -1,21 +1,27 @@
 package com.classroomapp.classroombackend.service.impl;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.classroomapp.classroombackend.constants.RoleConstants;
 import com.classroomapp.classroombackend.dto.RequestDTO;
 import com.classroomapp.classroombackend.dto.RequestResponseDTO;
+import com.classroomapp.classroombackend.dto.requestmanagement.CreateRequestDto;
 import com.classroomapp.classroombackend.exception.BusinessLogicException;
 import com.classroomapp.classroombackend.model.Request;
+import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.requestmanagement.RequestRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.RoleRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.EmailService;
 import com.classroomapp.classroombackend.service.RequestService;
-import com.classroomapp.classroombackend.service.UserServiceExtension;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,9 +32,31 @@ import lombok.extern.slf4j.Slf4j;
 public class RequestServiceImpl implements RequestService {
     private final RequestRepository requestRepository;
     private final EmailService emailService;
-    private final UserServiceExtension userService;
-    
-    private static final DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;    @Override
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+
+    @Override
+    public void createRegistrationRequest(CreateRequestDto dto) {
+        if (requestRepository.existsByEmailAndStatusIn(dto.getEmail(), List.of("PENDING", "APPROVED")) || userRepository.existsByEmail(dto.getEmail())) {
+            throw new BusinessLogicException("An account with this email already exists or is pending approval.");
+        }
+
+        Request newRequest = new Request();
+        newRequest.setEmail(dto.getEmail());
+        newRequest.setFullName(dto.getFullName());
+        newRequest.setPhoneNumber(dto.getPhoneNumber());
+        newRequest.setRequestedRole(dto.getRequestedRole());
+        newRequest.setFormResponses(dto.getFormResponses());
+        newRequest.setStatus("PENDING");
+        newRequest.setCreatedAt(LocalDateTime.now());
+
+        requestRepository.save(newRequest);
+    }
+
+    @Override
     @Transactional(noRollbackFor = BusinessLogicException.class)
     public RequestResponseDTO createRequest(RequestDTO requestDTO) {
         // Check if there's already an active request
@@ -43,6 +71,7 @@ public class RequestServiceImpl implements RequestService {
         request.setRequestedRole(requestDTO.getRequestedRole());
         request.setFormResponses(requestDTO.getFormResponses());
         request.setStatus("PENDING");
+        request.setCreatedAt(LocalDateTime.now());
 
         Request savedRequest = requestRepository.save(request);
         
@@ -67,59 +96,57 @@ public class RequestServiceImpl implements RequestService {
         log.info("Starting approval process for request ID: {}", requestId);
         
         Request request = requestRepository.findById(requestId)
-                .orElseThrow(() -> new RuntimeException("Request not found with ID: " + requestId));
+                .orElseThrow(() -> new BusinessLogicException("Request not found with ID: " + requestId));
         log.info("Found request: {}", request);
 
         if (!"PENDING".equals(request.getStatus())) {
             log.warn("Request {} is not in PENDING status. Current status: {}", requestId, request.getStatus());
-            throw new RuntimeException("Request is not in PENDING status. Current status: " + request.getStatus());
+            throw new BusinessLogicException("Request is not in PENDING status. Current status: " + request.getStatus());
         }
 
+        // Create User from Request info
+        User newUser = new User();
+        newUser.setEmail(request.getEmail());
+        // Note: The User entity appears to use 'fullName' based on other files.
+        // If it uses firstName/lastName, this needs adjustment. Assuming fullName for now.
+        newUser.setFullName(request.getFullName());
+        newUser.setPhoneNumber(request.getPhoneNumber());
+
+        String randomPassword = generateRandomPassword();
+        newUser.setPassword(passwordEncoder.encode(randomPassword));
+        newUser.setStatus("active");
+        
+        // Determine roleId from the requested role string
+        int roleId = RoleConstants.STUDENT; // Default to STUDENT
+        if ("TEACHER".equalsIgnoreCase(request.getRequestedRole())) {
+            roleId = RoleConstants.TEACHER;
+        }
+        newUser.setRoleId(roleId);
+
+        userRepository.save(newUser);
+        log.info("Successfully created user for request {}", requestId);
+
+        // Update Request status
         log.info("Setting request {} status to APPROVED", requestId);
         request.setStatus("APPROVED");
         request.setProcessedAt(LocalDateTime.now());
 
-        // Update or create user with the requested role
-        try {
-            log.info("Attempting to create/update user for request {}: email={}, name={}, role={}", 
-                    requestId, request.getEmail(), request.getFullName(), request.getRequestedRole());
-                    
-            boolean success = userService.createOrUpdateUser(
-                request.getEmail(), 
-                request.getFullName(), 
-                request.getRequestedRole()
-            );
-            
-            if (!success) {
-                log.warn("Failed to update user role, but request was approved. Request ID: {}", requestId);
-            } else {
-                log.info("Successfully created/updated user for request {}", requestId);
-            }
-        } catch (Exception e) {
-            log.error("Error updating user role for request {}: {}", requestId, e.getMessage(), e);
-            // Don't fail the approval if user update fails
-        }
-        
-        // Send approval notification
+        Request savedRequest = requestRepository.save(request);
+
+        // Send approval notification with temporary password
         try {
             log.info("Sending approval notification for request {}", requestId);
-            emailService.sendRequestStatusNotification(
-                request.getEmail(),
-                request.getFullName(),
-                request.getRequestedRole(),
-                "APPROVED", 
-                null
-            );
+            // Re-fetch role name for the email
+            String roleNameForEmail = "STUDENT";
+            if (roleId == RoleConstants.TEACHER) {
+                roleNameForEmail = "TEACHER";
+            }
+            emailService.sendApprovalEmail(newUser.getEmail(), newUser.getFullName(), roleNameForEmail, randomPassword);
             log.info("Successfully sent approval notification for request {}", requestId);
         } catch (Exception e) {
             log.error("Failed to send approval email for request {}: {}", requestId, e.getMessage(), e);
-            // Don't fail the approval if email fails
         }
 
-        log.info("Saving approved request to database: {}", request);
-        Request savedRequest = requestRepository.save(request);
-        log.info("Request successfully saved with ID: {}", savedRequest.getId());
-        
         RequestResponseDTO responseDTO = convertToDTO(savedRequest);
         log.info("Returning response DTO: {}", responseDTO);
         return responseDTO;
@@ -251,5 +278,16 @@ public class RequestServiceImpl implements RequestService {
                 request.getProcessedAt().format(formatter) : null);
         dto.setFormResponses(request.getFormResponses());
         return dto;
+    }
+
+    private String generateRandomPassword() {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        SecureRandom random = new SecureRandom();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 10; i++) {
+            int randomIndex = random.nextInt(chars.length());
+            sb.append(chars.charAt(randomIndex));
+        }
+        return sb.toString();
     }
 } 

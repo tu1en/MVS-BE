@@ -87,4 +87,11 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
      * Find all announcements ordered by creation date
      */
     List<Announcement> findAllByOrderByCreatedAtDesc();
+
+    /**
+     * Find announcements by target audience list and status
+     */
+    List<Announcement> findByTargetAudienceInAndStatusOrderByCreatedAtDesc(
+            List<Announcement.TargetAudience> targetAudiences, 
+            Announcement.AnnouncementStatus status);
 }

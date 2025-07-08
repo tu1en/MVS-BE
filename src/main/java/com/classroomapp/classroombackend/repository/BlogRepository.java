@@ -1,6 +1,7 @@
 package com.classroomapp.classroombackend.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -12,6 +13,8 @@ import com.classroomapp.classroombackend.model.Blog;
 @Repository
 public interface BlogRepository extends JpaRepository<Blog, Long> {
     
+    Optional<Blog> findBySlug(String slug);
+
     List<Blog> findByAuthorId(Long authorId);
     
     List<Blog> findByIsPublishedTrue();

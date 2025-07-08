@@ -4,6 +4,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -26,7 +27,6 @@ import com.classroomapp.classroombackend.repository.usermanagement.UserRepositor
 import com.classroomapp.classroombackend.security.JwtUtil;
 import com.classroomapp.classroombackend.service.AuthService;
 import com.classroomapp.classroombackend.service.UserService;
-import com.classroomapp.classroombackend.util.UserMapper;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
@@ -46,6 +46,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
+    private final ModelMapper modelMapper;
 
     @Autowired
     public AuthServiceImpl(
@@ -53,12 +54,14 @@ public class AuthServiceImpl implements AuthService {
             UserService userService,
             PasswordEncoder passwordEncoder,
             JwtUtil jwtUtil,
-            AuthenticationManager authenticationManager) {
+            AuthenticationManager authenticationManager,
+            ModelMapper modelMapper) {
         this.userRepository = userRepository;
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
         this.authenticationManager = authenticationManager;
+        this.modelMapper = modelMapper;
     }
 
     @Override
@@ -78,8 +81,8 @@ public class AuthServiceImpl implements AuthService {
             User user = userRepository.findByUsername(loginRequest.getUsername())
                     .orElseThrow(() -> new ResourceNotFoundException("User not found"));
             
-            // Generate token
-            String token = generateToken(user.getUsername(), user.getRoleId(), user.getEmail());
+            // Generate token - FIX: Use email as the primary subject for the token
+            String token = generateToken(user.getEmail(), user.getRoleId(), user.getEmail());
             
             // Get role name
             String roleName = jwtUtil.convertRoleIdToName(user.getRoleId());
@@ -130,7 +133,7 @@ public class AuthServiceImpl implements AuthService {
         User savedUser = userRepository.save(user);
         log.info("User registered successfully: {}", savedUser.getUsername());
 
-        return UserMapper.toDto(savedUser);
+        return modelMapper.map(savedUser, UserDto.class);
     }
 
     @Override
@@ -203,7 +206,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // Get username from token
-        String username = jwtUtil.getUsernameFromToken(passwordConfirmation.getToken());
+        String username = jwtUtil.getSubjectFromToken(passwordConfirmation.getToken());
 
         // Update password
         User user = userRepository.findByUsername(username)
@@ -215,22 +218,21 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public String generateToken(String username, Integer roleId, String email) {
-        log.debug("Generating JWT token for user: {}", username);
+    public String generateToken(String subject, Integer roleId, String email) {
+        log.debug("Generating JWT token for user: {}", subject);
         
         String roleName = jwtUtil.convertRoleIdToName(roleId);
         
         Map<String, Object> claims = new HashMap<>();
-        claims.put("sub", username);  // Subject is username
+        claims.put("sub", subject);  // Subject can be email or username
         claims.put("email", email);
-        claims.put("username", username);
-        claims.put("role", roleId);
-        claims.put("roles", new String[]{roleName});
+        claims.put("role", roleId); // Keep roleId for potential fine-grained checks
+        claims.put("roles", new String[]{roleName}); // Keep roles for standard Spring Security
         
         // Generate JWT token with claims
         String token = Jwts.builder()
             .setClaims(claims)
-            .setSubject(username)
+            .setSubject(subject) // The principal identifier
             .setIssuedAt(new Date(System.currentTimeMillis()))
             .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)) // 24 hours
             .signWith(jwtUtil.getSecretKeyFromString())

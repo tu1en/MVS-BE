@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -23,6 +25,8 @@ import com.classroomapp.classroombackend.repository.usermanagement.UserRepositor
 @RequestMapping("/api/academic-performance")
 public class AcademicPerformanceController {
     
+    private static final Logger logger = LoggerFactory.getLogger(AcademicPerformanceController.class);
+
     @Autowired
     private UserRepository userRepository;
     
@@ -32,9 +36,17 @@ public class AcademicPerformanceController {
     @GetMapping("/student")
     public ResponseEntity<Map<String, Object>> getStudentAcademicPerformance(Authentication authentication) {
         try {
-            String username = authentication.getName();
-            User currentUser = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+            String usernameOrEmail = authentication.getName();
+            User currentUser;
+            
+            // Check if the authentication name is an email or username
+            if (usernameOrEmail.contains("@")) {
+                currentUser = userRepository.findByEmail(usernameOrEmail)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "email", usernameOrEmail));
+            } else {
+                currentUser = userRepository.findByUsername(usernameOrEmail)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "username", usernameOrEmail));
+            }
             
             // Lấy dữ liệu thực từ database
             Map<String, Object> response = new HashMap<>();
@@ -46,11 +58,13 @@ public class AcademicPerformanceController {
             for (Submission submission : submissions) {
                 Assignment assignment = submission.getAssignment();
                 if (assignment != null && submission.getScore() != null) {
-                    String subject = assignment.getClassroom() != null ? 
-                            assignment.getClassroom().getSubject() : "Unknown Subject";
+                    String subjectName = "Unknown Subject";
+                    if (assignment.getClassroom() != null && assignment.getClassroom().getSubject() != null) {
+                        subjectName = assignment.getClassroom().getSubject();
+                    }
                     
-                    scoresBySubject.putIfAbsent(subject, new ArrayList<>());
-                    scoresBySubject.get(subject).add(submission.getScore().doubleValue());
+                    scoresBySubject.putIfAbsent(subjectName, new ArrayList<>());
+                    scoresBySubject.get(subjectName).add(submission.getScore().doubleValue());
                 }
             }
             
@@ -85,7 +99,8 @@ public class AcademicPerformanceController {
             
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+            logger.error("Error calculating student academic performance", e);
+            return ResponseEntity.status(500).body(Map.of("error", "An internal error occurred: " + e.getMessage()));
         }
     }
     

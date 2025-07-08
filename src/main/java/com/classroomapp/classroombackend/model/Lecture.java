@@ -1,5 +1,6 @@
 package com.classroomapp.classroombackend.model;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +15,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
@@ -33,10 +35,18 @@ public class Lecture {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "schedule_id")
+    private Schedule schedule;
+    
+    @Column
+    private LocalDate lectureDate;
+    
+    @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
     private String title;
     
-    @Column(columnDefinition = "TEXT")
+    @Lob
+    @Column(columnDefinition = "NTEXT")
     private String content;
     
     @ManyToOne(fetch = FetchType.LAZY)

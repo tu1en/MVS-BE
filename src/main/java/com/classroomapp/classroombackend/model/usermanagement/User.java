@@ -28,8 +28,10 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;    @NotBlank
-    @Column(nullable = false, columnDefinition = "NVARCHAR(100)")
+    private Long id;
+
+    @NotBlank
+    @Column(nullable = false, unique = true)
     private String username;
 
     @NotBlank
@@ -44,6 +46,9 @@ public class User {
     @Column(name = "full_name", columnDefinition = "NVARCHAR(255)")
     private String fullName;
 
+    @Column(name = "phone_number", length = 20)
+    private String phoneNumber;
+
     @Column(name = "role_id")
     private Integer roleId;
 
@@ -51,7 +56,9 @@ public class User {
     private LocalDate enrollmentDate;
 
     @Column(name = "hire_date")
-    private LocalDate hireDate;    @Column(columnDefinition = "NVARCHAR(100)")
+    private LocalDate hireDate;
+
+    @Column(columnDefinition = "NVARCHAR(100)")
     private String department;
     
     @Column(name = "created_at")
@@ -101,6 +108,7 @@ public class User {
     public String getPassword() { return password; }
     public String getEmail() { return email; }
     public String getFullName() { return fullName; }
+    public String getPhoneNumber() { return phoneNumber; }
     public Integer getRoleId() { return roleId; }
     public LocalDate getEnrollmentDate() { return enrollmentDate; }
     public LocalDate getHireDate() { return hireDate; }

@@ -14,4 +14,5 @@ public class LectureMaterialDto {
     private String contentType;
     private String downloadUrl;
     private Long lectureId;
+    private long fileSize;
 }

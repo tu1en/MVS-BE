@@ -39,4 +39,13 @@ public interface EmailService {
      * @param requestedRole The role that was requested
      */
     void sendFormCompletionConfirmation(String to, String fullName, String requestedRole);
+
+    /**
+     * Send an approval email with a temporary password.
+     * @param to Recipient email address
+     * @param fullName The user's full name
+     * @param roleName The user's assigned role
+     * @param temporaryPassword The generated temporary password for the user
+     */
+    void sendApprovalEmail(String to, String fullName, String roleName, String temporaryPassword);
 }

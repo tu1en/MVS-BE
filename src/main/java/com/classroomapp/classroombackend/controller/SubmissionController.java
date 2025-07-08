@@ -1,9 +1,11 @@
 package com.classroomapp.classroombackend.controller;
 
+import java.security.Principal;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,7 +13,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.classroomapp.classroombackend.dto.assignmentmanagement.CreateSubmissionDto;
@@ -33,16 +34,38 @@ public class SubmissionController {
     public ResponseEntity<SubmissionDto> GetSubmissionById(@PathVariable Long id) {
         return ResponseEntity.ok(submissionService.GetSubmissionById(id));
     }
-    
+
+    /**
+     * Creates or updates a submission for the current user.
+     * This single endpoint handles both initial submissions and resubmissions.
+     */
     @PostMapping
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<SubmissionDto> submitOrUpdateSubmission(
+            @Valid @RequestBody CreateSubmissionDto createSubmissionDto,
+            Principal principal) {
+        return ResponseEntity.ok(submissionService.submit(createSubmissionDto, principal.getName()));
+    }
+
+    /**
+     * @deprecated Use the main POST /api/submissions endpoint which now handles updates.
+     */
+    @Deprecated
+    @PostMapping("/create") // Kept old method temporarily on a different path to avoid breaking changes
+    @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<SubmissionDto> CreateSubmission(
             @Valid @RequestBody CreateSubmissionDto createSubmissionDto,
-            @RequestParam Long studentId) {
-        return new ResponseEntity<>(submissionService.CreateSubmission(createSubmissionDto, studentId), 
+            Principal principal) {
+        return new ResponseEntity<>(submissionService.CreateSubmission(createSubmissionDto, principal.getName()), 
                 HttpStatus.CREATED);
     }
-    
+
+    /**
+     * @deprecated Use the main POST /api/submissions endpoint which now handles updates.
+     */
+    @Deprecated
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<SubmissionDto> UpdateSubmission(
             @PathVariable Long id,
             @Valid @RequestBody CreateSubmissionDto updateSubmissionDto) {
@@ -72,12 +95,13 @@ public class SubmissionController {
         return ResponseEntity.ok(submissionService.GetStudentSubmissionForAssignment(assignmentId, studentId));
     }
     
-    @PostMapping("/{submissionId}/grade")
+    @PutMapping("/{submissionId}/grade")
+    @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<SubmissionDto> GradeSubmission(
             @PathVariable Long submissionId,
             @Valid @RequestBody GradeSubmissionDto gradeSubmissionDto,
-            @RequestParam Long teacherId) {
-        return ResponseEntity.ok(submissionService.GradeSubmission(submissionId, gradeSubmissionDto, teacherId));
+            Principal principal) {
+        return ResponseEntity.ok(submissionService.GradeSubmission(submissionId, gradeSubmissionDto, principal.getName()));
     }
     
     @GetMapping("/assignment/{assignmentId}/graded")

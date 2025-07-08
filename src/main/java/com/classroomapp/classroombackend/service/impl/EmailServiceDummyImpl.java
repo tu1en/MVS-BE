@@ -38,4 +38,10 @@ public class EmailServiceDummyImpl implements EmailService {
         log.info("DUMMY EMAIL SERVICE: Would send form completion confirmation to {} ({}) - Role: {}", 
                 to, fullName, requestedRole);
     }
+
+    @Override
+    public void sendApprovalEmail(String to, String fullName, String roleName, String temporaryPassword) {
+        log.info("DUMMY EMAIL SERVICE: Would send approval email to {} ({}) - Role: {}, Password: {}",
+                to, fullName, roleName, temporaryPassword);
+    }
 }

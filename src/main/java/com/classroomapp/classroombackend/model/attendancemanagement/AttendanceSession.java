@@ -1,89 +1,119 @@
 package com.classroomapp.classroombackend.model.attendancemanagement;
 
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
-import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSession.SessionStatus;
+import com.classroomapp.classroombackend.model.Lecture;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
-import com.classroomapp.classroombackend.model.usermanagement.User;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "attendance_sessions")
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
+@Getter
+@Setter
 public class AttendanceSession {
+    public enum SessionStatus {
+        OPEN,
+        CLOSED
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // The classroom this session belongs to
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "classroom_id")
+    @ManyToOne(fetch = jakarta.persistence.FetchType.LAZY)
+    @JoinColumn(name = "lecture_id", nullable = false)
+    private Lecture lecture;
+
+    @ManyToOne(fetch = jakarta.persistence.FetchType.LAZY)
+    @JoinColumn(name = "classroom_id", nullable = false)
     private Classroom classroom;
 
-    // The teacher responsible for the session
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "teacher_id")
-    private User teacher;
+    @Column(nullable = true)
+    private LocalDateTime createdAt;
 
-    // Session name
-    private String sessionName;
-    
-    // Session date
-    private LocalDateTime sessionDate;
-    
-    // Session start and end times
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
+    @Column(nullable = true)
+    private LocalDateTime expiresAt;
 
-    // Type of session: "ONLINE" or "OFFLINE"
-    private String sessionType;
+    @Column(nullable = true)
+    private Boolean isOpen = true;
 
-    // Status of the session
+    private String qrCodeData; // Can store a unique identifier for the QR code
+
+    @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Attendance> records;
+
     @Enumerated(EnumType.STRING)
+    @Column(length = 20)
     private SessionStatus status;
 
-    // Session title or topic
-    private String title;
-    
-    // Session description
-    private String description;
+    @Column(name = "start_time")
+    private Instant startTime;
 
-    // Whether teacher attendance is auto-marked
-    private boolean autoMarkTeacherAttendance;
+    @Column(name = "end_time")
+    private Instant endTime;
 
-    // Whether the session is currently active
-    private boolean isActive;
-    
-    // Location data for attendance
-    private Double locationLatitude;
-    private Double locationLongitude;
-    private Integer locationRadiusMeters;
+    @Column(nullable = false)
+    private LocalDate sessionDate;
 
-    // When the session was created
-    private LocalDateTime createdAt;
+    @Column(name = "auto_mark_teacher_attendance", nullable = false)
+    private boolean autoMarkTeacherAttendance = false;
+
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive = true;
     
-    // Session status enum
-    public enum SessionStatus {
-        SCHEDULED,
-        ACTIVE,
-        COMPLETED
+    @Column(name = "teacher_clock_in_time", nullable = true)
+    private LocalDateTime teacherClockInTime;
+
+    public void setTeacherClockInTime(LocalDateTime teacherClockInTime) {
+        this.teacherClockInTime = teacherClockInTime;
     }
-}
+
+    public SessionStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(SessionStatus status) {
+        this.status = status;
+    }
+
+    public Instant getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(Instant startTime) {
+        this.startTime = startTime;
+    }
+
+    public Instant getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(Instant endTime) {
+        this.endTime = endTime;
+    }
+} 

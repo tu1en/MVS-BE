@@ -1,8 +1,10 @@
 package com.classroomapp.classroombackend.service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import com.classroomapp.classroombackend.dto.ScheduleDto;
+import com.classroomapp.classroombackend.dto.TimetableEventDto;
 import com.classroomapp.classroombackend.model.Schedule;
 
 public interface ScheduleService {
@@ -14,7 +16,6 @@ public interface ScheduleService {
     void deleteSchedule(Long id);
     
     // Business logic operations
-    List<ScheduleDto> getSchedulesByTeacher(Long teacherId);
     List<ScheduleDto> getSchedulesByClassroom(Long classroomId);
     List<ScheduleDto> getSchedulesByDay(Integer dayOfWeek);
     List<ScheduleDto> getSchedulesByTeacherAndDay(Long teacherId, Integer dayOfWeek);
@@ -24,4 +25,6 @@ public interface ScheduleService {
     
     // Update a schedule entry
     ScheduleDto updateScheduleEntry(Long id, ScheduleDto scheduleDto);
+
+    List<TimetableEventDto> getTimetableForUser(Long userId, LocalDate startDate, LocalDate endDate);
 } 

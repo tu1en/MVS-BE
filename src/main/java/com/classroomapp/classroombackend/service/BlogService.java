@@ -1,15 +1,17 @@
 package com.classroomapp.classroombackend.service;
 
+import java.util.List;
+
 import com.classroomapp.classroombackend.dto.BlogDto;
 import com.classroomapp.classroombackend.dto.CreateBlogDto;
-
-import java.util.List;
 
 public interface BlogService {
     
     BlogDto createBlog(CreateBlogDto createBlogDto, Long authorId);
     
     BlogDto getBlogById(Long id);
+
+    BlogDto getBlogBySlug(String slug);
     
     List<BlogDto> getAllBlogs();
     

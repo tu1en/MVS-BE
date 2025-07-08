@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.classroomapp.classroombackend.model.Lecture;
 import com.classroomapp.classroombackend.model.Schedule;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -16,8 +17,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
@@ -53,15 +52,21 @@ public class Classroom {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "teacher_id")
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password"})
-    private User teacher;    // Students enrolled in this classroom
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-        name = "classroom_enrollments",
-        joinColumns = @JoinColumn(name = "classroom_id"),
-        inverseJoinColumns = @JoinColumn(name = "user_id")
-    )
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password"})
-    private Set<User> students = new HashSet<>();
+    private User teacher;
+
+    @Column(name = "course_id")
+    private Long courseId;
+
+    @OneToMany(mappedBy = "classroom", fetch = FetchType.LAZY)
+    private Set<ClassroomEnrollment> enrollments = new HashSet<>();
+
+    public Set<User> getStudents() {
+        Set<User> students = new HashSet<>();
+        for (ClassroomEnrollment enrollment : this.enrollments) {
+            students.add(enrollment.getUser());
+        }
+        return students;
+    }
     
     // Syllabus for this classroom - one classroom has one syllabus
     @OneToOne(mappedBy = "classroom", fetch = FetchType.LAZY)
@@ -71,4 +76,7 @@ public class Classroom {
     // Schedules for this classroom - one classroom has many schedule entries
     @OneToMany(mappedBy = "classroom", fetch = FetchType.LAZY)
     private List<Schedule> schedules = new ArrayList<>();
+
+    @OneToMany(mappedBy = "classroom", fetch = FetchType.LAZY)
+    private List<Lecture> lectures = new ArrayList<>();
 }

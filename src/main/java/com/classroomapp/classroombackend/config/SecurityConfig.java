@@ -2,8 +2,6 @@ package com.classroomapp.classroombackend.config;
 
 import java.util.Arrays;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -34,8 +32,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class SecurityConfig {
 
-    private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
-    
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
@@ -90,7 +86,13 @@ public class SecurityConfig {
                 .requestMatchers("/api/files/**").permitAll()
                 .requestMatchers("/files/**").permitAll() // Allow both with and without /api prefix
                 .requestMatchers("/api/timetable/**").permitAll() // Allow access to timetable for testing
-                .requestMatchers("/api/classrooms/**").permitAll() // Allow access to classrooms for testing
+                .requestMatchers("/api/assignments/classroom/**").permitAll() // Allow access to assignments for testing
+                .requestMatchers("/api/assignments").permitAll() // Allow access to assignments for testing
+                .requestMatchers("/api/assignments/create-samples/**").permitAll() // Allow creating sample assignments
+                .requestMatchers("/api/assignments/*").permitAll() // Allow access to assignment detail for testing
+                .requestMatchers("/api/assignments/*/submissions").permitAll() // Allow access to submissions for testing
+                .requestMatchers("/api/assignments/*/submissions-debug").permitAll() // Allow access to debug for testing
+                .requestMatchers("/api/assignments/upload").permitAll() // Allow file upload for testing
                 
                 // Blog endpoints
                 .requestMatchers("/api/blogs").permitAll()
@@ -102,19 +104,11 @@ public class SecurityConfig {
                 .requestMatchers("/api/blogs/{id:[\\d]+}/publish").authenticated()
                 .requestMatchers("/api/blogs/{id:[\\d]+}/unpublish").authenticated()
                 
-                // User and Assignment endpoints for testing/debugging
-                .requestMatchers("/api/v1/users/**").permitAll()
-                .requestMatchers("/api/v1/assignments/**").permitAll()
-                .requestMatchers("/api/assignments/**").permitAll()
-                .requestMatchers("/api/users/**").permitAll()
-                .requestMatchers("/api/messages/**").permitAll() // Allow messages API for testing
-                .requestMatchers("/api/student-messages/**").permitAll() // Allow student messages API for testing
-                
                 // Protected endpoints
                 .requestMatchers("/api/admin/requests/**").hasAnyRole("ADMIN", "MANAGER")
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/manager/**").hasRole("MANAGER")
-                .requestMatchers("/api/teacher/**").hasRole("TEACHER")
+                .requestMatchers("/api/teacher/**").hasAuthority("ROLE_TEACHER")
                 .requestMatchers("/api/student/**").hasRole("STUDENT")
                 
                 // All other requests need authentication

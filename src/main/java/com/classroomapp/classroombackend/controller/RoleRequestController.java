@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.classroomapp.classroombackend.dto.FileUploadResponse;
 import com.classroomapp.classroombackend.dto.RequestDTO;
 import com.classroomapp.classroombackend.dto.RequestResponseDTO;
 import com.classroomapp.classroombackend.dto.StudentRequestFormDTO;
@@ -78,7 +79,8 @@ public class RoleRequestController {
                     
                     // Upload lên Firebase Storage
                     try {
-                        String fileUrl = fileStorageService.uploadFile(multipartFile, "cv-files");
+                        FileUploadResponse response = fileStorageService.save(multipartFile, "cv-files");
+                        String fileUrl = response.getFileUrl();
                         logger.info("CV file uploaded successfully to: {}", fileUrl);
                         
                         // Cập nhật URL cho form

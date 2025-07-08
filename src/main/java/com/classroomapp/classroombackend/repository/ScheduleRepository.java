@@ -27,4 +27,6 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
     // Find schedules by teacher ID with sorted days and times
     @Query("SELECT s FROM Schedule s WHERE s.teacher.id = :teacherId ORDER BY s.dayOfWeek, s.startTime")
     List<Schedule> findByTeacherIdOrderByDayAndTime(@Param("teacherId") Long teacherId);
+
+    List<Schedule> findByClassroomIdIn(List<Long> classroomIds);
 } 

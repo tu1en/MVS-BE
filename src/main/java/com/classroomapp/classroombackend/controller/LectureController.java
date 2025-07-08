@@ -1,12 +1,14 @@
 package com.classroomapp.classroombackend.controller;
 
+import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,15 +21,20 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.classroomapp.classroombackend.dto.AddMaterialsRequest;
 import com.classroomapp.classroombackend.dto.AssessmentDto;
 import com.classroomapp.classroombackend.dto.CreateAssessmentDto;
 import com.classroomapp.classroombackend.dto.CreateLectureDto;
+import com.classroomapp.classroombackend.dto.LectureDetailsDto;
 import com.classroomapp.classroombackend.dto.LectureDto;
 import com.classroomapp.classroombackend.dto.LectureMaterialDto;
 import com.classroomapp.classroombackend.dto.LiveStreamDto;
 import com.classroomapp.classroombackend.dto.LiveStreamStatusDto;
 import com.classroomapp.classroombackend.dto.RecordingSessionDto;
 import com.classroomapp.classroombackend.dto.UpdateLectureDto;
+import com.classroomapp.classroombackend.service.AssessmentService;
+import com.classroomapp.classroombackend.service.LectureMaterialService;
+import com.classroomapp.classroombackend.service.LectureService;
 
 import jakarta.validation.Valid;
 
@@ -36,84 +43,60 @@ import jakarta.validation.Valid;
 @CrossOrigin(origins = "http://localhost:3000")
 public class LectureController {
     
-    private final Map<Long, List<LectureDto>> lecturesByCourseDb; 
-    private final AtomicLong materialIdCounter = new AtomicLong(1000); 
+    @Autowired
+    private LectureService lectureService;
 
-    public LectureController(CourseController courseController) {
-        this.lecturesByCourseDb = courseController.lecturesByCourse; 
-    }
+    @Autowired
+    private LectureMaterialService lectureMaterialService;
 
-    // Extended functionality for LectureCreator.jsx
-    
+    @Autowired
+    private AssessmentService assessmentService;
+
     // Get single lecture details
     @GetMapping("/{id}")
-    public ResponseEntity<LectureDto> getLecture(@PathVariable Long id) {
-        // Search for lecture across all courses
-        for (List<LectureDto> lecturesInCourse : lecturesByCourseDb.values()) {
-            for (LectureDto lecture : lecturesInCourse) {
-                if (lecture.getId().equals(id)) {
-                    return ResponseEntity.ok(lecture);
-                }
-            }
-        }
-        return ResponseEntity.notFound().build();
+    @PreAuthorize("hasAnyRole('TEACHER', 'STUDENT')")
+    public ResponseEntity<LectureDetailsDto> getLectureById(@PathVariable Long id, Principal principal) {
+        return ResponseEntity.ok(lectureService.getLectureById(id, principal));
     }
     
     // Create new lecture
-    @PostMapping
-    public ResponseEntity<LectureDto> createLecture(@Valid @RequestBody CreateLectureDto createLectureDto) {
-        LectureDto lecture = new LectureDto();
-        lecture.setId(System.currentTimeMillis());
-        lecture.setTitle(createLectureDto.getTitle());
-        lecture.setDescription(createLectureDto.getDescription());
-        lecture.setCreatedDate(LocalDateTime.now());
-        lecture.setStatus("DRAFT");
-        
-        // Add to course lectures list (assuming courseId exists)
-        List<LectureDto> courseLectures = lecturesByCourseDb.get(createLectureDto.getCourseId());
-        if (courseLectures != null) {
-            courseLectures.add(lecture);
-        }
-        
-        return new ResponseEntity<>(lecture, HttpStatus.CREATED);
+    @PostMapping("/classrooms/{classroomId}")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<LectureDto> createLecture(@PathVariable Long classroomId,
+                                                    @Valid @RequestBody CreateLectureDto createLectureDto,
+                                                    Principal principal) {
+        String userEmail = principal.getName();
+        LectureDto createdLecture = lectureService.createLecture(classroomId, createLectureDto, userEmail);
+        return new ResponseEntity<>(createdLecture, HttpStatus.CREATED);
     }
     
     // Update lecture
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<LectureDto> updateLecture(
             @PathVariable Long id,
-            @Valid @RequestBody UpdateLectureDto updateLectureDto) {
-        
-        // Find and update lecture
-        for (List<LectureDto> lecturesInCourse : lecturesByCourseDb.values()) {
-            for (LectureDto lecture : lecturesInCourse) {
-                if (lecture.getId().equals(id)) {
-                    lecture.setTitle(updateLectureDto.getTitle());
-                    lecture.setDescription(updateLectureDto.getDescription());
-                    return ResponseEntity.ok(lecture);
-                }
-            }
-        }
-        return ResponseEntity.notFound().build();
+            @Valid @RequestBody UpdateLectureDto updateLectureDto,
+            Principal principal) {
+        String userEmail = principal.getName();
+        LectureDto updatedLecture = lectureService.updateLecture(id, updateLectureDto, userEmail);
+        return ResponseEntity.ok(updatedLecture);
     }
     
     // Delete lecture
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteLecture(@PathVariable Long id) {
-        for (List<LectureDto> lecturesInCourse : lecturesByCourseDb.values()) {
-            lecturesInCourse.removeIf(lecture -> lecture.getId().equals(id));
-        }
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<Void> deleteLecture(@PathVariable Long id, Principal principal) {
+        String userEmail = principal.getName();
+        lectureService.deleteLecture(id, userEmail);
         return ResponseEntity.noContent().build();
     }
     
     // Get lectures by course
-    @GetMapping("/course/{courseId}")
-    public ResponseEntity<List<LectureDto>> getLecturesByCourse(@PathVariable Long courseId) {
-        List<LectureDto> lectures = lecturesByCourseDb.get(courseId);
-        if (lectures != null) {
-            return ResponseEntity.ok(lectures);
-        }
-        return ResponseEntity.ok(List.of()); // Return empty list if no lectures found
+    @GetMapping("/classrooms/{classroomId}")
+    @PreAuthorize("hasAnyRole('TEACHER', 'STUDENT')")
+    public ResponseEntity<List<LectureDto>> getLecturesByClassroom(@PathVariable Long classroomId) {
+        List<LectureDto> lectures = lectureService.getLecturesByClassroomId(classroomId);
+        return ResponseEntity.ok(lectures);
     }
     
     // Video recording operations for LectureCreator.jsx
@@ -177,84 +160,75 @@ public class LectureController {
         status.setStreamQuality("HD");
         return ResponseEntity.ok(status);
     }
-    
-    // Assessment integration for LectureCreator.jsx
+
+    // Assessment Endpoints
     @PostMapping("/{lectureId}/assessments")
+    @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<AssessmentDto> createLectureAssessment(
             @PathVariable Long lectureId,
-            @Valid @RequestBody CreateAssessmentDto createAssessmentDto) {
-        AssessmentDto assessment = new AssessmentDto();
-        assessment.setId(System.currentTimeMillis());
-        assessment.setLectureId(lectureId);
-        assessment.setTitle(createAssessmentDto.getTitle());
-        assessment.setDescription(createAssessmentDto.getDescription());
-        assessment.setAssessmentType(createAssessmentDto.getAssessmentType());
-        assessment.setTimeLimit(createAssessmentDto.getTimeLimit());
-        assessment.setCreatedDate(LocalDateTime.now());
+            @Valid @RequestBody CreateAssessmentDto createAssessmentDto,
+            Principal principal) {
+        AssessmentDto assessment = assessmentService.createAssessment(lectureId, createAssessmentDto, principal.getName());
         return new ResponseEntity<>(assessment, HttpStatus.CREATED);
     }
     
     @GetMapping("/{lectureId}/assessments")
+    @PreAuthorize("hasAnyRole('TEACHER', 'STUDENT')")
     public ResponseEntity<List<AssessmentDto>> getLectureAssessments(@PathVariable Long lectureId) {
-        // Mock implementation - return sample assessments
-        List<AssessmentDto> assessments = List.of(
-            createMockAssessment(1L, lectureId, "Quick Quiz", "QUIZ"),
-            createMockAssessment(2L, lectureId, "Understanding Check", "POLL")
-        );
+        List<AssessmentDto> assessments = assessmentService.getAssessmentsByLectureId(lectureId);
         return ResponseEntity.ok(assessments);
     }
-    
-    // Helper method for mock assessment
-    private AssessmentDto createMockAssessment(Long id, Long lectureId, String title, String assessmentType) {
-        AssessmentDto assessment = new AssessmentDto();
-        assessment.setId(id);
-        assessment.setLectureId(lectureId);
-        assessment.setTitle(title);
-        assessment.setDescription("Sample assessment for lecture");
-        assessment.setAssessmentType(assessmentType);
-        assessment.setTimeLimit(15); // 15 minutes
-        assessment.setCreatedDate(LocalDateTime.now());
-        return assessment;
+
+    @DeleteMapping("/assessments/{assessmentId}")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<Void> deleteAssessment(@PathVariable Long assessmentId, Principal principal) {
+        assessmentService.deleteAssessment(assessmentId, principal.getName());
+        return ResponseEntity.noContent().build();
     }
 
-    // Task 31: Upload tài liệu bài giảng
+    // Material Endpoints
+    @PostMapping("/{lectureId}/materials")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<List<LectureMaterialDto>> addMaterialsToLecture(
+            @PathVariable Long lectureId,
+            @Valid @RequestBody AddMaterialsRequest request,
+            Principal principal) {
+        List<LectureMaterialDto> newMaterials = lectureService.addMaterials(lectureId, request.getFiles(), principal.getName());
+        return new ResponseEntity<>(newMaterials, HttpStatus.CREATED);
+    }
+
+    /**
+     * @deprecated This endpoint is deprecated in favor of the new two-step upload process.
+     * Use POST /api/files/upload and then POST /api/lectures/{lectureId}/materials.
+     */
+    @Deprecated
     @PostMapping("/{lectureId}/materials/upload")
+    @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<LectureMaterialDto> uploadMaterial(
             @PathVariable Long lectureId,
-            @RequestParam("file") MultipartFile file) {
-        
-        System.out.println("Yêu cầu upload tài liệu cho bài giảng ID: " + lectureId);
-        System.out.println("Tên file: " + file.getOriginalFilename());
+            @RequestParam("file") MultipartFile file,
+            Principal principal) {
+        LectureMaterialDto materialDto = lectureMaterialService.storeFile(file, lectureId, principal.getName());
+        return new ResponseEntity<>(materialDto, HttpStatus.CREATED);
+    }
+    
+    @GetMapping("/{lectureId}/materials")
+    @PreAuthorize("hasAnyRole('TEACHER', 'STUDENT')")
+    public ResponseEntity<List<LectureMaterialDto>> getLectureMaterials(@PathVariable Long lectureId) {
+        List<LectureMaterialDto> materials = lectureMaterialService.getMaterialsByLectureId(lectureId);
+        return ResponseEntity.ok(materials);
+    }
 
-        if (file.isEmpty()) {
-            return ResponseEntity.badRequest().body(null);
-        }
-        
-        LectureMaterialDto materialDto = new LectureMaterialDto(
-            materialIdCounter.getAndIncrement(),
-            file.getOriginalFilename(),
-            file.getContentType(),
-            "/api/lectures/materials/download/" + file.getOriginalFilename(),
-            lectureId
-        );
+    @GetMapping("/materials/{materialId}/download")
+    @PreAuthorize("hasAnyRole('TEACHER', 'STUDENT')")
+    public ResponseEntity<Resource> downloadFile(@PathVariable Long materialId) {
+        return lectureMaterialService.getFile(materialId);
+    }
 
-        boolean lectureFoundAndUpdate = false;
-        // Tìm bài giảng và thêm tài liệu
-        outerloop:
-        for (List<LectureDto> lecturesInCourse : lecturesByCourseDb.values()) {
-            for (LectureDto lecture : lecturesInCourse) {
-                if (lecture.getId().equals(lectureId)) {
-                    lecture.addMaterial(materialDto);
-                    lectureFoundAndUpdate = true;
-                    break outerloop;
-                }
-            }
-        }
-
-        if (!lectureFoundAndUpdate) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-        }
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(materialDto);
+    @DeleteMapping("/materials/{materialId}")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<Void> deleteMaterial(@PathVariable Long materialId, Principal principal) {
+        lectureMaterialService.deleteFile(materialId, principal.getName());
+        return ResponseEntity.noContent().build();
     }
 }

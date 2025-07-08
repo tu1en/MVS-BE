@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,6 +32,7 @@ public class CourseFeedbackController {
     
     // Create new feedback
     @PostMapping
+    @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<CourseFeedbackDto> createFeedback(@Valid @RequestBody CourseFeedbackDto feedbackDto) {
         try {
             CourseFeedbackDto createdFeedback = feedbackService.createFeedback(feedbackDto);
@@ -64,6 +66,7 @@ public class CourseFeedbackController {
     
     // Get all feedback for a classroom
     @GetMapping("/classroom/{classroomId}")
+    @PreAuthorize("hasAnyRole('TEACHER', 'MANAGER')")
     public ResponseEntity<List<CourseFeedbackDto>> getFeedbackByClassroom(@PathVariable Long classroomId) {
         try {
             List<CourseFeedbackDto> feedback = feedbackService.getFeedbackByClassroom(classroomId);

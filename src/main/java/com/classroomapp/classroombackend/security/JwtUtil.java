@@ -7,8 +7,6 @@ import java.util.Map;
 
 import javax.crypto.SecretKey;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -25,8 +23,6 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @Slf4j
 public class JwtUtil {
-
-    private static final Logger log = LoggerFactory.getLogger(JwtUtil.class);
 
     // Sử dụng một secret key cố định từ application.properties
     @Value("${jwt.secret:defaultSecretKeyForDevThatShouldBeChangedInProduction}")
@@ -87,18 +83,18 @@ public class JwtUtil {
             log.error("JWT validation failed: Unknown error: {}", e.getMessage());
         }
         return false;
-    }    public String getUsernameFromToken(String token) {
+    }    public String getSubjectFromToken(String token) {
         try {
-            String username = Jwts.parserBuilder()
+            String subject = Jwts.parserBuilder()
                     .setSigningKey(getSecretKeyFromString())
                     .build()
                     .parseClaimsJws(token)
                     .getBody()
                     .getSubject();
-            log.debug("Extracted username from token: {}", username);
-            return username;
+            log.debug("Extracted subject from token: {}", subject);
+            return subject;
         } catch (Exception e) {
-            log.error("Error getting username from token: {}", e.getMessage());
+            log.error("Error getting subject from token: {}", e.getMessage());
             return null;
         }
     }

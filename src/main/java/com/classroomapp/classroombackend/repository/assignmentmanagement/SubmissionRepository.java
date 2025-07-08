@@ -53,9 +53,18 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
     @Query("SELECT AVG(s.score) FROM Submission s WHERE s.assignment = :assignment AND s.score IS NOT NULL")
     Optional<Double> getAverageScoreByAssignment(@Param("assignment") Assignment assignment);
 
+    @Query("SELECT s FROM Submission s JOIN FETCH s.assignment JOIN FETCH s.student WHERE s.student = :student ORDER BY s.submittedAt DESC")
+    List<Submission> findByStudentWithDetails(@Param("student") User student);
+
     List<Submission> findByAssignmentId(Long assignmentId);
     
     Optional<Submission> findByAssignmentIdAndStudentId(Long assignmentId, Long studentId);
     
     List<Submission> findByStudentId(Long studentId);
+
+    @Query("SELECT count(s) FROM Submission s WHERE s.assignment.classroom.id IN :classroomIds AND s.score IS NOT NULL")
+    long countGradedSubmissionsByClassroomIds(@Param("classroomIds") List<Long> classroomIds);
+
+    @Query("SELECT count(s) FROM Submission s WHERE s.assignment.classroom.id IN :classroomIds AND s.score IS NULL")
+    long countPendingSubmissionsByClassroomIds(@Param("classroomIds") List<Long> classroomIds);
 }

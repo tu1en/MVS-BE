@@ -1,50 +1,34 @@
 package com.classroomapp.classroombackend.repository.attendancemanagement;
 
-import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSession;
-import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSession.SessionStatus;
-import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
-import com.classroomapp.classroombackend.model.usermanagement.User;
 
 @Repository
 public interface AttendanceSessionRepository extends JpaRepository<AttendanceSession, Long> {
+    List<AttendanceSession> findByClassroomId(Long classroomId);
+    Optional<AttendanceSession> findByLectureId(Long lectureId);
     
-    // Find sessions by classroom
-    List<AttendanceSession> findByClassroom(Classroom classroom);
-    
-    // Find sessions by teacher
-    List<AttendanceSession> findByTeacher(User teacher);
-    
-    // Find sessions by status
-    List<AttendanceSession> findByStatus(SessionStatus status);
-      // Find sessions by classroom and status
-    List<AttendanceSession> findByClassroomAndStatus(Classroom classroom, SessionStatus status);
-      // Find sessions within a date range
-    List<AttendanceSession> findByStartTimeBetween(LocalDateTime startDate, LocalDateTime endDate);
-    
-    // Find sessions for a classroom within date range
-    List<AttendanceSession> findByClassroomAndStartTimeBetween(Classroom classroom, LocalDateTime startDate, LocalDateTime endDate);
-    
-    // Find current active session for a classroom
-    List<AttendanceSession> findByClassroomAndStatusOrderByStartTimeDesc(Classroom classroom, SessionStatus status);
-    
-    // Find scheduled sessions that should be activated
-    List<AttendanceSession> findByStatusAndStartTimeLessThanEqual(SessionStatus status, LocalDateTime currentTime);
-    
-    // Find active sessions that should be completed
-    List<AttendanceSession> findByStatusAndEndTimeLessThanEqual(SessionStatus status, LocalDateTime currentTime);
-    
-    // Count sessions for a classroom
-    long countByClassroom(Classroom classroom);
-    
-    // Count sessions by teacher
-    long countByTeacher(User teacher);
-    
-    // Find sessions for teacher within date range
-    List<AttendanceSession> findByTeacherAndStartTimeBetween(User teacher, LocalDateTime startDate, LocalDateTime endDate);
+    boolean existsByClassroomIdAndStatus(Long classroomId, AttendanceSession.SessionStatus status);
+
+    /**
+     * Tìm các phiên điểm danh mà giáo viên đã clock-in
+     * @param teacherId ID của giáo viên
+     * @return Danh sách các phiên điểm danh
+     */
+    @Query("SELECT s FROM AttendanceSession s " +
+           "JOIN s.lecture l " +
+           "JOIN l.schedule sch " +
+           "WHERE sch.teacher.id = :teacherId " +
+           "AND s.teacherClockInTime IS NOT NULL " +
+           "ORDER BY s.teacherClockInTime DESC")
+    List<AttendanceSession> findTeachingHistoryByTeacherId(@Param("teacherId") Long teacherId);
+
+    long countByClassroomIdIn(List<Long> classroomIds);
 }

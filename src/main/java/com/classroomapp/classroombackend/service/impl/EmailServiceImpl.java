@@ -84,7 +84,16 @@ public class EmailServiceImpl implements EmailService {
         String body = templateEngine.process("email/request-received", context);
         sendEmail(to, subject, body);
     }
-      // This method is kept for potential future use
+
+    @Override
+    public void sendApprovalEmail(String to, String fullName, String roleName, String temporaryPassword) {
+        String subject = "Tài khoản MVS Classroom của bạn đã được phê duyệt";
+        // We can reuse the account info email body generation logic
+        String body = generateAccountInfoEmailBody(fullName, roleName, to, temporaryPassword);
+        sendEmail(to, subject, body);
+    }
+
+    // This method is kept for potential future use
     private String generateStatusEmailBody(String fullName, String role, String status, String reason) {
         if ("APPROVED".equals(status)) {
             Context context = new Context();

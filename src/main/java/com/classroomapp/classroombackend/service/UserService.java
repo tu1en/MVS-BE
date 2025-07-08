@@ -1,8 +1,13 @@
 package com.classroomapp.classroombackend.service;
 
 import java.util.List;
+import java.util.Set;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import com.classroomapp.classroombackend.dto.usermanagement.UserDto;
+import com.classroomapp.classroombackend.model.usermanagement.User;
 
 public interface UserService {
     
@@ -26,20 +31,22 @@ public interface UserService {
      */
     UserDto FindUserByUsername(String username);
     
+    /*
     /**
      * Create a new user
      * @param userDto user information
      * @return created user DTO
      */
-    UserDto CreateUser(UserDto userDto);
+    // UserDto CreateUser(UserDto userDto);
     
+    /*
     /**
      * Update existing user
      * @param id user ID
      * @param userDto updated user information
      * @return updated user DTO
      */
-    UserDto UpdateUser(Long id, UserDto userDto);
+    // UserDto UpdateUser(Long id, UserDto userDto);
     
     /**
      * Delete user
@@ -69,4 +76,17 @@ public interface UserService {
     List<UserDto> FindUsersByRole(Integer roleId);
 
     void sendPasswordResetEmail(String email, String resetLink);
+
+    Page<UserDto> findAllUsers(String keyword, Pageable pageable);
+
+    UserDto updateUserStatus(Long userId, boolean enabled);
+
+    UserDto updateUserRoles(Long userId, Set<String> roleNames);
+
+    /**
+     * Find user entity by email
+     * @param email email to search
+     * @return User entity if found, null otherwise
+     */
+    User findUserEntityByEmail(String email);
 }

@@ -2,6 +2,8 @@ package com.classroomapp.classroombackend.dto.assignmentmanagement;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -27,6 +29,7 @@ public class AssignmentDto {
     
     @NotNull(message = "Due date is required")
     @Future(message = "Due date must be in the future")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime dueDate;
     
     @Min(value = 0, message = "Points must be non-negative")
@@ -40,6 +43,8 @@ public class AssignmentDto {
     private String subject;
     
     // Additional metadata
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime updatedAt;
 }

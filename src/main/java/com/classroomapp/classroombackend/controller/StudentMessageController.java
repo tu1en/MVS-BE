@@ -68,51 +68,31 @@ public class StudentMessageController {
     @GetMapping("/messages/received/{recipientId}")
     public ResponseEntity<List<StudentMessageDto>> getReceivedMessages(@PathVariable Long recipientId) {
         try {
-            System.out.println("=== StudentMessageController: GET RECEIVED MESSAGES DEBUG ===");
             System.out.println("Getting messages for recipient ID: " + recipientId);
-            
             List<StudentMessageDto> messages = messageService.getReceivedMessages(recipientId);
-            
             System.out.println("Found " + messages.size() + " messages for recipient");
-            System.out.println("=== END GET RECEIVED MESSAGES DEBUG ===");
-            
             return ResponseEntity.ok(messages);
         } catch (Exception e) {
-            System.err.println("=== StudentMessageController: GET RECEIVED MESSAGES ERROR ===");
             System.err.println("Error getting messages for recipient ID: " + recipientId);
-            System.err.println("Error message: " + e.getMessage());
             e.printStackTrace();
-            System.err.println("=== END GET RECEIVED MESSAGES ERROR ===");
-            
-            // Return empty list instead of error status to prevent frontend crashes
-            return ResponseEntity.ok(List.of());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
     
-    // Get conversation between two users    @GetMapping("/messages/conversation/{user1Id}/{user2Id}")
+    // Get conversation between two users
+    @GetMapping("/messages/conversation/{user1Id}/{user2Id}")
     public ResponseEntity<List<StudentMessageDto>> getConversation(
             @PathVariable Long user1Id, 
             @PathVariable Long user2Id) {
         try {
-            System.out.println("=== StudentMessageController: GET CONVERSATION DEBUG ===");
             System.out.println("Getting conversation between user " + user1Id + " and user " + user2Id);
-            
             List<StudentMessageDto> conversation = messageService.getConversation(user1Id, user2Id);
-            
             System.out.println("Found " + conversation.size() + " messages in conversation");
-            for (int i = 0; i < conversation.size(); i++) {
-                StudentMessageDto msg = conversation.get(i);
-                System.out.println("Message " + (i+1) + ": ID=" + msg.getId() + ", From=" + msg.getSenderId() + ", To=" + msg.getRecipientId() + ", Content=" + msg.getContent());
-            }
-            System.out.println("=== END GET CONVERSATION DEBUG ===");
-            
             return ResponseEntity.ok(conversation);
         } catch (Exception e) {
-            System.err.println("=== StudentMessageController: GET CONVERSATION ERROR ===");
             System.err.println("Error getting conversation: " + e.getMessage());
             e.printStackTrace();
-            System.err.println("=== END GET CONVERSATION ERROR ===");
-            return ResponseEntity.ok(List.of()); // Return empty list instead of 404 Not Found
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
     
@@ -123,8 +103,7 @@ public class StudentMessageController {
             List<StudentMessageDto> messages = messageService.getUnreadMessages(recipientId);
             return ResponseEntity.ok(messages);
         } catch (Exception e) {
-            // Return empty list instead of error status to prevent frontend crashes
-            return ResponseEntity.ok(List.of());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
     
@@ -156,8 +135,7 @@ public class StudentMessageController {
             List<StudentMessageDto> messages = messageService.getUrgentMessages(recipientId);
             return ResponseEntity.ok(messages);
         } catch (Exception e) {
-            // Return empty list instead of error status to prevent frontend crashes
-            return ResponseEntity.ok(List.of());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
     
@@ -182,8 +160,7 @@ public class StudentMessageController {
             List<StudentMessageDto> messages = messageService.getPendingReplies(recipientId);
             return ResponseEntity.ok(messages);
         } catch (Exception e) {
-            // Return empty list instead of error status to prevent frontend crashes
-            return ResponseEntity.ok(List.of());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
     
@@ -241,8 +218,7 @@ public class StudentMessageController {
             Long count = messageService.countUnreadMessages(recipientId);
             return ResponseEntity.ok(count);
         } catch (Exception e) {
-            // Return zero instead of error status to prevent frontend crashes
-            return ResponseEntity.ok(0L);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(0L);
         }
     }
     
@@ -293,5 +269,13 @@ public class StudentMessageController {
         response.put("data", data);
         
         return ResponseEntity.ok(response);
+    }
+    
+    // Alias for legacy FE: /student-messages/student/{id}
+    @GetMapping("/student-messages/student/{studentId}")
+    public ResponseEntity<List<StudentMessageDto>> getStudentMessagesAlias(@PathVariable Long studentId) {
+        // Reuse existing received messages endpoint logic
+        List<StudentMessageDto> messages = messageService.getReceivedMessages(studentId);
+        return ResponseEntity.ok(messages);
     }
 }

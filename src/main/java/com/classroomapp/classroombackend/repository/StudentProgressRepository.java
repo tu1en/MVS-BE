@@ -1,14 +1,15 @@
 package com.classroomapp.classroombackend.repository;
 
-import com.classroomapp.classroombackend.model.StudentProgress;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Optional;
+import com.classroomapp.classroombackend.model.StudentProgress;
 
 @Repository
 public interface StudentProgressRepository extends JpaRepository<StudentProgress, Long> {
@@ -66,4 +67,16 @@ public interface StudentProgressRepository extends JpaRepository<StudentProgress
            "WHERE sp.studentId = :studentId AND sp.classroomId = :classroomId")
     Integer getTotalTimeSpent(@Param("studentId") Long studentId, 
                             @Param("classroomId") Long classroomId);
+    
+    /**
+     * Find all progress for a specific student across all classrooms
+     */
+    List<StudentProgress> findByStudentIdOrderByLastAccessedDesc(Long studentId);
+    
+    /**
+     * Find overall progress for all classrooms of a student
+     */
+    @Query("SELECT sp FROM StudentProgress sp WHERE sp.studentId = :studentId " +
+           "AND sp.progressType = 'OVERALL' ORDER BY sp.lastAccessed DESC")
+    List<StudentProgress> findOverallProgressByStudent(@Param("studentId") Long studentId);
 }

@@ -5,22 +5,25 @@ import java.util.List;
 import java.util.OptionalDouble;
 import java.util.stream.Collectors;
 
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.classroomapp.classroombackend.dto.assignmentmanagement.CreateSubmissionDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.GradeSubmissionDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.SubmissionDto;
+import com.classroomapp.classroombackend.exception.BusinessLogicException;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
 import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
-import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.assignmentmanagement.Submission;
+import com.classroomapp.classroombackend.model.assignmentmanagement.SubmissionAttachment;
+import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.assignmentmanagement.AssignmentRepository;
 import com.classroomapp.classroombackend.repository.assignmentmanagement.SubmissionRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.classroomapp.classroombackend.service.FileStorageService;
 import com.classroomapp.classroombackend.service.SubmissionService;
-import com.classroomapp.classroombackend.util.ModelMapper;
 
 import lombok.RequiredArgsConstructor;
 
@@ -32,23 +35,63 @@ public class SubmissionServiceImpl implements SubmissionService {
     private final AssignmentRepository assignmentRepository;
     private final UserRepository userRepository;
     private final ModelMapper modelMapper;
+    private final FileStorageService fileStorageService;
 
     @Override
     public SubmissionDto GetSubmissionById(Long id) {
         Submission submission = FindSubmissionById(id);
-        return modelMapper.MapToSubmissionDto(submission);
+        return modelMapper.map(submission, SubmissionDto.class);
     }
 
     @Override
     @Transactional
-    public SubmissionDto CreateSubmission(CreateSubmissionDto createSubmissionDto, Long studentId) {
+    public SubmissionDto submit(CreateSubmissionDto dto, String studentUsername) {
+        User student = userRepository.findByEmail(studentUsername)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", studentUsername));
+
+        Assignment assignment = assignmentRepository.findById(dto.getAssignmentId())
+                .orElseThrow(() -> new ResourceNotFoundException("Assignment", "id", dto.getAssignmentId()));
+
+        // 1. Kiểm tra hạn nộp
+        if (LocalDateTime.now().isAfter(assignment.getDueDate())) {
+            throw new BusinessLogicException("Assignment deadline has passed.");
+        }
+
+        // 2. Logic Upsert: Tìm hoặc tạo mới Submission
+        Submission submission = submissionRepository
+                .findByAssignmentAndStudent(assignment, student)
+                .orElse(new Submission(assignment, student));
+
+        // 3. Nếu là nộp lại, xóa file cũ
+        if (submission.getId() != null && submission.getAttachments() != null) {
+            submission.getAttachments().forEach(att -> fileStorageService.delete(att.getFileName()));
+            submission.getAttachments().clear();
+        }
+
+        // 4. Cập nhật nội dung và file mới
+        submission.setComment(dto.getComment());
+        submission.setSubmittedAt(LocalDateTime.now());
+
+        if (dto.getAttachments() != null && !dto.getAttachments().isEmpty()) {
+            dto.getAttachments().forEach(fileInfo ->
+                submission.addAttachment(new SubmissionAttachment(fileInfo, submission))
+            );
+        }
+
+        Submission savedSubmission = submissionRepository.save(submission);
+        return modelMapper.map(savedSubmission, SubmissionDto.class);
+    }
+
+    @Override
+    @Transactional
+    public SubmissionDto CreateSubmission(CreateSubmissionDto createSubmissionDto, String studentUsername) {
         // Get assignment
         Assignment assignment = assignmentRepository.findById(createSubmissionDto.getAssignmentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Assignment", "id", createSubmissionDto.getAssignmentId()));
         
         // Get student
-        User student = userRepository.findById(studentId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", studentId));
+        User student = userRepository.findByEmail(studentUsername)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", studentUsername));
         
         // Validate student role
         if (student.getRoleId() != 1) {
@@ -67,16 +110,19 @@ public class SubmissionServiceImpl implements SubmissionService {
                 });
         
         // Create submission
-        Submission submission = new Submission();
-        submission.setAssignment(assignment);
-        submission.setStudent(student);
+        Submission submission = new Submission(assignment, student);
         submission.setComment(createSubmissionDto.getComment());
-        submission.setFileSubmissionUrl(createSubmissionDto.getFileSubmissionUrl());
         submission.setSubmittedAt(LocalDateTime.now());
+
+        if (createSubmissionDto.getAttachments() != null && !createSubmissionDto.getAttachments().isEmpty()) {
+            createSubmissionDto.getAttachments().forEach(fileInfo ->
+                submission.addAttachment(new SubmissionAttachment(fileInfo, submission))
+            );
+        }
         
         // Save and return
         Submission savedSubmission = submissionRepository.save(submission);
-        return modelMapper.MapToSubmissionDto(savedSubmission);
+        return modelMapper.map(savedSubmission, SubmissionDto.class);
     }
 
     @Override
@@ -89,14 +135,28 @@ public class SubmissionServiceImpl implements SubmissionService {
             throw new IllegalArgumentException("Cannot update a graded submission");
         }
         
+        // Delete old attachments from storage
+        if (submission.getAttachments() != null && !submission.getAttachments().isEmpty()) {
+            submission.getAttachments().forEach(attachment -> fileStorageService.delete(attachment.getFileName()));
+        }
+
+        // Clear the old collection of attachments managed by JPA
+        submission.getAttachments().clear();
+        
         // Update fields
         submission.setComment(updateSubmissionDto.getComment());
-        submission.setFileSubmissionUrl(updateSubmissionDto.getFileSubmissionUrl());
         submission.setSubmittedAt(LocalDateTime.now());
+
+        // Add new attachments
+        if (updateSubmissionDto.getAttachments() != null && !updateSubmissionDto.getAttachments().isEmpty()) {
+            updateSubmissionDto.getAttachments().forEach(fileInfo ->
+                submission.addAttachment(new SubmissionAttachment(fileInfo, submission))
+            );
+        }
         
         // Save and return
         Submission updatedSubmission = submissionRepository.save(submission);
-        return modelMapper.MapToSubmissionDto(updatedSubmission);
+        return modelMapper.map(updatedSubmission, SubmissionDto.class);
     }
 
     @Override
@@ -107,6 +167,11 @@ public class SubmissionServiceImpl implements SubmissionService {
         // Only allow deleting if not graded
         if (submission.getScore() != null) {
             throw new IllegalArgumentException("Cannot delete a graded submission");
+        }
+
+        // Also delete files from storage before deleting the submission from DB
+        if (submission.getAttachments() != null && !submission.getAttachments().isEmpty()) {
+            submission.getAttachments().forEach(attachment -> fileStorageService.delete(attachment.getFileName()));
         }
         
         submissionRepository.delete(submission);
@@ -121,7 +186,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         // Get submissions
         List<Submission> submissions = submissionRepository.findByAssignmentOrderBySubmittedAtDesc(assignment);
         return submissions.stream()
-                .map(modelMapper::MapToSubmissionDto)
+                .map(submission -> modelMapper.map(submission, SubmissionDto.class))
                 .collect(Collectors.toList());
     }
 
@@ -131,10 +196,10 @@ public class SubmissionServiceImpl implements SubmissionService {
         User student = userRepository.findById(studentId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", studentId));
         
-        // Get submissions
-        List<Submission> submissions = submissionRepository.findByStudent(student);
+        // Get submissions using the optimized query
+        List<Submission> submissions = submissionRepository.findByStudentWithDetails(student);
         return submissions.stream()
-                .map(modelMapper::MapToSubmissionDto)
+                .map(submission -> modelMapper.map(submission, SubmissionDto.class))
                 .collect(Collectors.toList());
     }
 
@@ -153,18 +218,18 @@ public class SubmissionServiceImpl implements SubmissionService {
                 .orElseThrow(() -> new ResourceNotFoundException("Submission", "assignment and student", 
                         assignmentId + " and " + studentId));
         
-        return modelMapper.MapToSubmissionDto(submission);
+        return modelMapper.map(submission, SubmissionDto.class);
     }
 
     @Override
     @Transactional
-    public SubmissionDto GradeSubmission(Long submissionId, GradeSubmissionDto gradeSubmissionDto, Long teacherId) {
+    public SubmissionDto GradeSubmission(Long submissionId, GradeSubmissionDto gradeSubmissionDto, String teacherUsername) {
         // Get submission
         Submission submission = FindSubmissionById(submissionId);
         
         // Get teacher
-        User teacher = userRepository.findById(teacherId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", teacherId));
+        User teacher = userRepository.findByEmail(teacherUsername)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", teacherUsername));
         
         // Validate teacher role
         if (teacher.getRoleId() != 2 && teacher.getRoleId() != 3) {
@@ -192,7 +257,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         
         // Save and return
         Submission gradedSubmission = submissionRepository.save(submission);
-        return modelMapper.MapToSubmissionDto(gradedSubmission);
+        return modelMapper.map(gradedSubmission, SubmissionDto.class);
     }
 
     @Override
@@ -204,7 +269,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         // Get graded submissions
         List<Submission> submissions = submissionRepository.findByAssignmentAndScoreIsNotNull(assignment);
         return submissions.stream()
-                .map(modelMapper::MapToSubmissionDto)
+                .map(submission -> modelMapper.map(submission, SubmissionDto.class))
                 .collect(Collectors.toList());
     }
 
@@ -217,7 +282,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         // Get ungraded submissions
         List<Submission> submissions = submissionRepository.findByAssignmentAndScoreIsNull(assignment);
         return submissions.stream()
-                .map(modelMapper::MapToSubmissionDto)
+                .map(submission -> modelMapper.map(submission, SubmissionDto.class))
                 .collect(Collectors.toList());
     }
 
