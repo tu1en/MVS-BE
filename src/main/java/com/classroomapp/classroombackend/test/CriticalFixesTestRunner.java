@@ -8,9 +8,9 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import com.classroomapp.classroombackend.service.impl.AttendanceServiceImpl;
-import com.classroomapp.classroombackend.service.impl.AccomplishmentServiceImpl;
 import com.classroomapp.classroombackend.repository.assignmentmanagement.AssignmentRepository;
+import com.classroomapp.classroombackend.service.impl.AccomplishmentServiceImpl;
+import com.classroomapp.classroombackend.service.impl.AttendanceServiceImpl;
 
 /**
  * Test runner to verify critical fixes are working
