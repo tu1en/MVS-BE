@@ -24,6 +24,7 @@ import lombok.NoArgsConstructor;
     @UniqueConstraint(columnNames = {"session_id", "student_id"})
 })
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

@@ -100,6 +100,67 @@ public class UserController {
     }
 
     /**
+     * Get current user profile (mock implementation)
+     * @return current user profile
+     */
+    @GetMapping("/me")
+    public ResponseEntity<Map<String, Object>> getCurrentUser() {
+        try {
+            // For now, return mock data since authentication is not fully implemented
+            // In a real implementation, you would get the user from the security context
+            Map<String, Object> response = new HashMap<>();
+            Map<String, Object> userData = new HashMap<>();
+            
+            // Mock student data
+            userData.put("id", 36L);
+            userData.put("fullName", "Nguyễn Văn A");
+            userData.put("email", "student@example.com");
+            userData.put("phoneNumber", "0123456789");
+            userData.put("studentId", "SV2023001");
+            userData.put("gender", "male");
+            userData.put("address", "Hà Nội, Việt Nam");
+            userData.put("school", "Trường Đại học ABC");
+            userData.put("className", "Lớp 12A1");
+            userData.put("roleName", "STUDENT");
+            userData.put("roleId", 1);
+            
+            response.put("success", true);
+            response.put("data", userData);
+            response.put("message", "User profile retrieved successfully");
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Error retrieving user profile: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+    
+    /**
+     * Update current user profile (mock implementation)
+     * @param profileData updated profile data
+     * @return updated profile response
+     */
+    @PutMapping("/me")
+    public ResponseEntity<Map<String, Object>> updateCurrentUser(@RequestBody Map<String, Object> profileData) {
+        try {
+            // Mock update - in real implementation, you would update the actual user
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", profileData);
+            response.put("message", "Profile updated successfully");
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Error updating profile: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+    
+    /**
      * Get all users
      * @return list of all users
      */

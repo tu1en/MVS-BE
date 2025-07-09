@@ -10,6 +10,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -50,7 +51,7 @@ public class AttendanceController {
         AttendanceResultDto result = attendanceService.getAttendanceResult(classroomId, studentId);
         return ResponseEntity.ok(result);
     }
-
+    
     /**
      * Gets the attendance status for all enrolled students for a specific lecture.
      * Accessible only by users with the 'TEACHER' role.
@@ -91,7 +92,7 @@ public class AttendanceController {
             return ResponseEntity.status(500).body(new ArrayList<>());
         }
     }
-
+    
     /**
      * Gets the attendance history for a specific student in a specific classroom.
      * Accessible only by users with the 'TEACHER' role for viewing any student's record.
