@@ -20,11 +20,11 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SecurityException;
-import lombok.extern.slf4j.Slf4j;
 
 @Component
-@Slf4j
 public class JwtUtil {
+
+    private static final Logger log = LoggerFactory.getLogger(JwtUtil.class);
 
     @Value("${jwt.secret}")
     private String jwtSecret;

@@ -82,7 +82,15 @@ public class AssignmentController {
     @GetMapping("/current-teacher")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<AssignmentDto>> GetAssignmentsByCurrentTeacher() {
-        return ResponseEntity.ok(assignmentService.getAssignmentsByCurrentTeacher());
+        log.info("🔍 AssignmentController.GetAssignmentsByCurrentTeacher called");
+        try {
+            List<AssignmentDto> assignments = assignmentService.getAssignmentsByCurrentTeacher();
+            log.info("✅ Successfully retrieved {} assignments for current teacher", assignments.size());
+            return ResponseEntity.ok(assignments);
+        } catch (Exception e) {
+            log.error("❌ Error retrieving assignments for current teacher: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 
     // Add endpoint to get assignments by student
@@ -93,8 +101,15 @@ public class AssignmentController {
 
     @GetMapping("/teacher/{teacherId}")
     public ResponseEntity<List<AssignmentDto>> getAssignmentsByTeacher(@PathVariable Long teacherId) {
-        List<AssignmentDto> assignments = assignmentService.getAssignmentsByTeacher(teacherId);
-        return ResponseEntity.ok(assignments);
+        log.info("🔍 AssignmentController.getAssignmentsByTeacher called with teacherId: {}", teacherId);
+        try {
+            List<AssignmentDto> assignments = assignmentService.getAssignmentsByTeacher(teacherId);
+            log.info("✅ Successfully retrieved {} assignments for teacher {}", assignments.size(), teacherId);
+            return ResponseEntity.ok(assignments);
+        } catch (Exception e) {
+            log.error("❌ Error retrieving assignments for teacher {}: {}", teacherId, e.getMessage(), e);
+            throw e;
+        }
     }
 
     // Add endpoint for currently authenticated student

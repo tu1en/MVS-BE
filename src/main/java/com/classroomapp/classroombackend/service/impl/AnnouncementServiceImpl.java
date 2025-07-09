@@ -55,7 +55,7 @@ public class AnnouncementServiceImpl implements AnnouncementService {
         // Create notifications for the target audience
         createNotificationsForAnnouncement(savedAnnouncement);
 
-        return modelMapper.map(savedAnnouncement, AnnouncementDto.class);
+        return convertToDto(savedAnnouncement);
     }
 
     private void createNotificationsForAnnouncement(Announcement announcement) {
@@ -99,7 +99,7 @@ public class AnnouncementServiceImpl implements AnnouncementService {
         // This can be expanded later.
 
         Announcement savedAnnouncement = announcementRepository.save(existingAnnouncement);
-        return modelMapper.map(savedAnnouncement, AnnouncementDto.class);
+        return convertToDto(savedAnnouncement);
     }
 
     @Override
@@ -115,12 +115,12 @@ public class AnnouncementServiceImpl implements AnnouncementService {
     public AnnouncementDto getAnnouncementById(Long announcementId) {
         Announcement announcement = announcementRepository.findById(announcementId)
                 .orElseThrow(() -> new ResourceNotFoundException("Announcement not found with id: " + announcementId));
-        return modelMapper.map(announcement, AnnouncementDto.class);
+        return convertToDto(announcement);
     }
     
     public List<AnnouncementDto> getAllAnnouncements() {
         return announcementRepository.findAllByOrderByCreatedAtDesc().stream()
-                .map(announcement -> modelMapper.map(announcement, AnnouncementDto.class))
+                .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
 
@@ -130,7 +130,7 @@ public class AnnouncementServiceImpl implements AnnouncementService {
                 Announcement.AnnouncementStatus.ACTIVE
         );
         return announcements.stream()
-                .map(announcement -> modelMapper.map(announcement, AnnouncementDto.class))
+                .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
 
@@ -206,4 +206,32 @@ public class AnnouncementServiceImpl implements AnnouncementService {
     public void archiveExpiredAnnouncements() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
-} 
+
+    private AnnouncementDto convertToDto(Announcement announcement) {
+        AnnouncementDto dto = new AnnouncementDto();
+        dto.setId(announcement.getId());
+        dto.setTitle(announcement.getTitle());
+        dto.setContent(announcement.getContent());
+        dto.setClassroomId(announcement.getClassroomId());
+        dto.setCreatedBy(announcement.getCreatedBy());
+        dto.setTargetAudience(announcement.getTargetAudience() != null ? announcement.getTargetAudience().name() : null);
+        dto.setPriority(announcement.getPriority() != null ? announcement.getPriority().name() : null);
+        dto.setScheduledDate(announcement.getScheduledDate());
+        dto.setExpiryDate(announcement.getExpiryDate());
+        dto.setIsPinned(announcement.getIsPinned());
+        dto.setAttachmentsCount(announcement.getAttachmentsCount());
+        dto.setCreatedAt(announcement.getCreatedAt());
+        dto.setUpdatedAt(announcement.getUpdatedAt());
+        dto.setStatus(announcement.getStatus() != null ? announcement.getStatus().name() : null);
+
+        // Set related entity names if available
+        if (announcement.getClassroom() != null) {
+            dto.setClassroomName(announcement.getClassroom().getName());
+        }
+        if (announcement.getCreator() != null) {
+            dto.setCreatorName(announcement.getCreator().getFullName());
+        }
+
+        return dto;
+    }
+}

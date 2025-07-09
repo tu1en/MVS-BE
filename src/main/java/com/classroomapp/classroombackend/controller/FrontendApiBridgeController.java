@@ -1,7 +1,6 @@
 package com.classroomapp.classroombackend.controller;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -18,9 +17,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.classroomapp.classroombackend.dto.AttendanceDto;
 import com.classroomapp.classroombackend.dto.StudentMessageDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto;
+import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
 import com.classroomapp.classroombackend.dto.usermanagement.UserDto;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
@@ -62,65 +61,17 @@ public class FrontendApiBridgeController {
     @Autowired
     private UserRepository userRepository;
 
-    /**
-     * Bridge endpoint for getting current user profile
-     * Frontend calls: /api/users/me
-     * Maps to the UserController /api/v1/users/me endpoint
-     */
-    @GetMapping("/users/me")
-    public ResponseEntity<Map<String, Object>> getCurrentUserProfile() {
-        try {
-            // Mock current user data for frontend compatibility
-            Map<String, Object> response = new HashMap<>();
-            Map<String, Object> userData = new HashMap<>();
-            
-            // Mock student data that matches frontend expectations
-            userData.put("id", 36L);
-            userData.put("fullName", "Nguyễn Văn A");
-            userData.put("email", "student@example.com");
-            userData.put("phoneNumber", "0123456789");
-            userData.put("studentId", "SV2023001");
-            userData.put("gender", "male");
-            userData.put("address", "Hà Nội, Việt Nam");
-            userData.put("school", "Trường Đại học ABC");
-            userData.put("className", "Lớp 12A1");
-            userData.put("roleName", "STUDENT");
-            userData.put("roleId", 1);
-            
-            response.put("success", true);
-            response.put("data", userData);
-            response.put("message", "User profile retrieved successfully");
-            
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("message", "Error retrieving user profile: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-        }
-    }
-    
-    /**
+    /*
      * Bridge endpoint for updating current user profile
      * Frontend calls: /api/users/me (PUT)
+     * This endpoint is now handled by UserController.updateCurrentUser and is removed here to prevent conflicts.
      */
-    @PutMapping("/users/me")
-    public ResponseEntity<Map<String, Object>> updateCurrentUserProfile(@RequestBody Map<String, Object> profileData) {
-        try {
-            // Mock update response for frontend compatibility
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("data", profileData);
-            response.put("message", "Profile updated successfully");
-            
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("message", "Error updating profile: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-        }
-    }
+    // @PutMapping("/users/me")
+    // public ResponseEntity<?> updateCurrentUserProfile(@RequestBody Map<String, String> profileData) {
+    //     // Mock implementation
+    //     System.out.println("🌉 [Bridge] Received PUT /api/users/me with data: " + profileData);
+    //     return ResponseEntity.ok(Map.of("status", "success", "message", "Profile updated via bridge."));
+    // }
 
     /**
      * Bridge endpoint for getting all students
@@ -139,23 +90,6 @@ public class FrontendApiBridgeController {
         }
     }
     
-    /**
-     * Bridge endpoint for getting all teachers
-     * Frontend calls: /api/users/teachers
-     * Maps to: /api/v1/users/teachers
-     */
-    @GetMapping("/users/teachers")
-    public ResponseEntity<List<UserDto>> getAllTeachers() {
-        try {
-            return ResponseEntity.ok(userService.FindUsersByRole(2)); // Role 2 = TEACHER
-        } catch (Exception e) {
-            System.err.println("Error fetching teachers: " + e.getMessage());
-            e.printStackTrace();
-            // Return empty list to prevent frontend crash
-            return ResponseEntity.ok(new ArrayList<>());
-        }
-    }
-
     // Note: Removed duplicate endpoints for /classrooms/student/{studentId} and /classrooms/teacher/{teacherId}
     // These are already handled by ClassroomController at /api/classrooms/student/{studentId} and /api/classrooms/teacher/{teacherId}
     
@@ -333,46 +267,49 @@ public class FrontendApiBridgeController {
     // These are already handled by UserController at /api/users/teachers and /api/users/students
     
     /**
-     * Bridge endpoint for getting current teacher's classrooms
-     * Frontend calls: /classrooms/current-teacher
-     * Gets current user from JWT token
+     * REMOVED: Bridge endpoint for getting current teacher's classrooms
+     * This endpoint was causing a conflict with ClassroomController.
+     * Frontend should call: /api/classrooms/current-teacher directly
+     * which is handled by ClassroomController.GetClassroomsByCurrentTeacher()
      */
-    @GetMapping("/classrooms/current-teacher")
-    public ResponseEntity<List<ClassroomDto>> getCurrentTeacherClassrooms(Authentication authentication) {
-        // Extract user ID from JWT token
-        String username = authentication.getName();
-        User currentUser = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
-        return ResponseEntity.ok(classroomService.GetClassroomsByTeacher(currentUser.getId()));
-    }
+    // @GetMapping("/classrooms/current-teacher")
+    // public ResponseEntity<List<ClassroomDto>> getCurrentTeacherClassrooms(Authentication authentication) {
+    //     // Extract user ID from JWT token
+    //     String username = authentication.getName();
+    //     User currentUser = userRepository.findByUsername(username)
+    //             .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+    //     return ResponseEntity.ok(classroomService.GetClassroomsByTeacher(currentUser.getId()));
+    // }
     
     /**
-     * Bridge endpoint for getting current teacher's assignments
-     * Frontend calls: /assignments/current-teacher
-     * Gets assignments for current teacher's classrooms
+     * REMOVED: Bridge endpoint for getting current teacher's assignments
+     * This endpoint was causing a conflict with AssignmentController.
+     * Frontend should call: /api/assignments/current-teacher directly
+     * which is handled by AssignmentController.GetAssignmentsByCurrentTeacher()
      */
-    @GetMapping("/assignments/current-teacher")
-    public ResponseEntity<List<AssignmentDto>> getCurrentTeacherAssignments(Authentication authentication) {
-        // Extract user ID from JWT token
-        String username = authentication.getName();
-        User currentUser = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
-        return ResponseEntity.ok(assignmentService.GetAssignmentsByTeacher(currentUser.getId()));
-    }
+    // @GetMapping("/assignments/current-teacher")
+    // public ResponseEntity<List<AssignmentDto>> getCurrentTeacherAssignments(Authentication authentication) {
+    //     // Extract user ID from JWT token
+    //     String username = authentication.getName();
+    //     User currentUser = userRepository.findByUsername(username)
+    //             .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+    //     return ResponseEntity.ok(assignmentService.findByTeacherId(currentUser.getId()));
+    // }
     
     /**
-     * Bridge endpoint for getting current student's classrooms
-     * Frontend calls: /classrooms/current-student
-     * Gets current user from JWT token
+     * REMOVED: Bridge endpoint for getting current student's classrooms
+     * This endpoint was causing a conflict with ClassroomController.
+     * Frontend should call: /api/classrooms/current-student directly
+     * which is handled by ClassroomController.GetClassroomsByCurrentStudent()
      */
-    @GetMapping("/classrooms/current-student")
-    public ResponseEntity<List<ClassroomDto>> getCurrentStudentClassrooms(Authentication authentication) {
-        // Extract user ID from JWT token
-        String username = authentication.getName();
-        User currentUser = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
-        return ResponseEntity.ok(classroomService.GetClassroomsByStudent(currentUser.getId()));
-    }
+    // @GetMapping("/classrooms/current-student")
+    // public ResponseEntity<List<ClassroomDto>> getCurrentStudentClassrooms(Authentication authentication) {
+    //     // Extract user ID from JWT token
+    //     String username = authentication.getName();
+    //     User currentUser = userRepository.findByUsername(username)
+    //             .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+    //     return ResponseEntity.ok(classroomService.GetClassroomsByStudent(currentUser.getId()));
+    // }
     
     /**
      * Bridge endpoint for getting current student's courses
@@ -401,7 +338,7 @@ public class FrontendApiBridgeController {
                     .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
             
             // Get actual attendance data from service
-            List<AttendanceDto> attendanceRecords = attendanceService.getAttendanceByUser(currentUser.getId());
+            List<AttendanceDto> attendanceRecords = attendanceService.findByUserId(currentUser.getId());
             
             return ResponseEntity.ok(new java.util.HashMap<String, Object>() {{
                 put("data", attendanceRecords);
@@ -452,7 +389,7 @@ public class FrontendApiBridgeController {
             
             // Get real stats based on teacher's classrooms
             List<ClassroomDto> classrooms = classroomService.GetClassroomsByTeacher(currentUser.getId());
-            List<AssignmentDto> assignments = assignmentService.GetAssignmentsByTeacher(currentUser.getId());
+            List<AssignmentDto> assignments = assignmentService.findByTeacherId(currentUser.getId());
             
             // Calculate stats
             final int totalStudents = classrooms.size() * 10; // Mock: 10 students per classroom
@@ -486,7 +423,7 @@ public class FrontendApiBridgeController {
     public ResponseEntity<?> getTeacherUnreadMessageCount(Authentication authentication) {
         try {
             String username = authentication.getName();
-            User currentUser = userRepository.findByUsername(username)
+            userRepository.findByUsername(username)
                     .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
             
             // Return mock data for now
@@ -518,13 +455,15 @@ public class FrontendApiBridgeController {
     }
 
     /**
-     * Bridge endpoint for getting assignments by specific teacher ID
-     * Frontend calls: /assignments/teacher/{teacherId}
+     * REMOVED: Bridge endpoint for getting assignments by specific teacher ID
+     * This endpoint was causing a conflict with AssignmentController.
+     * Frontend should call: /api/assignments/teacher/{teacherId} directly
+     * which is handled by AssignmentController.getAssignmentsByTeacher()
      */
-    @GetMapping("/assignments/teacher/{teacherId}")
-    public ResponseEntity<List<AssignmentDto>> getAssignmentsByTeacher(@PathVariable Long teacherId) {
-        return ResponseEntity.ok(assignmentService.GetAssignmentsByTeacher(teacherId));
-    }
+    // @GetMapping("/assignments/teacher/{teacherId}")
+    // public ResponseEntity<List<AssignmentDto>> getAssignmentsByTeacher(@PathVariable Long teacherId) {
+    //     return ResponseEntity.ok(assignmentService.findByTeacherId(teacherId));
+    // }
 
     /**
      * Bridge endpoint for teacher profile management
@@ -572,36 +511,41 @@ public class FrontendApiBridgeController {
     }
 
     /**
-     * Bridge endpoint for getting current student's assignments
-     * Frontend calls: /assignments/student
-     * Gets assignments for current authenticated student
+     * REMOVED: Bridge endpoint for getting current student's assignments
+     * This endpoint was causing a potential conflict with AssignmentController.
+     * Frontend should call: /api/assignments/student/me directly
+     * which is handled by AssignmentController.GetAssignmentsForCurrentStudent()
      */
-    @GetMapping("/assignments/student")
-    public ResponseEntity<List<AssignmentDto>> getCurrentStudentAssignments(Authentication authentication) {
-        // Extract user ID from JWT token
-        String username = authentication.getName();
-        User currentUser = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
-        return ResponseEntity.ok(assignmentService.GetAssignmentsByStudent(currentUser.getId()));
-    }
+    // @GetMapping("/assignments/student")
+    // public ResponseEntity<List<AssignmentDto>> getCurrentStudentAssignments(Authentication authentication) {
+    //     // Extract user ID from JWT token
+    //     String username = authentication.getName();
+    //     User currentUser = userRepository.findByUsername(username)
+    //             .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+    //     return ResponseEntity.ok(assignmentService.findByStudentId(currentUser.getId()));
+    // }
 
     /**
-     * Bridge endpoint for getting all classrooms
-     * Frontend calls: /classrooms
+     * REMOVED: Bridge endpoint for getting all classrooms
+     * This endpoint should be centralized in ClassroomController.
+     * Frontend should call: /api/classrooms directly
+     * A GET /api/classrooms endpoint should be added to ClassroomController if needed.
      */
-    @GetMapping("/classrooms")
-    public ResponseEntity<List<ClassroomDto>> getAllClassrooms() {
-        return ResponseEntity.ok(classroomService.getAllClassrooms());
-    }
+    // @GetMapping("/classrooms")
+    // public ResponseEntity<List<ClassroomDto>> getAllClassrooms() {
+    //     return ResponseEntity.ok(classroomService.getAllClassrooms());
+    // }
     
     /**
-     * Bridge endpoint for getting all assignments
-     * Frontend calls: /assignments
+     * REMOVED: Bridge endpoint for getting all assignments
+     * This endpoint was causing a conflict with AssignmentController.
+     * Frontend should call: /api/assignments directly
+     * which is handled by AssignmentController.GetAllAssignments()
      */
-    @GetMapping("/assignments")
-    public ResponseEntity<List<AssignmentDto>> getAllAssignments() {
-        return ResponseEntity.ok(assignmentService.GetAllAssignments());
-    }
+    // @GetMapping("/assignments")
+    // public ResponseEntity<List<AssignmentDto>> getAllAssignments() {
+    //     return ResponseEntity.ok(assignmentService.getAllAssignments());
+    // }
 
     /**
      * Test endpoint

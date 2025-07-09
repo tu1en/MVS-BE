@@ -63,4 +63,18 @@ public class CourseFeedbackDto {
     
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    
+    // Explicit getters to resolve compilation issues
+    public Long getClassroomId() { return classroomId; }
+    public String getTitle() { return title; }
+    public String getContent() { return content; }
+    public Integer getOverallRating() { return overallRating; }
+    public Integer getTeachingQualityRating() { return teachingQualityRating; }
+    public Integer getCourseMaterialRating() { return courseMaterialRating; }
+    public Integer getSupportRating() { return supportRating; }
+    public String getCategory() { return category; }
+    public Boolean getIsAnonymous() { return isAnonymous; }
+    
+    // Explicit setters to resolve compilation issues
+    public void setStudentName(String studentName) { this.studentName = studentName; }
 }

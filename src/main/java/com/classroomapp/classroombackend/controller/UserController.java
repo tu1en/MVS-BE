@@ -1,10 +1,13 @@
 package com.classroomapp.classroombackend.controller;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -12,6 +15,8 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -96,44 +101,6 @@ public class UserController {
             logger.severe("Error retrieving current user profile: " + e.getMessage());
             e.printStackTrace(); // Log stack trace for better debugging
             return ResponseEntity.status(500).build();
-        }
-    }
-
-    /**
-     * Get current user profile (mock implementation)
-     * @return current user profile
-     */
-    @GetMapping("/me")
-    public ResponseEntity<Map<String, Object>> getCurrentUser() {
-        try {
-            // For now, return mock data since authentication is not fully implemented
-            // In a real implementation, you would get the user from the security context
-            Map<String, Object> response = new HashMap<>();
-            Map<String, Object> userData = new HashMap<>();
-            
-            // Mock student data
-            userData.put("id", 36L);
-            userData.put("fullName", "Nguyễn Văn A");
-            userData.put("email", "student@example.com");
-            userData.put("phoneNumber", "0123456789");
-            userData.put("studentId", "SV2023001");
-            userData.put("gender", "male");
-            userData.put("address", "Hà Nội, Việt Nam");
-            userData.put("school", "Trường Đại học ABC");
-            userData.put("className", "Lớp 12A1");
-            userData.put("roleName", "STUDENT");
-            userData.put("roleId", 1);
-            
-            response.put("success", true);
-            response.put("data", userData);
-            response.put("message", "User profile retrieved successfully");
-            
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("message", "Error retrieving user profile: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
     

@@ -32,15 +32,31 @@ import com.classroomapp.classroombackend.service.ExamService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/api/classrooms")
 @RequiredArgsConstructor
+@Slf4j
 public class ClassroomController {
 
     private final ClassroomService classroomService;
     private final ExamService examService;
-    
+
+    // Add endpoint to get all classrooms (centralized from FrontendApiBridgeController)
+    @GetMapping
+    public ResponseEntity<List<ClassroomDto>> getAllClassrooms() {
+        log.info("🔍 ClassroomController.getAllClassrooms called");
+        try {
+            List<ClassroomDto> classrooms = classroomService.getAllClassrooms();
+            log.info("✅ Successfully retrieved {} classrooms", classrooms.size());
+            return ResponseEntity.ok(classrooms);
+        } catch (Exception e) {
+            log.error("❌ Error retrieving all classrooms: {}", e.getMessage(), e);
+            throw e;
+        }
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ClassroomDto> GetClassroomById(@PathVariable Long id) {
         return ResponseEntity.ok(classroomService.GetClassroomById(id));
@@ -76,13 +92,29 @@ public class ClassroomController {
     @GetMapping("/current-teacher")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<ClassroomDto>> GetClassroomsByCurrentTeacher() {
-        return ResponseEntity.ok(classroomService.GetClassroomsByCurrentTeacher());
+        log.info("🔍 ClassroomController.GetClassroomsByCurrentTeacher called");
+        try {
+            List<ClassroomDto> classrooms = classroomService.GetClassroomsByCurrentTeacher();
+            log.info("✅ Successfully retrieved {} classrooms for current teacher", classrooms.size());
+            return ResponseEntity.ok(classrooms);
+        } catch (Exception e) {
+            log.error("❌ Error retrieving classrooms for current teacher: {}", e.getMessage(), e);
+            throw e;
+        }
     }
     
     @GetMapping("/current-student")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<ClassroomDto>> GetClassroomsByCurrentStudent() {
-        return ResponseEntity.ok(classroomService.getClassroomsByCurrentStudent());
+        log.info("🔍 ClassroomController.GetClassroomsByCurrentStudent called");
+        try {
+            List<ClassroomDto> classrooms = classroomService.getClassroomsByCurrentStudent();
+            log.info("✅ Successfully retrieved {} classrooms for current student", classrooms.size());
+            return ResponseEntity.ok(classrooms);
+        } catch (Exception e) {
+            log.error("❌ Error retrieving classrooms for current student: {}", e.getMessage(), e);
+            throw e;
+        }
     }
     
     @GetMapping("/student/me")

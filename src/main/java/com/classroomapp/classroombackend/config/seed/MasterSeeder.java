@@ -5,6 +5,8 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.DependsOn;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,8 +17,10 @@ import com.classroomapp.classroombackend.repository.usermanagement.UserRepositor
 
 import lombok.RequiredArgsConstructor;
 
-@Component // Re-enabled with lazy AssignmentSeeder
+@Component
+@Order(2) // Run after DatabaseCleanupService
 @RequiredArgsConstructor
+@DependsOn("entityManagerFactory") // Wait for JPA to be initialized
 public class MasterSeeder implements CommandLineRunner {
     private static final Logger log = LoggerFactory.getLogger(MasterSeeder.class);
 

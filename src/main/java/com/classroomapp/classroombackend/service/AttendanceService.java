@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceDto;
+import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceDto;
 import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceRecordDto;
 import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceResultDto;
 import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceSessionDto;
@@ -98,4 +100,11 @@ public interface AttendanceService {
      * @return Danh sách các buổi học đã được ghi nhận giảng dạy
      */
     List<TeachingHistoryDto> getTeachingHistory(Long teacherId);
-} 
+    
+    /**
+     * Find attendance records by user ID
+     * @param userId The ID of the user
+     * @return List of attendance records
+     */
+    List<AttendanceDto> findByUserId(Long userId);
+}

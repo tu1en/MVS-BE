@@ -25,4 +25,9 @@ public class Role {
     public Role(String name) {
         this.name = name;
     }
+    
+    // Explicit setters to resolve compilation issues
+    public void setId(int id) { this.id = id; }
+    public void setId(Integer id) { this.id = id; }
+    public void setName(String name) { this.name = name; }
 }

@@ -63,10 +63,7 @@ public class AssignmentServiceImpl implements AssignmentService {
     private final ClassroomSecurityService classroomSecurityService;
     private static final Logger log = LoggerFactory.getLogger(AssignmentServiceImpl.class);
 
-    @Override
-    public Assignment findEntityById(Long id) {
-        return assignmentRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Assignment with ID " + id + " not found"));
-    }
+
 
     /**
      * Find Assignment entity by ID
@@ -410,6 +407,36 @@ public class AssignmentServiceImpl implements AssignmentService {
 
         // Fetch all assignments for those classrooms in a single query
         return assignmentRepository.findByClassroomInOrderByDueDateAsc(enrolledClassrooms)
+                .stream()
+                .map(assignment -> modelMapper.map(assignment, AssignmentDto.class))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<AssignmentDto> findByTeacherId(Long teacherId) {
+        List<Classroom> teacherClassrooms = classroomRepository.findByTeacherId(teacherId);
+        return assignmentRepository.findByClassroomInOrderByDueDateAsc(teacherClassrooms)
+                .stream()
+                .map(assignment -> modelMapper.map(assignment, AssignmentDto.class))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<AssignmentDto> findByStudentId(Long studentId) {
+        List<ClassroomEnrollment> enrollments = classroomEnrollmentRepository.findByUserId(studentId);
+        List<Classroom> enrolledClassrooms = enrollments.stream()
+                .map(ClassroomEnrollment::getClassroom)
+                .collect(Collectors.toList());
+        
+        return assignmentRepository.findByClassroomInOrderByDueDateAsc(enrolledClassrooms)
+                .stream()
+                .map(assignment -> modelMapper.map(assignment, AssignmentDto.class))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<AssignmentDto> getAllAssignments() {
+        return assignmentRepository.findAll()
                 .stream()
                 .map(assignment -> modelMapper.map(assignment, AssignmentDto.class))
                 .collect(Collectors.toList());
