@@ -16,7 +16,7 @@ import com.classroomapp.classroombackend.service.AdminRequestService;
 
 @RestController
 @RequestMapping("/api/admin/requests")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('MANAGER')")
 public class AdminRequestController {
 
     private final AdminRequestService adminRequestService;
@@ -28,6 +28,11 @@ public class AdminRequestController {
     @GetMapping
     public ResponseEntity<List<RequestDTO>> getAllRequests() {
         return ResponseEntity.ok(adminRequestService.getAllRequests());
+    }
+
+    @GetMapping("/pending")
+    public ResponseEntity<List<RequestDTO>> getPendingRequests() {
+        return ResponseEntity.ok(adminRequestService.getPendingRequests());
     }
 
     @PostMapping("/{id}/approve")

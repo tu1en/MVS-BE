@@ -15,6 +15,7 @@ import com.classroomapp.classroombackend.config.seed.CourseSeeder;
 import com.classroomapp.classroombackend.config.seed.LectureSeeder;
 import com.classroomapp.classroombackend.config.seed.RoleSeeder;
 import com.classroomapp.classroombackend.config.seed.UserSeeder;
+import com.classroomapp.classroombackend.config.seed.RequestSeeder;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 
 import lombok.RequiredArgsConstructor;
@@ -32,20 +33,20 @@ public class DataLoader implements CommandLineRunner {
     private final LectureSeeder lectureSeeder;
     private final AssignmentSeeder assignmentSeeder;
     private final AnnouncementSeeder announcementSeeder;
+    private final RequestSeeder requestSeeder;
 
     @Override
     @Transactional
     public void run(String... args) throws Exception {
         System.out.println("🌱 [DataLoader] Starting data seeding...");
-        
-        roleSeeder.seed();
-        userSeeder.seed();
-        courseSeeder.seed();
-        List<Classroom> classrooms = classroomSeeder.seed();
-        lectureSeeder.seed(classrooms);
-        assignmentSeeder.seed(); // Re-enabled with @Lazy dependency
-        announcementSeeder.seed(classrooms);
-
+        // roleSeeder.seed();
+        // userSeeder.seed();
+        // courseSeeder.seed();
+        // List<Classroom> classrooms = classroomSeeder.seed();
+        // lectureSeeder.seed(classrooms);
+        // assignmentSeeder.seed(); // Re-enabled with @Lazy dependency
+        // announcementSeeder.seed(classrooms);
+        requestSeeder.seed();
         System.out.println("✅ [DataLoader] Data seeding completed.");
     }
 } 
