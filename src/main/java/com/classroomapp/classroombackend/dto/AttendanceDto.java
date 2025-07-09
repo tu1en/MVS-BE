@@ -2,7 +2,7 @@ package com.classroomapp.classroombackend.dto;
 
 import java.time.LocalDateTime;
 
-import com.classroomapp.classroombackend.model.attendancemanagement.Attendance.AttendanceStatus;
+import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceStatus;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

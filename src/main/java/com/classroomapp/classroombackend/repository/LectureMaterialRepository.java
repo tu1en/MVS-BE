@@ -16,4 +16,6 @@ public interface LectureMaterialRepository extends JpaRepository<LectureMaterial
     List<LectureMaterial> findByLectureIdOrderByCreatedAtDesc(Long lectureId);
     
     List<LectureMaterial> findByFileNameContainingIgnoreCase(String fileName);
+
+    List<LectureMaterial> findByLectureId(Long lectureId);
 }

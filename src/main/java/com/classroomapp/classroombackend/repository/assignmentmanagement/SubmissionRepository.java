@@ -15,8 +15,16 @@ import com.classroomapp.classroombackend.model.usermanagement.User;
 @Repository
 public interface SubmissionRepository extends JpaRepository<Submission, Long> {
     
-    // Find submission by assignment and student
-    Optional<Submission> findByAssignmentAndStudent(Assignment assignment, User student);
+    // Find submission by assignment and student (returns first if multiple exist due to legacy data)
+    @Query("SELECT s FROM Submission s WHERE s.assignment = :assignment AND s.student = :student ORDER BY s.submittedAt DESC")
+    List<Submission> findByAssignmentAndStudentList(@Param("assignment") Assignment assignment, @Param("student") User student);
+    
+    // Find submission by assignment and student - for backward compatibility
+    // If multiple submissions exist, returns the most recent one
+    default Optional<Submission> findByAssignmentAndStudent(Assignment assignment, User student) {
+        List<Submission> submissions = findByAssignmentAndStudentList(assignment, student);
+        return submissions.isEmpty() ? Optional.empty() : Optional.of(submissions.get(0));
+    }
     
     // Find all submissions for an assignment
     List<Submission> findByAssignment(Assignment assignment);
@@ -53,9 +61,18 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
     @Query("SELECT AVG(s.score) FROM Submission s WHERE s.assignment = :assignment AND s.score IS NOT NULL")
     Optional<Double> getAverageScoreByAssignment(@Param("assignment") Assignment assignment);
 
+    @Query("SELECT s FROM Submission s JOIN FETCH s.assignment JOIN FETCH s.student WHERE s.student = :student ORDER BY s.submittedAt DESC")
+    List<Submission> findByStudentWithDetails(@Param("student") User student);
+
     List<Submission> findByAssignmentId(Long assignmentId);
     
     Optional<Submission> findByAssignmentIdAndStudentId(Long assignmentId, Long studentId);
     
     List<Submission> findByStudentId(Long studentId);
+
+    @Query("SELECT count(s) FROM Submission s WHERE s.assignment.classroom.id IN :classroomIds AND s.score IS NOT NULL")
+    long countGradedSubmissionsByClassroomIds(@Param("classroomIds") List<Long> classroomIds);
+
+    @Query("SELECT count(s) FROM Submission s WHERE s.assignment.classroom.id IN :classroomIds AND s.score IS NULL")
+    long countPendingSubmissionsByClassroomIds(@Param("classroomIds") List<Long> classroomIds);
 }

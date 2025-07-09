@@ -1,0 +1,8 @@
+Sample lecture notes for Mathematics
+
+These are detailed notes about the course content.
+- Topic 1: Introduction
+- Topic 2: Main concepts
+- Topic 3: Advanced techniques
+
+Remember to review these notes before the exam!

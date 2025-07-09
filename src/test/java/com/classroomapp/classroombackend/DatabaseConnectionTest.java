@@ -8,10 +8,17 @@ import java.sql.Statement;
 public class DatabaseConnectionTest {
     public static void main(String[] args) {
         String url = "jdbc:sqlserver://localhost:1433;databaseName=SchoolManagementDB;encrypt=false;trustServerCertificate=true;";
-        String username = "app_user";
-        String password = "123456";
+        String username = "sa"; // Default
+        String password = "123456"; // Default
+        
+        // Override with command-line arguments if provided
+        if (args.length >= 2) {
+            username = args[0];
+            password = args[1];
+        }
         
         System.out.println("Testing SQL Server connection...");
+        System.out.println("Username: " + username);
         
         try {
             // Load the driver

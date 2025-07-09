@@ -3,16 +3,14 @@ package com.classroomapp.classroombackend.service.impl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 import com.classroomapp.classroombackend.service.EmailService;
 
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
@@ -30,22 +28,12 @@ public class EmailServiceImpl implements EmailService {
     private String fromEmail;
     
     @Override
-    public void sendEmail(String to, String subject, String body) {
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            
-            helper.setFrom(fromEmail);
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(body, true); // Set to true for HTML content
-            
-            mailSender.send(message);
-            log.info("Email sent successfully to: {}", to);
-        } catch (MessagingException e) {
-            log.error("Failed to send email to: " + to, e);
-            throw new RuntimeException("Failed to send email", e);
-        }
+    public void sendEmail(String to, String subject, String text) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(to);
+        message.setSubject(subject);
+        message.setText(text);
+        mailSender.send(message);
     }
 
     @Override
@@ -84,22 +72,14 @@ public class EmailServiceImpl implements EmailService {
         String body = templateEngine.process("email/request-received", context);
         sendEmail(to, subject, body);
     }
-      // This method is kept for potential future use
-    private String generateStatusEmailBody(String fullName, String role, String status, String reason) {
-        if ("APPROVED".equals(status)) {
-            Context context = new Context();
-            context.setVariable("name", fullName);
-            context.setVariable("role", role);
-            return templateEngine.process("email/request-approved", context);
-        } else {
-            Context context = new Context();
-            context.setVariable("name", fullName);
-            context.setVariable("role", role);
-            context.setVariable("reason", reason);
-            return templateEngine.process("email/request-rejected", context);
-        }
+
+    @Override
+    public void sendApprovalEmail(String to, String fullName, String roleName, String temporaryPassword) {
+        String subject = "Tài khoản MVS Classroom của bạn đã được phê duyệt";
+        // We can reuse the account info email body generation logic
+        String body = generateAccountInfoEmailBody(fullName, roleName, to, temporaryPassword);
+        sendEmail(to, subject, body);
     }
-    
 
     private String generateAccountInfoEmailBody(String fullName, String role, String username, String password) {
         StringBuilder bodyBuilder = new StringBuilder();

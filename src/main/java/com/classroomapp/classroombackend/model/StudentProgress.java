@@ -3,7 +3,6 @@ package com.classroomapp.classroombackend.model;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import com.classroomapp.classroombackend.model.StudentProgress.ProgressType;
 import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.usermanagement.User;
@@ -22,15 +21,11 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "student_progress")
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class StudentProgress {
 
     @Id

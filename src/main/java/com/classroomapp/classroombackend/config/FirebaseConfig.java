@@ -7,6 +7,7 @@ import javax.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 
@@ -15,6 +16,7 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 
 @Configuration
+@ConditionalOnProperty(name = "firebase.enabled", havingValue = "true", matchIfMissing = false)
 public class FirebaseConfig {
     
     private static final Logger logger = LoggerFactory.getLogger(FirebaseConfig.class);
@@ -29,7 +31,7 @@ public class FirebaseConfig {
                 logger.info("Initializing Firebase for project with bucket: {}", storageBucket);
 
                 // This file should be in src/main/resources
-                String serviceAccountPath = "sep490-e5896-firebase-adminsdk-fbsvc-402079bade.json";
+                String serviceAccountPath = "mve-1-firebase-adminsdk.json";
                 ClassPathResource resource = new ClassPathResource(serviceAccountPath);
 
                 if (!resource.exists()) {

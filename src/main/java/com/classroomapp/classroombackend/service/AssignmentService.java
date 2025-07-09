@@ -25,7 +25,7 @@ public interface AssignmentService {
     AssignmentDto GetAssignmentById(Long id);
     
     // Create a new assignment
-    AssignmentDto CreateAssignment(CreateAssignmentDto createAssignmentDto);
+    AssignmentDto CreateAssignment(CreateAssignmentDto createAssignmentDto, String teacherUsername);
     
     // Update an existing assignment
     AssignmentDto UpdateAssignment(Long id, CreateAssignmentDto updateAssignmentDto);
@@ -41,8 +41,14 @@ public interface AssignmentService {
       // Get assignments for a specific student (enrolled classrooms)
     List<AssignmentDto> GetAssignmentsByStudent(Long studentId);
     
+    // Get assignments for the current teacher
+    List<AssignmentDto> getAssignmentsByCurrentTeacher();
+
+    // Get assignments for the current student
+    List<AssignmentDto> getAssignmentsByCurrentStudent();
+
     // Get assignments for a specific teacher (their classrooms)
-    List<AssignmentDto> GetAssignmentsByTeacher(Long teacherId);
+    List<AssignmentDto> getAssignmentsByTeacher(Long teacherId);
     
     // Get upcoming assignments for a classroom
     List<AssignmentDto> GetUpcomingAssignmentsByClassroom(Long classroomId);

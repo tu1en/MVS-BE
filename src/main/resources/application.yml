@@ -1,0 +1,65 @@
+spring:
+  datasource:
+    url: jdbc:sqlserver://localhost:1433;databaseName=SchoolManagementDB;encrypt=false;trustServerCertificate=true;sendStringParametersAsUnicode=true;characterEncoding=UTF-8;useUnicode=true;collation=SQL_Latin1_General_CP1_CI_AS
+    username: sa
+    password: 123456
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    hikari:
+      connection-properties: useUnicode=true;characterEncoding=UTF-8;useLegacyDatetimeCode=false;sendStringParametersAsUnicode=true
+      connection-init-sql: |
+        SET NAMES 'UTF8';
+        SET CHARACTER SET utf8;
+        SET COLLATION_CONNECTION = 'utf8_unicode_ci';
+      
+  jpa:
+    hibernate:
+      ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.SQLServerDialect
+        connection:
+          characterEncoding: UTF-8
+          useUnicode: true
+          CharSet: UTF-8
+        jdbc:
+          batch_size: 20
+        # SQL Server specific UTF-8 configuration
+        globally_quoted_identifiers: true
+        # Ensure proper Unicode handling
+        use_unicode: true
+        character_set_server: utf8mb4
+        collation_server: utf8mb4_unicode_ci
+    database-platform: org.hibernate.dialect.SQLServerDialect
+    
+  http:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+      
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Ho_Chi_Minh
+    default-property-inclusion: non_null
+    
+server:
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+  port: 8088
+  tomcat:
+    uri-encoding: UTF-8

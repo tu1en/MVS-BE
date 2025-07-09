@@ -71,7 +71,7 @@ class MaterialDto {
 
 @RestController
 @RequestMapping("/api/mock-materials")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "*")
 public class MaterialController {
 
     private final Map<Long, MaterialDto> materials = new ConcurrentHashMap<>();
@@ -189,6 +189,12 @@ public class MaterialController {
                 .body(resource);
     }
 
+    // Alternative download endpoint to match frontend service expectation
+    @GetMapping("/{materialId}/download")
+    public ResponseEntity<Resource> downloadMaterialAlternative(@PathVariable Long materialId) {
+        return downloadMaterial(materialId);
+    }
+
     // Get material details
     @GetMapping("/{materialId}")
     public ResponseEntity<MaterialDto> getMaterialDetails(@PathVariable Long materialId) {
@@ -212,6 +218,40 @@ public class MaterialController {
             return ResponseEntity.ok().build();
         }
         return ResponseEntity.notFound().build();
+    }
+    
+    // Get materials by course ID
+    @GetMapping("/course/{courseId}")
+    public ResponseEntity<List<MaterialDto>> getMaterialsByCourse(
+            @PathVariable Long courseId,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String search) {
+        System.out.println("Yêu cầu lấy danh sách tài liệu cho khóa học ID: " + courseId);
+        
+        // In a real implementation, you would filter materials by course ID from the database
+        // For mock purposes, we'll return all materials with a mock filtering
+        List<MaterialDto> result = new ArrayList<>(materials.values());
+        
+        // Apply some mock filtering based on course ID (in this case, we'll just return all materials)
+        // For demo purposes, maybe filter based on some characteristic of the ID
+        if (courseId % 2 == 0) {
+            // For even course IDs, filter to keep only PDFs
+            result.removeIf(material -> !material.getFileType().equalsIgnoreCase("PDF"));
+        }
+        
+        // Filter by category if provided
+        if (category != null && !category.isEmpty()) {
+            result.removeIf(material -> !material.getCategory().equalsIgnoreCase(category));
+        }
+        
+        // Filter by search term if provided
+        if (search != null && !search.isEmpty()) {
+            result.removeIf(material -> 
+                !material.getFileName().toLowerCase().contains(search.toLowerCase()) &&
+                !material.getDescription().toLowerCase().contains(search.toLowerCase()));
+        }
+        
+        return ResponseEntity.ok(result);
     }
     
     private String getFileExtension(String fileName) {

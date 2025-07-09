@@ -53,4 +53,21 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
     // Bulk query to get assignments for multiple classrooms at once to avoid N+1
     @Query("SELECT a FROM Assignment a JOIN FETCH a.classroom WHERE a.classroom IN :classrooms ORDER BY a.dueDate ASC")
     List<Assignment> findByClassroomInWithClassroomOrderByDueDateAsc(@Param("classrooms") List<Classroom> classrooms);
+
+    @Query("SELECT a FROM Assignment a WHERE a.classroom.teacher.id = :teacherId")
+    List<Assignment> findByTeacherId(@Param("teacherId") Long teacherId);
+
+    @Query("SELECT a FROM Assignment a WHERE a.classroom.teacher.username = :username")
+    List<Assignment> findByTeacherUsername(@Param("username") String username);
+
+    List<Assignment> findByClassroomId(Long classroomId);
+    
+    long countByClassroomIdIn(List<Long> classroomIds);
+
+    List<Assignment> findByClassroomIdIn(List<Long> classroomIds);
+
+    List<Assignment> findByClassroomInOrderByDueDateAsc(List<Classroom> classrooms);
+
+    List<Assignment> findByClassroomAndDueDateAfter(Classroom classroom, LocalDateTime dateTime);
+    List<Assignment> findByClassroomAndDueDateBefore(Classroom classroom, LocalDateTime dateTime);
 }

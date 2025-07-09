@@ -70,6 +70,21 @@ public class CourseMaterialController {
     }
 
     /**
+     * Get materials by course ID (alias for classroom ID)
+     * Added to match frontend API expectation
+     */
+    @GetMapping("/course/{courseId}")
+    public ResponseEntity<List<CourseMaterialDto>> getMaterialsByCourse(@PathVariable Long courseId) {
+        try {
+            // Course ID is equivalent to classroom ID in this context
+            List<CourseMaterialDto> materials = courseMaterialService.getMaterialsByClassroom(courseId);
+            return ResponseEntity.ok(materials);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
      * Get public materials for a classroom
      */
     @GetMapping("/classroom/{classroomId}/public")

@@ -3,6 +3,8 @@ package com.classroomapp.classroombackend.security;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
+import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
@@ -34,23 +36,33 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        log.info("Loading user details for: {}", username);
+    public UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException {
+        log.info("Attempting to load user by: {}", usernameOrEmail);
+
+        // Regex to check if the input is an email address
+        final Pattern emailPattern = Pattern.compile("^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,6}$", Pattern.CASE_INSENSITIVE);
         
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> {
-                    log.error("User not found: {}", username);
-                    return new UsernameNotFoundException("User not found with username: " + username);
-                });
+        Optional<User> userOptional;
+        
+        if (emailPattern.matcher(usernameOrEmail).matches()) {
+            log.info("Input is an email. Searching by email: {}", usernameOrEmail);
+            userOptional = userRepository.findByEmail(usernameOrEmail);
+        } else {
+            log.info("Input is a username. Searching by username: {}", usernameOrEmail);
+            userOptional = userRepository.findByUsername(usernameOrEmail);
+        }
+
+        User user = userOptional.orElseThrow(() -> {
+            log.error("User not found with identifier: {}", usernameOrEmail);
+            return new UsernameNotFoundException("User not found with identifier: " + usernameOrEmail);
+        });
         
         Collection<? extends GrantedAuthority> authorities = getAuthorities(user);
         
-        log.info("User found: {} with {} authorities", username, authorities.size());
+        log.info("Successfully loaded user '{}' with roles {}", user.getUsername(), authorities);
         
-        return new org.springframework.security.core.userdetails.User(
-                user.getUsername(),
-                user.getPassword(),
-                authorities);
+        // Return our custom UserDetails object that holds the full User entity
+        return new CustomUserDetails(user, authorities);
     }
     
     /**

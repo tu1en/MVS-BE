@@ -18,15 +18,16 @@ import com.zaxxer.hikari.HikariDataSource;
     "com.classroomapp.classroombackend.repository.requestmanagement",
     "com.classroomapp.classroombackend.repository.classroommanagement",
     "com.classroomapp.classroombackend.repository.assignmentmanagement",
-    "com.classroomapp.classroombackend.repository.attendancemanagement"
+    "com.classroomapp.classroombackend.repository.attendancemanagement",
+    "com.classroomapp.classroombackend.repository.exammangement"
 })
 @EntityScan(basePackages = {
     "com.classroomapp.classroombackend.model",
     "com.classroomapp.classroombackend.model.usermanagement",
-    "com.classroomapp.classroombackend.model.requestmanagement",
     "com.classroomapp.classroombackend.model.classroommanagement",
     "com.classroomapp.classroombackend.model.assignmentmanagement",
-    "com.classroomapp.classroombackend.model.attendancemanagement"
+    "com.classroomapp.classroombackend.model.attendancemanagement",
+    "com.classroomapp.classroombackend.model.exammangement"
 })
 @ComponentScan(basePackages = {
     "com.classroomapp.classroombackend",

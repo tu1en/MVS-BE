@@ -1,20 +1,35 @@
 package com.classroomapp.classroombackend.service;
 
+import java.util.List;
+
 import com.classroomapp.classroombackend.dto.assignmentmanagement.CreateSubmissionDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.GradeSubmissionDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.SubmissionDto;
-
-import java.util.List;
 
 public interface SubmissionService {
     
     // Get a submission by ID
     SubmissionDto GetSubmissionById(Long id);
     
-    // Create a new submission for the current user
-    SubmissionDto CreateSubmission(CreateSubmissionDto createSubmissionDto, Long studentId);
+    /**
+     * Creates or updates a submission for the current user.
+     * This method implements an "upsert" logic.
+     * @param createSubmissionDto DTO containing submission data.
+     * @param studentUsername The username of the student submitting.
+     * @return The created or updated submission as a DTO.
+     */
+    SubmissionDto submit(CreateSubmissionDto createSubmissionDto, String studentUsername);
+
+    /**
+     * @deprecated Use submit() instead.
+     */
+    @Deprecated
+    SubmissionDto CreateSubmission(CreateSubmissionDto createSubmissionDto, String studentUsername);
     
-    // Update an existing submission
+    /**
+     * @deprecated Use submit() instead.
+     */
+    @Deprecated
     SubmissionDto UpdateSubmission(Long id, CreateSubmissionDto updateSubmissionDto);
     
     // Delete a submission
@@ -30,7 +45,7 @@ public interface SubmissionService {
     SubmissionDto GetStudentSubmissionForAssignment(Long assignmentId, Long studentId);
     
     // Grade a submission
-    SubmissionDto GradeSubmission(Long submissionId, GradeSubmissionDto gradeSubmissionDto, Long teacherId);
+    SubmissionDto GradeSubmission(Long submissionId, GradeSubmissionDto gradeSubmissionDto, String teacherUsername);
     
     // Get all graded submissions for an assignment
     List<SubmissionDto> GetGradedSubmissionsByAssignment(Long assignmentId);

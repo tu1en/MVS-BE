@@ -5,14 +5,19 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.classroomapp.classroombackend.dto.CourseFeedbackDto;
+import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
+import com.classroomapp.classroombackend.exception.UnauthorizedException;
 import com.classroomapp.classroombackend.model.CourseFeedback;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
+import com.classroomapp.classroombackend.model.classroommanagement.ClassroomEnrollmentId;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.CourseFeedbackRepository;
+import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomEnrollmentRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.CourseFeedbackService;
@@ -29,15 +34,24 @@ public class CourseFeedbackServiceImpl implements CourseFeedbackService {
     
     @Autowired
     private ClassroomRepository classroomRepository;
+
+    @Autowired
+    private ClassroomEnrollmentRepository classroomEnrollmentRepository;
     
     @Override
     public CourseFeedbackDto createFeedback(CourseFeedbackDto feedbackDto) {
-        User student = userRepository.findById(feedbackDto.getStudentId())
-                .orElseThrow(() -> new RuntimeException("Student not found"));
+        String studentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User student = userRepository.findByEmail(studentEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Student not found with email: " + studentEmail));
+
         Classroom classroom = classroomRepository.findById(feedbackDto.getClassroomId())
-                .orElseThrow(() -> new RuntimeException("Classroom not found"));
-        User teacher = userRepository.findById(feedbackDto.getTeacherId())
-                .orElseThrow(() -> new RuntimeException("Teacher not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Classroom not found"));
+
+        // Security Check: Ensure the logged-in student is actually enrolled in the classroom.
+        ClassroomEnrollmentId enrollmentId = new ClassroomEnrollmentId(classroom.getId(), student.getId());
+        if (!classroomEnrollmentRepository.existsById(enrollmentId)) {
+            throw new UnauthorizedException("Student is not enrolled in this classroom.");
+        }
         
         // Check if student already gave feedback for this classroom
         if (feedbackRepository.existsByStudentAndClassroom(student, classroom)) {
@@ -47,7 +61,7 @@ public class CourseFeedbackServiceImpl implements CourseFeedbackService {
         CourseFeedback feedback = new CourseFeedback();
         feedback.setStudent(student);
         feedback.setClassroom(classroom);
-        feedback.setTeacher(teacher);
+        feedback.setTeacher(classroom.getTeacher()); // Get teacher from classroom directly
         feedback.setTitle(feedbackDto.getTitle());
         feedback.setContent(feedbackDto.getContent());
         feedback.setOverallRating(feedbackDto.getOverallRating());

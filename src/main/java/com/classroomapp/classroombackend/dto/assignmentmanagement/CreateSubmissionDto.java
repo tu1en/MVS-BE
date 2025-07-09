@@ -1,5 +1,9 @@
 package com.classroomapp.classroombackend.dto.assignmentmanagement;
 
+import java.util.List;
+
+import com.classroomapp.classroombackend.dto.FileUploadResponse;
+
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -17,5 +21,5 @@ public class CreateSubmissionDto {
     @Size(max = 2000, message = "Comment cannot exceed 2000 characters")
     private String comment;
     
-    private String fileSubmissionUrl;
+    private List<FileUploadResponse> attachments;
 }
