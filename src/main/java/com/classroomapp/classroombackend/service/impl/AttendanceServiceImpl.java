@@ -14,6 +14,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceDto;
 import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceRecordDto;
 import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceResultDto;
 import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceSessionDto;
@@ -33,6 +34,7 @@ import com.classroomapp.classroombackend.repository.attendancemanagement.Attenda
 import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceSessionRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomEnrollmentRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.AttendanceService;
 import com.classroomapp.classroombackend.service.ClassroomSecurityService;
 
@@ -46,6 +48,7 @@ public class AttendanceServiceImpl implements AttendanceService {
     private final AttendanceSessionRepository attendanceSessionRepository;
     private final ClassroomEnrollmentRepository enrollmentRepository;
     private final ClassroomRepository classroomRepository;
+    private final UserRepository userRepository;
     private final ClassroomSecurityService classroomSecurityService;
 
     @Override
@@ -247,6 +250,34 @@ public class AttendanceServiceImpl implements AttendanceService {
     private StudentAttendanceDto mapToStudentAttendanceDto(Attendance record) {
         StudentAttendanceDto dto = new StudentAttendanceDto();
         dto.setSessionId(record.getSession().getId());
+        return dto;
+    }
+
+    @Override
+    public List<AttendanceDto> findByUserId(Long userId) {
+        // First find the user
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+        
+        List<Attendance> attendances = attendanceRepository.findByStudent(user);
+        return attendances.stream()
+                .map(this::mapToAttendanceDto)
+                .collect(Collectors.toList());
+    }
+
+    private AttendanceDto mapToAttendanceDto(Attendance attendance) {
+        AttendanceDto dto = new AttendanceDto();
+        dto.setId(attendance.getId());
+        dto.setUserId(attendance.getStudent().getId());
+        dto.setUserName(attendance.getStudent().getUsername());
+        dto.setUserFullName(attendance.getStudent().getFullName());
+        dto.setPresent(attendance.getStatus() == AttendanceStatus.PRESENT);
+        dto.setAttendanceType(attendance.getStatus().name());
+        dto.setSessionDate(attendance.getSession().getSessionDate().atStartOfDay());
+        if (attendance.getSession().getClassroom() != null) {
+            dto.setClassroomId(attendance.getSession().getClassroom().getId());
+            dto.setClassroomName(attendance.getSession().getClassroom().getName());
+        }
         return dto;
     }
 }

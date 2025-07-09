@@ -26,13 +26,14 @@ public class Request {
     @Column(nullable = false, length = 255)
     private String email;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = true, length = 255)
     private String fullName;
 
-    @Column(nullable = false, length = 20)
+    @Column(nullable = true, length = 20)
     private String phoneNumber;
 
-    @Column(nullable = false, length = 50)    private String requestedRole; // "TEACHER" or "STUDENT"
+    @Column(length = 50)
+    private String requestedRole = "STUDENT"; // "TEACHER" or "STUDENT" - default to STUDENT
     
     @Column(columnDefinition = "TEXT", length = 4000)
     private String formResponses; // JSON string containing form responses
