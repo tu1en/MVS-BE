@@ -256,26 +256,15 @@ public class StudentMessageController {
     // New endpoint for student dashboard to get unread count in standard response format
     @GetMapping("/messages/dashboard/unread-count")
     public ResponseEntity<Map<String, Object>> getUnreadMessageCount() {
-        // In a real implementation, you would get the user ID from the security context
-        // For now, just return a mock count
-        Map<String, Object> response = new HashMap<>();
-        Map<String, Object> data = new HashMap<>();
-        
-        // Create mock count data
-        data.put("count", (int)(Math.random() * 5)); // Random number from 0-4
-        
-        response.put("status", "success");
-        response.put("message", "Retrieved unread message count successfully");
-        response.put("data", data);
-        
-        return ResponseEntity.ok(response);
-    }
-    
-    // Alias for legacy FE: /student-messages/student/{id}
-    @GetMapping("/student-messages/student/{studentId}")
-    public ResponseEntity<List<StudentMessageDto>> getStudentMessagesAlias(@PathVariable Long studentId) {
-        // Reuse existing received messages endpoint logic
-        List<StudentMessageDto> messages = messageService.getReceivedMessages(studentId);
-        return ResponseEntity.ok(messages);
+        try {
+            long unreadCount = messageService.countUnreadMessages(null);
+            Map<String, Object> response = new HashMap<>();
+            response.put("unreadCount", unreadCount);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to retrieve unread message count");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
     }
 }

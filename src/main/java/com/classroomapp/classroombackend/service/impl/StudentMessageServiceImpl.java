@@ -192,6 +192,11 @@ public class StudentMessageServiceImpl implements StudentMessageService {
     @Transactional(readOnly = true)
     public Long countUnreadMessages(Long recipientId) {
         try {
+            // If recipientId is null, count all unread messages
+            if (recipientId == null) {
+                return messageRepository.countByIsReadFalse();
+            }
+
             // Check if user exists first
             if (!userRepository.existsById(recipientId)) {
                 System.out.println("User with ID " + recipientId + " not found in database");

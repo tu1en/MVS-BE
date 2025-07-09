@@ -64,7 +64,7 @@ public class StudentMessage {
     @JoinColumn(name = "replied_by")
     private User repliedBy;
     
-    @Column(nullable = false)
+    @Column
     private LocalDateTime createdAt;
     
     @Column

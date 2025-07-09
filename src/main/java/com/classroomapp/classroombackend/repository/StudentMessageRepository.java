@@ -51,4 +51,6 @@ public interface StudentMessageRepository extends JpaRepository<StudentMessage, 
     
     @Query("SELECT COUNT(sm) FROM StudentMessage sm WHERE sm.recipient = :recipient AND sm.isRead = false")
     Long countUnreadMessagesByRecipient(@Param("recipient") User recipient);
+
+    Long countByIsReadFalse();
 }

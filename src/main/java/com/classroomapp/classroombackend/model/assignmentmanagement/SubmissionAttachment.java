@@ -28,7 +28,7 @@ public class SubmissionAttachment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column
     private String fileName;
 
     @Column(nullable = true)  // Made nullable to avoid DDL error with existing data

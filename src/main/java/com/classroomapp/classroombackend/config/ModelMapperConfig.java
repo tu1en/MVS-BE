@@ -8,6 +8,15 @@ import org.springframework.context.annotation.Configuration;
 public class ModelMapperConfig {
     @Bean
     public ModelMapper modelMapper() {
-        return new ModelMapper();
+        ModelMapper modelMapper = new ModelMapper();
+
+        // Configure ModelMapper to be more lenient and handle ambiguity
+        modelMapper.getConfiguration()
+            .setSkipNullEnabled(true)
+            .setAmbiguityIgnored(true)
+            .setFieldMatchingEnabled(true)
+            .setFieldAccessLevel(org.modelmapper.config.Configuration.AccessLevel.PRIVATE);
+
+        return modelMapper;
     }
-} 
+}

@@ -50,6 +50,11 @@ public interface AssignmentService {
     // Get assignments for a specific teacher (their classrooms)
     List<AssignmentDto> getAssignmentsByTeacher(Long teacherId);
     
+    // Additional methods needed by FrontendApiBridgeController
+    List<AssignmentDto> findByTeacherId(Long teacherId);
+    List<AssignmentDto> findByStudentId(Long studentId);
+    List<AssignmentDto> getAllAssignments();
+    
     // Get upcoming assignments for a classroom
     List<AssignmentDto> GetUpcomingAssignmentsByClassroom(Long classroomId);
     
