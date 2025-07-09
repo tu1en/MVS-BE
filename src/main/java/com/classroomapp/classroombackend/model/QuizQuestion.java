@@ -3,7 +3,6 @@ package com.classroomapp.classroombackend.model;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import com.classroomapp.classroombackend.model.QuizQuestion.QuestionType;
 import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
 
 import jakarta.persistence.Column;

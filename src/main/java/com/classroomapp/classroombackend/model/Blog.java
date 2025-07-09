@@ -28,7 +28,12 @@ public class Blog {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;    @NotBlank
+    private Long id;
+    
+    @Column(unique = true)
+    private String slug;
+    
+    @NotBlank
     @Column(nullable = false, columnDefinition = "NVARCHAR(200)")
     private String title;
 
@@ -78,6 +83,14 @@ public class Blog {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getSlug() {
+        return slug;
+    }
+
+    public void setSlug(String slug) {
+        this.slug = slug;
     }
 
     public String getTitle() {

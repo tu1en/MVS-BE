@@ -2,26 +2,29 @@ package com.classroomapp.classroombackend.model.classroommanagement;
 
 import com.classroomapp.classroombackend.model.usermanagement.User;
 
+import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.IdClass;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.MapsId;
 import jakarta.persistence.Table;
 import lombok.Data;
 
 @Data
 @Entity
 @Table(name = "classroom_enrollments")
-@IdClass(ClassroomEnrollmentId.class)
 public class ClassroomEnrollment {
-    @Id
+
+    @EmbeddedId
+    private ClassroomEnrollmentId id;
+
     @ManyToOne
-    @JoinColumn(name = "classroom_id", nullable = false)
+    @MapsId("classroomId")
+    @JoinColumn(name = "classroom_id")
     private Classroom classroom;
 
-    @Id
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @MapsId("userId")
+    @JoinColumn(name = "user_id")
     private User user;
 } 

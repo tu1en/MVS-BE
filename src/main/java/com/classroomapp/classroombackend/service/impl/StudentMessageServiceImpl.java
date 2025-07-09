@@ -1,7 +1,6 @@
 package com.classroomapp.classroombackend.service.impl;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -67,72 +66,34 @@ public class StudentMessageServiceImpl implements StudentMessageService {
     @Override
     @Transactional(readOnly = true)
     public List<StudentMessageDto> getReceivedMessages(Long recipientId) {
-        try {
-            // Check if user exists first
-            if (!userRepository.existsById(recipientId)) {
-                System.out.println("User with ID " + recipientId + " not found in database");
-                return new ArrayList<>(); // Return empty list instead of throwing exception
-            }
-            
-            User recipient = userRepository.findById(recipientId).get();
-            List<StudentMessage> messages = messageRepository.findByRecipientOrderByCreatedAtDesc(recipient);
-            return messages.stream().map(this::convertToDto).collect(Collectors.toList());
-        } catch (Throwable e) {
-            // Log error and return empty list instead of crashing
-            System.err.println("Error fetching received messages for user " + recipientId + ": " + e.getMessage());
-            e.printStackTrace();
-            return new ArrayList<>();
-        }
+        User recipient = userRepository.findById(recipientId)
+                .orElseThrow(() -> new RuntimeException("Recipient not found with id: " + recipientId));
+        List<StudentMessage> messages = messageRepository.findByRecipientOrderByCreatedAtDesc(recipient);
+        return messages.stream().map(this::convertToDto).collect(Collectors.toList());
     }
     
     @Override
     @Transactional(readOnly = true)
     public List<StudentMessageDto> getConversation(Long user1Id, Long user2Id) {
-        try {
-            // Check if users exist first
-            if (!userRepository.existsById(user1Id)) {
-                System.out.println("User1 with ID " + user1Id + " not found in database");
-                return new ArrayList<>();
-            }
-            
-            if (!userRepository.existsById(user2Id)) {
-                System.out.println("User2 with ID " + user2Id + " not found in database");
-                return new ArrayList<>();
-            }
-            
-            User user1 = userRepository.findById(user1Id).get();
-            User user2 = userRepository.findById(user2Id).get();
+        User user1 = userRepository.findById(user1Id)
+                .orElseThrow(() -> new RuntimeException("User1 not found with id: " + user1Id));
+        User user2 = userRepository.findById(user2Id)
+                .orElseThrow(() -> new RuntimeException("User2 not found with id: " + user2Id));
 
-            List<StudentMessage> messages = messageRepository.findConversation(user1, user2);
-            
-            return messages.stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
-        } catch (Throwable e) {
-            System.err.println("Error fetching conversation between users " + user1Id + " and " + user2Id + ": " + e.getMessage());
-            e.printStackTrace();
-            return new ArrayList<>();
-        }
+        List<StudentMessage> messages = messageRepository.findConversation(user1, user2);
+        
+        return messages.stream()
+            .map(this::convertToDto)
+            .collect(Collectors.toList());
     }
     
     @Override
     @Transactional(readOnly = true)
     public List<StudentMessageDto> getUnreadMessages(Long recipientId) {
-        try {
-            // Check if user exists first
-            if (!userRepository.existsById(recipientId)) {
-                System.out.println("User with ID " + recipientId + " not found in database");
-                return new ArrayList<>();
-            }
-            
-            User recipient = userRepository.findById(recipientId).get();
-            List<StudentMessage> messages = messageRepository.findByRecipientAndIsReadFalseOrderByCreatedAtDesc(recipient);
-            return messages.stream().map(this::convertToDto).collect(Collectors.toList());
-        } catch (Throwable e) {
-            System.err.println("Error fetching unread messages for user " + recipientId + ": " + e.getMessage());
-            e.printStackTrace();
-            return new ArrayList<>();
-        }
+        User recipient = userRepository.findById(recipientId)
+                .orElseThrow(() -> new RuntimeException("Recipient not found with id: " + recipientId));
+        List<StudentMessage> messages = messageRepository.findByRecipientAndIsReadFalseOrderByCreatedAtDesc(recipient);
+        return messages.stream().map(this::convertToDto).collect(Collectors.toList());
     }
     
     @Override
@@ -159,21 +120,10 @@ public class StudentMessageServiceImpl implements StudentMessageService {
     @Override
     @Transactional(readOnly = true)
     public List<StudentMessageDto> getUrgentMessages(Long recipientId) {
-        try {
-            // Check if user exists first
-            if (!userRepository.existsById(recipientId)) {
-                System.out.println("User with ID " + recipientId + " not found in database");
-                return new ArrayList<>();
-            }
-            
-            User recipient = userRepository.findById(recipientId).get();
-            List<StudentMessage> messages = messageRepository.findUrgentMessages(recipient);
-            return messages.stream().map(this::convertToDto).collect(Collectors.toList());
-        } catch (Throwable e) {
-            System.err.println("Error fetching urgent messages for user " + recipientId + ": " + e.getMessage());
-            e.printStackTrace();
-            return new ArrayList<>();
-        }
+        User recipient = userRepository.findById(recipientId)
+                .orElseThrow(() -> new RuntimeException("Recipient not found with id: " + recipientId));
+        List<StudentMessage> messages = messageRepository.findUrgentMessages(recipient);
+        return messages.stream().map(this::convertToDto).collect(Collectors.toList());
     }
     
     @Override
@@ -193,21 +143,10 @@ public class StudentMessageServiceImpl implements StudentMessageService {
     @Override
     @Transactional(readOnly = true)
     public List<StudentMessageDto> getPendingReplies(Long recipientId) {
-        try {
-            // Check if user exists first
-            if (!userRepository.existsById(recipientId)) {
-                System.out.println("User with ID " + recipientId + " not found in database");
-                return new ArrayList<>();
-            }
-            
-            User recipient = userRepository.findById(recipientId).get();
-            List<StudentMessage> messages = messageRepository.findPendingReplies(recipient);
-            return messages.stream().map(this::convertToDto).collect(Collectors.toList());
-        } catch (Throwable e) {
-            System.err.println("Error fetching pending replies for user " + recipientId + ": " + e.getMessage());
-            e.printStackTrace();
-            return new ArrayList<>();
-        }
+        User recipient = userRepository.findById(recipientId)
+                .orElseThrow(() -> new RuntimeException("Recipient not found with id: " + recipientId));
+        List<StudentMessage> messages = messageRepository.findPendingReplies(recipient);
+        return messages.stream().map(this::convertToDto).collect(Collectors.toList());
     }
     
     @Override

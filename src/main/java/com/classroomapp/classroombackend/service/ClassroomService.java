@@ -2,9 +2,14 @@ package com.classroomapp.classroombackend.service;
 
 import java.util.List;
 
+import org.springframework.security.core.userdetails.UserDetails;
+
+import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDetailsDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.CourseDetailsDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.CreateClassroomDto;
+import com.classroomapp.classroombackend.dto.classroommanagement.UpdateClassroomDto;
+import com.classroomapp.classroombackend.model.usermanagement.User;
 
 public interface ClassroomService {
     
@@ -18,10 +23,10 @@ public interface ClassroomService {
     ClassroomDto GetClassroomById(Long id);
     
     // Create a new classroom with the logged-in user as teacher
-    ClassroomDto CreateClassroom(CreateClassroomDto createClassroomDto, Long teacherId);
+    ClassroomDetailsDto createClassroom(CreateClassroomDto dto);
     
     // Update an existing classroom
-    ClassroomDto UpdateClassroom(Long id, CreateClassroomDto updateClassroomDto);
+    ClassroomDto UpdateClassroom(Long id, UpdateClassroomDto updateClassroomDto, UserDetails userDetails);
     
     // Delete a classroom
     void DeleteClassroom(Long id);
@@ -46,4 +51,12 @@ public interface ClassroomService {
     
     // Get comprehensive course details including all related information
     CourseDetailsDto GetCourseDetails(Long classroomId);
+
+    List<User> getStudentsInClassroom(Long classroomId);
+
+    List<ClassroomDto> GetClassroomsByCurrentTeacher();
+
+    List<ClassroomDto> getClassroomsByCurrentStudent();
+
+    ClassroomDetailsDto findClassroomDetailsById(Long classroomId);
 }

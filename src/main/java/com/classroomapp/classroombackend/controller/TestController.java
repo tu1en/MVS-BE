@@ -38,19 +38,9 @@ public class TestController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/ping")
-    public ResponseEntity<String> ping() {
-        return ResponseEntity.ok("pong");
-    }
-
     @PostMapping("/cors-test")
     public ResponseEntity<String> testCors(@RequestBody(required = false) String body) {
         return ResponseEntity.ok("CORS test successful. Received: " + body);
-    }
-
-    @GetMapping("/health")
-    public ResponseEntity<String> health() {
-        return ResponseEntity.ok("OK");
     }
     
     @GetMapping("/debug/teacher/{teacherId}")
@@ -59,7 +49,7 @@ public class TestController {
         
         try {
             List<ClassroomDto> classrooms = classroomService.GetClassroomsByTeacher(teacherId);
-            List<AssignmentDto> assignments = assignmentService.GetAssignmentsByTeacher(teacherId);
+            List<AssignmentDto> assignments = assignmentService.getAssignmentsByTeacher(teacherId);
             
             response.put("teacherId", teacherId);
             response.put("classrooms", classrooms);

@@ -1,18 +1,37 @@
 package com.classroomapp.classroombackend.controller;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDetailsDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.CourseDetailsDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.CreateClassroomDto;
+import com.classroomapp.classroombackend.dto.classroommanagement.EnrollmentRequestDto;
+import com.classroomapp.classroombackend.dto.classroommanagement.UpdateClassroomDto;
+import com.classroomapp.classroombackend.dto.exammangement.ExamDto;
 import com.classroomapp.classroombackend.dto.usermanagement.UserDto;
 import com.classroomapp.classroombackend.service.ClassroomService;
+import com.classroomapp.classroombackend.service.ExamService;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/classrooms")
@@ -20,6 +39,7 @@ import java.util.List;
 public class ClassroomController {
 
     private final ClassroomService classroomService;
+    private final ExamService examService;
     
     @GetMapping("/{id}")
     public ResponseEntity<ClassroomDto> GetClassroomById(@PathVariable Long id) {
@@ -27,17 +47,19 @@ public class ClassroomController {
     }
     
     @PostMapping
-    public ResponseEntity<ClassroomDto> CreateClassroom(
-            @Valid @RequestBody CreateClassroomDto createClassroomDto,
-            @RequestParam Long teacherId) {
-        return new ResponseEntity<>(classroomService.CreateClassroom(createClassroomDto, teacherId), HttpStatus.CREATED);
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<ClassroomDetailsDto> CreateClassroom(
+            @Valid @RequestBody CreateClassroomDto createClassroomDto) {
+        return new ResponseEntity<>(classroomService.createClassroom(createClassroomDto), HttpStatus.CREATED);
     }
     
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TEACHER')")
     public ResponseEntity<ClassroomDto> UpdateClassroom(
             @PathVariable Long id,
-            @Valid @RequestBody CreateClassroomDto updateClassroomDto) {
-        return ResponseEntity.ok(classroomService.UpdateClassroom(id, updateClassroomDto));
+            @Valid @RequestBody UpdateClassroomDto updateClassroomDto,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(classroomService.UpdateClassroom(id, updateClassroomDto, userDetails));
     }
     
     @DeleteMapping("/{id}")
@@ -51,16 +73,33 @@ public class ClassroomController {
         return ResponseEntity.ok(classroomService.GetClassroomsByTeacher(teacherId));
     }
     
+    @GetMapping("/current-teacher")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<ClassroomDto>> GetClassroomsByCurrentTeacher() {
+        return ResponseEntity.ok(classroomService.GetClassroomsByCurrentTeacher());
+    }
+    
+    @GetMapping("/current-student")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<ClassroomDto>> GetClassroomsByCurrentStudent() {
+        return ResponseEntity.ok(classroomService.getClassroomsByCurrentStudent());
+    }
+    
+    @GetMapping("/student/me")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<ClassroomDto>> GetMyStudentCourses() {
+        return ResponseEntity.ok(classroomService.getClassroomsByCurrentStudent());
+    }
+    
     @GetMapping("/student/{studentId}")
     public ResponseEntity<List<ClassroomDto>> GetClassroomsByStudent(@PathVariable Long studentId) {
         return ResponseEntity.ok(classroomService.GetClassroomsByStudent(studentId));
     }
     
-    @PostMapping("/{classroomId}/students/{studentId}")
-    public ResponseEntity<Void> EnrollStudent(
-            @PathVariable Long classroomId,
-            @PathVariable Long studentId) {
-        classroomService.EnrollStudent(classroomId, studentId);
+    @PostMapping("/{classroomId}/enrollments")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TEACHER')")
+    public ResponseEntity<Void> enrollStudent(@PathVariable Long classroomId, @Valid @RequestBody EnrollmentRequestDto enrollmentRequest) {
+        classroomService.EnrollStudent(classroomId, enrollmentRequest.getStudentId());
         return ResponseEntity.ok().build();
     }
     
@@ -86,27 +125,48 @@ public class ClassroomController {
     public ResponseEntity<CourseDetailsDto> GetCourseDetails(@PathVariable Long id) {
         return ResponseEntity.ok(classroomService.GetCourseDetails(id));
     }
-      /**
+    
+    /**
      * Get students in a classroom
      * @param classroomId classroom ID
      * @return list of students in the classroom
      */
     @GetMapping("/{classroomId}/students")
     public ResponseEntity<List<UserDto>> GetClassroomStudents(@PathVariable Long classroomId) {
+        List<UserDto> students = classroomService.getStudentsInClassroom(classroomId).stream()
+                .map(user -> {
+                    UserDto dto = new UserDto();
+                    dto.setId(user.getId());
+                    dto.setName(user.getFullName());
+                    dto.setEmail(user.getEmail());
+                    dto.setEnabled("active".equalsIgnoreCase(user.getStatus()));
+                    dto.setRoles(Collections.singleton(user.getRole()));
+                    return dto;
+                }).collect(Collectors.toList());
+        return ResponseEntity.ok(students);
+    }
+
+    @GetMapping("/{classroomId}/exams")
+    // @PreAuthorize("hasAnyAuthority('STUDENT', 'MANAGER', 'ADMIN')")
+    public ResponseEntity<List<ExamDto>> getExamsByClassroomId(@PathVariable Long classroomId) {
+        System.out.println("=== DEBUG: Getting exams for classroom " + classroomId + " ===");
         try {
-            // For now, return mock data until the service method is implemented
-            List<UserDto> mockStudents = new ArrayList<>();
-            for (int i = 1; i <= 3; i++) {
-                UserDto student = new UserDto();
-                student.setId((long) i);
-                student.setFullName("Student " + i + " (Class " + classroomId + ")");
-                student.setRoleName("STUDENT");
-                student.setRoleId(1);
-                mockStudents.add(student);
-            }
-            return ResponseEntity.ok(mockStudents);
+            List<ExamDto> exams = examService.getExamsByClassroomId(classroomId);
+            System.out.println("=== DEBUG: Found " + exams.size() + " exams ===");
+            return ResponseEntity.ok(exams);
         } catch (Exception e) {
-            return ResponseEntity.ok(new ArrayList<>());
+            System.out.println("=== DEBUG: Error getting exams: " + e.getMessage() + " ===");
+            throw e;
+        }
+    }
+    
+    @GetMapping("/{classroomId}/exams/debug")
+    public ResponseEntity<String> debugExams(@PathVariable Long classroomId) {
+        try {
+            List<ExamDto> exams = examService.getExamsByClassroomId(classroomId);
+            return ResponseEntity.ok("Found " + exams.size() + " exams for classroom " + classroomId);
+        } catch (Exception e) {
+            return ResponseEntity.ok("Error: " + e.getMessage());
         }
     }
 }

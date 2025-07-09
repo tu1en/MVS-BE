@@ -1,6 +1,7 @@
 package com.classroomapp.classroombackend.dto.classroommanagement;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -21,4 +22,10 @@ public class CreateClassroomDto {
     private String section;
     
     private String subject;
+
+    @NotNull(message = "Teacher is required")
+    private Long teacherId;
+
+    @NotNull(message = "Course is required")
+    private Long courseId;
 }

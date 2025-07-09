@@ -1,11 +1,13 @@
 package com.classroomapp.classroombackend.service;
 
-import com.classroomapp.classroombackend.dto.RequestDTO;
-import com.classroomapp.classroombackend.dto.RequestResponseDTO;
-
 import java.util.List;
 
+import com.classroomapp.classroombackend.dto.RequestDTO;
+import com.classroomapp.classroombackend.dto.RequestResponseDTO;
+import com.classroomapp.classroombackend.dto.requestmanagement.CreateRequestDto;
+
 public interface RequestService {
+    void createRegistrationRequest(CreateRequestDto dto);
     RequestResponseDTO createRequest(RequestDTO requestDTO);
     RequestResponseDTO approveRequest(Long requestId);
     RequestResponseDTO rejectRequest(Long requestId, String reason);

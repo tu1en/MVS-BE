@@ -13,4 +13,5 @@ public interface RequestRepository extends JpaRepository<Request, Long> {
     List<Request> findByStatus(String status);
     List<Request> findByRequestedRole(String role);
     boolean existsByEmailAndStatusAndRequestedRole(String email, String status, String role);
+    boolean existsByEmailAndStatusIn(String email, List<String> statuses);
 }

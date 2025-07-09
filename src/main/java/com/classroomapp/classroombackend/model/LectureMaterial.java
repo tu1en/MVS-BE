@@ -45,7 +45,7 @@ public class LectureMaterial {
     @JoinColumn(name = "lecture_id", nullable = false)
     private Lecture lecture;
     
-    @Column(nullable = false)
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
     
     @PrePersist

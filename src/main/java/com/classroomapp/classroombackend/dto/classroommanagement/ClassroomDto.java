@@ -33,4 +33,6 @@ public class ClassroomDto {
     private Set<Long> studentIds;
     
     private Integer studentCount;
+    
+    private Double progressPercentage;
 }

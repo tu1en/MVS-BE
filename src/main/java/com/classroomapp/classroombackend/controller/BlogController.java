@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.classroomapp.classroombackend.dto.BlogDto;
 import com.classroomapp.classroombackend.dto.CreateBlogDto;
+import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.BlogService;
 
 import jakarta.validation.Valid;
@@ -29,14 +31,17 @@ import jakarta.validation.Valid;
 public class BlogController {
 
     private final BlogService blogService;
+    private final UserRepository userRepository;
+
 
     @Autowired
-    public BlogController(BlogService blogService) {
+    public BlogController(BlogService blogService, UserRepository userRepository) {
         this.blogService = blogService;
+        this.userRepository = userRepository;
     }
 
     @PostMapping
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
     public ResponseEntity<BlogDto> createBlog(
             @Valid @RequestBody CreateBlogDto createBlogDto,
             Authentication authentication) {
@@ -64,6 +69,12 @@ public class BlogController {
         return ResponseEntity.ok(blogs);
     }
 
+    @GetMapping("/slug/{slug}")
+    public ResponseEntity<BlogDto> getBlogBySlug(@PathVariable String slug) {
+        BlogDto blog = blogService.getBlogBySlug(slug);
+        return ResponseEntity.ok(blog);
+    }
+
     @GetMapping("/author/{authorId}")
     public ResponseEntity<List<BlogDto>> getBlogsByAuthor(@PathVariable Long authorId) {
         List<BlogDto> blogs = blogService.getBlogsByAuthor(authorId);
@@ -71,7 +82,7 @@ public class BlogController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN') or @blogPermissionEvaluator.isAuthor(#id, authentication.principal)")
     public ResponseEntity<BlogDto> updateBlog(
             @PathVariable Long id,
             @Valid @RequestBody CreateBlogDto updateBlogDto,
@@ -144,23 +155,17 @@ public class BlogController {
     
     // Helper method to extract user ID from Authentication
     private Long getUserIdFromAuthentication(Authentication authentication) {
-        if (authentication == null) {
-            throw new RuntimeException("Not authenticated");
+        if (authentication == null || !(authentication.getPrincipal() instanceof UserDetails)) {
+            // Or throw an exception if authentication is required
+            throw new RuntimeException("User is not authenticated or user details are not available.");
         }
-        
-        // This is placeholder code - you'll need to adjust based on your actual UserDetails implementation
-        if (authentication.getPrincipal() instanceof UserDetails) {
-            // Assuming your UserDetails contains the user ID in the username field
-            // In a real implementation, you'd have a custom UserDetails with a getUserId method
-            String username = ((UserDetails) authentication.getPrincipal()).getUsername();
-            try {
-                return Long.parseLong(username);
-            } catch (NumberFormatException e) {
-                // Handle non-numeric username
-                throw new RuntimeException("Could not extract user ID from authentication");
-            }
-        }
-        
-        throw new RuntimeException("Could not extract user ID from authentication");
+
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        String username = userDetails.getUsername(); // This is typically the email
+
+        // Find the user by email (username) and return their ID
+        return userRepository.findByEmail(username)
+                .map(User::getId)
+                .orElseThrow(() -> new RuntimeException("Authenticated user not found in database: " + username));
     }
 } 

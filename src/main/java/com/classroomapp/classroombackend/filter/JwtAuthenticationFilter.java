@@ -1,16 +1,14 @@
 package com.classroomapp.classroombackend.filter;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Enumeration;
-import java.util.List;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -22,7 +20,6 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -32,12 +29,17 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Component
 @Slf4j
-@RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
     
     private final JwtUtil jwtUtil;
+    private final UserDetailsService userDetailsService;
+
+    public JwtAuthenticationFilter(JwtUtil jwtUtil, UserDetailsService userDetailsService) {
+        this.jwtUtil = jwtUtil;
+        this.userDetailsService = userDetailsService;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -68,58 +70,37 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             // Kiểm tra và xác thực token
             if (StringUtils.hasText(token) && jwtUtil.validateToken(token)) {
-                // Lấy subject từ token (có thể là username hoặc email)
-                String subject = jwtUtil.getUsernameFromToken(token);
+                // Lấy subject từ token (đã được cấu hình là email)
+                String subject = jwtUtil.getSubjectFromToken(token);
                 if (subject == null) {
-                    log.warn("JWT Filter - Subject is null");
+                    log.warn("JWT Filter - Subject from token is null");
                     filterChain.doFilter(request, response);
                     return;
                 }
                 
-                log.info("JWT Filter - Subject: {}", subject);
+                log.info("JWT Filter - Subject (email) from token: {}", subject);
                 
-                // Lấy role từ token
-                Integer roleId = null;
-                try {
-                    roleId = jwtUtil.getRoleFromToken(token);
-                    log.info("JWT Filter - Role ID: {}", roleId);
-                } catch (Exception e) {
-                    log.warn("JWT Filter - Error getting role: {}", e.getMessage());
+                // Tải thông tin người dùng đầy đủ từ database bằng email
+                org.springframework.security.core.userdetails.UserDetails userDetails = 
+                        userDetailsService.loadUserByUsername(subject); // Custom service handles email lookup
+
+                // Kiểm tra nếu người dùng hợp lệ và có thể xác thực
+                if (userDetails != null) {
+                    // Tạo đối tượng xác thực với UserDetails làm principal
+                    UsernamePasswordAuthenticationToken authentication = 
+                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    
+                    // Set request details in authentication object
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    
+                    // Set the authentication in the Security context
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    
+                    log.info("JWT Filter - Authentication set for user: {} with roles: {}", 
+                        subject, userDetails.getAuthorities().stream().map(auth -> auth.getAuthority()).collect(Collectors.joining(", ")));
+                } else {
+                    log.warn("JWT Filter - Could not find user with subject (email): {}", subject);
                 }
-                
-                // Chuyển đổi roleId thành tên role
-                String role = "USER"; // Mặc định
-                if (roleId != null) {
-                    switch (roleId) {
-                        case 1: role = "STUDENT"; break;
-                        case 2: role = "TEACHER"; break;
-                        case 3: role = "MANAGER"; break;
-                        case 4: role = "ADMIN"; break;
-                        default: role = "USER";
-                    }
-                }
-                
-                log.info("JWT Filter - Role Name: {}", role);
-                
-                // Tạo danh sách quyền từ role
-                List<SimpleGrantedAuthority> authorities = Collections.singletonList(
-                        new SimpleGrantedAuthority("ROLE_" + role));
-                
-                // Log danh sách quyền
-                log.info("JWT Filter - Authorities: {}", authorities.stream()
-                        .map(auth -> auth.getAuthority())
-                        .collect(Collectors.joining(", ")));
-                  // Create Authentication object and set into SecurityContext
-                UsernamePasswordAuthenticationToken authentication = 
-                        new UsernamePasswordAuthenticationToken(subject, null, authorities);
-                
-                // Set request details in authentication object
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                
-                // Set the authentication in the Security context
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-                
-                log.info("JWT Filter - Authentication set: {} with role: {}", subject, role);
             } else if (StringUtils.hasText(token)) {
                 log.warn("JWT Filter - Invalid token");
             } else if (requestURI.contains("/approve") || requestURI.contains("/reject")) {
