@@ -28,6 +28,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "attendance_sessions")
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

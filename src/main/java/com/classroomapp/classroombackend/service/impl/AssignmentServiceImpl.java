@@ -68,6 +68,18 @@ public class AssignmentServiceImpl implements AssignmentService {
         return assignmentRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Assignment with ID " + id + " not found"));
     }
 
+    /**
+     * Find Assignment entity by ID
+     */
+    @Override
+    public Assignment findEntityById(Long id) {
+        return assignmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Assignment", "id", id));
+    }
+
+    /**
+     * Get assignment by ID
+     */
     @Override
     public AssignmentDto GetAssignmentById(Long id) {
         Assignment assignment = findEntityById(id);
@@ -219,17 +231,13 @@ public class AssignmentServiceImpl implements AssignmentService {
         return assignmentRepository.findByTeacherId(teacherId).stream()
                 .map(assignment -> modelMapper.map(assignment, AssignmentDto.class))
                 .collect(Collectors.toList());
-    }
-
-    @Override
+    }    @Override
     public List<AssignmentDto> GetUpcomingAssignmentsByClassroom(Long classroomId) {
         Classroom classroom = classroomRepository.findById(classroomId).orElseThrow(() -> new EntityNotFoundException("Classroom with ID " + classroomId + " not found"));
         return assignmentRepository.findByClassroomAndDueDateAfter(classroom, LocalDateTime.now()).stream()
                 .map(assignment -> modelMapper.map(assignment, AssignmentDto.class))
                 .collect(Collectors.toList());
-    }
-
-    @Override
+    }    @Override
     public List<AssignmentDto> GetPastAssignmentsByClassroom(Long classroomId) {
         Classroom classroom = classroomRepository.findById(classroomId).orElseThrow(() -> new EntityNotFoundException("Classroom with ID " + classroomId + " not found"));
         return assignmentRepository.findByClassroomAndDueDateBefore(classroom, LocalDateTime.now()).stream()
