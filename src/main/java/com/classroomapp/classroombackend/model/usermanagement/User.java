@@ -116,4 +116,20 @@ public class User {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public String getStatus() { return status; }
+    
+    // Explicit setters to resolve compilation issues
+    public void setId(Long id) { this.id = id; }
+    public void setUsername(String username) { this.username = username; }
+    public void setPassword(String password) { this.password = password; }
+    public void setEmail(String email) { this.email = email; }
+    public void setFullName(String fullName) { this.fullName = fullName; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+    public void setRoleId(Integer roleId) { this.roleId = roleId; }
+    public void setRoleId(int roleId) { this.roleId = roleId; }
+    public void setEnrollmentDate(LocalDate enrollmentDate) { this.enrollmentDate = enrollmentDate; }
+    public void setHireDate(LocalDate hireDate) { this.hireDate = hireDate; }
+    public void setDepartment(String department) { this.department = department; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public void setStatus(String status) { this.status = status; }
 }

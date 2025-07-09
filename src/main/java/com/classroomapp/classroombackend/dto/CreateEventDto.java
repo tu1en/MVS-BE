@@ -39,4 +39,19 @@ public class CreateEventDto {
     private String recurringRule;
     
     private Long parentEventId;
+    
+    // Explicit setters to resolve compilation issues
+    public void setTitle(String title) { this.title = title; }
+    public void setDescription(String description) { this.description = description; }
+    public void setStartDatetime(LocalDateTime startDatetime) { this.startDatetime = startDatetime; }
+    public void setEndDatetime(LocalDateTime endDatetime) { this.endDatetime = endDatetime; }
+    public void setEventType(String eventType) { this.eventType = eventType; }
+    public void setClassroomId(Long classroomId) { this.classroomId = classroomId; }
+    public void setClassroomId(long classroomId) { this.classroomId = classroomId; }
+    public void setLocation(String location) { this.location = location; }
+    public void setIsAllDay(Boolean isAllDay) { this.isAllDay = isAllDay; }
+    public void setReminderMinutes(Integer reminderMinutes) { this.reminderMinutes = reminderMinutes; }
+    public void setColor(String color) { this.color = color; }
+    public void setRecurringRule(String recurringRule) { this.recurringRule = recurringRule; }
+    public void setParentEventId(Long parentEventId) { this.parentEventId = parentEventId; }
 }
