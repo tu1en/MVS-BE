@@ -8,4 +8,5 @@ public interface AdminRequestService {
     List<RequestDTO> getAllRequests();
     RequestDTO approveRequest(Long id);
     RequestDTO rejectRequest(Long id, String reason);
+    List<RequestDTO> getPendingRequests();
 } 

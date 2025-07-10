@@ -38,9 +38,9 @@ public class RequestSeeder {
                     "Tôi đã có 5 năm kinh nghiệm giảng dạy Toán cấp trung học. Tôi từng làm việc tại trường THPT Chu Văn An và là giáo viên dạy thêm tại nhiều trung tâm luyện thi.");
 
             Request teacherRequest = new Request();
-            teacherRequest.setEmail(teacherForm.getEmail());
-            teacherRequest.setFullName(teacherForm.getFullName());
-            teacherRequest.setPhoneNumber(teacherForm.getPhoneNumber());
+            teacherRequest.setEmail(teacherForm.getEmail() != null ? teacherForm.getEmail() : "unknown@email.com");
+            teacherRequest.setFullName(teacherForm.getFullName() != null ? teacherForm.getFullName() : "Unknown");
+            teacherRequest.setPhoneNumber(teacherForm.getPhoneNumber() != null ? teacherForm.getPhoneNumber() : "0000000000");
             teacherRequest.setRequestedRole("TEACHER");
             teacherRequest.setFormResponses(objectMapper.writeValueAsString(teacherForm));
             teacherRequest.setStatus("PENDING");
@@ -57,9 +57,9 @@ public class RequestSeeder {
             studentForm.setAdditionalInfo("Em muốn đăng ký học thêm môn Toán và Vật lý để chuẩn bị cho kỳ thi quốc gia.");
 
             Request studentRequest = new Request();
-            studentRequest.setEmail(studentForm.getEmail());
-            studentRequest.setFullName(studentForm.getFullName());
-            studentRequest.setPhoneNumber(studentForm.getPhoneNumber());
+            studentRequest.setEmail(studentForm.getEmail() != null ? studentForm.getEmail() : "unknown@email.com");
+            studentRequest.setFullName(studentForm.getFullName() != null ? studentForm.getFullName() : "Unknown");
+            studentRequest.setPhoneNumber(studentForm.getPhoneNumber() != null ? studentForm.getPhoneNumber() : "0000000000");
             studentRequest.setRequestedRole("STUDENT");
             studentRequest.setFormResponses(objectMapper.writeValueAsString(studentForm));
             studentRequest.setStatus("PENDING");

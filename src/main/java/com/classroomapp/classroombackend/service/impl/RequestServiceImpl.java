@@ -52,6 +52,16 @@ public class RequestServiceImpl implements RequestService {
         newRequest.setCreatedAt(LocalDateTime.now());
 
         requestRepository.save(newRequest);
+        // Gửi mail xác nhận đã nhận request
+        try {
+            emailService.sendFormCompletionConfirmation(
+                newRequest.getEmail(),
+                newRequest.getFullName(),
+                newRequest.getRequestedRole()
+            );
+        } catch (Exception e) {
+            log.error("Failed to send confirmation email", e);
+        }
     }
 
     @Override
