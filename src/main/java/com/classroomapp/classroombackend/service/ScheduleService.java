@@ -3,28 +3,73 @@ package com.classroomapp.classroombackend.service;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.classroomapp.classroombackend.dto.LectureDto;
 import com.classroomapp.classroombackend.dto.ScheduleDto;
 import com.classroomapp.classroombackend.dto.TimetableEventDto;
-import com.classroomapp.classroombackend.model.Schedule;
 
 public interface ScheduleService {
-
-    // Basic CRUD operations
-    Schedule createSchedule(Schedule schedule);
-    Schedule getScheduleById(Long id);
-    Schedule updateSchedule(Long id, Schedule schedule);
+    /**
+     * Chuyển đổi lịch học thành sự kiện lịch trình cho người dùng
+     */
+    List<TimetableEventDto> getTimetableForUser(Long userId, LocalDate startDate, LocalDate endDate);
+    
+    /**
+     * Lấy tất cả lịch học
+     */
+    List<ScheduleDto> getAllSchedules();
+    
+    /**
+     * Lấy lịch học theo ID
+     */
+    ScheduleDto getScheduleById(Long id);
+    
+    /**
+     * Lấy lịch học theo ID của giáo viên
+     */
+    List<ScheduleDto> getSchedulesByTeacherId(Long teacherId);
+    
+    /**
+     * Lấy lịch học theo ID của học sinh
+     */
+    List<ScheduleDto> getSchedulesByStudentId(Long studentId);
+    
+    /**
+     * Lấy lịch học theo ID của lớp học
+     */
+    List<ScheduleDto> getSchedulesByClassroomId(Long classroomId);
+    
+    /**
+     * Tạo lịch học mới
+     */
+    ScheduleDto createSchedule(ScheduleDto scheduleDto);
+    
+    /**
+     * Cập nhật lịch học
+     */
+    ScheduleDto updateSchedule(Long id, ScheduleDto scheduleDto);
+    
+    /**
+     * Xóa lịch học
+     */
     void deleteSchedule(Long id);
     
-    // Business logic operations
-    List<ScheduleDto> getSchedulesByClassroom(Long classroomId);
-    List<ScheduleDto> getSchedulesByDay(Integer dayOfWeek);
-    List<ScheduleDto> getSchedulesByTeacherAndDay(Long teacherId, Integer dayOfWeek);
-    
-    // Create a schedule entry
-    ScheduleDto createScheduleEntry(ScheduleDto scheduleDto);
-    
-    // Update a schedule entry
-    ScheduleDto updateScheduleEntry(Long id, ScheduleDto scheduleDto);
+    /**
+     * Tạo lịch học mẫu cho một lớp học
+     */
+    void createSampleSchedules(Long classroomId);
 
-    List<TimetableEventDto> getTimetableForUser(Long userId, LocalDate startDate, LocalDate endDate);
-} 
+    /**
+     * Lấy lịch học theo giáo viên và ngày trong tuần
+     */
+    List<ScheduleDto> getSchedulesByTeacherAndDay(Long teacherId, Integer dayOfWeek);
+
+    /**
+     * Tạo một entry lịch học mới
+     */
+    ScheduleDto createScheduleEntry(ScheduleDto scheduleDto);
+
+    /**
+     * Get lectures associated with a specific schedule
+     */
+    List<LectureDto> getLecturesByScheduleId(Long scheduleId);
+}

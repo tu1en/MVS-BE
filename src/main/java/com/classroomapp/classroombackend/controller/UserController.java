@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.classroomapp.classroombackend.dto.usermanagement.UserDto;
+import com.classroomapp.classroombackend.dto.UserDto;
 import com.classroomapp.classroombackend.dto.usermanagement.UserMapper;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.security.CustomUserDetails;
@@ -161,11 +161,12 @@ public class UserController {
         return ResponseEntity.ok(userService.FindUsersByRole(roleId.intValue()));
     }
 
-    @GetMapping("/teachers")
-    public ResponseEntity<List<UserDto>> getTeachers() {
-        // Role 2 corresponds to TEACHER
-        return ResponseEntity.ok(userService.FindUsersByRole(2));
-    }
+    // Removed duplicate endpoint - now handled by FrontendApiBridgeController
+    // @GetMapping("/teachers")
+    // public ResponseEntity<List<UserDto>> getTeachers() {
+    //     // Role 2 corresponds to TEACHER
+    //     return ResponseEntity.ok(userService.FindUsersByRole(2));
+    // }
 
     /**
      * Delete user

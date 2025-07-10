@@ -96,8 +96,23 @@ public class AssignmentServiceImpl implements AssignmentService {
                     .orElseThrow(() -> new ResourceNotFoundException("Classroom not found with id: " + createAssignmentDto.getClassroomId()));
             log.info("Found classroom: id={}, name={}", classroom.getId(), classroom.getName());
 
-            User teacher = userRepository.findByEmail(teacherUsername)
-                    .orElseThrow(() -> new ResourceNotFoundException("User", "email", teacherUsername));
+            // Handle authentication - if teacherUsername is null, get from security context
+            User teacher = null;
+            if (teacherUsername != null) {
+                teacher = userRepository.findByEmail(teacherUsername)
+                        .orElseThrow(() -> new ResourceNotFoundException("User", "email", teacherUsername));
+            } else {
+                // Get current authenticated user from security context
+                org.springframework.security.core.Authentication authentication =
+                    org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                if (authentication != null && authentication.getName() != null) {
+                    String currentUserEmail = authentication.getName();
+                    teacher = userRepository.findByEmail(currentUserEmail)
+                            .orElseThrow(() -> new ResourceNotFoundException("User", "email", currentUserEmail));
+                } else {
+                    throw new AccessDeniedException("No authenticated user found");
+                }
+            }
             log.info("Found teacher: id={}, username={}, email={}", teacher.getId(), teacher.getUsername(), teacher.getEmail());
 
             if (!classroomSecurityService.isTeacherOfClassroom(teacher, classroom.getId())) {
@@ -280,7 +295,12 @@ public class AssignmentServiceImpl implements AssignmentService {
                     
                     dto.setSubmissionText(submission.getComment());
                     dto.setSubmissionDate(submission.getSubmittedAt());
-                    dto.setGrade(submission.getScore() != null ? submission.getScore().doubleValue() : null);
+                    
+                    // Set grade field from score
+                    if (submission.getScore() != null) {
+                        dto.setGrade(submission.getScore().doubleValue());
+                    }
+                    
                     dto.setFeedback(submission.getFeedback());
                     dto.setStatus(submission.getScore() != null ? "GRADED" : "SUBMITTED");
                     
@@ -313,43 +333,46 @@ public class AssignmentServiceImpl implements AssignmentService {
 
     @Override
     @Transactional
-    public GradeDto gradeSubmission(Long assignmentId, GradeSubmissionDto gradeSubmissionDto) {
-        log.info("AssignmentServiceImpl.gradeSubmission called with assignmentId: {}", assignmentId);
-        log.info("Grading data: score={}, hasFeedback={}",
-                gradeSubmissionDto.getScore(), gradeSubmissionDto.getFeedback() != null);
+    public GradeDto gradeSubmission(Long assignmentId, Long submissionId, GradeSubmissionDto gradeSubmissionDto) {
+        log.info("gradeSubmission called with assignmentId: {}, submissionId: {}, score: {}, feedback: {}",
+                assignmentId, submissionId, gradeSubmissionDto.getScore(), gradeSubmissionDto.getFeedback());
 
-        try {
-            // Validate assignment exists
-            Assignment assignment = assignmentRepository.findById(assignmentId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Assignment not found with id: " + assignmentId));
-            log.info("Found assignment: id={}, title={}", assignment.getId(), assignment.getTitle());
+        // Find the submission by its ID
+        Submission submission = submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Submission", "id", submissionId));
 
-            // Note: The current implementation expects submissionId to be passed separately
-            // For now, we'll need to find the submission through other means or modify the API
-            // This is a placeholder implementation that needs to be completed based on the actual API design
-            log.warn("gradeSubmission method needs submissionId - current implementation is incomplete");
-
-            // Create a basic response for now
-            GradeDto gradeDto = new GradeDto();
-            gradeDto.setGrade(gradeSubmissionDto.getScore().doubleValue());
-            gradeDto.setFeedback(gradeSubmissionDto.getFeedback());
-            gradeDto.setGradedDate(LocalDateTime.now());
-
-            // Get current user for grading audit
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String currentUserEmail = authentication.getName();
-            User grader = userRepository.findByEmail(currentUserEmail)
-                    .orElseThrow(() -> new ResourceNotFoundException("User", "email", currentUserEmail));
-            gradeDto.setGradedBy(grader.getFullName());
-
-            log.info("Grading operation logged - actual implementation needs submissionId parameter");
-            return gradeDto;
-
-        } catch (Exception e) {
-            log.error("Error grading submission: assignmentId={}, error={}",
-                    assignmentId, e.getMessage(), e);
-            throw e;
+        // Optional: Verify the submission belongs to the assignment
+        if (!submission.getAssignment().getId().equals(assignmentId)) {
+            throw new IllegalArgumentException("Submission with id " + submissionId + " does not belong to assignment with id " + assignmentId);
         }
+
+        // Get the current authenticated user (the grader)
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || !(authentication.getPrincipal() instanceof CustomUserDetails)) {
+            throw new InsufficientAuthenticationException("User must be authenticated to grade a submission.");
+        }
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        User grader = userRepository.findById(userDetails.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userDetails.getId()));
+
+        // Update the submission with the grade and feedback
+        submission.setScore(gradeSubmissionDto.getScore());
+        submission.setFeedback(gradeSubmissionDto.getFeedback());
+        submission.setGradedAt(LocalDateTime.now());
+        submission.setGradedBy(grader); // Set the grader
+
+        // Save the updated submission
+        Submission savedSubmission = submissionRepository.save(submission);
+        log.info("Successfully graded and saved submission with ID: {}", savedSubmission.getId());
+
+        // Return a DTO representing the grade
+        return new GradeDto(
+                savedSubmission.getId(),
+                savedSubmission.getAssignment().getId(),
+                savedSubmission.getScore() != null ? savedSubmission.getScore().doubleValue() : null,
+                savedSubmission.getFeedback(),
+                savedSubmission.getGradedAt(),
+                grader.getFullName());
     }
 
     @Override

@@ -27,6 +27,26 @@ public class CourseSeeder {
             history.setDescription("A survey of major historical events from ancient civilizations to the modern era.");
             courseRepository.save(history);
 
+            Course literature = new Course();
+            literature.setName("Vietnamese Literature");
+            literature.setDescription("An exploration of Vietnamese literary works throughout history.");
+            courseRepository.save(literature);
+
+            Course english = new Course();
+            english.setName("Communicative English");
+            english.setDescription("Developing English communication skills for an international environment.");
+            courseRepository.save(english);
+
+            Course cs = new Course();
+            cs.setName("Computer Science");
+            cs.setDescription("Fundamental concepts of computer science and programming.");
+            courseRepository.save(cs);
+
+            Course physics = new Course();
+            physics.setName("General Physics");
+            physics.setDescription("An introduction to the fundamental principles of physics.");
+            courseRepository.save(physics);
+
             System.out.println("✅ [CourseSeeder] Created 6 sample courses.");
         }
     }

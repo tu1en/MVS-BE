@@ -131,8 +131,10 @@ public class AssignmentController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
-    public ResponseEntity<AssignmentDto> CreateAssignment(@RequestBody CreateAssignmentDto createAssignmentDto) {
-        return new ResponseEntity<>(assignmentService.CreateAssignment(createAssignmentDto, null), HttpStatus.CREATED);
+    public ResponseEntity<AssignmentDto> CreateAssignment(@RequestBody CreateAssignmentDto createAssignmentDto,
+                                                         java.security.Principal principal) {
+        String teacherUsername = principal != null ? principal.getName() : null;
+        return new ResponseEntity<>(assignmentService.CreateAssignment(createAssignmentDto, teacherUsername), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
@@ -251,15 +253,17 @@ public class AssignmentController {
             return ResponseEntity.ok(submissions);
         } catch (Exception e) {
             log.error("Error getting submissions for assignment " + id, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ArrayList<>());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    @PostMapping("/{id}/grade")
+    @PostMapping("/{assignmentId}/submissions/{submissionId}/grade")
     public ResponseEntity<GradeDto> gradeSubmission(
-            @PathVariable Long id,
+            @PathVariable Long assignmentId,
+            @PathVariable Long submissionId,
             @Valid @RequestBody GradeSubmissionDto gradeSubmissionDto) {
-        return ResponseEntity.ok(assignmentService.gradeSubmission(id, gradeSubmissionDto));
+        log.info("Grading submission {} for assignment {}", submissionId, assignmentId);
+        return ResponseEntity.ok(assignmentService.gradeSubmission(assignmentId, submissionId, gradeSubmissionDto));
     }
 
     @GetMapping("/{id}/rubric")

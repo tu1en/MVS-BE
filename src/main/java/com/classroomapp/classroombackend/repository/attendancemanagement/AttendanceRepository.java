@@ -92,4 +92,13 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
             "SUM(CASE WHEN a.status IN (com.classroomapp.classroombackend.model.attendancemanagement.AttendanceStatus.PRESENT, com.classroomapp.classroombackend.model.attendancemanagement.AttendanceStatus.LATE) THEN 1 ELSE 0 END) * 100.0 / COUNT(a.id) " +
             "FROM Attendance a WHERE a.session.classroom.id IN :classroomIds")
     Double getAverageAttendanceByClassroomIds(@Param("classroomIds") List<Long> classroomIds);
+
+    @Query("SELECT a FROM Attendance a JOIN a.session s WHERE s.lecture.id = :lectureId AND a.student.id = :studentId")
+    Optional<Attendance> findByLectureIdAndStudentId(@Param("lectureId") Long lectureId, @Param("studentId") Long studentId);
+
+    @Query("SELECT a FROM Attendance a " +
+           "JOIN a.session s " +
+           "WHERE a.student.id = :studentId AND s.classroom.id = :classroomId " +
+           "ORDER BY s.sessionDate DESC")
+    List<Attendance> findByStudentIdAndSession_ClassroomIdOrderBySession_SessionDateDesc(@Param("studentId") Long studentId, @Param("classroomId") Long classroomId);
 }

@@ -70,7 +70,7 @@ public interface AssignmentService {
     List<AssignmentSubmissionDto> getAssignmentSubmissions(Long assignmentId);
     
     // Grade a submission
-    GradeDto gradeSubmission(Long assignmentId, GradeSubmissionDto gradeSubmissionDto);
+    GradeDto gradeSubmission(Long assignmentId, Long submissionId, GradeSubmissionDto gradeSubmissionDto);
     
     // Get assignment rubric
     AssignmentRubricDto getAssignmentRubric(Long assignmentId);

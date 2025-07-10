@@ -16,9 +16,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.classroomapp.classroombackend.dto.UserDto;
 import com.classroomapp.classroombackend.dto.usermanagement.UpdateUserRolesRequest;
 import com.classroomapp.classroombackend.dto.usermanagement.UpdateUserStatusRequest;
-import com.classroomapp.classroombackend.dto.usermanagement.UserDto;
 import com.classroomapp.classroombackend.exception.BusinessLogicException;
 import com.classroomapp.classroombackend.service.UserService;
 

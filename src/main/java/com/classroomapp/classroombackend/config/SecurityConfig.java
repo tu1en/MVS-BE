@@ -79,24 +79,20 @@ public class SecurityConfig {
                 // Allow OPTIONS requests for CORS preflight
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 
-                // Public endpoints
-                .requestMatchers("/api/auth/**").permitAll()
+                // Public endpoints - Only truly public endpoints should be here
+                .requestMatchers("/api/auth/login").permitAll()
+                .requestMatchers("/api/auth/register").permitAll()
+                .requestMatchers("/api/auth/google-login").permitAll()
+                .requestMatchers("/api/auth/reset-password").permitAll()
+                .requestMatchers("/api/auth/change-password").authenticated() // Requires authentication
+                .requestMatchers("/api/auth/validate").authenticated() // Requires authentication for token validation
                 .requestMatchers("/api/public/**").permitAll()
-                .requestMatchers("/api/test/**").permitAll() // Allow test endpoints for debugging
-                .requestMatchers("/api/v1/greetings/**").permitAll() // Allow greeting endpoints
-                .requestMatchers("/api/greetings/**").permitAll() // Allow greeting endpoints
+                .requestMatchers("/api/health").permitAll() // Health check endpoint
+                .requestMatchers("/api/v1/health").permitAll() // Health check endpoint v1
+                .requestMatchers("/api/test").permitAll() // Test endpoint
+                .requestMatchers("/api/v1/greetings/hello").permitAll() // Only allow hello endpoint for health check
                 .requestMatchers("/api/role-requests/**").permitAll()
                 .requestMatchers("/role-requests/**").permitAll() // Allow both with and without /api prefix
-                .requestMatchers("/api/files/**").permitAll()
-                .requestMatchers("/files/**").permitAll() // Allow both with and without /api prefix
-                .requestMatchers("/api/timetable/**").permitAll() // Allow access to timetable for testing
-                .requestMatchers("/api/assignments/classroom/**").permitAll() // Allow access to assignments for testing
-                .requestMatchers("/api/assignments").permitAll() // Allow access to assignments for testing
-                .requestMatchers("/api/assignments/create-samples/**").permitAll() // Allow creating sample assignments
-                .requestMatchers("/api/assignments/*").permitAll() // Allow access to assignment detail for testing
-                .requestMatchers("/api/assignments/*/submissions").permitAll() // Allow access to submissions for testing
-                .requestMatchers("/api/assignments/*/submissions-debug").permitAll() // Allow access to debug for testing
-                .requestMatchers("/api/assignments/upload").permitAll() // Allow file upload for testing
                 
                 // Blog endpoints
                 .requestMatchers("/api/blogs").permitAll()
@@ -108,7 +104,20 @@ public class SecurityConfig {
                 .requestMatchers("/api/blogs/{id:[\\d]+}/publish").authenticated()
                 .requestMatchers("/api/blogs/{id:[\\d]+}/unpublish").authenticated()
                 
-                // Protected endpoints
+                // Protected endpoints - Attendance system
+                .requestMatchers("/api/v1/attendance/**").authenticated()
+                .requestMatchers("/api/attendance-sessions/**").authenticated()
+                .requestMatchers("/api/attendances/**").authenticated()
+
+                // Protected endpoints - File operations
+                .requestMatchers("/api/files/**").authenticated()
+                .requestMatchers("/files/**").authenticated()
+
+                // Protected endpoints - Assignments
+                .requestMatchers("/api/assignments/**").authenticated()
+                .requestMatchers("/api/timetable/**").authenticated()
+
+                // Role-based endpoints
                 .requestMatchers("/api/admin/requests/**").hasAnyRole("ADMIN", "MANAGER")
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/manager/**").hasRole("MANAGER")

@@ -3,6 +3,7 @@ package com.classroomapp.classroombackend.controller;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -18,10 +19,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.classroomapp.classroombackend.dto.StudentMessageDto;
+import com.classroomapp.classroombackend.dto.UserDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto;
 import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
-import com.classroomapp.classroombackend.dto.usermanagement.UserDto;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
@@ -84,6 +85,38 @@ public class FrontendApiBridgeController {
             return ResponseEntity.ok(userService.FindUsersByRole(1)); // Role 1 = STUDENT
         } catch (Exception e) {
             System.err.println("Error fetching students: " + e.getMessage());
+            e.printStackTrace();
+            // Return empty list to prevent frontend crash
+            return ResponseEntity.ok(new ArrayList<>());
+        }
+    }
+
+    /**
+     * Bridge endpoint for getting all teachers
+     * Frontend calls: /api/users/teachers
+     */
+    @GetMapping("/users/teachers")
+    public ResponseEntity<List<com.classroomapp.classroombackend.dto.UserDto>> getAllTeachers() {
+        try {
+            // Get teachers directly from repository since service method is broken
+            List<User> teachers = userRepository.findByRoleId(2); // Role 2 = TEACHER
+            List<com.classroomapp.classroombackend.dto.UserDto> teacherDtos = teachers.stream()
+                .map(user -> {
+                    com.classroomapp.classroombackend.dto.UserDto dto = new com.classroomapp.classroombackend.dto.UserDto();
+                    dto.setId(user.getId());
+                    dto.setUsername(user.getUsername());
+                    dto.setEmail(user.getEmail());
+                    dto.setFullName(user.getFullName());
+                    dto.setRoleId(user.getRoleId());
+                    dto.setStatus(user.getStatus());
+                    return dto;
+                })
+                .collect(Collectors.toList());
+
+            System.out.println("Found " + teacherDtos.size() + " teachers");
+            return ResponseEntity.ok(teacherDtos);
+        } catch (Exception e) {
+            System.err.println("Error fetching teachers: " + e.getMessage());
             e.printStackTrace();
             // Return empty list to prevent frontend crash
             return ResponseEntity.ok(new ArrayList<>());
@@ -349,7 +382,9 @@ public class FrontendApiBridgeController {
             }});
         }
     }
-    
+
+
+
     /**
      * Bridge endpoint for getting unread message count for students
      * Frontend calls: /student-messages/unread-count
