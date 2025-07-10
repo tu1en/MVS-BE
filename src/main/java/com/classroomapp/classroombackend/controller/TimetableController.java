@@ -76,23 +76,46 @@ public class TimetableController {
             Authentication authentication,
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate) {
-        
+
+        System.out.println("📅 TimetableController.getMyTimetable: Request received");
+        System.out.println("   Authentication: " + (authentication != null ? authentication.getName() : "null"));
+        System.out.println("   Start Date: " + startDate);
+        System.out.println("   End Date: " + endDate);
+
         if (authentication == null) {
+            System.out.println("❌ TimetableController.getMyTimetable: No authentication provided");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        
-        // In a real implementation, we would get the current user ID from the authentication
-        // For now, just get all events
-        
-        LocalDate start = startDate != null ? LocalDate.parse(startDate) : LocalDate.now().withDayOfMonth(1);
-        LocalDate end = endDate != null ? LocalDate.parse(endDate) : start.plusMonths(1).minusDays(1);
-        
-        // Convert to LocalDateTime for service
-        LocalDateTime startDateTime = start.atStartOfDay();
-        LocalDateTime endDateTime = end.atTime(23, 59, 59);
-        
-        List<TimetableEventDto> events = timetableService.getEventsByDateRange(startDateTime, endDateTime);
-        return ResponseEntity.ok(events);
+
+        try {
+            // Get user ID from authentication
+            String username = authentication.getName();
+            System.out.println("📅 TimetableController.getMyTimetable: Username from auth: " + username);
+
+            // For now, use a default user ID since we don't have UserRepository injected
+            // TODO: Inject UserRepository and get actual user ID
+            Long userId = 1L; // Default to student user
+
+            LocalDate start = startDate != null ? LocalDate.parse(startDate) : LocalDate.now().withDayOfMonth(1);
+            LocalDate end = endDate != null ? LocalDate.parse(endDate) : start.plusMonths(1).minusDays(1);
+
+            System.out.println("📅 TimetableController.getMyTimetable: Date range: " + start + " to " + end);
+            System.out.println("📅 TimetableController.getMyTimetable: Getting events for user ID: " + userId);
+
+            // Convert to LocalDateTime for service
+            LocalDateTime startDateTime = start.atStartOfDay();
+            LocalDateTime endDateTime = end.atTime(23, 59, 59);
+
+            // Get events for the authenticated user using the new method
+            List<TimetableEventDto> events = timetableService.getEventsForUser(userId, startDateTime, endDateTime);
+            System.out.println("📅 TimetableController.getMyTimetable: Found " + events.size() + " events for user");
+
+            return ResponseEntity.ok(events);
+        } catch (Exception e) {
+            System.out.println("❌ TimetableController.getMyTimetable: Error - " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
     
     // Get weekly timetable
@@ -269,5 +292,88 @@ public class TimetableController {
         List<TimetableEventDto> events = timetableService.getEventsByClassroomAndDateRange(
                 classroomId, startDateTime, endDateTime);
         return ResponseEntity.ok(events);
+    }
+    
+    // Create sample data for a specific classroom
+    @PostMapping("/create-sample-data/{classroomId}")
+    public ResponseEntity<String> createSampleDataForClassroom(@PathVariable Long classroomId) {
+        try {
+            // Lấy thời gian hiện tại
+            LocalDateTime now = LocalDateTime.now();
+            int currentYear = now.getYear();
+            int currentMonth = now.getMonthValue();
+            int currentDay = now.getDayOfMonth();
+            
+            // Tạo lịch học trong tuần hiện tại và tuần tiếp theo
+            
+            // Buổi học lý thuyết
+            CreateEventDto theoryClass = new CreateEventDto();
+            theoryClass.setTitle("Bài giảng lý thuyết");
+            theoryClass.setDescription("Giới thiệu các khái niệm cơ bản và lý thuyết nền tảng");
+            theoryClass.setStartDatetime(LocalDateTime.of(currentYear, currentMonth, currentDay, 8, 0));
+            theoryClass.setEndDatetime(LocalDateTime.of(currentYear, currentMonth, currentDay, 9, 30));
+            theoryClass.setEventType("CLASS");
+            theoryClass.setClassroomId(classroomId);
+            theoryClass.setLocation("Phòng học 101");
+            theoryClass.setIsAllDay(false);
+            theoryClass.setColor("#007bff");
+            timetableService.createEvent(theoryClass, 1L);
+            
+            // Buổi thực hành
+            CreateEventDto practiceClass = new CreateEventDto();
+            practiceClass.setTitle("Buổi thực hành");
+            practiceClass.setDescription("Áp dụng kiến thức lý thuyết vào bài tập thực hành");
+            practiceClass.setStartDatetime(LocalDateTime.of(currentYear, currentMonth, currentDay + 2, 13, 0));
+            practiceClass.setEndDatetime(LocalDateTime.of(currentYear, currentMonth, currentDay + 2, 15, 30));
+            practiceClass.setEventType("CLASS");
+            practiceClass.setClassroomId(classroomId);
+            practiceClass.setLocation("Phòng thực hành 202");
+            practiceClass.setIsAllDay(false);
+            practiceClass.setColor("#28a745");
+            timetableService.createEvent(practiceClass, 1L);
+            
+            // Bài kiểm tra
+            CreateEventDto examEvent = new CreateEventDto();
+            examEvent.setTitle("Bài kiểm tra giữa kỳ");
+            examEvent.setDescription("Kiểm tra kiến thức đã học trong nửa đầu khóa học");
+            examEvent.setStartDatetime(LocalDateTime.of(currentYear, currentMonth, currentDay + 7, 10, 0));
+            examEvent.setEndDatetime(LocalDateTime.of(currentYear, currentMonth, currentDay + 7, 11, 30));
+            examEvent.setEventType("EXAM");
+            examEvent.setClassroomId(classroomId);
+            examEvent.setLocation("Phòng thi A");
+            examEvent.setIsAllDay(false);
+            examEvent.setColor("#dc3545");
+            timetableService.createEvent(examEvent, 1L);
+            
+            // Hạn nộp bài tập
+            CreateEventDto assignmentDue = new CreateEventDto();
+            assignmentDue.setTitle("Hạn nộp bài tập lớn");
+            assignmentDue.setDescription("Nộp báo cáo và mã nguồn của dự án");
+            assignmentDue.setStartDatetime(LocalDateTime.of(currentYear, currentMonth, currentDay + 10, 23, 59));
+            assignmentDue.setEndDatetime(LocalDateTime.of(currentYear, currentMonth, currentDay + 10, 23, 59));
+            assignmentDue.setEventType("ASSIGNMENT_DUE");
+            assignmentDue.setClassroomId(classroomId);
+            assignmentDue.setIsAllDay(true);
+            assignmentDue.setColor("#ffc107");
+            timetableService.createEvent(assignmentDue, 1L);
+            
+            // Buổi hỏi đáp
+            CreateEventDto meetingEvent = new CreateEventDto();
+            meetingEvent.setTitle("Buổi hỏi đáp");
+            meetingEvent.setDescription("Giải đáp thắc mắc và chuẩn bị cho kỳ thi cuối kỳ");
+            meetingEvent.setStartDatetime(LocalDateTime.of(currentYear, currentMonth, currentDay + 14, 15, 0));
+            meetingEvent.setEndDatetime(LocalDateTime.of(currentYear, currentMonth, currentDay + 14, 16, 30));
+            meetingEvent.setEventType("MEETING");
+            meetingEvent.setClassroomId(classroomId);
+            meetingEvent.setLocation("Phòng họp trực tuyến");
+            meetingEvent.setIsAllDay(false);
+            meetingEvent.setColor("#6f42c1");
+            timetableService.createEvent(meetingEvent, 1L);
+            
+            return ResponseEntity.ok("Đã tạo dữ liệu lịch học mẫu thành công");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Lỗi khi tạo dữ liệu mẫu: " + e.getMessage());
+        }
     }
 }

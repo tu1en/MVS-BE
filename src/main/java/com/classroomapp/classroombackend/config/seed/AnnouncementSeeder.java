@@ -9,6 +9,7 @@ import com.classroomapp.classroombackend.dto.CreateAnnouncementDto;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.AnnouncementRepository;
+import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.AnnouncementService;
 
@@ -18,18 +19,35 @@ public class AnnouncementSeeder {
     private final AnnouncementRepository announcementRepository;
     private final UserRepository userRepository;
     private final AnnouncementService announcementService;
+    private final ClassroomRepository classroomRepository;
 
-    public AnnouncementSeeder(AnnouncementRepository announcementRepository, UserRepository userRepository, AnnouncementService announcementService) {
+    public AnnouncementSeeder(AnnouncementRepository announcementRepository, UserRepository userRepository, AnnouncementService announcementService, ClassroomRepository classroomRepository) {
         this.announcementRepository = announcementRepository;
         this.userRepository = userRepository;
         this.announcementService = announcementService;
+        this.classroomRepository = classroomRepository;
     }
 
     @Transactional
-    public void seed(List<Classroom> classrooms) {
-        if (announcementRepository.count() == 0) {
-            User admin = userRepository.findByEmail("admin@test.com").orElseThrow(() -> new RuntimeException("Admin user not found"));
-            User teacher = userRepository.findByEmail("teacher@test.com").orElseThrow(() -> new RuntimeException("Teacher user not found"));
+    public void seed() {
+        if (announcementRepository.count() > 0) {
+            System.out.println("✅ [AnnouncementSeeder] Announcements already exist. Seeding more for testing.");
+        }
+
+        // Find users by role for creating announcements
+        User admin = userRepository.findByRoleId(4).stream().findFirst().orElse(null); // ADMIN
+        User teacher = userRepository.findByRoleId(2).stream().findFirst().orElse(null); // TEACHER
+        List<Classroom> classrooms = classroomRepository.findAll();
+
+        if (admin == null || teacher == null) {
+            System.out.println("⚠️ [AnnouncementSeeder] Admin or Teacher users not found. Skipping announcement seeding.");
+            return;
+        }
+
+            if (classrooms.isEmpty()) {
+                System.out.println("⚠️ [AnnouncementSeeder] No classrooms found. Skipping classroom-specific announcements.");
+            }
+
             Classroom classroom1 = classrooms.stream().findFirst().orElse(null);
 
             // Announcement 1: Global from Admin
@@ -60,6 +78,5 @@ public class AnnouncementSeeder {
             announcementService.createAnnouncement(announcement3Dto, admin.getId());
             
             System.out.println("✅ [AnnouncementSeeder] Created 3 sample announcements and their notifications.");
-        }
     }
 } 

@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.classroomapp.classroombackend.dto.UserDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDetailsDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.CourseDetailsDto;
@@ -26,7 +27,6 @@ import com.classroomapp.classroombackend.dto.classroommanagement.CreateClassroom
 import com.classroomapp.classroombackend.dto.classroommanagement.EnrollmentRequestDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.UpdateClassroomDto;
 import com.classroomapp.classroombackend.dto.exammangement.ExamDto;
-import com.classroomapp.classroombackend.dto.usermanagement.UserDto;
 import com.classroomapp.classroombackend.service.ClassroomService;
 import com.classroomapp.classroombackend.service.ExamService;
 
