@@ -77,12 +77,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     filterChain.doFilter(request, response);
                     return;
                 }
-                
-                log.info("JWT Filter - Subject (email) from token: {}", subject);
-                
-                // Tải thông tin người dùng đầy đủ từ database bằng email
-                org.springframework.security.core.userdetails.UserDetails userDetails = 
-                        userDetailsService.loadUserByUsername(subject); // Custom service handles email lookup
+
+                log.info("JWT Filter - Subject from token: {}", subject);
+                log.info("JWT Filter - Token validation successful, loading user details...");
+
+                // Tải thông tin người dùng đầy đủ từ database
+                // CustomUserDetailsService sẽ xử lý việc tìm user bằng email hoặc username
+                org.springframework.security.core.userdetails.UserDetails userDetails =
+                        userDetailsService.loadUserByUsername(subject);
 
                 // Kiểm tra nếu người dùng hợp lệ và có thể xác thực
                 if (userDetails != null) {

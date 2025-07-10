@@ -10,7 +10,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -32,7 +31,7 @@ import lombok.RequiredArgsConstructor;
  * This controller provides secure endpoints for managing and viewing attendance records.
  */
 @RestController
-@RequestMapping("/api/v1/attendance")
+@RequestMapping("/api/attendance")
 @RequiredArgsConstructor
 public class AttendanceController {
 
@@ -140,8 +139,7 @@ public class AttendanceController {
     @PostMapping("/submit")
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<String> submitAttendance(@RequestBody AttendanceSubmitDto submitDto) {
-        // For now, just return a success message
-        // In a real implementation, this would call a service method to save the records
+        attendanceService.submitAttendance(submitDto);
         return ResponseEntity.ok("Attendance records submitted successfully");
     }
 }

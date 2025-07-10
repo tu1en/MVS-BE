@@ -1,5 +1,6 @@
 package com.classroomapp.classroombackend.dto;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +30,7 @@ public class LectureDto {
     private String status;
     private LocalDateTime createdDate;
     private LocalDateTime updatedDate;
+    private LocalDate lectureDate;
     private List<LectureMaterialDto> materials = new ArrayList<>();
     
     public LectureDto(Long id, String title, String content, Long classroomId) {

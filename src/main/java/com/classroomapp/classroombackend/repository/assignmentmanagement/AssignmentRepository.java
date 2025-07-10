@@ -6,12 +6,9 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 
 import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
-
-@Repository
 public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
     
     // Find assignments by classroom

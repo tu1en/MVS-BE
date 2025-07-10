@@ -108,4 +108,10 @@ public interface TimetableService {
      * Get events created by a user
      */
     List<TimetableEventDto> getEventsByCreator(Long createdBy);
+
+    /**
+     * Get timetable events for a specific user (student or teacher)
+     * This method will get events from classrooms the user is enrolled in or teaching
+     */
+    List<TimetableEventDto> getEventsForUser(Long userId, LocalDateTime startDate, LocalDateTime endDate);
 }
