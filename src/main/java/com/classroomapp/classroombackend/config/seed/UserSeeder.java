@@ -10,6 +10,8 @@ import com.classroomapp.classroombackend.constants.RoleConstants;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 
+import java.time.LocalDate;
+
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
@@ -48,8 +50,13 @@ public class UserSeeder {
                 teacher.setUsername("teacher");
                 teacher.setPassword(passwordEncoder.encode("teacher123"));
                 teacher.setEmail("teacher@test.com");
-                teacher.setFullName("Teacher User");
+                teacher.setFullName("Nguyễn Văn Minh");
                 teacher.setRoleId(RoleConstants.TEACHER);
+                teacher.setPhoneNumber("0912345678");
+                teacher.setDepartment("Khoa Công Nghệ Thông Tin");
+                teacher.setHireDate(LocalDate.now().minusYears(2));
+                teacher.setAnnualLeaveBalance(12);
+                teacher.setLeaveResetDate(LocalDate.now().plusMonths(6)); // Reset in 6 months
                 userRepository.save(teacher);
 
                 // Create manager user
@@ -78,8 +85,13 @@ public class UserSeeder {
                 mathTeacher.setUsername("math_teacher");
                 mathTeacher.setPassword(passwordEncoder.encode("teacher123"));
                 mathTeacher.setEmail("math@test.com");
-                mathTeacher.setFullName("Nguyễn Văn Toán");
+                mathTeacher.setFullName("Trần Văn Đức");
                 mathTeacher.setRoleId(RoleConstants.TEACHER);
+                mathTeacher.setPhoneNumber("0987654321");
+                mathTeacher.setDepartment("Khoa Toán Học");
+                mathTeacher.setHireDate(LocalDate.now().minusYears(3));
+                mathTeacher.setAnnualLeaveBalance(4); // Đã dùng 8 ngày
+                mathTeacher.setLeaveResetDate(LocalDate.now().plusMonths(8));
                 userRepository.save(mathTeacher);
 
                 User litTeacher = new User();
@@ -87,8 +99,13 @@ public class UserSeeder {
                 litTeacher.setUsername("lit_teacher");
                 litTeacher.setPassword(passwordEncoder.encode("teacher123"));
                 litTeacher.setEmail("literature@test.com");
-                litTeacher.setFullName("Trần Thị Văn");
+                litTeacher.setFullName("Phạm Thị Lan");
                 litTeacher.setRoleId(RoleConstants.TEACHER);
+                litTeacher.setPhoneNumber("0976543210");
+                litTeacher.setDepartment("Khoa Ngữ Văn");
+                litTeacher.setHireDate(LocalDate.now().minusYears(1));
+                litTeacher.setAnnualLeaveBalance(-3); // Đã vượt phép (dùng 15 ngày)
+                litTeacher.setLeaveResetDate(LocalDate.now().plusMonths(3));
                 userRepository.save(litTeacher);
 
                 User engTeacher = new User();
@@ -96,8 +113,13 @@ public class UserSeeder {
                 engTeacher.setUsername("eng_teacher");
                 engTeacher.setPassword(passwordEncoder.encode("teacher123"));
                 engTeacher.setEmail("english@test.com");
-                engTeacher.setFullName("Lê Anh");
+                engTeacher.setFullName("Lê Hoàng Nam");
                 engTeacher.setRoleId(RoleConstants.TEACHER);
+                engTeacher.setPhoneNumber("0965432109");
+                engTeacher.setDepartment("Khoa Ngoại Ngữ");
+                engTeacher.setHireDate(LocalDate.now().minusYears(4));
+                engTeacher.setAnnualLeaveBalance(8); // Đã dùng 4 ngày
+                engTeacher.setLeaveResetDate(LocalDate.now().plusMonths(10));
                 userRepository.save(engTeacher);
 
                 // Create additional test students
@@ -152,8 +174,13 @@ public class UserSeeder {
                 extraTeacher1.setUsername("teacher2");
                 extraTeacher1.setPassword(passwordEncoder.encode("teacher123"));
                 extraTeacher1.setEmail("teacher2@test.com");
-                extraTeacher1.setFullName("Dr. Sarah Williams");
+                extraTeacher1.setFullName("Vũ Thị Hương");
                 extraTeacher1.setRoleId(RoleConstants.TEACHER);
+                extraTeacher1.setPhoneNumber("0954321098");
+                extraTeacher1.setDepartment("Khoa Hóa Học");
+                extraTeacher1.setHireDate(LocalDate.now().minusYears(5));
+                extraTeacher1.setAnnualLeaveBalance(9); // Đã dùng 3 ngày
+                extraTeacher1.setLeaveResetDate(LocalDate.now().plusMonths(4));
                 userRepository.save(extraTeacher1);
 
                 User extraTeacher2 = new User();
@@ -161,8 +188,13 @@ public class UserSeeder {
                 extraTeacher2.setUsername("teacher3");
                 extraTeacher2.setPassword(passwordEncoder.encode("teacher123"));
                 extraTeacher2.setEmail("teacher3@test.com");
-                extraTeacher2.setFullName("Prof. Michael Brown");
+                extraTeacher2.setFullName("Đặng Minh Tuấn");
                 extraTeacher2.setRoleId(RoleConstants.TEACHER);
+                extraTeacher2.setPhoneNumber("0943210987");
+                extraTeacher2.setDepartment("Khoa Vật Lý");
+                extraTeacher2.setHireDate(LocalDate.now().minusMonths(6)); // Mới vào 6 tháng
+                extraTeacher2.setAnnualLeaveBalance(12); // Chưa dùng ngày nào
+                extraTeacher2.setLeaveResetDate(LocalDate.now().plusMonths(6));
                 userRepository.save(extraTeacher2);
 
                 System.out.println("✅ [UserSeeder] Created users with standardized, explicit IDs.");
