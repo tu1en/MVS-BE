@@ -1,6 +1,7 @@
 package com.classroomapp.classroombackend.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -18,4 +19,6 @@ public interface LectureRepository extends JpaRepository<Lecture, Long> {
     List<Lecture> findByTitleContainingIgnoreCase(String title);
 
     List<Lecture> findByClassroomId(Long classroomId);
+    boolean existsByClassroomId(Long classroomId);
+    Optional<Lecture> findById(Long id);
 }

@@ -37,50 +37,58 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException {
-        log.info("Attempting to load user by: {}", usernameOrEmail);
+        log.info("CustomUserDetailsService - Attempting to load user by: {}", usernameOrEmail);
 
         // Regex to check if the input is an email address
         final Pattern emailPattern = Pattern.compile("^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,6}$", Pattern.CASE_INSENSITIVE);
-        
+
         Optional<User> userOptional;
-        
+
         if (emailPattern.matcher(usernameOrEmail).matches()) {
-            log.info("Input is an email. Searching by email: {}", usernameOrEmail);
+            log.info("CustomUserDetailsService - Input is an email. Searching by email: {}", usernameOrEmail);
             userOptional = userRepository.findByEmail(usernameOrEmail);
         } else {
-            log.info("Input is a username. Searching by username: {}", usernameOrEmail);
+            log.info("CustomUserDetailsService - Input is a username. Searching by username: {}", usernameOrEmail);
             userOptional = userRepository.findByUsername(usernameOrEmail);
         }
 
         User user = userOptional.orElseThrow(() -> {
-            log.error("User not found with identifier: {}", usernameOrEmail);
+            log.error("CustomUserDetailsService - User not found with identifier: {}", usernameOrEmail);
             return new UsernameNotFoundException("User not found with identifier: " + usernameOrEmail);
         });
-        
+
+        log.info("CustomUserDetailsService - Found user: ID={}, Username={}, Email={}, RoleId={}",
+                user.getId(), user.getUsername(), user.getEmail(), user.getRoleId());
+
         Collection<? extends GrantedAuthority> authorities = getAuthorities(user);
-        
-        log.info("Successfully loaded user '{}' with roles {}", user.getUsername(), authorities);
-        
+
+        log.info("CustomUserDetailsService - Successfully loaded user '{}' with authorities: {}",
+                user.getUsername(), authorities);
+
         // Return our custom UserDetails object that holds the full User entity
         return new CustomUserDetails(user, authorities);
     }
     
     /**
      * Get user authorities based on role
-     * 
+     *
      * @param user user entity
      * @return collection of authorities
      */
     private Collection<? extends GrantedAuthority> getAuthorities(User user) {
         String roleName = jwtUtil.convertRoleIdToName(user.getRoleId());
         List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-        
+
         // Add ROLE_X authority
-        authorities.add(new SimpleGrantedAuthority("ROLE_" + roleName));
-        
+        String authority = "ROLE_" + roleName;
+        authorities.add(new SimpleGrantedAuthority(authority));
+
+        log.info("CustomUserDetailsService - Generated authorities for user {}: [{}]",
+                user.getUsername(), authority);
+
         // Add permissions based on role if needed
         // This can be extended to include specific permissions
-        
+
         return authorities;
     }
 }

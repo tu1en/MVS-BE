@@ -26,5 +26,6 @@ public class AttendanceSubmitDto {
     public static class AttendanceRecordUpdateDto {
         private Long studentId;
         private String status;
+        private String note; // Optional note for the attendance record
     }
 } 

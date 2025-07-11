@@ -57,6 +57,9 @@ public class TimetableEvent {
     @Column(name = "classroom_id")
     private Long classroomId;
 
+    @Column(name = "lecture_id")
+    private Long lectureId; // Add lectureId field for attendance navigation
+
     @NotNull
     @Column(name = "created_by", nullable = false)
     private Long createdBy;

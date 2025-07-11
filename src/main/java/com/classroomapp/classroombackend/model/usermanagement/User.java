@@ -40,7 +40,7 @@ public class User {
 
     @NotBlank
     @Email
-    @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
+    @Column(nullable = false, columnDefinition = "NVARCHAR(255)", unique = true)
     private String email;
 
     @Column(name = "full_name", columnDefinition = "NVARCHAR(255)")

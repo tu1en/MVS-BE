@@ -31,8 +31,11 @@ public class UserSeeder {
     public void seed() {
         if (userRepository.count() == 0) {
             try {
+                System.out.println("🔄 [UserSeeder] Starting user seeding with explicit IDs...");
+
                 // Allow explicit ID insertion for SQL Server
                 entityManager.createNativeQuery("SET IDENTITY_INSERT users ON").executeUpdate();
+                System.out.println("✅ [UserSeeder] IDENTITY_INSERT enabled for users table");
 
                 // Create student user
                 User student = new User();
@@ -43,6 +46,7 @@ public class UserSeeder {
                 student.setFullName("Student User");
                 student.setRoleId(RoleConstants.STUDENT);
                 userRepository.save(student);
+                System.out.println("✅ [UserSeeder] Created student user with ID: " + student.getId());
 
                 // Create main teacher user
                 User teacher = new User();
@@ -58,6 +62,7 @@ public class UserSeeder {
                 teacher.setAnnualLeaveBalance(12);
                 teacher.setLeaveResetDate(LocalDate.now().plusMonths(6)); // Reset in 6 months
                 userRepository.save(teacher);
+                System.out.println("✅ [UserSeeder] Created teacher user with ID: " + teacher.getId());
 
                 // Create manager user
                 User manager = new User();
@@ -202,6 +207,23 @@ public class UserSeeder {
             } finally {
                 // IMPORTANT: Disable explicit ID insertion
                 entityManager.createNativeQuery("SET IDENTITY_INSERT users OFF").executeUpdate();
+                System.out.println("✅ [UserSeeder] IDENTITY_INSERT disabled for users table");
+
+                // Verify the users were created with correct IDs
+                User createdStudent = userRepository.findByUsername("student").orElse(null);
+                User createdTeacher = userRepository.findByUsername("teacher").orElse(null);
+                User createdManager = userRepository.findByUsername("manager").orElse(null);
+
+                System.out.println("🔍 [UserSeeder] Verification of created users:");
+                if (createdStudent != null) {
+                    System.out.println("   📚 Student: ID=" + createdStudent.getId() + ", Expected=101");
+                }
+                if (createdTeacher != null) {
+                    System.out.println("   🎓 Teacher: ID=" + createdTeacher.getId() + ", Expected=201");
+                }
+                if (createdManager != null) {
+                    System.out.println("   👔 Manager: ID=" + createdManager.getId() + ", Expected=301");
+                }
             }
         } else {
             System.out.println("✅ [UserSeeder] Users already seeded.");
