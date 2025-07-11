@@ -22,7 +22,7 @@ public class DatabaseConfig {
         dataSource.setDriverClassName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
         dataSource.setJdbcUrl("jdbc:sqlserver://localhost:1433;databaseName=SchoolManagementDB;encrypt=false;trustServerCertificate=true;sendStringParametersAsUnicode=true;characterEncoding=UTF-8;useUnicode=true;sendTimeAsDateTime=false;");
         dataSource.setUsername("sa");
-        dataSource.setPassword("12345678");
+        dataSource.setPassword("Hoangduc02@");
         // dataSource.setAutoCommit(false); // This can prevent seeders from committing data. Let Spring's @Transactional manage commits.
         dataSource.setTransactionIsolation("TRANSACTION_READ_COMMITTED");
         dataSource.setMaximumPoolSize(10);
