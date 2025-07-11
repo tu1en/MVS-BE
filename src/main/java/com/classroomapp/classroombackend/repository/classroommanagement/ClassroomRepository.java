@@ -42,4 +42,8 @@ public interface ClassroomRepository extends JpaRepository<Classroom, Long> {
 
     @Query("SELECT c FROM Classroom c LEFT JOIN FETCH c.teacher LEFT JOIN FETCH c.lectures WHERE c.id = :classroomId")
     Optional<Classroom> findDetailsById(@Param("classroomId") Long classroomId);
+
+    // Find classroom IDs by student ID (for schedule service)
+    @Query("SELECT c.id FROM Classroom c JOIN c.enrollments e WHERE e.user.id = :studentId")
+    List<Long> findClassroomsIdsByStudentId(@Param("studentId") Long studentId);
 }

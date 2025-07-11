@@ -273,6 +273,26 @@ public class TimetableServiceImpl implements TimetableService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<TimetableEventDto> getEventsForUser(Long userId, LocalDateTime startDate, LocalDateTime endDate) {
+        System.out.println("📅 TimetableServiceImpl.getEventsForUser: Getting events for user " + userId);
+        System.out.println("   Date range: " + startDate + " to " + endDate);
+
+        // For now, return all events in the date range
+        // TODO: In a real implementation, we would:
+        // 1. Get classrooms where user is enrolled (for students) or teaching (for teachers)
+        // 2. Get events only for those classrooms
+        // 3. Filter by user permissions
+
+        List<TimetableEvent> events = timetableEventRepository.findEventsByDateRange(startDate, endDate);
+        System.out.println("📅 TimetableServiceImpl.getEventsForUser: Found " + events.size() + " events");
+
+        return events.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     @Transactional
     public void removeAttendee(Long eventId, Long userId) {
         // Implementation for removing attendees would be here
@@ -317,6 +337,7 @@ public class TimetableServiceImpl implements TimetableService {
         dto.setEndDatetime(event.getEndDatetime());
         dto.setEventType(event.getEventType().name());
         dto.setClassroomId(event.getClassroomId());
+        dto.setLectureId(event.getLectureId()); // Set lectureId for attendance navigation
         dto.setCreatedBy(event.getCreatedBy());
         dto.setLocation(event.getLocation());
         dto.setIsAllDay(event.getIsAllDay());

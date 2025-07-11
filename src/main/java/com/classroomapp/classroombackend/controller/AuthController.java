@@ -7,11 +7,13 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.classroomapp.classroombackend.dto.PasswordConfirmationDto;
@@ -122,11 +124,13 @@ public class AuthController {
             // Generate JWT token mới với claims đầy đủ
             String token = Jwts.builder()
                 .setClaims(claims)
-                .setSubject(user.getEmail()) // FIX: Subject must be the email
+                .setSubject(user.getEmail()) // CONSISTENT: Subject is always email
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)) // 24 giờ
                 .signWith(jwtUtil.getSecretKeyFromString(), SignatureAlgorithm.HS512)
                 .compact();
+
+            log.info("AuthController - Generated JWT token for user: {} with role: {}", user.getEmail(), user.getRoleId());
             
             System.out.println("Generated new token for user: " + username);
             
@@ -249,6 +253,55 @@ public class AuthController {
         response.put("userId", user.getId().toString());
         
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Validate JWT token endpoint
+     * This endpoint is used by the frontend to validate if the current token is still valid
+     *
+     * @return validation response
+     */
+    @GetMapping("/validate")
+    public ResponseEntity<Map<String, Object>> validateToken() {
+        log.info("Token validation endpoint called");
+        try {
+            // If we reach this point, the JWT filter has already validated the token
+            // and set up the security context
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            log.info("Authentication object: {}", authentication != null ? authentication.getName() : "null");
+
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("valid", false, "message", "Token is not valid"));
+            }
+
+            // Get user details from the authentication
+            Object principal = authentication.getPrincipal();
+            String username = null;
+
+            if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
+                username = ((org.springframework.security.core.userdetails.UserDetails) principal).getUsername();
+            } else {
+                username = principal.toString();
+            }
+
+            log.info("Token validation successful for user: {}", username);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("valid", true);
+            response.put("message", "Token is valid");
+            response.put("username", username);
+            response.put("authorities", authentication.getAuthorities().stream()
+                .map(auth -> auth.getAuthority())
+                .toArray());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("Token validation error: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("valid", false, "message", "Token validation failed: " + e.getMessage()));
+        }
     }
 
     @PostMapping("/change-password")

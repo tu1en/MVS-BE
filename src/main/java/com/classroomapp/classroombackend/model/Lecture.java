@@ -39,6 +39,7 @@ public class Lecture {
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "schedule_id")
+    @ToString.Exclude
     private Schedule schedule;
     
     @Column

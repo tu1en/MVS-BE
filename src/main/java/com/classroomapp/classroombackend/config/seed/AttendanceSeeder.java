@@ -1,9 +1,10 @@
 package com.classroomapp.classroombackend.config.seed;
-import java.util.Optional;
-import java.util.ArrayList;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.classroomapp.classroombackend.model.Lecture;
 import com.classroomapp.classroombackend.model.attendancemanagement.Attendance;
@@ -14,6 +15,7 @@ import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.LectureRepository;
 import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceRepository;
 import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceSessionRepository;
+import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomEnrollmentRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -26,12 +28,12 @@ public class AttendanceSeeder {
     private final AttendanceRepository attendanceRepository;
     private final LectureRepository lectureRepository;
     private final ClassroomRepository classroomRepository;
+    private final ClassroomEnrollmentRepository classroomEnrollmentRepository;
 
+    @Transactional
     public void seed() {
-        if (attendanceSessionRepository.count() > 0) {
-            System.out.println("✅ [AttendanceSeeder] Attendance data already seeded.");
-            return;
-        }
+        // We will now always run this seeder to ensure some teaching history exists.
+        System.out.println("🔄 [AttendanceSeeder] Seeding attendance data and ensuring teaching history...");
 
         List<Classroom> classrooms = classroomRepository.findAll();
         if (classrooms.isEmpty()) {
@@ -48,42 +50,56 @@ public class AttendanceSeeder {
 
     private void seedAttendanceForClassroom(Classroom classroom) {
         List<Lecture> lectures = lectureRepository.findByClassroomId(classroom.getId());
-        List<User> students = new ArrayList<>(classroom.getStudents());
+        List<User> students = classroomEnrollmentRepository.findByClassroomId(classroom.getId())
+                .stream()
+                .map(enrollment -> enrollment.getUser())
+                .collect(Collectors.toList());
 
-        if (lectures.isEmpty() || students.isEmpty()) {
-            System.out.println("⚠️ [AttendanceSeeder] No lectures or students for classroom: " + classroom.getName() + ", skipping.");
+        if (lectures.isEmpty()) {
+            System.out.println("⚠️ [AttendanceSeeder] No lectures for classroom: " + classroom.getName() + ", skipping.");
             return;
         }
 
-        // Seed attendance for the first 3 lectures for variety
-        for (int i = 0; i < Math.min(3, lectures.size()); i++) {
-            Lecture lecture = lectures.get(i);
-
-            // Skip if session already exists
-            if (attendanceSessionRepository.findByLectureId(lecture.getId()).isPresent()) {
-                continue;
-            }
-
-            AttendanceSession session = new AttendanceSession();
-            session.setLecture(lecture);
-            session.setSessionDate(lecture.getLectureDate());
-            session.setClassroom(classroom);
-            // Simulate clock-in time to populate teaching history
-            session.setTeacherClockInTime(lecture.getLectureDate().atStartOfDay().plusHours(8));
-            attendanceSessionRepository.save(session);
-
-            // Create attendance records for each student
-            for (int j = 0; j < students.size(); j++) {
-                User student = students.get(j);
-                Attendance attendance = new Attendance();
-                attendance.setSession(session);
-                attendance.setStudent(student);
+        // Seed attendance for lectures that have a date in the past or today
+        for (Lecture lecture : lectures) {
+            // Check if lecture has a date and if it's in the past or today
+            if (lecture.getLectureDate() != null && !lecture.getLectureDate().isAfter(LocalDate.now())) {
                 
-                // Alternate status for variety
-                attendance.setStatus(j % 3 == 0 ? AttendanceStatus.ABSENT : (j % 3 == 1 ? AttendanceStatus.LATE : AttendanceStatus.PRESENT));
-                attendanceRepository.save(attendance);
+                // Find existing or create a new session
+                AttendanceSession session = attendanceSessionRepository.findByLectureId(lecture.getId())
+                    .orElse(new AttendanceSession());
+
+                // Always ensure there is a clock-in time for past lectures
+                if (session.getTeacherClockInTime() == null) {
+                    session.setTeacherClockInTime(lecture.getLectureDate().atTime(8, 30)); // Set a fixed time for consistency
+                }
+                
+                // If it's a new session, set its properties
+                if (session.getId() == null) {
+                    session.setLecture(lecture);
+                    session.setSessionDate(lecture.getLectureDate());
+                    session.setClassroom(classroom);
+                    attendanceSessionRepository.save(session);
+
+                    // Create attendance records for each student only for the new session
+                    if (!students.isEmpty()) {
+                        for (int j = 0; j < students.size(); j++) {
+                            User student = students.get(j);
+                            Attendance attendance = new Attendance();
+                            attendance.setSession(session);
+                            attendance.setStudent(student);
+                            
+                            // Alternate status for variety
+                            attendance.setStatus(j % 3 == 0 ? AttendanceStatus.ABSENT : (j % 3 == 1 ? AttendanceStatus.LATE : AttendanceStatus.PRESENT));
+                            attendanceRepository.save(attendance);
+                        }
+                    }
+                } else {
+                    // If the session already exists, just save the updated clock-in time
+                    attendanceSessionRepository.save(session);
+                }
             }
         }
-        System.out.println("✅ [AttendanceSeeder] Seeded attendance for classroom: " + classroom.getName());
+        System.out.println("✅ [AttendanceSeeder] Seeded/updated attendance for classroom: " + classroom.getName());
     }
 } 

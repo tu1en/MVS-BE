@@ -6,7 +6,7 @@ import com.classroomapp.classroombackend.dto.LoginResponseDto;
 import com.classroomapp.classroombackend.dto.PasswordConfirmationDto;
 import com.classroomapp.classroombackend.dto.PasswordResetRequestDto;
 import com.classroomapp.classroombackend.dto.RegisterDto;
-import com.classroomapp.classroombackend.dto.usermanagement.UserDto;
+import com.classroomapp.classroombackend.dto.UserDto;
 
 /**
  * Service for authentication-related operations

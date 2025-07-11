@@ -1,12 +1,14 @@
 package com.classroomapp.classroombackend.dto.classroommanagement;
 
+import java.util.List;
+
+import com.classroomapp.classroombackend.dto.ScheduleDto;
+import com.classroomapp.classroombackend.dto.UserDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto;
-import com.classroomapp.classroombackend.dto.usermanagement.UserDto;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 @Data
 @NoArgsConstructor

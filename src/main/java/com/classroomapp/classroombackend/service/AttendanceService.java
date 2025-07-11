@@ -5,10 +5,10 @@ import java.util.List;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceDto;
-import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceDto;
 import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceRecordDto;
 import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceResultDto;
 import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceSessionDto;
+import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceSubmitDto;
 import com.classroomapp.classroombackend.dto.attendancemanagement.CreateAttendanceSessionDto;
 import com.classroomapp.classroombackend.dto.attendancemanagement.CreateOrUpdateAttendanceDto;
 import com.classroomapp.classroombackend.dto.attendancemanagement.MyAttendanceHistoryDto;
@@ -107,4 +107,6 @@ public interface AttendanceService {
      * @return List of attendance records
      */
     List<AttendanceDto> findByUserId(Long userId);
+
+    void submitAttendance(AttendanceSubmitDto submitDto);
 }

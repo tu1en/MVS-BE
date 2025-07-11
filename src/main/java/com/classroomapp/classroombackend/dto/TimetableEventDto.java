@@ -24,6 +24,7 @@ public class TimetableEventDto {
     private String eventType;
     private Long classroomId;
     private String classroomName;
+    private Long lectureId; // Add lectureId field for attendance navigation
     private Long createdBy;
     private String location;
     private Boolean isAllDay;

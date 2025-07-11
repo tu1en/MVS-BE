@@ -84,13 +84,27 @@ public class LectureServiceImpl implements LectureService {
 
     @Override
     public List<LectureDto> getLecturesByClassroomId(Long classroomId) {
+        System.out.println("📚 LectureService: Getting lectures for classroomId: " + classroomId);
+
         if (!classroomRepository.existsById(classroomId)) {
+            System.out.println("❌ LectureService: Classroom not found with id: " + classroomId);
             throw new ResourceNotFoundException("Classroom not found with id: " + classroomId);
         }
+
+        System.out.println("✅ LectureService: Classroom exists, fetching lectures...");
         List<Lecture> lectures = lectureRepository.findByClassroomId(classroomId);
-        return lectures.stream()
-                .map(lecture -> modelMapper.map(lecture, LectureDto.class))
+        System.out.println("📊 LectureService: Found " + lectures.size() + " lectures");
+
+        List<LectureDto> lectureDtos = lectures.stream()
+                .map(lecture -> {
+                    LectureDto dto = modelMapper.map(lecture, LectureDto.class);
+                    System.out.println("🔄 LectureService: Mapped lecture: " + dto.getTitle());
+                    return dto;
+                })
                 .collect(Collectors.toList());
+
+        System.out.println("✅ LectureService: Returning " + lectureDtos.size() + " lecture DTOs");
+        return lectureDtos;
     }
 
     @Override

@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.classroommanagement.ClassroomEnrollment;
@@ -15,6 +16,7 @@ import com.classroomapp.classroombackend.repository.classroommanagement.Classroo
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 
 @Component
+@Transactional
 public class ClassroomEnrollmentSeeder {
 
     @Autowired

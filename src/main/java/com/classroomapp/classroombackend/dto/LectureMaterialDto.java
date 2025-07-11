@@ -13,6 +13,7 @@ public class LectureMaterialDto {
     private String fileName;
     private String contentType;
     private String downloadUrl;
+    private String filePath;
     private Long lectureId;
     private long fileSize;
 }

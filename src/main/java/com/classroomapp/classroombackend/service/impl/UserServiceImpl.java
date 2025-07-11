@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.classroomapp.classroombackend.constants.RoleConstants;
-import com.classroomapp.classroombackend.dto.usermanagement.UserDto;
+import com.classroomapp.classroombackend.dto.UserDto;
 import com.classroomapp.classroombackend.exception.BusinessLogicException;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
 import com.classroomapp.classroombackend.model.usermanagement.Role;
@@ -184,10 +184,11 @@ public class UserServiceImpl implements UserService {
     
     @Override
     public List<UserDto> FindUsersByRole(Integer roleId) {
-        // This logic is likely broken due to User entity changes.
-        // It should be refactored to work with new Role management.
-        // For now, returning an empty list to avoid compilation errors.
-        return Collections.emptyList();
+        // Use the repository method to find users by role ID
+        List<User> users = userRepository.findByRoleId(roleId);
+        return users.stream()
+                .map(this::convertToUserDto)
+                .collect(Collectors.toList());
     }
 
     @Override
