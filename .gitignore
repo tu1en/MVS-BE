@@ -52,4 +52,5 @@ Thumbs.db
 *.properties.backup
 **/application.properties
 application-*.properties
+**/DatabaseConfig.java
 "src/main/resources/mve-1-firebase-adminsdk.json" 
