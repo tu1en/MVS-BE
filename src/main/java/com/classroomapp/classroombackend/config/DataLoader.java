@@ -22,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @Profile("local")
-@Order(2) // Run after DatabaseCleanupService
+@Order(1) // Run before MasterSeeder
 @RequiredArgsConstructor
 public class DataLoader implements CommandLineRunner {
 
@@ -39,14 +39,15 @@ public class DataLoader implements CommandLineRunner {
     @Transactional
     public void run(String... args) throws Exception {
         System.out.println("🌱 [DataLoader] Starting data seeding...");
-        // roleSeeder.seed();
-        // userSeeder.seed();
+        roleSeeder.seed();
+        userSeeder.seed();
         // courseSeeder.seed();
         // List<Classroom> classrooms = classroomSeeder.seed();
         // lectureSeeder.seed(classrooms);
         // assignmentSeeder.seed(); // Re-enabled with @Lazy dependency
         // announcementSeeder.seed(classrooms);
         requestSeeder.seed();
+        // absenceSeeder.seed(); // Moved to MasterSeeder to avoid conflicts
         System.out.println("✅ [DataLoader] Data seeding completed.");
     }
 } 

@@ -70,6 +70,13 @@ public class User {
     @Column(columnDefinition = "NVARCHAR(10) default 'active'")
     private String status = "active";
     
+    // Leave management fields for Teachers
+    @Column(name = "annual_leave_balance", nullable = true)
+    private Integer annualLeaveBalance = 12; // Default 12 days per year for teachers
+    
+    @Column(name = "leave_reset_date", nullable = true)
+    private LocalDate leaveResetDate; // Date when annual leave resets (hire anniversary)
+    
     /**
      * Get the role name as String based on the roleId
      * 
@@ -94,6 +101,10 @@ public class User {
         }
         if (updatedAt == null) {
             updatedAt = LocalDateTime.now();
+        }
+        // Set leave reset date for teachers (one year from now)
+        if (roleId != null && roleId == 2 && leaveResetDate == null) { // TEACHER role
+            leaveResetDate = LocalDate.now().plusYears(1);
         }
     }
     
@@ -132,4 +143,8 @@ public class User {
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
     public void setStatus(String status) { this.status = status; }
+    public Integer getAnnualLeaveBalance() { return annualLeaveBalance; }
+    public void setAnnualLeaveBalance(Integer annualLeaveBalance) { this.annualLeaveBalance = annualLeaveBalance; }
+    public LocalDate getLeaveResetDate() { return leaveResetDate; }
+    public void setLeaveResetDate(LocalDate leaveResetDate) { this.leaveResetDate = leaveResetDate; }
 }

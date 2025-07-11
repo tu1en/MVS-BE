@@ -15,6 +15,7 @@ import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.CourseMaterialRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.classroomapp.classroombackend.repository.absencemanagement.AbsenceRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -28,6 +29,7 @@ public class MasterSeeder implements CommandLineRunner {
     private final UserRepository userRepository;
     private final CourseMaterialRepository courseMaterialRepository;
     private final ClassroomRepository classroomRepository;
+    private final AbsenceRepository absenceRepository;
     private final UserSeeder userSeeder;
     private final CourseSeeder courseSeeder;
     private final ClassroomSeeder classroomSeeder;
@@ -47,11 +49,15 @@ public class MasterSeeder implements CommandLineRunner {
     private final StudentProgressSeeder studentProgressSeeder;
     private final ComprehensiveGradingSeeder comprehensiveGradingSeeder;
     private final AssignmentTestDataSeeder assignmentTestDataSeeder;
+<<<<<<< HEAD
+    private final AbsenceSeeder absenceSeeder;
+=======
     private final DatabaseVerificationSeeder databaseVerificationSeeder;
     private final DataVerificationSeeder dataVerificationSeeder;
     private final TimetableEventSeeder timetableEventSeeder;
     private final RequestSeeder requestSeeder;
 
+>>>>>>> remotes/origin/master
 
     @Override
     @Transactional
@@ -82,7 +88,7 @@ public class MasterSeeder implements CommandLineRunner {
             teachingHistorySeeder.seed();
             examSeeder.seed();
             studentProgressSeeder.seed();
-
+            
             log.info("============== Main Seeding Complete ==============");
         } else {
             log.info("Database already has users. Skipping main seeding.");
@@ -122,6 +128,22 @@ public class MasterSeeder implements CommandLineRunner {
             log.info("Course materials already seeded. Skipping.");
         }
         
+<<<<<<< HEAD
+        // Always check and seed absence data after users exist
+        if (userRepository.count() > 0 && absenceRepository.count() == 0) {
+            log.info("============== Seeding Absence Data ==============");
+            try {
+                absenceSeeder.seed();
+                log.info("============== Absence Seeding Complete ==============");
+            } catch (Exception e) {
+                log.error("Error seeding absence data: {}", e.getMessage(), e);
+            }
+        } else if (absenceRepository.count() > 0) {
+            log.info("Absence data already exists. Count: {}", absenceRepository.count());
+        } else {
+            log.warn("No users found - cannot seed absence data");
+        }
+=======
         // Không gọi lại scheduleSeeder.seed() để tránh xung đột
         log.info("============== Checking Schedule Status ==============");
         log.info("Schedules are already seeded in the main seeding process if needed.");
@@ -131,6 +153,7 @@ public class MasterSeeder implements CommandLineRunner {
         log.info("============== Forcing Classroom Enrollment Seeding ==============");
         classroomEnrollmentSeeder.seed();
         log.info("============== Classroom Enrollment Seeding Complete ==============");
+>>>>>>> remotes/origin/master
     }
 
     /**
