@@ -128,8 +128,8 @@ public class JwtUtil {
             case 1: return "STUDENT";
             case 2: return "TEACHER";
             case 3: return "MANAGER";
-            case 4: return "ADMIN";
-            case 5: return "ACCOUNTANT";
+            case 4: return "ACCOUNTANT";
+            case 5: return "ADMIN";
             default: return "USER";
         }
     }
