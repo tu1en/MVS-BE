@@ -38,11 +38,7 @@ public class Request {
     @Column(columnDefinition = "TEXT", length = 4000)
     private String formResponses; // JSON string containing form responses
 
-    @Column(nullable = false, length = 50)
-    private String status = "PENDING"; // PENDING, APPROVED, REJECTED, COMPLETED
-
-    @Column(length = 50)
-    private String resultStatus; // APPROVED, REJECTED - result after processing
+    @Column(nullable = false, length = 50)    private String status = "PENDING"; // PENDING, APPROVED, REJECTED
 
     @Column(columnDefinition = "TEXT", length = 4000)
     private String rejectReason;

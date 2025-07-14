@@ -102,7 +102,25 @@ public class LectureServiceImpl implements LectureService {
         List<LectureDto> lectureDtos = lectures.stream()
                 .map(lecture -> {
                     LectureDto dto = modelMapper.map(lecture, LectureDto.class);
-                    System.out.println("🔄 LectureService: Mapped lecture: " + dto.getTitle());
+
+                    // Manually load materials for this lecture
+                    List<LectureMaterial> materials = lectureMaterialRepository.findByLectureId(lecture.getId());
+                    List<LectureMaterialDto> materialDtos = materials.stream()
+                            .map(material -> {
+                                LectureMaterialDto materialDto = new LectureMaterialDto();
+                                materialDto.setId(material.getId());
+                                materialDto.setFileName(material.getFileName());
+                                materialDto.setContentType(material.getContentType());
+                                materialDto.setDownloadUrl(material.getDownloadUrl());
+                                materialDto.setFilePath(material.getFilePath());
+                                materialDto.setFileSize(material.getFileSize());
+                                materialDto.setLectureId(lecture.getId());
+                                return materialDto;
+                            })
+                            .collect(Collectors.toList());
+
+                    dto.setMaterials(materialDtos);
+                    System.out.println("🔄 LectureService: Mapped lecture: " + dto.getTitle() + " with " + materialDtos.size() + " materials");
                     return dto;
                 })
                 .collect(Collectors.toList());

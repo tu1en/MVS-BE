@@ -20,7 +20,13 @@ public interface StudentMessageService {
     
     // Get conversation between two users
     List<StudentMessageDto> getConversation(Long user1Id, Long user2Id);
-    
+
+    // OPTIMIZED: Get all messages for a user (sent + received) in single query
+    List<StudentMessageDto> getAllUserMessages(Long userId);
+
+    // OPTIMIZED: Get teacher conversations with single query and in-memory grouping
+    List<java.util.Map<String, Object>> getTeacherConversationsOptimized(Long teacherId);
+
     // Get unread messages for a recipient
     List<StudentMessageDto> getUnreadMessages(Long recipientId);
     

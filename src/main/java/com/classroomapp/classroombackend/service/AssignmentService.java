@@ -87,7 +87,11 @@ public interface AssignmentService {
     
     // Provide feedback
     FeedbackDto provideFeedback(Long assignmentId, CreateFeedbackDto createFeedbackDto);
-
-    // Clean invalid submissions for a classroom (from non-enrolled students)
+    
+    /**
+     * Clean up submissions from students not enrolled in the classroom
+     * @param classroomId The ID of the classroom to clean submissions for
+     * @return Information about cleanup (number of records deleted, details, etc.) as Map
+     */
     Map<String, Object> cleanInvalidSubmissionsForClassroom(Long classroomId);
 }

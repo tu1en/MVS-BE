@@ -59,16 +59,32 @@ public class StudentMessageServiceImpl implements StudentMessageService {
     public List<StudentMessageDto> getSentMessages(Long senderId) {
         User sender = userRepository.findById(senderId)
                 .orElseThrow(() -> new RuntimeException("Sender not found"));
-        List<StudentMessage> messages = messageRepository.findBySenderOrderByCreatedAtDesc(sender);
+        // Use optimized method to prevent N+1 queries
+        List<StudentMessage> messages = messageRepository.findBySenderWithUsersOrderByCreatedAtDesc(sender);
         return messages.stream().map(this::convertToDto).collect(Collectors.toList());
     }
-    
+
     @Override
     @Transactional(readOnly = true)
     public List<StudentMessageDto> getReceivedMessages(Long recipientId) {
         User recipient = userRepository.findById(recipientId)
                 .orElseThrow(() -> new RuntimeException("Recipient not found with id: " + recipientId));
-        List<StudentMessage> messages = messageRepository.findByRecipientOrderByCreatedAtDesc(recipient);
+        // Use optimized method to prevent N+1 queries
+        List<StudentMessage> messages = messageRepository.findByRecipientWithUsersOrderByCreatedAtDesc(recipient);
+        return messages.stream().map(this::convertToDto).collect(Collectors.toList());
+    }
+
+    /**
+     * NEW OPTIMIZED METHOD: Get all messages for a user (sent + received) in single query
+     * This replaces the need to call getSentMessages() and getReceivedMessages() separately
+     * Reduces database queries from 2 + N to just 1
+     */
+    @Transactional(readOnly = true)
+    public List<StudentMessageDto> getAllUserMessages(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+        // Single query to get all messages where user is sender or recipient
+        List<StudentMessage> messages = messageRepository.findByUserWithUsersOrderByCreatedAtDesc(user);
         return messages.stream().map(this::convertToDto).collect(Collectors.toList());
     }
     
@@ -80,8 +96,9 @@ public class StudentMessageServiceImpl implements StudentMessageService {
         User user2 = userRepository.findById(user2Id)
                 .orElseThrow(() -> new RuntimeException("User2 not found with id: " + user2Id));
 
-        List<StudentMessage> messages = messageRepository.findConversation(user1, user2);
-        
+        // Use optimized method to prevent N+1 queries
+        List<StudentMessage> messages = messageRepository.findConversationWithUsers(user1, user2);
+
         return messages.stream()
             .map(this::convertToDto)
             .collect(Collectors.toList());
@@ -278,5 +295,78 @@ public class StudentMessageServiceImpl implements StudentMessageService {
         dto.setCreatedAt(message.getCreatedAt());
         dto.setUpdatedAt(message.getUpdatedAt());
         return dto;
+    }
+
+    /**
+     * OPTIMIZED METHOD: Get teacher conversations with single database query
+     * Replaces the inefficient pattern of separate getSentMessages() + getReceivedMessages() calls
+     * Groups messages into conversations in memory to avoid N+1 queries
+     */
+    @Transactional(readOnly = true)
+    public List<java.util.Map<String, Object>> getTeacherConversationsOptimized(Long teacherId) {
+        System.out.println("=== OPTIMIZED GET TEACHER CONVERSATIONS ===");
+        System.out.println("Teacher ID: " + teacherId);
+
+        // Single query to get all messages where teacher is sender or recipient
+        List<StudentMessageDto> allMessages = getAllUserMessages(teacherId);
+        System.out.println("Retrieved " + allMessages.size() + " messages in single query");
+
+        // Group messages by conversation partner (student) in memory
+        java.util.Map<Long, java.util.Map<String, Object>> conversationMap = new java.util.HashMap<>();
+
+        for (StudentMessageDto msg : allMessages) {
+            Long studentId;
+            String studentName;
+
+            // Determine the conversation partner (student)
+            if (msg.getSenderId().equals(teacherId)) {
+                // Teacher sent message to student
+                studentId = msg.getRecipientId();
+                studentName = msg.getRecipientName();
+            } else {
+                // Student sent message to teacher
+                studentId = msg.getSenderId();
+                studentName = msg.getSenderName();
+            }
+
+            // Get or create conversation object
+            java.util.Map<String, Object> conversation = conversationMap.get(studentId);
+            if (conversation == null) {
+                conversation = new java.util.HashMap<>();
+                conversation.put("id", studentId);
+                conversation.put("studentId", studentId);
+                conversation.put("studentName", studentName);
+                conversation.put("lastMessage", msg.getContent());
+                conversation.put("lastMessageAt", msg.getCreatedAt());
+                conversation.put("unreadCount", 0);
+                conversationMap.put(studentId, conversation);
+            }
+
+            // Update with most recent message
+            java.time.LocalDateTime currentLastMessageAt = (java.time.LocalDateTime) conversation.get("lastMessageAt");
+            if (msg.getCreatedAt().isAfter(currentLastMessageAt)) {
+                conversation.put("lastMessage", msg.getContent());
+                conversation.put("lastMessageAt", msg.getCreatedAt());
+            }
+
+            // Count unread messages (messages sent to teacher that are unread)
+            if (!msg.getSenderId().equals(teacherId) && !msg.getIsRead()) {
+                conversation.put("unreadCount", (Integer) conversation.get("unreadCount") + 1);
+            }
+        }
+
+        java.util.List<java.util.Map<String, Object>> conversations = new java.util.ArrayList<>(conversationMap.values());
+
+        // Sort by last message time (most recent first)
+        conversations.sort((a, b) -> {
+            java.time.LocalDateTime timeA = (java.time.LocalDateTime) a.get("lastMessageAt");
+            java.time.LocalDateTime timeB = (java.time.LocalDateTime) b.get("lastMessageAt");
+            return timeB.compareTo(timeA);
+        });
+
+        System.out.println("Grouped into " + conversations.size() + " conversations");
+        System.out.println("=== END OPTIMIZED GET TEACHER CONVERSATIONS ===");
+
+        return conversations;
     }
 }

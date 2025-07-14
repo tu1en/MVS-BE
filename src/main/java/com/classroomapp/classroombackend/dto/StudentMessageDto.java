@@ -2,6 +2,8 @@ package com.classroomapp.classroombackend.dto;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -33,14 +35,21 @@ public class StudentMessageDto {
     private String status = "SENT"; // SENT, READ, REPLIED, RESOLVED, ARCHIVED
     
     private Boolean isRead = false;
+
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime readAt;
-    
+
     private String reply;
+
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime repliedAt;
     private Long repliedById;
     private String repliedByName;
-    
+
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
+
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime updatedAt;
     
     // Explicit getters to resolve compilation issues

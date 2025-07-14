@@ -118,7 +118,7 @@ public class AttendanceController {
                 .orElseThrow(() -> new RuntimeException("User not found from security context"));
         
         List<TeachingHistoryDto> history = attendanceService.getTeachingHistory(currentUser.getId());
-        return ResponseEntity.ok(history);
+    return ResponseEntity.ok(history);
     }
     
     /**

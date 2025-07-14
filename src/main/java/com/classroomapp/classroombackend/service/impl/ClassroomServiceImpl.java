@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import com.classroomapp.classroombackend.dto.ClassroomDto;
 import com.classroomapp.classroombackend.dto.CreateClassroomDto;
 import com.classroomapp.classroombackend.dto.LectureDto;
+import com.classroomapp.classroombackend.dto.LectureMaterialDto;
 import com.classroomapp.classroombackend.dto.UserDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDetailsDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.CourseDetailsDto;
@@ -23,12 +24,14 @@ import com.classroomapp.classroombackend.dto.classroommanagement.UpdateClassroom
 import com.classroomapp.classroombackend.dto.usermanagement.UserDetailsDto;
 import com.classroomapp.classroombackend.exception.BusinessLogicException;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
+import com.classroomapp.classroombackend.model.LectureMaterial;
 import com.classroomapp.classroombackend.model.StudentProgress;
 import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.classroommanagement.ClassroomEnrollment;
 import com.classroomapp.classroombackend.model.classroommanagement.ClassroomEnrollmentId;
 import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.LectureMaterialRepository;
 import com.classroomapp.classroombackend.repository.StudentProgressRepository;
 import com.classroomapp.classroombackend.repository.assignmentmanagement.AssignmentRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomEnrollmentRepository;
@@ -52,6 +55,7 @@ public class ClassroomServiceImpl implements ClassroomService {
     private final ClassroomEnrollmentRepository classroomEnrollmentRepository;
     private final StudentProgressRepository studentProgressRepository;
     private final AssignmentRepository assignmentRepository;
+    private final LectureMaterialRepository lectureMaterialRepository;
     private final ModelMapper modelMapper;
 
     @Override
@@ -218,10 +222,31 @@ public class ClassroomServiceImpl implements ClassroomService {
 
         CourseDetailsDto courseDetails = modelMapper.map(classroom, CourseDetailsDto.class);
 
-        // Add lectures to the response
+        // Add lectures to the response with materials
         if (classroom.getLectures() != null) {
             List<com.classroomapp.classroombackend.dto.LectureDto> lectureDtos = classroom.getLectures().stream()
-                    .map(lecture -> modelMapper.map(lecture, com.classroomapp.classroombackend.dto.LectureDto.class))
+                    .map(lecture -> {
+                        com.classroomapp.classroombackend.dto.LectureDto dto = modelMapper.map(lecture, com.classroomapp.classroombackend.dto.LectureDto.class);
+
+                        // Manually load materials for this lecture
+                        List<LectureMaterial> materials = lectureMaterialRepository.findByLectureId(lecture.getId());
+                        List<LectureMaterialDto> materialDtos = materials.stream()
+                                .map(material -> {
+                                    LectureMaterialDto materialDto = new LectureMaterialDto();
+                                    materialDto.setId(material.getId());
+                                    materialDto.setFileName(material.getFileName());
+                                    materialDto.setContentType(material.getContentType());
+                                    materialDto.setDownloadUrl(material.getDownloadUrl());
+                                    materialDto.setFilePath(material.getFilePath());
+                                    materialDto.setFileSize(material.getFileSize());
+                                    materialDto.setLectureId(lecture.getId());
+                                    return materialDto;
+                                })
+                                .collect(Collectors.toList());
+
+                        dto.setMaterials(materialDtos);
+                        return dto;
+                    })
                     .collect(Collectors.toList());
             courseDetails.setLectures(lectureDtos);
         }

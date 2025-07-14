@@ -12,15 +12,66 @@ import com.classroomapp.classroombackend.model.usermanagement.User;
 
 @Repository
 public interface StudentMessageRepository extends JpaRepository<StudentMessage, Long> {
-    
+
+    // Original methods (kept for backward compatibility)
     List<StudentMessage> findBySenderOrderByCreatedAtDesc(User sender);
-    
+
     List<StudentMessage> findByRecipientOrderByCreatedAtDesc(User recipient);
-    
+
     List<StudentMessage> findBySenderAndRecipientOrderByCreatedAtDesc(User sender, User recipient);
-    
+
     @Query("SELECT sm FROM StudentMessage sm WHERE (sm.sender = :user1 AND sm.recipient = :user2) OR (sm.sender = :user2 AND sm.recipient = :user1) ORDER BY sm.createdAt ASC")
     List<StudentMessage> findConversation(@Param("user1") User user1, @Param("user2") User user2);
+
+    // ===== OPTIMIZED METHODS WITH JOIN FETCH TO PREVENT N+1 QUERIES =====
+
+    /**
+     * Get messages sent by user with eager loading of sender and recipient
+     * Prevents N+1 query by fetching all relationships in single query
+     */
+    @Query("SELECT sm FROM StudentMessage sm " +
+           "JOIN FETCH sm.sender " +
+           "JOIN FETCH sm.recipient " +
+           "LEFT JOIN FETCH sm.repliedBy " +
+           "WHERE sm.sender = :sender " +
+           "ORDER BY sm.createdAt DESC")
+    List<StudentMessage> findBySenderWithUsersOrderByCreatedAtDesc(@Param("sender") User sender);
+
+    /**
+     * Get messages received by user with eager loading of sender and recipient
+     * Prevents N+1 query by fetching all relationships in single query
+     */
+    @Query("SELECT sm FROM StudentMessage sm " +
+           "JOIN FETCH sm.sender " +
+           "JOIN FETCH sm.recipient " +
+           "LEFT JOIN FETCH sm.repliedBy " +
+           "WHERE sm.recipient = :recipient " +
+           "ORDER BY sm.createdAt DESC")
+    List<StudentMessage> findByRecipientWithUsersOrderByCreatedAtDesc(@Param("recipient") User recipient);
+
+    /**
+     * Get all messages where user is either sender or recipient (for teacher conversations)
+     * Single query to replace separate sent/received queries
+     */
+    @Query("SELECT sm FROM StudentMessage sm " +
+           "JOIN FETCH sm.sender " +
+           "JOIN FETCH sm.recipient " +
+           "LEFT JOIN FETCH sm.repliedBy " +
+           "WHERE sm.sender = :user OR sm.recipient = :user " +
+           "ORDER BY sm.createdAt DESC")
+    List<StudentMessage> findByUserWithUsersOrderByCreatedAtDesc(@Param("user") User user);
+
+    /**
+     * Get conversation between two users with eager loading
+     * Optimized version of findConversation
+     */
+    @Query("SELECT sm FROM StudentMessage sm " +
+           "JOIN FETCH sm.sender " +
+           "JOIN FETCH sm.recipient " +
+           "LEFT JOIN FETCH sm.repliedBy " +
+           "WHERE (sm.sender = :user1 AND sm.recipient = :user2) OR (sm.sender = :user2 AND sm.recipient = :user1) " +
+           "ORDER BY sm.createdAt ASC")
+    List<StudentMessage> findConversationWithUsers(@Param("user1") User user1, @Param("user2") User user2);
     
     List<StudentMessage> findByRecipientAndIsReadFalseOrderByCreatedAtDesc(User recipient);
     
