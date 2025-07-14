@@ -42,7 +42,7 @@ public class AttendanceSession {
     private Long id;
 
     @ManyToOne(fetch = jakarta.persistence.FetchType.LAZY)
-    @JoinColumn(name = "lecture_id", nullable = false)
+    @JoinColumn(name = "lecture_id", nullable = true)
     private Lecture lecture;
 
     @ManyToOne(fetch = jakarta.persistence.FetchType.LAZY)

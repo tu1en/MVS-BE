@@ -37,10 +37,15 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class ClassroomServiceImpl implements ClassroomService {
+
+    private static final Logger log = LoggerFactory.getLogger(ClassroomServiceImpl.class);
 
     private final ClassroomRepository classroomRepository;
     private final UserRepository userRepository;

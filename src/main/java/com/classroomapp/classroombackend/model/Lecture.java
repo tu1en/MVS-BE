@@ -16,7 +16,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
@@ -48,8 +47,7 @@ public class Lecture {
     @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
     private String title;
     
-    @Lob
-    @Column(columnDefinition = "NTEXT")
+    @Column(name = "content", columnDefinition = "TEXT")
     private String content;
     
     @ManyToOne(fetch = FetchType.LAZY)
