@@ -31,29 +31,35 @@ public interface UserService {
      */
     UserDto FindUserByUsername(String username);
     
-    /*
     /**
      * Create a new user
      * @param userDto user information
      * @return created user DTO
      */
-    // UserDto CreateUser(UserDto userDto);
+    UserDto createUser(UserDto userDto);
     
-    /*
     /**
      * Update existing user
      * @param id user ID
      * @param userDto updated user information
      * @return updated user DTO
      */
-    // UserDto UpdateUser(Long id, UserDto userDto);
-    
+    UserDto updateUser(Long id, UserDto userDto);
+
     /**
      * Delete user
      * @param id user ID
      */
-    void DeleteUser(Long id);
+    void deleteUser(Long id);
     
+
+    /**
+     * Reset user password to default
+     * @param id user ID
+     */
+    void resetPassword(Long id);
+    
+
     /**
      * Check if username exists
      * @param username username to check
