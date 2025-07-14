@@ -8,10 +8,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,12 +44,18 @@ import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
 import com.classroomapp.classroombackend.model.assignmentmanagement.Submission;
 import com.classroomapp.classroombackend.model.assignmentmanagement.SubmissionAttachment;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
+import com.classroomapp.classroombackend.model.classroommanagement.ClassroomEnrollment;
 import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.StudentMessageRepository;
+import com.classroomapp.classroombackend.repository.assignmentmanagement.AssignmentRepository;
 import com.classroomapp.classroombackend.repository.assignmentmanagement.SubmissionRepository;
+import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceRepository;
+import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomEnrollmentRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.AssignmentService;
 import com.classroomapp.classroombackend.service.FileStorageService;
+import com.classroomapp.classroombackend.service.SubmissionService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -60,9 +69,14 @@ public class AssignmentController {
 
     private final AssignmentService assignmentService;
     private final FileStorageService fileStorageService;
+    private final SubmissionService submissionService;
     private final ClassroomRepository classroomRepository;
     private final UserRepository userRepository;
     private final SubmissionRepository submissionRepository;
+    private final AssignmentRepository assignmentRepository;
+    private final ClassroomEnrollmentRepository classroomEnrollmentRepository;
+    private final AttendanceRepository attendanceRepository;
+    private final StudentMessageRepository studentMessageRepository;
 
     // Add endpoint to get all assignments (needed by frontend)
     @GetMapping
@@ -151,9 +165,43 @@ public class AssignmentController {
     }
 
     @GetMapping("/classroom/{classroomId}")
-    // @PreAuthorize("permitAll()") // Temporarily disable security for testing
+    @PreAuthorize("permitAll()") // Temporarily disable security for testing
     public ResponseEntity<List<AssignmentDto>> GetAssignmentsByClassroom(@PathVariable Long classroomId) {
-        return ResponseEntity.ok(assignmentService.GetAssignmentsByClassroom(classroomId));
+        log.info("🔍 GetAssignmentsByClassroom called with classroomId: {}", classroomId);
+        List<AssignmentDto> assignments = assignmentService.GetAssignmentsByClassroom(classroomId);
+        log.info("✅ Found {} assignments for classroom {}", assignments.size(), classroomId);
+        assignments.forEach(assignment ->
+            log.info("📝 Assignment: id={}, title={}, classroomId={}",
+                assignment.getId(), assignment.getTitle(), assignment.getClassroomId())
+        );
+        return ResponseEntity.ok(assignments);
+    }
+
+    // Debug endpoint to check classroom and student data
+    @GetMapping("/debug/classroom/{classroomId}")
+    @PreAuthorize("permitAll()") // Temporarily disable security for testing
+    public ResponseEntity<Map<String, Object>> debugClassroomData(@PathVariable Long classroomId) {
+        log.info("🔍 Debug endpoint called for classroomId: {}", classroomId);
+        Map<String, Object> debugInfo = new HashMap<>();
+
+        try {
+            // Get assignments
+            List<AssignmentDto> assignments = assignmentService.GetAssignmentsByClassroom(classroomId);
+            debugInfo.put("assignmentCount", assignments.size());
+            debugInfo.put("assignments", assignments);
+
+            // Get classroom info
+            // Note: You might need to inject ClassroomService here
+            debugInfo.put("classroomId", classroomId);
+
+            log.info("📊 Debug info for classroom {}: {} assignments", classroomId, assignments.size());
+
+        } catch (Exception e) {
+            log.error("❌ Error in debug endpoint: {}", e.getMessage(), e);
+            debugInfo.put("error", e.getMessage());
+        }
+
+        return ResponseEntity.ok(debugInfo);
     }
 
     @GetMapping("/classroom/{classroomId}/upcoming")
@@ -650,6 +698,624 @@ public class AssignmentController {
             log.error("Debug endpoint error", e);
             Map<String, Object> error = new HashMap<>();
             error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    // Debug endpoint to check classroom enrollments and submissions relationship
+    @GetMapping("/debug/classroom/{classroomId}/submissions-analysis")
+    @PreAuthorize("permitAll()") // Debug endpoint
+    public ResponseEntity<Map<String, Object>> debugClassroomSubmissionsAnalysis(@PathVariable Long classroomId) {
+        try {
+            log.info("Debug: Analyzing submissions for classroom {}", classroomId);
+            Map<String, Object> result = new HashMap<>();
+
+            // Get classroom info
+            Optional<Classroom> classroomOpt = classroomRepository.findById(classroomId);
+            if (classroomOpt.isPresent()) {
+                Classroom classroom = classroomOpt.get();
+                result.put("classroomName", classroom.getName());
+                result.put("classroomId", classroom.getId());
+            } else {
+                result.put("classroomExists", false);
+                return ResponseEntity.ok(result);
+            }
+
+            // Get enrollments
+            List<ClassroomEnrollment> enrollments = classroomEnrollmentRepository.findById_ClassroomId(classroomId);
+            result.put("enrollmentCount", enrollments.size());
+
+            List<Map<String, Object>> enrollmentDetails = new ArrayList<>();
+            for (ClassroomEnrollment enrollment : enrollments) {
+                Map<String, Object> enrollmentInfo = new HashMap<>();
+                enrollmentInfo.put("userId", enrollment.getUser().getId());
+                enrollmentInfo.put("userName", enrollment.getUser().getFullName());
+                enrollmentInfo.put("userEmail", enrollment.getUser().getEmail());
+                enrollmentInfo.put("userRole", enrollment.getUser().getRole());
+                enrollmentDetails.add(enrollmentInfo);
+            }
+            result.put("enrollments", enrollmentDetails);
+
+            // Get assignments for this classroom
+            List<Assignment> assignments = assignmentRepository.findByClassroomId(classroomId);
+            result.put("assignmentCount", assignments.size());
+
+            List<Map<String, Object>> assignmentDetails = new ArrayList<>();
+            for (Assignment assignment : assignments) {
+                Map<String, Object> assignmentInfo = new HashMap<>();
+                assignmentInfo.put("assignmentId", assignment.getId());
+                assignmentInfo.put("assignmentTitle", assignment.getTitle());
+
+                // Get submissions for this assignment
+                List<Submission> submissions = submissionRepository.findByAssignmentId(assignment.getId());
+                assignmentInfo.put("submissionCount", submissions.size());
+
+                List<Map<String, Object>> submissionDetails = new ArrayList<>();
+                for (Submission submission : submissions) {
+                    Map<String, Object> submissionInfo = new HashMap<>();
+                    submissionInfo.put("submissionId", submission.getId());
+                    submissionInfo.put("studentId", submission.getStudent() != null ? submission.getStudent().getId() : null);
+                    submissionInfo.put("studentName", submission.getStudent() != null ? submission.getStudent().getFullName() : "NULL");
+                    submissionInfo.put("studentEmail", submission.getStudent() != null ? submission.getStudent().getEmail() : "NULL");
+                    submissionInfo.put("submittedAt", submission.getSubmittedAt());
+                    submissionInfo.put("score", submission.getScore());
+
+                    // Check if student is enrolled in classroom
+                    boolean isEnrolled = enrollments.stream()
+                        .anyMatch(e -> submission.getStudent() != null &&
+                                     e.getUser().getId().equals(submission.getStudent().getId()));
+                    submissionInfo.put("studentEnrolledInClassroom", isEnrolled);
+
+                    submissionDetails.add(submissionInfo);
+                }
+                assignmentInfo.put("submissions", submissionDetails);
+                assignmentDetails.add(assignmentInfo);
+            }
+            result.put("assignments", assignmentDetails);
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Debug classroom submissions analysis error", e);
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            error.put("stackTrace", e.getStackTrace());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    // Debug endpoint to clean invalid submissions (from non-enrolled students)
+    @DeleteMapping("/debug/classroom/{classroomId}/clean-invalid-submissions")
+    @PreAuthorize("permitAll()") // Debug endpoint
+    public ResponseEntity<Map<String, Object>> cleanInvalidSubmissions(@PathVariable Long classroomId) {
+        try {
+            log.info("Controller: Delegating cleanup to service for classroom {}", classroomId);
+            Map<String, Object> result = assignmentService.cleanInvalidSubmissionsForClassroom(classroomId);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Error cleaning invalid submissions for classroom {}: {}", classroomId, e.getMessage(), e);
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    // New endpoint to clean invalid submissions for a specific assignment
+    @DeleteMapping("/debug/assignment/{assignmentId}/clean-invalid-submissions")
+    @PreAuthorize("permitAll()") // Debug endpoint
+    public ResponseEntity<Map<String, Object>> cleanInvalidSubmissionsForAssignment(@PathVariable Long assignmentId) {
+        try {
+            log.info("Controller: Cleaning invalid submissions for assignment {}", assignmentId);
+            int deletedCount = submissionService.cleanInvalidSubmissionsForAssignment(assignmentId);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("assignmentId", assignmentId);
+            result.put("deletedSubmissions", deletedCount);
+            result.put("message", "Successfully cleaned " + deletedCount + " invalid submissions for assignment " + assignmentId);
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Error cleaning invalid submissions for assignment {}: {}", assignmentId, e.getMessage(), e);
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    // Debug endpoint to check submissions consistency
+    @GetMapping("/debug/submissions-consistency-check")
+    @PreAuthorize("permitAll()") // Debug endpoint
+    public ResponseEntity<Map<String, Object>> checkSubmissionsConsistency() {
+        try {
+            Map<String, Object> result = new HashMap<>();
+
+            // Query để tìm submissions từ non-enrolled students
+            List<Object[]> invalidSubmissions = submissionRepository.findSubmissionsFromNonEnrolledStudents();
+
+            result.put("totalInvalidSubmissions", invalidSubmissions.size());
+            result.put("invalidSubmissions", invalidSubmissions);
+            result.put("status", invalidSubmissions.isEmpty() ? "HEALTHY" : "ISSUES_FOUND");
+            result.put("message", invalidSubmissions.isEmpty() ?
+                "✅ All submissions are from enrolled students" :
+                "🚨 Found " + invalidSubmissions.size() + " submissions from non-enrolled students");
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Error checking submissions consistency: {}", e.getMessage(), e);
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            error.put("status", "ERROR");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    // Debug endpoint to clean ALL invalid submissions across all assignments
+    @DeleteMapping("/debug/clean-all-invalid-submissions")
+    @PreAuthorize("permitAll()") // Debug endpoint
+    @Transactional
+    public ResponseEntity<Map<String, Object>> cleanAllInvalidSubmissions() {
+        try {
+            log.info("Controller: Cleaning ALL invalid submissions across all assignments");
+
+            // Get all invalid submissions first
+            List<Object[]> invalidSubmissions = submissionRepository.findSubmissionsFromNonEnrolledStudents();
+            int totalInvalid = invalidSubmissions.size();
+
+            if (totalInvalid == 0) {
+                Map<String, Object> result = new HashMap<>();
+                result.put("message", "✅ No invalid submissions found - database is clean");
+                result.put("deletedSubmissions", 0);
+                result.put("status", "ALREADY_CLEAN");
+                return ResponseEntity.ok(result);
+            }
+
+            // Delete invalid submissions one by one
+            List<Long> invalidSubmissionIds = invalidSubmissions.stream()
+                .map(row -> ((Number) row[0]).longValue()) // submission_id is first column
+                .collect(Collectors.toList());
+
+            int deletedCount = 0;
+            for (Long submissionId : invalidSubmissionIds) {
+                try {
+                    submissionRepository.deleteById(submissionId);
+                    deletedCount++;
+                    log.info("Deleted invalid submission ID: {}", submissionId);
+                } catch (Exception e) {
+                    log.error("Failed to delete submission ID {}: {}", submissionId, e.getMessage());
+                }
+            }
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("totalInvalidFound", totalInvalid);
+            result.put("deletedSubmissions", deletedCount);
+            result.put("invalidSubmissionDetails", invalidSubmissions);
+            result.put("message", "🧹 Successfully cleaned " + deletedCount + " invalid submissions from " + totalInvalid + " found");
+            result.put("status", "CLEANED");
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Error cleaning all invalid submissions: {}", e.getMessage(), e);
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            error.put("status", "ERROR");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    // Debug endpoint to check attendance consistency
+    @GetMapping("/debug/attendance-consistency-check")
+    @PreAuthorize("permitAll()") // Debug endpoint
+    public ResponseEntity<Map<String, Object>> checkAttendanceConsistency() {
+        try {
+            Map<String, Object> result = new HashMap<>();
+
+            // Query để tìm attendance từ non-enrolled students
+            List<Object[]> invalidAttendance = attendanceRepository.findAttendanceFromNonEnrolledStudents();
+
+            result.put("totalInvalidAttendance", invalidAttendance.size());
+            result.put("invalidAttendance", invalidAttendance);
+            result.put("status", invalidAttendance.isEmpty() ? "HEALTHY" : "ISSUES_FOUND");
+            result.put("message", invalidAttendance.isEmpty() ?
+                "✅ All attendance records are from enrolled students" :
+                "🚨 Found " + invalidAttendance.size() + " attendance records from non-enrolled students");
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Error checking attendance consistency: {}", e.getMessage(), e);
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            error.put("status", "ERROR");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    // Debug endpoint to check messages consistency
+    @GetMapping("/debug/messages-consistency-check")
+    @PreAuthorize("permitAll()") // Debug endpoint
+    public ResponseEntity<Map<String, Object>> checkMessagesConsistency() {
+        try {
+            Map<String, Object> result = new HashMap<>();
+
+            // Query để tìm messages without proper classroom context
+            List<Object[]> invalidMessages = studentMessageRepository.findMessagesWithoutClassroomContext();
+
+            result.put("totalInvalidMessages", invalidMessages.size());
+            result.put("invalidMessages", invalidMessages);
+            result.put("status", invalidMessages.isEmpty() ? "HEALTHY" : "ISSUES_FOUND");
+            result.put("message", invalidMessages.isEmpty() ?
+                "✅ All messages have proper classroom context" :
+                "🚨 Found " + invalidMessages.size() + " messages without proper classroom context");
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Error checking messages consistency: {}", e.getMessage(), e);
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            error.put("status", "ERROR");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    // Debug endpoint to check duplicate enrollments
+    @GetMapping("/debug/enrollments-consistency-check")
+    @PreAuthorize("permitAll()") // Debug endpoint
+    public ResponseEntity<Map<String, Object>> checkEnrollmentsConsistency() {
+        try {
+            Map<String, Object> result = new HashMap<>();
+
+            // Query để tìm duplicate enrollments
+            List<Object[]> duplicateEnrollments = classroomEnrollmentRepository.findDuplicateEnrollments();
+
+            result.put("totalDuplicateEnrollments", duplicateEnrollments.size());
+            result.put("duplicateEnrollments", duplicateEnrollments);
+            result.put("status", duplicateEnrollments.isEmpty() ? "HEALTHY" : "ISSUES_FOUND");
+            result.put("message", duplicateEnrollments.isEmpty() ?
+                "✅ No duplicate enrollment records found" :
+                "🚨 Found " + duplicateEnrollments.size() + " duplicate enrollment records");
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Error checking enrollments consistency: {}", e.getMessage(), e);
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            error.put("status", "ERROR");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    // Comprehensive data consistency check
+    @GetMapping("/debug/comprehensive-consistency-check")
+    @PreAuthorize("permitAll()") // Debug endpoint
+    public ResponseEntity<Map<String, Object>> comprehensiveConsistencyCheck() {
+        try {
+            Map<String, Object> result = new HashMap<>();
+            int totalIssues = 0;
+
+            // Check submissions
+            List<Object[]> invalidSubmissions = submissionRepository.findSubmissionsFromNonEnrolledStudents();
+            result.put("submissions", Map.of(
+                "count", invalidSubmissions.size(),
+                "details", invalidSubmissions,
+                "description", "Submissions from students not enrolled in the classroom"
+            ));
+            totalIssues += invalidSubmissions.size();
+
+            // Check attendance
+            List<Object[]> invalidAttendance = attendanceRepository.findAttendanceFromNonEnrolledStudents();
+            result.put("attendance", Map.of(
+                "count", invalidAttendance.size(),
+                "details", invalidAttendance,
+                "description", "Attendance records for students not enrolled in the classroom"
+            ));
+            totalIssues += invalidAttendance.size();
+
+            // Check messages
+            List<Object[]> invalidMessages = studentMessageRepository.findMessagesWithoutClassroomContext();
+            result.put("messages", Map.of(
+                "count", invalidMessages.size(),
+                "details", invalidMessages,
+                "description", "Messages between users without proper classroom context"
+            ));
+            totalIssues += invalidMessages.size();
+
+            // Check duplicate enrollments
+            List<Object[]> duplicateEnrollments = classroomEnrollmentRepository.findDuplicateEnrollments();
+            result.put("duplicateEnrollments", Map.of(
+                "count", duplicateEnrollments.size(),
+                "details", duplicateEnrollments,
+                "description", "Duplicate enrollment records for same student-classroom pair"
+            ));
+            totalIssues += duplicateEnrollments.size();
+
+            // Summary
+            result.put("summary", Map.of(
+                "totalIssuesFound", totalIssues,
+                "status", totalIssues == 0 ? "HEALTHY" : "ISSUES_FOUND",
+                "message", totalIssues == 0 ?
+                    "✅ No data consistency issues found" :
+                    "🚨 Found " + totalIssues + " data consistency issues"
+            ));
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Error during comprehensive consistency check: {}", e.getMessage(), e);
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            error.put("status", "ERROR");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    // Debug endpoint to clean invalid messages
+    @DeleteMapping("/debug/clean-all-invalid-messages")
+    @PreAuthorize("permitAll()") // Debug endpoint
+    public ResponseEntity<Map<String, Object>> cleanAllInvalidMessages() {
+        try {
+            log.info("Starting cleanup of invalid messages...");
+
+            // Get invalid messages first
+            List<Object[]> invalidMessages = studentMessageRepository.findMessagesWithoutClassroomContext();
+
+            Map<String, Object> result = new HashMap<>();
+            int cleanedCount = 0;
+
+            // Clean each invalid message
+            for (Object[] row : invalidMessages) {
+                try {
+                    Long messageId = ((Number) row[0]).longValue();
+                    studentMessageRepository.deleteById(messageId);
+                    cleanedCount++;
+                    log.info("Deleted invalid message ID: {} from sender: {} to recipient: {}",
+                        messageId, row[2], row[4]);
+                } catch (Exception e) {
+                    log.error("Failed to delete message ID {}: {}", row[0], e.getMessage());
+                }
+            }
+
+            result.put("totalCleaned", cleanedCount);
+            result.put("originalInvalidCount", invalidMessages.size());
+            result.put("cleanedMessages", invalidMessages);
+            result.put("status", "CLEANED");
+            result.put("message", cleanedCount > 0 ?
+                "🧹 Successfully cleaned " + cleanedCount + " invalid messages" :
+                "✅ No invalid messages found to clean");
+
+            log.info("Cleanup completed. Cleaned {} invalid messages", cleanedCount);
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            log.error("Error during invalid messages cleanup: {}", e.getMessage(), e);
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            error.put("status", "ERROR");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    // Debug endpoint to clean invalid attendance records
+    @DeleteMapping("/debug/clean-all-invalid-attendance")
+    @PreAuthorize("permitAll()") // Debug endpoint
+    public ResponseEntity<Map<String, Object>> cleanAllInvalidAttendance() {
+        try {
+            log.info("Starting cleanup of invalid attendance records...");
+
+            // Get invalid attendance first
+            List<Object[]> invalidAttendance = attendanceRepository.findAttendanceFromNonEnrolledStudents();
+
+            Map<String, Object> result = new HashMap<>();
+            int cleanedCount = 0;
+
+            // Clean each invalid attendance record
+            for (Object[] row : invalidAttendance) {
+                try {
+                    Long attendanceId = ((Number) row[0]).longValue();
+                    attendanceRepository.deleteById(attendanceId);
+                    cleanedCount++;
+                    log.info("Deleted invalid attendance ID: {} for student: {} in classroom: {}",
+                        attendanceId, row[3], row[6]);
+                } catch (Exception e) {
+                    log.error("Failed to delete attendance ID {}: {}", row[0], e.getMessage());
+                }
+            }
+
+            result.put("totalCleaned", cleanedCount);
+            result.put("originalInvalidCount", invalidAttendance.size());
+            result.put("cleanedAttendance", invalidAttendance);
+            result.put("status", "CLEANED");
+            result.put("message", cleanedCount > 0 ?
+                "🧹 Successfully cleaned " + cleanedCount + " invalid attendance records" :
+                "✅ No invalid attendance records found to clean");
+
+            log.info("Cleanup completed. Cleaned {} invalid attendance records", cleanedCount);
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            log.error("Error during invalid attendance cleanup: {}", e.getMessage(), e);
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            error.put("status", "ERROR");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    // Comprehensive cleanup endpoint
+    @DeleteMapping("/debug/clean-all-data-issues")
+    @PreAuthorize("permitAll()") // Debug endpoint
+    public ResponseEntity<Map<String, Object>> cleanAllDataIssues() {
+        try {
+            log.info("Starting comprehensive data cleanup...");
+
+            Map<String, Object> result = new HashMap<>();
+            int totalCleaned = 0;
+
+            // 1. Clean invalid submissions
+            List<Object[]> invalidSubmissions = submissionRepository.findSubmissionsFromNonEnrolledStudents();
+            int cleanedSubmissions = 0;
+            for (Object[] row : invalidSubmissions) {
+                try {
+                    Long submissionId = ((Number) row[0]).longValue();
+                    submissionRepository.deleteById(submissionId);
+                    cleanedSubmissions++;
+                } catch (Exception e) {
+                    log.error("Failed to delete submission: {}", e.getMessage());
+                }
+            }
+            result.put("cleanedSubmissions", cleanedSubmissions);
+            totalCleaned += cleanedSubmissions;
+
+            // 2. Clean invalid attendance records
+            List<Object[]> invalidAttendance = attendanceRepository.findAttendanceFromNonEnrolledStudents();
+            int cleanedAttendance = 0;
+            for (Object[] row : invalidAttendance) {
+                try {
+                    Long attendanceId = ((Number) row[0]).longValue();
+                    attendanceRepository.deleteById(attendanceId);
+                    cleanedAttendance++;
+                } catch (Exception e) {
+                    log.error("Failed to delete attendance: {}", e.getMessage());
+                }
+            }
+            result.put("cleanedAttendance", cleanedAttendance);
+            totalCleaned += cleanedAttendance;
+
+            // 3. Clean invalid messages
+            List<Object[]> invalidMessages = studentMessageRepository.findMessagesWithoutClassroomContext();
+            int cleanedMessages = 0;
+            for (Object[] row : invalidMessages) {
+                try {
+                    Long messageId = ((Number) row[0]).longValue();
+                    studentMessageRepository.deleteById(messageId);
+                    cleanedMessages++;
+                } catch (Exception e) {
+                    log.error("Failed to delete message: {}", e.getMessage());
+                }
+            }
+            result.put("cleanedMessages", cleanedMessages);
+            totalCleaned += cleanedMessages;
+
+            result.put("summary", Map.of(
+                "totalCleaned", totalCleaned,
+                "status", "CLEANED",
+                "message", "🧹 Successfully cleaned " + totalCleaned + " data consistency issues"
+            ));
+
+            log.info("Comprehensive cleanup completed. Cleaned {} issues", totalCleaned);
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            log.error("Error during comprehensive data cleanup: {}", e.getMessage(), e);
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            error.put("status", "ERROR");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    // Debug endpoint to get current data counts
+    @GetMapping("/debug/data-counts")
+    @PreAuthorize("permitAll()") // Debug endpoint
+    public ResponseEntity<Map<String, Object>> getCurrentDataCounts() {
+        try {
+            Map<String, Object> result = new HashMap<>();
+
+            // Count submissions
+            long totalSubmissions = submissionRepository.count();
+            List<Object[]> submissionsByClassroom = submissionRepository.findSubmissionCountsByClassroom();
+
+            // Count messages
+            long totalMessages = studentMessageRepository.count();
+
+            // Count attendance records
+            long totalAttendance = attendanceRepository.count();
+
+            // Count enrollments
+            long totalEnrollments = classroomEnrollmentRepository.count();
+
+            // Count assignments
+            long totalAssignments = assignmentRepository.count();
+
+            result.put("totalSubmissions", totalSubmissions);
+            result.put("totalMessages", totalMessages);
+            result.put("totalAttendance", totalAttendance);
+            result.put("totalEnrollments", totalEnrollments);
+            result.put("totalAssignments", totalAssignments);
+            result.put("submissionsByClassroom", submissionsByClassroom);
+
+            result.put("status", "SUCCESS");
+            result.put("message", "📊 Current data counts retrieved successfully");
+
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            log.error("Error getting current data counts: {}", e.getMessage(), e);
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            error.put("status", "ERROR");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    // Debug endpoint to create valid replacement submissions
+    @PostMapping("/debug/create-valid-submissions")
+    @PreAuthorize("permitAll()") // Debug endpoint
+    public ResponseEntity<Map<String, Object>> createValidSubmissions() {
+        try {
+            log.info("Creating valid replacement submissions...");
+
+            Map<String, Object> result = new HashMap<>();
+            List<Map<String, Object>> createdSubmissions = new ArrayList<>();
+            int totalCreated = 0;
+
+            // Get all assignments
+            List<Assignment> assignments = assignmentRepository.findAll();
+
+            for (Assignment assignment : assignments) {
+                // Get enrolled students for this assignment's classroom
+                Set<Long> enrolledStudentIds = classroomEnrollmentRepository.findStudentIdsByClassroomId(assignment.getClassroom().getId());
+
+                for (Long studentId : enrolledStudentIds) {
+                    // Check if submission already exists
+                    Optional<Submission> existingSubmission = submissionRepository.findByAssignmentIdAndStudentId(assignment.getId(), studentId);
+
+                    if (existingSubmission.isEmpty()) {
+                        // Create new valid submission
+                        User student = userRepository.findById(studentId).orElse(null);
+                        if (student != null && student.getRoleId() == 1) { // Only students
+                            Submission newSubmission = new Submission();
+                            newSubmission.setAssignment(assignment);
+                            newSubmission.setStudent(student);
+                            newSubmission.setComment("Bài tập được nộp đúng hạn - " + assignment.getTitle());
+                            newSubmission.setSubmittedAt(LocalDateTime.now().minusDays(1)); // Submitted yesterday
+
+                            Submission saved = submissionRepository.save(newSubmission);
+
+                            Map<String, Object> submissionInfo = new HashMap<>();
+                            submissionInfo.put("submissionId", saved.getId());
+                            submissionInfo.put("assignmentId", assignment.getId());
+                            submissionInfo.put("assignmentTitle", assignment.getTitle());
+                            submissionInfo.put("studentId", studentId);
+                            submissionInfo.put("studentName", student.getFullName());
+                            submissionInfo.put("classroomId", assignment.getClassroom().getId());
+                            submissionInfo.put("classroomName", assignment.getClassroom().getName());
+
+                            createdSubmissions.add(submissionInfo);
+                            totalCreated++;
+                        }
+                    }
+                }
+            }
+
+            result.put("totalCreated", totalCreated);
+            result.put("createdSubmissions", createdSubmissions);
+            result.put("status", "SUCCESS");
+            result.put("message", "✅ Successfully created " + totalCreated + " valid submissions");
+
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            log.error("Error creating valid submissions: {}", e.getMessage(), e);
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            error.put("status", "ERROR");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }

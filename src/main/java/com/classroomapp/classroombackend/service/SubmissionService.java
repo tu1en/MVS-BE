@@ -55,7 +55,10 @@ public interface SubmissionService {
     
     // Get submission statistics for an assignment
     SubmissionStatistics GetSubmissionStatisticsForAssignment(Long assignmentId);
-    
+
+    // Clean up invalid submissions from students who are not enrolled in the classroom
+    int cleanInvalidSubmissionsForAssignment(Long assignmentId);
+
     // Inner class for submission statistics
     class SubmissionStatistics {
         private long totalStudents;

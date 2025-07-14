@@ -37,10 +37,10 @@ public class GradingRubric {
     private Long assignmentId;
 
     @NotBlank
-    @Column(name = "criteria_name", nullable = false)
+    @Column(name = "criteria_name", nullable = false, columnDefinition = "NVARCHAR(255)")
     private String criteriaName;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "NTEXT")
     private String description;
 
     @NotNull

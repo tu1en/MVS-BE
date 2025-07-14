@@ -108,5 +108,9 @@ public interface AttendanceService {
      */
     List<AttendanceDto> findByUserId(Long userId);
 
+    /**
+     * Submit attendance records for a lecture
+     * @param submitDto DTO containing lecture ID, classroom ID, and attendance records
+     */
     void submitAttendance(AttendanceSubmitDto submitDto);
 }

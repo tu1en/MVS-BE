@@ -28,6 +28,7 @@ public class CourseMaterialServiceImpl implements CourseMaterialService {
 
     private final CourseMaterialRepository courseMaterialRepository;
     private final FileStorageService fileStorageService;
+    private final HybridMaterialDownloadService hybridDownloadService;
 
     @Override
     public CourseMaterialDto uploadMaterial(UploadMaterialDto uploadDto, MultipartFile file, Long uploadedBy) {
@@ -119,25 +120,50 @@ public class CourseMaterialServiceImpl implements CourseMaterialService {
     @Override
     @Transactional(readOnly = true)
     public byte[] downloadMaterial(Long materialId) {
+        log.info("🔽 SERVICE: Starting downloadMaterial for ID: {}", materialId);
+
         CourseMaterial material = courseMaterialRepository.findById(materialId)
-                .orElseThrow(() -> new RuntimeException("Material not found with id: " + materialId));
+                .orElseThrow(() -> {
+                    log.error("🔽 SERVICE: Material not found in database for ID: {}", materialId);
+                    return new RuntimeException("Tài liệu không tồn tại với ID: " + materialId);
+                });
 
         try {
-            // This method now returns a URL, not raw bytes.
-            // A real implementation would fetch the bytes from the URL.
-            // For now, we adapt to the new service structure, acknowledging this might need more work.
-            log.warn("Downloading from URL is not implemented. Returning empty byte array for materialId: {}", materialId);
-            // Increment download count
-            material.setDownloadCount(material.getDownloadCount() + 1);
-            courseMaterialRepository.save(material);
+            log.info("🔽 SERVICE: Found material - ID: {}, Title: {}, File path: {}",
+                materialId, material.getTitle(), material.getFilePath());
+            log.info("🔽 SERVICE: Material details - Size: {} bytes, Type: {}, Classroom: {}",
+                material.getFileSize(), material.getFileType(), material.getClassroomId());
 
-            // Read and return file content
-            // Path filePath = Paths.get(material.getFilePath());
-            // return Files.readAllBytes(filePath);
-            return new byte[0]; // Placeholder
+            // Increment download count before reading file
+            int currentDownloadCount = material.getDownloadCount();
+            material.setDownloadCount(currentDownloadCount + 1);
+            courseMaterialRepository.save(material);
+            log.info("🔽 SERVICE: Updated download count from {} to {}", currentDownloadCount, currentDownloadCount + 1);
+
+            // Get file path and determine storage type
+            String filePath = material.getFilePath();
+            if (filePath == null || filePath.trim().isEmpty()) {
+                log.error("🔽 SERVICE: Invalid file path for material ID: {} - path is null or empty", materialId);
+                throw new RuntimeException("Đường dẫn file không hợp lệ cho tài liệu ID: " + materialId);
+            }
+
+            log.info("🔽 SERVICE: Original file path: {}", filePath);
+            log.info("🔽 SERVICE: Storage type: {}", hybridDownloadService.getStorageType(filePath));
+
+            // Use hybrid download service to handle both local and Firebase files
+            byte[] fileContent = hybridDownloadService.downloadMaterialContent(filePath, materialId);
+
+            // Validate file content
+            if (fileContent.length == 0) {
+                log.warn("🔽 SERVICE: File content is empty for material: {}", material.getFileName());
+            }
+
+            return fileContent;
+
         } catch (Exception e) {
-            log.error("Error downloading material: {}", e.getMessage());
-            throw new RuntimeException("Failed to download material", e);
+            log.error("🔽 SERVICE: Error downloading material ID {}: {}", materialId, e.getMessage());
+            log.error("🔽 SERVICE: Exception type: {}, Stack trace: ", e.getClass().getSimpleName(), e);
+            throw new RuntimeException("Lỗi tải xuống tài liệu: " + e.getMessage(), e);
         }
     }
 

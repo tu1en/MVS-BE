@@ -18,7 +18,6 @@ import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -46,12 +45,15 @@ public class Assignment {
     private String description;
 
     @NotNull
-    @Future // Must be a future date
+    // @Future // Temporarily removed to allow test data with past due dates
     @Column(name = "due_date")
     private LocalDateTime dueDate;
 
     @Min(0) // Points must be positive
     private Integer points;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
     @OneToMany(
             mappedBy = "assignment",

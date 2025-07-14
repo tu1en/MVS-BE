@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -33,6 +34,7 @@ import com.classroomapp.classroombackend.repository.LectureRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.FileStorageService;
+import com.classroomapp.classroombackend.service.LectureMaterialService;
 
 @RestController
 @RequestMapping("/api")
@@ -52,6 +54,9 @@ public class LectureController {
 
     @Autowired
     private FileStorageService fileStorageService;
+
+    @Autowired
+    private LectureMaterialService lectureMaterialService;
 
     // Get all lectures for a classroom - Changed endpoint to avoid conflict with CourseController
     @GetMapping("/lectures/classroom/{classroomId}")
@@ -155,6 +160,8 @@ public class LectureController {
             lecture.setTitle(lectureDto.getTitle());
             lecture.setContent(lectureDto.getContent());
             lecture.setClassroom(classroom);
+            // Set lectureDate - use provided date or default to today
+            lecture.setLectureDate(lectureDto.getLectureDate() != null ? lectureDto.getLectureDate() : LocalDate.now());
             lecture.setCreatedAt(LocalDateTime.now());
             lecture.setUpdatedAt(LocalDateTime.now());
 
@@ -162,12 +169,62 @@ public class LectureController {
 
             System.out.println("✅ [LectureController] Lecture created successfully with ID: " + savedLecture.getId());
 
+            // Process materials if provided
+            List<LectureMaterialDto> materialDtos = new ArrayList<>();
+            if (lectureDto.getMaterials() != null && !lectureDto.getMaterials().isEmpty()) {
+                System.out.println("🔍 [LectureController] Processing " + lectureDto.getMaterials().size() + " materials");
+                for (LectureMaterialDto materialDto : lectureDto.getMaterials()) {
+                    LectureMaterial material = new LectureMaterial();
+                    material.setLecture(savedLecture);
+                    material.setFileName(materialDto.getFileName());
+                    material.setContentType(materialDto.getContentType());
+                    material.setFileSize(materialDto.getFileSize());
+                    material.setFilePath(materialDto.getFilePath());
+                    material.setDownloadUrl(materialDto.getDownloadUrl());
+
+                    LectureMaterial savedMaterial = lectureMaterialRepository.save(material);
+
+                    LectureMaterialDto savedMaterialDto = new LectureMaterialDto();
+                    savedMaterialDto.setId(savedMaterial.getId());
+                    savedMaterialDto.setFileName(savedMaterial.getFileName());
+                    savedMaterialDto.setContentType(savedMaterial.getContentType());
+                    savedMaterialDto.setFileSize(savedMaterial.getFileSize());
+                    savedMaterialDto.setDownloadUrl(savedMaterial.getDownloadUrl());
+                    savedMaterialDto.setLectureId(savedLecture.getId());
+
+                    materialDtos.add(savedMaterialDto);
+                }
+            }
+
+            // Process YouTube URL if provided
+            if (lectureDto.getYoutubeEmbedUrl() != null && !lectureDto.getYoutubeEmbedUrl().trim().isEmpty()) {
+                System.out.println("🔍 [LectureController] Processing YouTube video: " + lectureDto.getYoutubeEmbedUrl());
+                LectureMaterial youtubeMaterial = new LectureMaterial();
+                youtubeMaterial.setLecture(savedLecture);
+                youtubeMaterial.setFileName("YouTube Video");
+                youtubeMaterial.setContentType("video/youtube");
+                youtubeMaterial.setDownloadUrl(lectureDto.getYoutubeEmbedUrl());
+                youtubeMaterial.setFileSize(0L);
+
+                LectureMaterial savedYoutubeMaterial = lectureMaterialRepository.save(youtubeMaterial);
+
+                LectureMaterialDto youtubeMaterialDto = new LectureMaterialDto();
+                youtubeMaterialDto.setId(savedYoutubeMaterial.getId());
+                youtubeMaterialDto.setFileName(savedYoutubeMaterial.getFileName());
+                youtubeMaterialDto.setContentType(savedYoutubeMaterial.getContentType());
+                youtubeMaterialDto.setDownloadUrl(savedYoutubeMaterial.getDownloadUrl());
+                youtubeMaterialDto.setLectureId(savedLecture.getId());
+
+                materialDtos.add(youtubeMaterialDto);
+            }
+
             LectureDto responseDto = new LectureDto();
             responseDto.setId(savedLecture.getId());
             responseDto.setTitle(savedLecture.getTitle());
             responseDto.setContent(savedLecture.getContent());
             responseDto.setLectureDate(savedLecture.getLectureDate());
             responseDto.setClassroomId(classroomId);
+            responseDto.setMaterials(materialDtos);
 
             return new ResponseEntity<>(responseDto, HttpStatus.CREATED);
         } else {
@@ -282,7 +339,7 @@ public class LectureController {
     public ResponseEntity<List<LectureMaterialDto>> getLectureMaterials(@PathVariable Long lectureId) {
         List<LectureMaterial> materials = lectureMaterialRepository.findByLectureId(lectureId);
         List<LectureMaterialDto> materialDtos = new ArrayList<>();
-        
+
         for (LectureMaterial material : materials) {
             LectureMaterialDto dto = new LectureMaterialDto();
             dto.setId(material.getId());
@@ -292,11 +349,17 @@ public class LectureController {
             dto.setContentType(material.getContentType());
             dto.setDownloadUrl(material.getDownloadUrl());
             dto.setLectureId(lectureId);
-            
+
             materialDtos.add(dto);
         }
-        
+
         return ResponseEntity.ok(materialDtos);
+    }
+
+    // Download lecture material
+    @GetMapping("/lecture-materials/download/{materialId}")
+    public ResponseEntity<Resource> downloadLectureMaterial(@PathVariable Long materialId) {
+        return lectureMaterialService.getFile(materialId);
     }
 
     // Upload material for a lecture

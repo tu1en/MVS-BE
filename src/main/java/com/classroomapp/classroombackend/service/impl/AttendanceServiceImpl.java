@@ -1,8 +1,8 @@
 package com.classroomapp.classroombackend.service.impl;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +31,6 @@ import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSe
 import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceStatus;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.usermanagement.User;
-import com.classroomapp.classroombackend.repository.LectureRepository;
 import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceRepository;
 import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceSessionRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomEnrollmentRepository;
@@ -52,69 +51,11 @@ public class AttendanceServiceImpl implements AttendanceService {
     private final ClassroomRepository classroomRepository;
     private final UserRepository userRepository;
     private final ClassroomSecurityService classroomSecurityService;
-    private final LectureRepository lectureRepository; // Inject LectureRepository
 
     @Override
     @Transactional
     public void createOrUpdateAttendance(CreateOrUpdateAttendanceDto dto) {
        throw new UnsupportedOperationException("This method is deprecated and part of the old attendance flow.");
-    }
-
-    @Override
-    @Transactional
-    public void submitAttendance(AttendanceSubmitDto submitDto) {
-        // Validate lecture and classroom existence
-        Lecture lecture = lectureRepository.findById(submitDto.getLectureId())
-                .orElseThrow(() -> new BusinessLogicException("Lecture not found with ID: " + submitDto.getLectureId()));
-
-        Classroom classroom = classroomRepository.findById(submitDto.getClassroomId())
-                .orElseThrow(() -> new BusinessLogicException("Classroom not found with ID: " + submitDto.getClassroomId()));
-
-        // Ensure the lecture belongs to the classroom
-        if (!lecture.getClassroom().getId().equals(classroom.getId())) {
-            throw new BusinessLogicException("Lecture does not belong to the specified classroom.");
-        }
-
-        // Find or create an AttendanceSession for this lecture
-        // For simplicity, we'll assume one session per lecture. In a real scenario,
-        // you might have multiple sessions per lecture (e.g., re-takes)
-        AttendanceSession session = attendanceSessionRepository.findByLectureId(lecture.getId())
-                .orElseGet(() -> {
-                    AttendanceSession newSession = new AttendanceSession();
-                    newSession.setClassroom(classroom);
-                    newSession.setLecture(lecture);
-                    newSession.setCreatedAt(LocalDateTime.now());
-                    newSession.setExpiresAt(LocalDateTime.now().plusHours(1)); // Example: session expires in 1 hour
-                    newSession.setIsOpen(true);
-                    newSession.setSessionDate(LocalDate.now()); // Set session date to today
-                    return attendanceSessionRepository.save(newSession);
-                });
-
-        // Ensure session is open and not expired if a new one wasn't created
-        if (!session.getIsOpen() ||
-            (session.getExpiresAt() != null && LocalDateTime.now().isAfter(session.getExpiresAt()))) {
-             // Optionally reopen or create new session based on business rules
-             // For this task, we will just throw an error or handle accordingly
-            session.setIsOpen(true); // Reopen for submission
-            session.setExpiresAt(LocalDateTime.now().plusHours(1)); // Extend expiration
-            attendanceSessionRepository.save(session);
-        }
-
-        // Process each attendance record
-        for (AttendanceSubmitDto.AttendanceRecordUpdateDto recordDto : submitDto.getRecords()) {
-            User student = userRepository.findById(recordDto.getStudentId())
-                    .orElseThrow(() -> new BusinessLogicException("Student not found with ID: " + recordDto.getStudentId()));
-
-            // Find existing record or create new one
-            Attendance attendance = attendanceRepository.findBySession_IdAndStudent_Id(session.getId(), student.getId())
-                    .orElseGet(Attendance::new);
-
-            attendance.setSession(session);
-            attendance.setStudent(student);
-            attendance.setStatus(AttendanceStatus.valueOf(recordDto.getStatus().toUpperCase())); // Convert string to enum
-
-            attendanceRepository.save(attendance);
-        }
     }
 
     @Override
@@ -183,24 +124,23 @@ public class AttendanceServiceImpl implements AttendanceService {
 
     @Override
     public List<MyAttendanceHistoryDto> getMyAttendanceHistory(Long studentId, Long classroomId) {
-        System.out.println("Service: Getting attendance history for student " + studentId + " in classroom " + classroomId);
-        List<Attendance> rawAttendance = attendanceRepository.findByStudentIdAndSession_ClassroomIdOrderBySession_SessionDateDesc(studentId, classroomId);
-        System.out.println("Service: Found " + rawAttendance.size() + " raw attendance records");
-
-        List<MyAttendanceHistoryDto> dtos = rawAttendance.stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
-        System.out.println("Service: Found " + dtos.size() + " DTO records");
-        return dtos;
-    }
-
-    private MyAttendanceHistoryDto mapToDto(Attendance attendance) {
-        MyAttendanceHistoryDto dto = new MyAttendanceHistoryDto();
-        dto.setLectureId(attendance.getSession().getLecture().getId());
-        dto.setLectureTitle(attendance.getSession().getLecture().getTitle());
-        dto.setSessionDate(attendance.getSession().getSessionDate());
-        dto.setStatus(attendance.getStatus());
-        return dto;
+        try {
+            System.out.println("Service: Getting attendance history for student " + studentId + " in classroom " + classroomId);
+            
+            // First try the simpler query to check if data exists
+            List<Attendance> debugRecords = attendanceRepository.findAttendanceRecordsForDebugging(studentId, classroomId);
+            System.out.println("Service: Found " + debugRecords.size() + " raw attendance records");
+            
+            // If we have records, try the DTO query
+            List<MyAttendanceHistoryDto> result = attendanceRepository.findStudentAttendanceHistoryByCourse(studentId, classroomId);
+            System.out.println("Service: Found " + result.size() + " DTO records");
+            return result;
+        } catch (Exception e) {
+            System.err.println("Service error in getMyAttendanceHistory: " + e.getMessage());
+            e.printStackTrace();
+            // Return empty list instead of throwing to avoid 500 error
+            return new ArrayList<>();
+        }
     }
     
     @Override
@@ -232,7 +172,7 @@ public class AttendanceServiceImpl implements AttendanceService {
         if (!session.getIsOpen()) {
             throw new BusinessLogicException("Attendance session is closed");
         }
-        if (session.getExpiresAt() != null && LocalDateTime.now().isAfter(session.getExpiresAt())) {
+        if (LocalDateTime.now().isAfter(session.getExpiresAt())) {
             throw new BusinessLogicException("Attendance session has expired");
         }
 
@@ -334,12 +274,86 @@ public class AttendanceServiceImpl implements AttendanceService {
         dto.setUserFullName(attendance.getStudent().getFullName());
         dto.setPresent(attendance.getStatus() == AttendanceStatus.PRESENT);
         dto.setAttendanceType(attendance.getStatus().name());
-        LocalDate sessionDate = attendance.getSession().getSessionDate();
-        dto.setSessionDate(sessionDate != null ? sessionDate.atStartOfDay() : LocalDateTime.now());
+        dto.setSessionDate(attendance.getSession().getSessionDate().atStartOfDay());
         if (attendance.getSession().getClassroom() != null) {
             dto.setClassroomId(attendance.getSession().getClassroom().getId());
             dto.setClassroomName(attendance.getSession().getClassroom().getName());
         }
         return dto;
+    }
+
+    @Override
+    @Transactional
+    public void submitAttendance(AttendanceSubmitDto submitDto) {
+        // Validate input
+        if (submitDto.getLectureId() == null || submitDto.getClassroomId() == null) {
+            throw new BusinessLogicException("Lecture ID và Classroom ID không được để trống");
+        }
+
+        if (submitDto.getRecords() == null || submitDto.getRecords().isEmpty()) {
+            throw new BusinessLogicException("Danh sách điểm danh không được để trống");
+        }
+
+        // Security check: Only teacher can submit attendance
+        User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (!classroomSecurityService.isTeacherOfClassroom(currentUser, submitDto.getClassroomId())) {
+            throw new BusinessLogicException("Chỉ giáo viên mới có thể ghi nhận điểm danh");
+        }
+
+        // Find or create attendance session for this lecture
+        Optional<AttendanceSession> existingSession = attendanceSessionRepository.findByLectureId(submitDto.getLectureId());
+        AttendanceSession session;
+
+        if (existingSession.isPresent()) {
+            session = existingSession.get();
+        } else {
+            // Create new session
+            Classroom classroom = classroomRepository.findById(submitDto.getClassroomId())
+                    .orElseThrow(() -> new BusinessLogicException("Không tìm thấy lớp học"));
+
+            session = new AttendanceSession();
+            session.setClassroom(classroom);
+            session.setCreatedAt(LocalDateTime.now());
+            session.setExpiresAt(LocalDateTime.now().plusHours(2)); // Default 2 hours
+            session.setIsOpen(false); // Closed since it's being submitted
+            session = attendanceSessionRepository.save(session);
+        }
+
+        // Process each attendance record
+        for (AttendanceSubmitDto.AttendanceRecordUpdateDto recordDto : submitDto.getRecords()) {
+            if (recordDto.getStudentId() == null || recordDto.getStatus() == null) {
+                continue; // Skip invalid records
+            }
+
+            // Find existing attendance record or create new one
+            Optional<Attendance> existingRecord = attendanceRepository
+                    .findBySession_IdAndStudent_Id(session.getId(), recordDto.getStudentId());
+
+            Attendance attendance;
+            if (existingRecord.isPresent()) {
+                attendance = existingRecord.get();
+            } else {
+                // Create new attendance record
+                User student = userRepository.findById(recordDto.getStudentId())
+                        .orElseThrow(() -> new BusinessLogicException("Không tìm thấy học sinh với ID: " + recordDto.getStudentId()));
+
+                attendance = new Attendance();
+                attendance.setSession(session);
+                attendance.setStudent(student);
+            }
+
+            // Update status
+            try {
+                AttendanceStatus status = AttendanceStatus.valueOf(recordDto.getStatus().toUpperCase());
+                attendance.setStatus(status);
+            } catch (IllegalArgumentException e) {
+                throw new BusinessLogicException("Trạng thái điểm danh không hợp lệ: " + recordDto.getStatus());
+            }
+
+            // Note: Attendance entity doesn't have note field, so we skip note handling
+            // If note functionality is needed, add note field to Attendance entity
+
+            attendanceRepository.save(attendance);
+        }
     }
 }

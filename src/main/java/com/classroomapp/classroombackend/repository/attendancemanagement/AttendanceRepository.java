@@ -101,4 +101,36 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
            "WHERE a.student.id = :studentId AND s.classroom.id = :classroomId " +
            "ORDER BY s.sessionDate DESC")
     List<Attendance> findByStudentIdAndSession_ClassroomIdOrderBySession_SessionDateDesc(@Param("studentId") Long studentId, @Param("classroomId") Long classroomId);
+
+    /**
+     * Find attendance records from students who are not enrolled in the classroom
+     * Returns: attendance_id, session_id, student_id, student_name, student_email, classroom_id, classroom_name
+     */
+    @Query(value = """
+        SELECT a.id as attendance_id, a.session_id, a.student_id,
+               u.full_name as student_name, u.email as student_email,
+               s.classroom_id, c.name as classroom_name
+        FROM attendance_records a
+        JOIN attendance_sessions s ON a.session_id = s.id
+        JOIN users u ON a.student_id = u.id
+        JOIN classrooms c ON s.classroom_id = c.id
+        LEFT JOIN classroom_enrollments ce ON ce.classroom_id = s.classroom_id AND ce.user_id = a.student_id
+        WHERE ce.user_id IS NULL
+        ORDER BY a.id
+        """, nativeQuery = true)
+    List<Object[]> findAttendanceFromNonEnrolledStudents();
+
+    /**
+     * Find attendance records with non-existent sessions (orphaned records)
+     * Returns: attendance_id, session_id, student_id, student_name
+     */
+    @Query(value = """
+        SELECT a.id as attendance_id, a.session_id, a.student_id, u.full_name as student_name
+        FROM attendance_records a
+        JOIN users u ON a.student_id = u.id
+        LEFT JOIN attendance_sessions s ON a.session_id = s.id
+        WHERE s.id IS NULL
+        ORDER BY a.id
+        """, nativeQuery = true)
+    List<Object[]> findAttendanceWithNonExistentSessions();
 }

@@ -1,7 +1,9 @@
 package com.classroomapp.classroombackend.service.impl;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
@@ -11,21 +13,24 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
+import com.classroomapp.classroombackend.dto.ClassroomDto;
+import com.classroomapp.classroombackend.dto.CreateClassroomDto;
 import com.classroomapp.classroombackend.dto.LectureDto;
+import com.classroomapp.classroombackend.dto.UserDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDetailsDto;
-import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.CourseDetailsDto;
-import com.classroomapp.classroombackend.dto.classroommanagement.CreateClassroomDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.UpdateClassroomDto;
 import com.classroomapp.classroombackend.dto.usermanagement.UserDetailsDto;
 import com.classroomapp.classroombackend.exception.BusinessLogicException;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
 import com.classroomapp.classroombackend.model.StudentProgress;
+import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.classroommanagement.ClassroomEnrollment;
 import com.classroomapp.classroombackend.model.classroommanagement.ClassroomEnrollmentId;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.StudentProgressRepository;
+import com.classroomapp.classroombackend.repository.assignmentmanagement.AssignmentRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomEnrollmentRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
@@ -46,6 +51,7 @@ public class ClassroomServiceImpl implements ClassroomService {
     private final UserRepository userRepository;
     private final ClassroomEnrollmentRepository classroomEnrollmentRepository;
     private final StudentProgressRepository studentProgressRepository;
+    private final AssignmentRepository assignmentRepository;
     private final ModelMapper modelMapper;
 
     @Override
@@ -209,7 +215,51 @@ public class ClassroomServiceImpl implements ClassroomService {
     public CourseDetailsDto GetCourseDetails(Long classroomId) {
         Classroom classroom = classroomRepository.findById(classroomId)
                 .orElseThrow(() -> new EntityNotFoundException("Classroom not found with id: " + classroomId));
-        return modelMapper.map(classroom, CourseDetailsDto.class);
+
+        CourseDetailsDto courseDetails = modelMapper.map(classroom, CourseDetailsDto.class);
+
+        // Add lectures to the response
+        if (classroom.getLectures() != null) {
+            List<com.classroomapp.classroombackend.dto.LectureDto> lectureDtos = classroom.getLectures().stream()
+                    .map(lecture -> modelMapper.map(lecture, com.classroomapp.classroombackend.dto.LectureDto.class))
+                    .collect(Collectors.toList());
+            courseDetails.setLectures(lectureDtos);
+        }
+
+        // Add assignments to the response
+        List<Assignment> assignments = assignmentRepository.findByClassroomId(classroomId);
+        if (assignments != null && !assignments.isEmpty()) {
+            courseDetails.setTotalAssignments(assignments.size());
+            courseDetails.setActiveAssignments((int) assignments.stream()
+                    .filter(assignment -> assignment.getDueDate().isAfter(java.time.LocalDateTime.now()))
+                    .count());
+        } else {
+            courseDetails.setTotalAssignments(0);
+            courseDetails.setActiveAssignments(0);
+        }
+
+        // Add students to the response
+        List<User> students = getStudentsInClassroom(classroomId);
+        if (students != null && !students.isEmpty()) {
+            courseDetails.setTotalStudents(students.size());
+            // Convert students to DTOs if needed
+            List<UserDto> studentDtos = students.stream()
+                    .map(user -> {
+                        UserDto dto = new UserDto();
+                        dto.setId(user.getId());
+                        dto.setName(user.getFullName());
+                        dto.setEmail(user.getEmail());
+                        dto.setEnabled("active".equalsIgnoreCase(user.getStatus()));
+                        dto.setRoles(Collections.singleton(user.getRole()));
+                        return dto;
+                    }).collect(Collectors.toList());
+            courseDetails.setStudents(studentDtos);
+        } else {
+            courseDetails.setTotalStudents(0);
+            courseDetails.setStudents(Collections.emptyList());
+        }
+
+        return courseDetails;
     }
 
     @Override
@@ -245,11 +295,14 @@ public class ClassroomServiceImpl implements ClassroomService {
             
             log.info("GetClassroomsByCurrentTeacher: Found teacher: {} (ID: {})", teacher.getFullName(), teacher.getId());
             
-            List<ClassroomDto> classrooms = classroomRepository.findByTeacher(teacher).stream()
-                .map(classroom -> modelMapper.map(classroom, ClassroomDto.class))
+            List<Classroom> classroomEntities = classroomRepository.findByTeacher(teacher);
+            log.info("GetClassroomsByCurrentTeacher: Found {} classroom entities for teacher", classroomEntities.size());
+
+            List<ClassroomDto> classrooms = classroomEntities.stream()
+                .map(this::convertToDto)
                 .collect(Collectors.toList());
-                
-            log.info("GetClassroomsByCurrentTeacher: Found {} classrooms for teacher", classrooms.size());
+
+            log.info("GetClassroomsByCurrentTeacher: Converted {} classrooms to DTOs", classrooms.size());
             
             return classrooms;
         } catch (Exception e) {
@@ -310,9 +363,67 @@ public class ClassroomServiceImpl implements ClassroomService {
         dto.setDescription(classroom.getDescription());
         dto.setSubject(classroom.getSubject());
         dto.setSection(classroom.getSection());
+
         if (classroom.getTeacher() != null) {
+            dto.setTeacherId(classroom.getTeacher().getId());
             dto.setTeacherName(classroom.getTeacher().getFullName());
         }
+
+        try {
+            // Get student count for this classroom
+            Set<Long> studentIds = classroomEnrollmentRepository.findStudentIdsByClassroomId(classroom.getId());
+            dto.setStudentIds(studentIds);
+            dto.setStudentCount(studentIds.size());
+
+            // Get assignments count for this classroom
+            List<Assignment> assignments = assignmentRepository.findByClassroomId(classroom.getId());
+            dto.setAssignmentCount(assignments.size());
+
+            // For frontend compatibility, populate arrays with actual data
+            if (studentIds.size() > 0) {
+                List<User> enrolledStudents = getStudentsInClassroom(classroom.getId());
+                List<com.classroomapp.classroombackend.dto.UserDto> enrolledStudentDtos = enrolledStudents.stream()
+                    .map(user -> {
+                        com.classroomapp.classroombackend.dto.UserDto userDto = new com.classroomapp.classroombackend.dto.UserDto();
+                        userDto.setId(user.getId());
+                        userDto.setName(user.getFullName());
+                        userDto.setEmail(user.getEmail());
+                        userDto.setEnabled("active".equalsIgnoreCase(user.getStatus()));
+                        userDto.setRoles(Collections.singleton(user.getRole()));
+                        return userDto;
+                    }).collect(Collectors.toList());
+                dto.setEnrolledStudents(enrolledStudentDtos);
+            } else {
+                dto.setEnrolledStudents(Collections.emptyList());
+            }
+
+            if (assignments.size() > 0) {
+                List<com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto> assignmentDtos = assignments.stream()
+                    .map(assignment -> {
+                        com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto assignmentDto =
+                            new com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto();
+                        assignmentDto.setId(assignment.getId());
+                        assignmentDto.setTitle(assignment.getTitle());
+                        assignmentDto.setDescription(assignment.getDescription());
+                        assignmentDto.setDueDate(assignment.getDueDate());
+                        assignmentDto.setClassroomId(classroom.getId());
+                        return assignmentDto;
+                    }).collect(Collectors.toList());
+                dto.setAssignments(assignmentDtos);
+            } else {
+                dto.setAssignments(Collections.emptyList());
+            }
+
+        } catch (Exception e) {
+            log.error("Exception in convertToDto for classroom {}: {}", classroom.getId(), e.getMessage(), e);
+
+            // Set default values to prevent null
+            dto.setStudentCount(0);
+            dto.setAssignmentCount(0);
+            dto.setEnrolledStudents(Collections.emptyList());
+            dto.setAssignments(Collections.emptyList());
+        }
+
         // We explicitly avoid mapping the syllabus here to prevent circular dependency issues
         // If syllabus summary is needed, it should be a separate lightweight DTO.
         return dto;

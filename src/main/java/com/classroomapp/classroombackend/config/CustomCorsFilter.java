@@ -27,7 +27,8 @@ public class CustomCorsFilter implements Filter {
     
     // List of allowed origins
     private final List<String> allowedOrigins = Arrays.asList(
-        "http://localhost:3000", 
+        "http://localhost:3000",
+        "http://localhost:3001",  // Add port 3001 for frontend
         "http://localhost:5173",
         "http://localhost:8088"
     );

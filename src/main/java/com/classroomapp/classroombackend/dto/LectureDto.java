@@ -32,6 +32,11 @@ public class LectureDto {
     private LocalDateTime updatedDate;
     private LocalDate lectureDate;
     private List<LectureMaterialDto> materials = new ArrayList<>();
+
+    // YouTube video fields
+    private String youtubeUrl;
+    private String youtubeVideoId;
+    private String youtubeEmbedUrl;
     
     public LectureDto(Long id, String title, String content, Long classroomId) {
         this.id = id;

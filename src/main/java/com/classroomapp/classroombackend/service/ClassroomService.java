@@ -4,10 +4,10 @@ import java.util.List;
 
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.classroomapp.classroombackend.dto.ClassroomDto;
+import com.classroomapp.classroombackend.dto.CreateClassroomDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDetailsDto;
-import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.CourseDetailsDto;
-import com.classroomapp.classroombackend.dto.classroommanagement.CreateClassroomDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.UpdateClassroomDto;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 

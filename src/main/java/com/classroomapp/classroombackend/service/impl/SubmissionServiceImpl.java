@@ -3,6 +3,7 @@ package com.classroomapp.classroombackend.service.impl;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.OptionalDouble;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
@@ -21,6 +22,7 @@ import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.assignmentmanagement.AssignmentRepository;
 import com.classroomapp.classroombackend.repository.assignmentmanagement.SubmissionRepository;
+import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomEnrollmentRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.FileStorageService;
 import com.classroomapp.classroombackend.service.SubmissionService;
@@ -34,6 +36,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     private final SubmissionRepository submissionRepository;
     private final AssignmentRepository assignmentRepository;
     private final UserRepository userRepository;
+    private final ClassroomEnrollmentRepository classroomEnrollmentRepository;
     private final ModelMapper modelMapper;
     private final FileStorageService fileStorageService;
 
@@ -52,7 +55,19 @@ public class SubmissionServiceImpl implements SubmissionService {
         Assignment assignment = assignmentRepository.findById(dto.getAssignmentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Assignment", "id", dto.getAssignmentId()));
 
-        // 1. Kiểm tra hạn nộp
+        // 1. Validate student role
+        if (student.getRoleId() != 1) {
+            throw new IllegalArgumentException("Only users with student role can submit assignments");
+        }
+
+        // 2. Check if student is enrolled in the classroom (optimized)
+        Classroom classroom = assignment.getClassroom();
+        boolean isEnrolled = classroomEnrollmentRepository.isStudentEnrolledInClassroom(classroom.getId(), student.getId());
+        if (!isEnrolled) {
+            throw new IllegalArgumentException("Student is not enrolled in this classroom");
+        }
+
+        // 3. Kiểm tra hạn nộp
         if (LocalDateTime.now().isAfter(assignment.getDueDate())) {
             throw new BusinessLogicException("Assignment deadline has passed.");
         }
@@ -245,10 +260,15 @@ public class SubmissionServiceImpl implements SubmissionService {
         }
         
         // Validate score is within the assignment's points
-        if (gradeSubmissionDto.getScore() > assignment.getPoints()) {
-            throw new IllegalArgumentException("Score cannot exceed the maximum points for the assignment");
+        if (gradeSubmissionDto.getScore() != null && assignment.getPoints() != null) {
+            if (gradeSubmissionDto.getScore() > assignment.getPoints()) {
+                throw new IllegalArgumentException(
+                    String.format("Score %d exceeds maximum points %d for assignment '%s'",
+                        gradeSubmissionDto.getScore(), assignment.getPoints(), assignment.getTitle())
+                );
+            }
         }
-        
+
         // Update submission
         submission.setScore(gradeSubmissionDto.getScore());
         submission.setFeedback(gradeSubmissionDto.getFeedback());
@@ -291,12 +311,14 @@ public class SubmissionServiceImpl implements SubmissionService {
         // Get assignment
         Assignment assignment = assignmentRepository.findById(assignmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Assignment", "id", assignmentId));
-        
+
         // Create statistics object
         SubmissionStatistics stats = new SubmissionStatistics();
-        
-        // Set total students count
-        int totalStudents = assignment.getClassroom().getStudents().size();
+
+        // Set total students count using enrollment repository for consistency
+        // This ensures we count only actually enrolled students, not lazy-loaded ones
+        Set<Long> enrolledStudentIds = classroomEnrollmentRepository.findStudentIdsByClassroomId(assignment.getClassroom().getId());
+        int totalStudents = enrolledStudentIds.size();
         stats.setTotalStudents(totalStudents);
         
         // Set submission count
@@ -326,4 +348,32 @@ public class SubmissionServiceImpl implements SubmissionService {
         return submissionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Submission", "id", id));
     }
-} 
+
+    /**
+     * Clean up invalid submissions from students who are not enrolled in the classroom
+     * This method ensures data consistency between enrollment and submission data
+     */
+    @Transactional
+    public int cleanInvalidSubmissionsForAssignment(Long assignmentId) {
+        Assignment assignment = assignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Assignment", "id", assignmentId));
+
+        // Get enrolled student IDs for this classroom
+        Set<Long> enrolledStudentIds = classroomEnrollmentRepository.findStudentIdsByClassroomId(assignment.getClassroom().getId());
+
+        // Get all submissions for this assignment
+        List<Submission> submissions = submissionRepository.findByAssignmentId(assignmentId);
+
+        // Find invalid submissions (from non-enrolled students)
+        List<Submission> invalidSubmissions = submissions.stream()
+            .filter(s -> s.getStudent() != null && !enrolledStudentIds.contains(s.getStudent().getId()))
+            .collect(java.util.stream.Collectors.toList());
+
+        // Delete invalid submissions
+        for (Submission invalidSubmission : invalidSubmissions) {
+            submissionRepository.delete(invalidSubmission);
+        }
+
+        return invalidSubmissions.size();
+    }
+}

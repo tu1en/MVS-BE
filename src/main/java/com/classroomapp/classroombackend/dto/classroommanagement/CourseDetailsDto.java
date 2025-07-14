@@ -32,6 +32,7 @@ public class CourseDetailsDto {
     // Course content
     private SyllabusDto syllabus;
     private List<ScheduleDto> schedules;
+    private List<com.classroomapp.classroombackend.dto.LectureDto> lectures;
     
     // Assignments
     private List<AssignmentDto> assignments;

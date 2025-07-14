@@ -1,6 +1,7 @@
 package com.classroomapp.classroombackend.service;
 
 import java.util.List;
+import java.util.Map;
 
 import com.classroomapp.classroombackend.dto.AssignmentRubricDto;
 import com.classroomapp.classroombackend.dto.AssignmentSubmissionDto;
@@ -86,4 +87,7 @@ public interface AssignmentService {
     
     // Provide feedback
     FeedbackDto provideFeedback(Long assignmentId, CreateFeedbackDto createFeedbackDto);
+
+    // Clean invalid submissions for a classroom (from non-enrolled students)
+    Map<String, Object> cleanInvalidSubmissionsForClassroom(Long classroomId);
 }

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -75,4 +76,59 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
 
     @Query("SELECT count(s) FROM Submission s WHERE s.assignment.classroom.id IN :classroomIds AND s.score IS NULL")
     long countPendingSubmissionsByClassroomIds(@Param("classroomIds") List<Long> classroomIds);
+
+    /**
+     * Find submissions from students who are not enrolled in the classroom
+     * Returns: submission_id, assignment_id, student_id, student_name, student_email, classroom_id, classroom_name
+     */
+    @Query(value = """
+        SELECT s.id as submission_id, s.assignment_id, s.student_id,
+               u.full_name as student_name, u.email as student_email,
+               a.classroom_id, c.name as classroom_name
+        FROM submissions s
+        JOIN assignments a ON s.assignment_id = a.id
+        JOIN users u ON s.student_id = u.id
+        JOIN classrooms c ON a.classroom_id = c.id
+        LEFT JOIN classroom_enrollments ce ON ce.classroom_id = a.classroom_id AND ce.user_id = s.student_id
+        WHERE ce.user_id IS NULL
+        ORDER BY s.assignment_id, s.student_id
+        """, nativeQuery = true)
+    List<Object[]> findSubmissionsFromNonEnrolledStudents();
+
+    /**
+     * Delete submissions by list of IDs
+     * @param ids List of submission IDs to delete
+     * @return Number of deleted submissions
+     */
+    @Modifying
+    @Query("DELETE FROM Submission s WHERE s.id IN :ids")
+    int deleteByIdIn(@Param("ids") List<Long> ids);
+
+    /**
+     * Find submissions with non-existent assignments (orphaned records)
+     * Returns: submission_id, assignment_id, student_id, student_name
+     */
+    @Query(value = """
+        SELECT s.id as submission_id, s.assignment_id, s.student_id, u.full_name as student_name
+        FROM submissions s
+        JOIN users u ON s.student_id = u.id
+        LEFT JOIN assignments a ON s.assignment_id = a.id
+        WHERE a.id IS NULL
+        ORDER BY s.id
+        """, nativeQuery = true)
+    List<Object[]> findSubmissionsWithNonExistentAssignments();
+
+    /**
+     * Get submission counts by classroom
+     * Returns: classroom_id, classroom_name, submission_count
+     */
+    @Query(value = """
+        SELECT c.id as classroom_id, c.name as classroom_name, COUNT(s.id) as submission_count
+        FROM classrooms c
+        LEFT JOIN assignments a ON a.classroom_id = c.id
+        LEFT JOIN submissions s ON s.assignment_id = a.id
+        GROUP BY c.id, c.name
+        ORDER BY submission_count DESC
+        """, nativeQuery = true)
+    List<Object[]> findSubmissionCountsByClassroom();
 }

@@ -17,10 +17,10 @@ import lombok.RequiredArgsConstructor;
 public class CourseServiceImpl implements CourseService {
 
     private final CourseRepository courseRepository;
+    private final ModelMapper modelMapper;
 
     @Override
     public List<CourseDetailsDto> getAllCourses() {
-        ModelMapper modelMapper = new ModelMapper();
         return courseRepository.findAll().stream()
                 .map(course -> modelMapper.map(course, CourseDetailsDto.class))
                 .collect(Collectors.toList());

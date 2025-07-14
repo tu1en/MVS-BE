@@ -2,7 +2,10 @@ package com.classroomapp.classroombackend.service.impl;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
@@ -26,6 +29,7 @@ import com.classroomapp.classroombackend.dto.FeedbackDto;
 import com.classroomapp.classroombackend.dto.FileUploadResponse;
 import com.classroomapp.classroombackend.dto.GradeDto;
 import com.classroomapp.classroombackend.dto.GradingAnalyticsDto;
+import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentAttachmentDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.CreateAssignmentDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.GradeSubmissionDto;
@@ -80,7 +84,7 @@ public class AssignmentServiceImpl implements AssignmentService {
     @Override
     public AssignmentDto GetAssignmentById(Long id) {
         Assignment assignment = findEntityById(id);
-        return modelMapper.map(assignment, AssignmentDto.class);
+        return convertToAssignmentDto(assignment);
     }
 
     @Override
@@ -96,23 +100,8 @@ public class AssignmentServiceImpl implements AssignmentService {
                     .orElseThrow(() -> new ResourceNotFoundException("Classroom not found with id: " + createAssignmentDto.getClassroomId()));
             log.info("Found classroom: id={}, name={}", classroom.getId(), classroom.getName());
 
-            // Handle authentication - if teacherUsername is null, get from security context
-            User teacher = null;
-            if (teacherUsername != null) {
-                teacher = userRepository.findByEmail(teacherUsername)
-                        .orElseThrow(() -> new ResourceNotFoundException("User", "email", teacherUsername));
-            } else {
-                // Get current authenticated user from security context
-                org.springframework.security.core.Authentication authentication =
-                    org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-                if (authentication != null && authentication.getName() != null) {
-                    String currentUserEmail = authentication.getName();
-                    teacher = userRepository.findByEmail(currentUserEmail)
-                            .orElseThrow(() -> new ResourceNotFoundException("User", "email", currentUserEmail));
-                } else {
-                    throw new AccessDeniedException("No authenticated user found");
-                }
-            }
+            User teacher = userRepository.findByEmail(teacherUsername)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "email", teacherUsername));
             log.info("Found teacher: id={}, username={}, email={}", teacher.getId(), teacher.getUsername(), teacher.getEmail());
 
             if (!classroomSecurityService.isTeacherOfClassroom(teacher, classroom.getId())) {
@@ -355,6 +344,19 @@ public class AssignmentServiceImpl implements AssignmentService {
         User grader = userRepository.findById(userDetails.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userDetails.getId()));
 
+        // Get the assignment from the submission for validation
+        Assignment assignment = submission.getAssignment();
+
+        // Validate score does not exceed assignment points
+        if (gradeSubmissionDto.getScore() != null && assignment.getPoints() != null) {
+            if (gradeSubmissionDto.getScore() > assignment.getPoints()) {
+                throw new IllegalArgumentException(
+                    String.format("Score %d exceeds maximum points %d for assignment '%s'",
+                        gradeSubmissionDto.getScore(), assignment.getPoints(), assignment.getTitle())
+                );
+            }
+        }
+
         // Update the submission with the grade and feedback
         submission.setScore(gradeSubmissionDto.getScore());
         submission.setFeedback(gradeSubmissionDto.getFeedback());
@@ -463,5 +465,113 @@ public class AssignmentServiceImpl implements AssignmentService {
                 .stream()
                 .map(assignment -> modelMapper.map(assignment, AssignmentDto.class))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public Map<String, Object> cleanInvalidSubmissionsForClassroom(Long classroomId) {
+        log.info("Service: Starting cleanup of invalid submissions for classroom {}", classroomId);
+
+        Map<String, Object> result = new HashMap<>();
+        int totalCleaned = 0;
+
+        try {
+            // Get all assignments for this classroom
+            List<Assignment> assignments = assignmentRepository.findByClassroomId(classroomId);
+
+            if (assignments.isEmpty()) {
+                result.put("message", "Không tìm thấy assignment nào cho classroom " + classroomId);
+                result.put("totalCleaned", 0);
+                result.put("status", "NO_ASSIGNMENTS");
+                return result;
+            }
+
+            // Get enrolled student IDs for this classroom
+            Set<Long> enrolledStudentIds = classroomEnrollmentRepository.findStudentIdsByClassroomId(classroomId);
+
+            List<Map<String, Object>> cleanupDetails = new ArrayList<>();
+
+            for (Assignment assignment : assignments) {
+                // Get all submissions for this assignment
+                List<Submission> submissions = submissionRepository.findByAssignmentId(assignment.getId());
+
+                // Find invalid submissions (from non-enrolled students)
+                List<Submission> invalidSubmissions = submissions.stream()
+                    .filter(s -> s.getStudent() != null && !enrolledStudentIds.contains(s.getStudent().getId()))
+                    .collect(Collectors.toList());
+
+                if (!invalidSubmissions.isEmpty()) {
+                    Map<String, Object> assignmentCleanup = new HashMap<>();
+                    assignmentCleanup.put("assignmentId", assignment.getId());
+                    assignmentCleanup.put("assignmentTitle", assignment.getTitle());
+                    assignmentCleanup.put("invalidSubmissionsCount", invalidSubmissions.size());
+
+                    // Delete invalid submissions
+                    for (Submission invalidSubmission : invalidSubmissions) {
+                        submissionRepository.delete(invalidSubmission);
+                        totalCleaned++;
+                        log.info("Deleted invalid submission ID {} from non-enrolled student ID {} for assignment {}",
+                                invalidSubmission.getId(), invalidSubmission.getStudent().getId(), assignment.getId());
+                    }
+
+                    cleanupDetails.add(assignmentCleanup);
+                }
+            }
+
+            result.put("classroomId", classroomId);
+            result.put("totalAssignments", assignments.size());
+            result.put("totalCleaned", totalCleaned);
+            result.put("cleanupDetails", cleanupDetails);
+            result.put("status", totalCleaned > 0 ? "CLEANED" : "ALREADY_CLEAN");
+            result.put("message", totalCleaned > 0 ?
+                "🧹 Đã xóa thành công " + totalCleaned + " submission không hợp lệ từ classroom " + classroomId :
+                "✅ Không tìm thấy submission không hợp lệ nào trong classroom " + classroomId);
+
+            log.info("Service: Completed cleanup for classroom {}. Total cleaned: {}", classroomId, totalCleaned);
+            return result;
+
+        } catch (Exception e) {
+            log.error("Service: Error during cleanup for classroom {}: {}", classroomId, e.getMessage(), e);
+            result.put("error", e.getMessage());
+            result.put("status", "ERROR");
+            result.put("totalCleaned", totalCleaned);
+            return result;
+        }
+    }
+
+    /**
+     * Convert Assignment entity to AssignmentDto with attachments
+     */
+    private AssignmentDto convertToAssignmentDto(Assignment assignment) {
+        AssignmentDto dto = modelMapper.map(assignment, AssignmentDto.class);
+
+        // Map attachments
+        if (assignment.getAttachments() != null && !assignment.getAttachments().isEmpty()) {
+            List<AssignmentAttachmentDto> attachmentDtos = assignment.getAttachments().stream()
+                .map(this::convertToAttachmentDto)
+                .collect(Collectors.toList());
+            dto.setAttachments(attachmentDtos);
+
+            // Set first attachment URL for backward compatibility
+            dto.setFileAttachmentUrl(assignment.getAttachments().get(0).getFileUrl());
+        }
+
+        return dto;
+    }
+
+    /**
+     * Convert AssignmentAttachment entity to AssignmentAttachmentDto
+     */
+    private AssignmentAttachmentDto convertToAttachmentDto(AssignmentAttachment attachment) {
+        AssignmentAttachmentDto dto = new AssignmentAttachmentDto();
+        dto.setId(attachment.getId());
+        dto.setFileName(attachment.getFileName());
+        dto.setFileUrl(attachment.getFileUrl());
+        dto.setDownloadUrl(attachment.getFileUrl()); // Use fileUrl as downloadUrl for now
+        dto.setFileType(attachment.getFileType());
+        dto.setFileSize(attachment.getFileSize());
+        dto.setAssignmentId(attachment.getAssignment().getId());
+        dto.setCreatedAt(attachment.getCreatedAt());
+        return dto;
     }
 }

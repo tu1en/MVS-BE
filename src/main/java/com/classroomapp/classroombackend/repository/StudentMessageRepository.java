@@ -53,4 +53,26 @@ public interface StudentMessageRepository extends JpaRepository<StudentMessage, 
     Long countUnreadMessagesByRecipient(@Param("recipient") User recipient);
 
     Long countByIsReadFalse();
+
+    /**
+     * Find messages between users without proper classroom context
+     * This is a simplified check - in a real system, you'd need more complex logic
+     * to determine if users should be able to message each other
+     * Returns: message_id, sender_id, sender_name, recipient_id, recipient_name, subject
+     */
+    @Query(value = """
+        SELECT sm.id as message_id, sm.sender_id, s.full_name as sender_name,
+               sm.recipient_id, r.full_name as recipient_name, sm.subject
+        FROM student_messages sm
+        JOIN users s ON sm.sender_id = s.id
+        JOIN users r ON sm.recipient_id = r.id
+        WHERE s.role_id = 1 AND r.role_id = 2  -- Student to Teacher messages
+        AND NOT EXISTS (
+            SELECT 1 FROM classroom_enrollments ce1
+            JOIN classrooms c ON ce1.classroom_id = c.id
+            WHERE ce1.user_id = s.id AND c.teacher_id = r.id
+        )
+        ORDER BY sm.id
+        """, nativeQuery = true)
+    List<Object[]> findMessagesWithoutClassroomContext();
 }

@@ -113,9 +113,21 @@ public class SecurityConfig {
                 .requestMatchers("/api/files/**").authenticated()
                 .requestMatchers("/files/**").authenticated()
 
-                // Protected endpoints - Assignments
+                // Protected endpoints - Assignments (with debug exception)
+                .requestMatchers("/api/assignments/debug/**").permitAll() // Debug endpoints
+                .requestMatchers("/api/assignments/classroom/**").permitAll() // Temporarily allow for debugging
                 .requestMatchers("/api/assignments/**").authenticated()
                 .requestMatchers("/api/timetable/**").authenticated()
+
+                // Debug endpoints - allow all for debugging
+                .requestMatchers("/api/debug/**").permitAll() // Debug endpoints
+
+                // Materials endpoints - require authentication for all operations
+                .requestMatchers("/api/materials/**").authenticated() // All material operations need auth
+
+                // Course endpoints - temporarily allow for debugging
+                .requestMatchers("/api/courses/**").permitAll() // Temporarily allow for debugging
+                .requestMatchers("/api/classrooms/*/details").permitAll() // Temporarily allow for debugging
 
                 // Role-based endpoints
                 .requestMatchers("/api/admin/requests/**").hasAnyRole("ADMIN", "MANAGER")

@@ -15,8 +15,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.classroomapp.classroombackend.dto.ClassroomDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto;
-import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
 import com.classroomapp.classroombackend.security.CustomUserDetails;
 import com.classroomapp.classroombackend.security.JwtUtil;
 import com.classroomapp.classroombackend.service.AssignmentService;

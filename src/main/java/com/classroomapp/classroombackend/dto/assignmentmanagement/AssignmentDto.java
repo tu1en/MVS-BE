@@ -1,6 +1,7 @@
 package com.classroomapp.classroombackend.dto.assignmentmanagement;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
@@ -36,7 +37,10 @@ public class AssignmentDto {
     private Integer points;
     
     private String fileAttachmentUrl;
-    
+
+    // Assignment attachments
+    private List<AssignmentAttachmentDto> attachments;
+
     // Classroom information
     private Long classroomId;
     private String classroomName;

@@ -85,4 +85,113 @@ public class StudentMessageController {
     public ResponseEntity<List<StudentMessageDto>> getMessagesBySender(@PathVariable Long senderId) {
         return getSentMessages(senderId);
     }
+
+    /**
+     * Get conversations for a teacher
+     * Frontend calls: /api/student-messages/teacher/{teacherId}/conversations
+     * @param teacherId
+     * @return List of conversations (students who have messaged this teacher)
+     */
+    @GetMapping("/teacher/{teacherId}/conversations")
+    public ResponseEntity<List<Object>> getTeacherConversations(@PathVariable Long teacherId) {
+        try {
+            System.out.println("=== GET TEACHER CONVERSATIONS DEBUG ===");
+            System.out.println("Teacher ID: " + teacherId);
+
+            // Get all messages where teacher is sender or recipient
+            List<StudentMessageDto> sentMessages = messageService.getSentMessages(teacherId);
+            List<StudentMessageDto> receivedMessages = messageService.getReceivedMessages(teacherId);
+
+            // Create conversation objects grouped by student
+            java.util.Map<Long, Object> conversationMap = new java.util.HashMap<>();
+
+            // Process sent messages (teacher -> student)
+            for (StudentMessageDto msg : sentMessages) {
+                Long studentId = msg.getRecipientId();
+                if (!conversationMap.containsKey(studentId)) {
+                    java.util.Map<String, Object> conversation = new java.util.HashMap<>();
+                    conversation.put("id", studentId);
+                    conversation.put("studentId", studentId);
+                    conversation.put("studentName", msg.getRecipientName());
+                    conversation.put("lastMessage", msg.getContent());
+                    conversation.put("lastMessageAt", msg.getCreatedAt());
+                    conversation.put("unreadCount", 0);
+                    conversationMap.put(studentId, conversation);
+                }
+            }
+
+            // Process received messages (student -> teacher)
+            for (StudentMessageDto msg : receivedMessages) {
+                Long studentId = msg.getSenderId();
+                if (!conversationMap.containsKey(studentId)) {
+                    java.util.Map<String, Object> conversation = new java.util.HashMap<>();
+                    conversation.put("id", studentId);
+                    conversation.put("studentId", studentId);
+                    conversation.put("studentName", msg.getSenderName());
+                    conversation.put("lastMessage", msg.getContent());
+                    conversation.put("lastMessageAt", msg.getCreatedAt());
+                    conversation.put("unreadCount", msg.getIsRead() ? 0 : 1);
+                    conversationMap.put(studentId, conversation);
+                } else {
+                    // Update if this message is more recent
+                    @SuppressWarnings("unchecked")
+                    java.util.Map<String, Object> existing = (java.util.Map<String, Object>) conversationMap.get(studentId);
+                    if (msg.getCreatedAt().isAfter((java.time.LocalDateTime) existing.get("lastMessageAt"))) {
+                        existing.put("lastMessage", msg.getContent());
+                        existing.put("lastMessageAt", msg.getCreatedAt());
+                    }
+                    if (!msg.getIsRead()) {
+                        existing.put("unreadCount", (Integer) existing.get("unreadCount") + 1);
+                    }
+                }
+            }
+
+            java.util.List<Object> conversations = new java.util.ArrayList<>(conversationMap.values());
+
+            System.out.println("Found " + conversations.size() + " conversations for teacher " + teacherId);
+            System.out.println("=== END GET TEACHER CONVERSATIONS DEBUG ===");
+
+            return ResponseEntity.ok(conversations);
+
+        } catch (Exception e) {
+            System.err.println("Error getting teacher conversations: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.ok(java.util.Collections.emptyList());
+        }
+    }
+
+    /**
+     * Get all messages for a teacher (both sent and received)
+     * Frontend calls: /api/student-messages/teacher/{teacherId}
+     * @param teacherId
+     * @return List of all messages
+     */
+    @GetMapping("/teacher/{teacherId}")
+    public ResponseEntity<List<StudentMessageDto>> getTeacherMessages(@PathVariable Long teacherId) {
+        try {
+            System.out.println("=== GET TEACHER MESSAGES DEBUG ===");
+            System.out.println("Teacher ID: " + teacherId);
+
+            List<StudentMessageDto> sentMessages = messageService.getSentMessages(teacherId);
+            List<StudentMessageDto> receivedMessages = messageService.getReceivedMessages(teacherId);
+
+            // Combine and sort by creation date
+            java.util.List<StudentMessageDto> allMessages = new java.util.ArrayList<>();
+            allMessages.addAll(sentMessages);
+            allMessages.addAll(receivedMessages);
+
+            // Sort by creation date (newest first)
+            allMessages.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
+
+            System.out.println("Found " + allMessages.size() + " total messages for teacher " + teacherId);
+            System.out.println("=== END GET TEACHER MESSAGES DEBUG ===");
+
+            return ResponseEntity.ok(allMessages);
+
+        } catch (Exception e) {
+            System.err.println("Error getting teacher messages: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.ok(java.util.Collections.emptyList());
+        }
+    }
 }

@@ -38,7 +38,7 @@ public class QuizQuestion {
     private Long assignmentId;
 
     @NotBlank
-    @Column(name = "question_text", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "question_text", nullable = false, columnDefinition = "NTEXT")
     private String questionText;
 
     @NotNull
@@ -46,7 +46,7 @@ public class QuizQuestion {
     @Column(name = "question_type", nullable = false)
     private QuestionType questionType;
 
-    @Column(name = "correct_answer", columnDefinition = "TEXT")
+    @Column(name = "correct_answer", columnDefinition = "NTEXT")
     private String correctAnswer;
 
     @Column(precision = 10, scale = 2)
@@ -55,7 +55,7 @@ public class QuizQuestion {
     @Column(name = "display_order")
     private Integer displayOrder = 0;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "NTEXT")
     private String explanation;
 
     @Column(name = "created_at")

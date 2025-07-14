@@ -16,6 +16,7 @@ import com.classroomapp.classroombackend.model.assignmentmanagement.SubmissionAt
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.assignmentmanagement.AssignmentRepository;
 import com.classroomapp.classroombackend.repository.assignmentmanagement.SubmissionRepository;
+import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomEnrollmentRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 
 @Component
@@ -31,12 +32,16 @@ public class SubmissionSeeder {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private ClassroomEnrollmentRepository classroomEnrollmentRepository;
+
     private static final String SAMPLE_PDF_URL = "/static/sample_materials/sample.pdf";
 
     @Transactional
     public void seed() {
-        log.info("Running SubmissionSeeder to ensure test submissions exist");
-        
+        log.info("🔧 Running SubmissionSeeder with ENROLLMENT VALIDATION to ensure test submissions exist");
+        log.info("🛡️ FIXED: Now checking enrollment before creating submissions to prevent data inconsistency");
+
         List<Assignment> assignments = assignmentRepository.findAll();
         List<User> students = userRepository.findAllByRoleId(1L); // Role ID 1 for STUDENT
 
@@ -89,20 +94,32 @@ public class SubmissionSeeder {
     
     /**
      * Creates a submission for the assignment and student if one doesn't already exist
+     * AND the student is enrolled in the classroom
      * @param assignment Assignment to create submission for
      * @param student Student to create submission for
-     * @return true if a new submission was created, false if one already existed
+     * @return true if a new submission was created, false if one already existed or student not enrolled
      */
     private boolean createSubmissionIfNotExists(Assignment assignment, User student) {
+        // CRITICAL FIX: Check if student is enrolled in the classroom first
+        Long classroomId = assignment.getClassroom().getId();
+        boolean isEnrolled = classroomEnrollmentRepository.isStudentEnrolledInClassroom(classroomId, student.getId());
+
+        if (!isEnrolled) {
+            log.debug("Skipping submission creation for assignment {} and student {} - student not enrolled in classroom {}",
+                     assignment.getId(), student.getId(), classroomId);
+            return false;
+        }
+
         // Check if a submission already exists to avoid duplicates
         List<Submission> existingSubmissions = submissionRepository.findByStudentAndAssignment(student, assignment);
         if (existingSubmissions.isEmpty()) {
             int studentIndex = student.getFullName().hashCode() % 3; // Deterministic variation
             createSubmission(assignment, student, studentIndex);
-            log.debug("Created submission for assignment {} and student {}", assignment.getId(), student.getId());
+            log.debug("Created submission for assignment {} and student {} (enrolled in classroom {})",
+                     assignment.getId(), student.getId(), classroomId);
             return true;
         } else {
-            log.debug("Submission already exists for assignment {} and student {} (found {} submissions)", 
+            log.debug("Submission already exists for assignment {} and student {} (found {} submissions)",
                      assignment.getId(), student.getId(), existingSubmissions.size());
             return false;
         }

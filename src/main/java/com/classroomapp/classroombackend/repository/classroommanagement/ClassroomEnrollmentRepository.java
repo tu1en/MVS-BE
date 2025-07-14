@@ -2,8 +2,11 @@ package com.classroomapp.classroombackend.repository.classroommanagement;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
@@ -30,4 +33,28 @@ public interface ClassroomEnrollmentRepository extends JpaRepository<ClassroomEn
     List<ClassroomEnrollment> findByClassroomId(Long classroomId);
 
     List<ClassroomEnrollment> findByUserId(Long studentId);
+
+    // Optimized method to get only student IDs for a classroom (avoids N+1 queries)
+    @Query("SELECT e.user.id FROM ClassroomEnrollment e WHERE e.classroom.id = :classroomId")
+    Set<Long> findStudentIdsByClassroomId(@Param("classroomId") Long classroomId);
+
+    // Check if a student is enrolled in a classroom (more efficient than existsById)
+    @Query("SELECT COUNT(e) > 0 FROM ClassroomEnrollment e WHERE e.classroom.id = :classroomId AND e.user.id = :studentId")
+    boolean isStudentEnrolledInClassroom(@Param("classroomId") Long classroomId, @Param("studentId") Long studentId);
+
+    /**
+     * Find duplicate enrollment records (same student-classroom pair)
+     * Returns: classroom_id, user_id, count, classroom_name, student_name
+     */
+    @Query(value = """
+        SELECT ce.classroom_id, ce.user_id, COUNT(*) as duplicate_count,
+               c.name as classroom_name, u.full_name as student_name
+        FROM classroom_enrollments ce
+        JOIN classrooms c ON ce.classroom_id = c.id
+        JOIN users u ON ce.user_id = u.id
+        GROUP BY ce.classroom_id, ce.user_id, c.name, u.full_name
+        HAVING COUNT(*) > 1
+        ORDER BY duplicate_count DESC
+        """, nativeQuery = true)
+    List<Object[]> findDuplicateEnrollments();
 }

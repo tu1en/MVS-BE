@@ -9,8 +9,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.classroomapp.classroombackend.dto.ClassroomDto;
 import com.classroomapp.classroombackend.dto.LectureDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.CourseDetailsDto;
+import com.classroomapp.classroombackend.service.ClassroomService;
 import com.classroomapp.classroombackend.service.CourseService;
 import com.classroomapp.classroombackend.service.LectureService;
 
@@ -24,10 +26,18 @@ public class CourseController {
 
     private final CourseService courseService;
     private final LectureService lectureService;
+    private final ClassroomService classroomService;
 
     @GetMapping
     public ResponseEntity<List<CourseDetailsDto>> getAllCourses() {
         return ResponseEntity.ok(courseService.getAllCourses());
+    }
+
+    // Get course (classroom) details by ID
+    // Since frontend treats courses as classrooms, we delegate to ClassroomService
+    @GetMapping("/{courseId}")
+    public ResponseEntity<ClassroomDto> getCourseById(@PathVariable Long courseId) {
+        return ResponseEntity.ok(classroomService.GetClassroomById(courseId));
     }
 
     // Compatibility endpoint: fetch lectures by course (classroom) ID

@@ -86,8 +86,12 @@ public class LectureMaterialServiceImpl implements LectureMaterialService {
             lectureMaterial.setContentType(file.getContentType());
             lectureMaterial.setFileSize(file.getSize());
             lectureMaterial.setFilePath(targetLocation.toString());
-            
+
             LectureMaterial savedMaterial = lectureMaterialRepository.save(lectureMaterial);
+
+            // Generate download URL using the saved material ID
+            savedMaterial.setDownloadUrl("/api/lecture-materials/download/" + savedMaterial.getId());
+            lectureMaterialRepository.save(savedMaterial);
             return modelMapper.map(savedMaterial, LectureMaterialDto.class);
 
         } catch (IOException ex) {

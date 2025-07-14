@@ -5,6 +5,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -51,6 +52,7 @@ public class MasterSeeder implements CommandLineRunner {
     private final DataVerificationSeeder dataVerificationSeeder;
     private final TimetableEventSeeder timetableEventSeeder;
     private final RequestSeeder requestSeeder;
+    private final ApplicationContext applicationContext;
 
 
     @Override
@@ -98,6 +100,23 @@ public class MasterSeeder implements CommandLineRunner {
         // Run comprehensive data verification
         dataVerificationSeeder.verifyDataIntegrity();
         dataVerificationSeeder.diagnoseStudentTeacherIssue();
+
+        // Run new comprehensive verification
+        log.info("============== Running Comprehensive Data Verification ==============");
+        try {
+            ComprehensiveDataVerifier comprehensiveVerifier = applicationContext.getBean(ComprehensiveDataVerifier.class);
+            DataVerificationReport report = comprehensiveVerifier.runComprehensiveVerification();
+
+            if (report.hasCriticalIssues()) {
+                log.error("❌ CRITICAL DATA ISSUES FOUND AFTER SEEDING!");
+                log.error("Report: {}", report.getDetailedReport());
+            } else {
+                log.info("✅ Comprehensive verification passed - no critical issues");
+            }
+        } catch (Exception e) {
+            log.error("❌ Comprehensive verification failed: {}", e.getMessage(), e);
+        }
+        log.info("============== Comprehensive Data Verification Complete ==============");
 
         // Always run the submission seeder to add new test data
         log.info("============== Checking for new submissions to seed ==============");

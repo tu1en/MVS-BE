@@ -1,6 +1,7 @@
 package com.classroomapp.classroombackend.service.impl;
 
 import java.security.Principal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -57,6 +58,9 @@ public class LectureServiceImpl implements LectureService {
         lecture.setTitle(createLectureDto.getTitle());
         lecture.setContent(createLectureDto.getContent());
         lecture.setClassroom(classroom);
+        // Ensure lectureDate is always set - use provided date or default to today
+        lecture.setLectureDate(createLectureDto.getLectureDate() != null ?
+            createLectureDto.getLectureDate() : LocalDate.now());
 
         Lecture savedLecture = lectureRepository.save(lecture);
 
