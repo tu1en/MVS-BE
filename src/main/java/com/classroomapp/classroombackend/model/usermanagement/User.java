@@ -102,8 +102,8 @@ public class User {
         if (updatedAt == null) {
             updatedAt = LocalDateTime.now();
         }
-        // Set leave reset date for teachers (one year from now)
-        if (roleId != null && roleId == 2 && leaveResetDate == null) { // TEACHER role
+        // Set leave reset date cho giáo viên hoặc kế toán viên (1 năm kể từ bây giờ)
+        if (roleId != null && (roleId == 2 || roleId == 5) && leaveResetDate == null) { // TEACHER hoặc ACCOUNTANT
             leaveResetDate = LocalDate.now().plusYears(1);
         }
     }

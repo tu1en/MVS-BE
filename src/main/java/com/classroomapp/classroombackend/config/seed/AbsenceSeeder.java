@@ -102,6 +102,16 @@ public class AbsenceSeeder {
                 LocalDate.now().plusDays(20), LocalDate.now().plusDays(21), 2,
                 "Xin nghỉ phép để tham gia hội nghị quốc tế về vật lý", "PENDING");
 
+            // Accountant (ID: 501) - đã dùng 2 ngày, còn 10 ngày, có 1 đơn chờ duyệt
+            if (userRepository.existsById(501L)) {
+                createAbsence(501L, "accountant@test.com", "Nguyễn Thị Kế Toán",
+                    LocalDate.now().minusDays(10), LocalDate.now().minusDays(9), 2,
+                    "Nghỉ phép kiểm toán cuối năm", "APPROVED");
+                createAbsence(501L, "accountant@test.com", "Nguyễn Thị Kế Toán",
+                    LocalDate.now().plusDays(3), LocalDate.now().plusDays(3), 1,
+                    "Nghỉ phép cá nhân", "PENDING");
+            }
+
             System.out.println("✅ [AbsenceSeeder] Created sample absence requests for all teachers.");
         } catch (Exception e) {
             System.err.println("❌ Error creating sample absence requests: " + e.getMessage());

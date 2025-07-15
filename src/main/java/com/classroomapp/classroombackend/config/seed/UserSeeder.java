@@ -202,6 +202,22 @@ public class UserSeeder {
                 extraTeacher2.setLeaveResetDate(LocalDate.now().plusMonths(6));
                 userRepository.save(extraTeacher2);
 
+                // Create accountant user
+                User accountant = new User();
+                accountant.setId(501L);
+                accountant.setUsername("accountant");
+                accountant.setPassword(passwordEncoder.encode("accountant123"));
+                accountant.setEmail("accountant@test.com");
+                accountant.setFullName("Nguyễn Thị Kế Toán");
+                accountant.setRoleId(RoleConstants.ACCOUNTANT);
+                accountant.setPhoneNumber("0901122334");
+                accountant.setDepartment("Kế toán viên");
+                accountant.setHireDate(LocalDate.now().minusYears(2));
+                accountant.setAnnualLeaveBalance(12);
+                accountant.setLeaveResetDate(LocalDate.now().plusMonths(6));
+                userRepository.save(accountant);
+                System.out.println("✅ [UserSeeder] Created accountant user with ID: " + accountant.getId());
+
                 System.out.println("✅ [UserSeeder] Created users with standardized, explicit IDs.");
 
             } finally {

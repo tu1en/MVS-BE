@@ -141,16 +141,16 @@ public class ManagerAbsenceController {
         return ResponseEntity.ok(pendingAbsences);
     }
 
-    @GetMapping("/teachers")
-    public ResponseEntity<List<TeacherLeaveInfoDTO>> getAllTeachersLeaveInfo() {
-        List<TeacherLeaveInfoDTO> teachersInfo = absenceService.getAllTeachersLeaveInfo();
-        return ResponseEntity.ok(teachersInfo);
+    @GetMapping("/employees")
+    public ResponseEntity<List<TeacherLeaveInfoDTO>> getAllEmployeesLeaveInfo() {
+        List<TeacherLeaveInfoDTO> employeesInfo = absenceService.getAllTeachersLeaveInfo();
+        return ResponseEntity.ok(employeesInfo);
     }
 
-    @GetMapping("/teachers/{teacherId}")
-    public ResponseEntity<TeacherLeaveInfoDTO> getTeacherLeaveInfo(@PathVariable Long teacherId) {
-        TeacherLeaveInfoDTO teacherInfo = absenceService.getTeacherLeaveInfo(teacherId);
-        return ResponseEntity.ok(teacherInfo);
+    @GetMapping("/employees/{employeeId}")
+    public ResponseEntity<TeacherLeaveInfoDTO> getEmployeeLeaveInfo(@PathVariable Long employeeId) {
+        TeacherLeaveInfoDTO employeeInfo = absenceService.getTeacherLeaveInfo(employeeId);
+        return ResponseEntity.ok(employeeInfo);
     }
 
     @PostMapping("/requests/{absenceId}/approve")

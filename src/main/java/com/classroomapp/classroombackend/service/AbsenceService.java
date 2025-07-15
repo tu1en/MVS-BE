@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface AbsenceService {
     
-    // Teacher operations
+    // Employee operations (Teacher + Accountant)
     AbsenceDTO createAbsenceRequest(CreateAbsenceDTO createDto, Long userId);
     List<AbsenceDTO> getMyAbsenceRequests(Long userId);
     AbsenceDTO getAbsenceById(Long absenceId, Long userId);
@@ -16,8 +16,8 @@ public interface AbsenceService {
     // Manager operations
     List<AbsenceDTO> getAllAbsenceRequests();
     List<AbsenceDTO> getPendingAbsenceRequests();
-    List<TeacherLeaveInfoDTO> getAllTeachersLeaveInfo();
-    TeacherLeaveInfoDTO getTeacherLeaveInfo(Long teacherId);
+    List<TeacherLeaveInfoDTO> getAllTeachersLeaveInfo(); // Trả về cả Teacher và Accountant
+    TeacherLeaveInfoDTO getTeacherLeaveInfo(Long employeeId); // Trả về info cho Teacher hoặc Accountant
     
     // Approval operations
     AbsenceDTO approveAbsence(Long absenceId, Long managerId);
