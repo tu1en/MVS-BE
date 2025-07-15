@@ -99,4 +99,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT COUNT(DISTINCT e.user.id) FROM ClassroomEnrollment e WHERE e.classroom.id IN :classroomIds")
     long countStudentsByClassroomIds(@Param("classroomIds") List<Long> classroomIds);
+
+    /**
+     * Find users by roleId in list
+     * @param roleIds danh sách roleId
+     * @return List<User>
+     */
+    List<User> findByRoleIdIn(List<Integer> roleIds);
 }

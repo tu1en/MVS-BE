@@ -138,6 +138,11 @@ public class UserServiceImpl implements UserService {
             user.setRoleId(RoleConstants.STUDENT);
         }
         
+        // Set department cho Accountant
+        if (user.getRoleId() != null && user.getRoleId() == RoleConstants.ACCOUNTANT) {
+            user.setDepartment("Kế toán viên");
+        }
+        
         // Save user and return as DTO
         User savedUser = userRepository.save(user);
         return convertToUserDto(savedUser);
@@ -165,6 +170,11 @@ public class UserServiceImpl implements UserService {
             String role = userDto.getRoles().iterator().next();
             Integer roleId = convertRoleToRoleId(role);
             existingUser.setRoleId(roleId);
+        }
+        
+        // Set department cho Accountant khi update
+        if (existingUser.getRoleId() != null && existingUser.getRoleId() == RoleConstants.ACCOUNTANT) {
+            existingUser.setDepartment("Kế toán viên");
         }
         
         // Save updated user and return as DTO

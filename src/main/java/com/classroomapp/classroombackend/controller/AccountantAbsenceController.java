@@ -18,11 +18,11 @@ import jakarta.validation.Valid;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/teacher/absences")
-@PreAuthorize("hasRole('TEACHER')")
+@RequestMapping("/api/accountant/absences")
+@PreAuthorize("hasRole('ACCOUNTANT')")
 @RequiredArgsConstructor
 @Slf4j
-public class TeacherAbsenceController {
+public class AccountantAbsenceController {
 
     private final AbsenceService absenceService;
     private final UserRepository userRepository;
@@ -33,10 +33,7 @@ public class TeacherAbsenceController {
             Authentication authentication) {
         try {
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-            // Note: You may need to get userId from UserDetails or implement a method to get it
-            // For now, assuming there's a way to get userId from authentication
             Long userId = getUserIdFromAuthentication(authentication);
-            
             AbsenceDTO createdAbsence = absenceService.createAbsenceRequest(createDto, userId);
             return ResponseEntity.status(HttpStatus.CREATED).body(createdAbsence);
         } catch (Exception e) {
@@ -66,11 +63,8 @@ public class TeacherAbsenceController {
         if (authentication == null || !(authentication.getPrincipal() instanceof UserDetails)) {
             throw new RuntimeException("User is not authenticated or user details are not available.");
         }
-
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        String username = userDetails.getUsername(); // This is typically the email
-
-        // Find the user by email (username) and return their ID
+        String username = userDetails.getUsername();
         return userRepository.findByEmail(username)
                 .map(User::getId)
                 .orElseThrow(() -> new RuntimeException("Authenticated user not found in database: " + username));

@@ -38,12 +38,12 @@ public class AbsenceServiceImpl implements AbsenceService {
     public AbsenceDTO createAbsenceRequest(CreateAbsenceDTO createDto, Long userId) {
         log.info("Creating absence request for user: {}", userId);
         
-        // Validate user exists and is a teacher
+        // Validate user exists and is a teacher or accountant
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
         
-        if (user.getRoleId() != RoleConstants.TEACHER) {
-            throw new BusinessLogicException("Only teachers can create absence requests");
+        if (user.getRoleId() != RoleConstants.TEACHER && user.getRoleId() != RoleConstants.ACCOUNTANT) {
+            throw new BusinessLogicException("Chỉ giáo viên hoặc kế toán viên mới được tạo đơn nghỉ phép");
         }
         
         // Validate dates
@@ -64,7 +64,7 @@ public class AbsenceServiceImpl implements AbsenceService {
         
         // Check for overlapping leave requests
         if (absenceRepository.hasOverlappingLeave(userId, createDto.getStartDate(), createDto.getEndDate())) {
-            throw new BusinessLogicException("You already have a leave request for overlapping dates");
+            throw new BusinessLogicException("Bạn đã có đơn nghỉ phép trùng với khoảng thời gian này. Vui lòng chọn ngày khác.");
         }
         
         // Check annual leave balance
@@ -142,26 +142,27 @@ public class AbsenceServiceImpl implements AbsenceService {
 
     @Override
     public List<TeacherLeaveInfoDTO> getAllTeachersLeaveInfo() {
-        // Get all teachers
-        log.info("Fetching all teachers with role ID: {}", RoleConstants.TEACHER);
-        List<User> teachers = userRepository.findByRoleId(RoleConstants.TEACHER);
-        log.info("Found {} teachers", teachers.size());
+        // Get all teachers and accountants
+        log.info("Fetching all teachers and accountants with role ID: {} and {}", RoleConstants.TEACHER, RoleConstants.ACCOUNTANT);
+        List<User> employees = userRepository.findByRoleId(RoleConstants.TEACHER);
+        employees.addAll(userRepository.findByRoleId(RoleConstants.ACCOUNTANT));
+        log.info("Found {} employees (teachers + accountants)", employees.size());
         
-        return teachers.stream()
+        return employees.stream()
             .map(this::calculateTeacherLeaveInfo)
             .collect(Collectors.toList());
     }
 
     @Override
-    public TeacherLeaveInfoDTO getTeacherLeaveInfo(Long teacherId) {
-        User teacher = userRepository.findById(teacherId)
-            .orElseThrow(() -> new ResourceNotFoundException("Teacher not found with id: " + teacherId));
+    public TeacherLeaveInfoDTO getTeacherLeaveInfo(Long employeeId) {
+        User employee = userRepository.findById(employeeId)
+            .orElseThrow(() -> new ResourceNotFoundException("Nhân viên không tồn tại với id: " + employeeId));
         
-        if (teacher.getRoleId() != RoleConstants.TEACHER) {
-            throw new BusinessLogicException("User is not a teacher");
+        if (employee.getRoleId() != RoleConstants.TEACHER && employee.getRoleId() != RoleConstants.ACCOUNTANT) {
+            throw new BusinessLogicException("Người dùng không phải là giáo viên hoặc kế toán viên");
         }
         
-        return calculateTeacherLeaveInfo(teacher);
+        return calculateTeacherLeaveInfo(employee);
     }
 
     @Override
@@ -234,17 +235,15 @@ public class AbsenceServiceImpl implements AbsenceService {
     @Transactional
     public void resetAnnualLeave() {
         log.info("Starting scheduled annual leave reset check");
-        
-        List<User> teachers = userRepository.findByRoleId(RoleConstants.TEACHER);
+        List<User> employees = userRepository.findByRoleId(RoleConstants.TEACHER);
+        employees.addAll(userRepository.findByRoleId(RoleConstants.ACCOUNTANT));
         LocalDate today = LocalDate.now();
-        
-        for (User teacher : teachers) {
-            if (teacher.getLeaveResetDate() != null && 
-                !teacher.getLeaveResetDate().isAfter(today)) {
-                resetUserAnnualLeave(teacher.getId());
+        for (User employee : employees) {
+            if (employee.getLeaveResetDate() != null && 
+                !employee.getLeaveResetDate().isAfter(today)) {
+                resetUserAnnualLeave(employee.getId());
             }
         }
-        
         log.info("Completed annual leave reset check");
     }
 
@@ -252,39 +251,36 @@ public class AbsenceServiceImpl implements AbsenceService {
     @Transactional
     public void resetUserAnnualLeave(Long userId) {
         log.info("Resetting annual leave for user: {}", userId);
-        
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
-        
-        if (user.getRoleId() == RoleConstants.TEACHER) {
+        if (user.getRoleId() == RoleConstants.TEACHER || user.getRoleId() == RoleConstants.ACCOUNTANT) {
             user.setAnnualLeaveBalance(12); // Reset to 12 days
             user.setLeaveResetDate(LocalDate.now().plusYears(1)); // Next reset date
             userRepository.save(user);
-            
             log.info("Annual leave reset completed for user: {}", userId);
         }
     }
 
-    private TeacherLeaveInfoDTO calculateTeacherLeaveInfo(User teacher) {
+    private TeacherLeaveInfoDTO calculateTeacherLeaveInfo(User employee) {
         TeacherLeaveInfoDTO info = new TeacherLeaveInfoDTO();
-        info.setUserId(teacher.getId());
-        info.setEmail(teacher.getEmail());
-        info.setFullName(teacher.getFullName());
-        info.setPhoneNumber(teacher.getPhoneNumber());
-        info.setDepartment(teacher.getDepartment());
-        info.setAnnualLeaveBalance(teacher.getAnnualLeaveBalance());
-        info.setLeaveResetDate(teacher.getLeaveResetDate());
-        info.setHireDate(teacher.getHireDate());
+        info.setUserId(employee.getId());
+        info.setEmail(employee.getEmail());
+        info.setFullName(employee.getFullName());
+        info.setPhoneNumber(employee.getPhoneNumber());
+        info.setDepartment(employee.getDepartment());
+        info.setAnnualLeaveBalance(employee.getAnnualLeaveBalance());
+        info.setLeaveResetDate(employee.getLeaveResetDate());
+        info.setHireDate(employee.getHireDate());
         
         // Calculate used and pending leave from database
-        LocalDate leaveYearStart = teacher.getLeaveResetDate() != null ? 
-            teacher.getLeaveResetDate().minusYears(1) : teacher.getHireDate();
-        LocalDate leaveYearEnd = teacher.getLeaveResetDate() != null ? 
-            teacher.getLeaveResetDate() : leaveYearStart.plusYears(1);
+        LocalDate leaveYearStart = employee.getLeaveResetDate() != null ? 
+            employee.getLeaveResetDate().minusYears(1) : employee.getHireDate();
+        LocalDate leaveYearEnd = employee.getLeaveResetDate() != null ? 
+            employee.getLeaveResetDate() : leaveYearStart.plusYears(1);
             
         Integer dbUsedLeave = absenceRepository.calculateUsedLeaveDays(
-            teacher.getId(), leaveYearStart, leaveYearEnd);
-        Integer pendingLeave = absenceRepository.calculatePendingLeaveDays(teacher.getId());
+            employee.getId(), leaveYearStart, leaveYearEnd);
+        Integer pendingLeave = absenceRepository.calculatePendingLeaveDays(employee.getId());
         
         // Ensure non-null values
         int dbUsed = dbUsedLeave != null ? dbUsedLeave : 0;
@@ -292,7 +288,7 @@ public class AbsenceServiceImpl implements AbsenceService {
         
         // Calculate actual used leave based on balance
         // Logic: usedDays = 12 - annualLeaveBalance (if positive) or 12 + |annualLeaveBalance| (if negative)
-        Integer currentBalance = teacher.getAnnualLeaveBalance();
+        Integer currentBalance = employee.getAnnualLeaveBalance();
         int actualUsedLeave;
         int overLimitDays = 0;
         
@@ -315,8 +311,8 @@ public class AbsenceServiceImpl implements AbsenceService {
         info.setPendingLeave(pending);
         info.setOverLimitDays(overLimitDays);
         
-        log.debug("Teacher {} - Balance: {}, Used: {}, Pending: {}, OverLimit: {}", 
-                teacher.getFullName(), currentBalance, actualUsedLeave, pending, overLimitDays);
+        log.debug("Employee {} - Balance: {}, Used: {}, Pending: {}, OverLimit: {}", 
+                employee.getFullName(), currentBalance, actualUsedLeave, pending, overLimitDays);
         
         return info;
     }
