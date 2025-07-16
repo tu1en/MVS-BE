@@ -1,9 +1,7 @@
-package com.classroomapp.classroombackend.config;
+package com.classroomapp.classroombackend.core.config;
 
 import java.util.Arrays;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -33,8 +31,6 @@ import lombok.extern.slf4j.Slf4j;
 @EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
 @Slf4j
 public class SecurityConfig {
-
-    private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
     
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
@@ -122,6 +118,10 @@ public class SecurityConfig {
                 // Debug endpoints - allow all for debugging
                 .requestMatchers("/api/debug/**").permitAll() // Debug endpoints
 
+                // Notification endpoints - temporarily allow for debugging
+                .requestMatchers("/api/notifications/teacher").permitAll() // Debug teacher notifications
+                .requestMatchers("/api/notifications/role/**").permitAll() // Debug role notifications
+
                 // Materials endpoints - require authentication for all operations
                 .requestMatchers("/api/materials/**").authenticated() // All material operations need auth
 
@@ -135,6 +135,12 @@ public class SecurityConfig {
                 .requestMatchers("/api/manager/**").hasRole("MANAGER")
                 .requestMatchers("/api/teacher/**").hasAuthority("ROLE_TEACHER")
                 .requestMatchers("/api/student/**").hasRole("STUDENT")
+
+                // HR Management endpoints - Only Manager and Admin can access
+                .requestMatchers("/api/hr/**").hasAnyRole("MANAGER", "ADMIN")
+
+                // Accountant specific endpoints
+                .requestMatchers("/api/accountant/**").hasRole("ACCOUNTANT")
                 
                 // All other requests need authentication
                 .anyRequest().authenticated()

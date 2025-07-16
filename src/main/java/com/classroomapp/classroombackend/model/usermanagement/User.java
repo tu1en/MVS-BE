@@ -72,12 +72,12 @@ public class User {
     
     /**
      * Get the role name as String based on the roleId
-     * 
+     *
      * @return String representation of the user's role
      */
     public String getRole() {
         if (roleId == null) return "USER";
-        
+
         switch (roleId) {
             case 1: return "STUDENT";
             case 2: return "TEACHER";
@@ -85,6 +85,27 @@ public class User {
             case 4: return "ADMIN";
             default: return "USER";
         }
+    }
+
+    /**
+     * Check if user is eligible for shift assignment
+     * Users are eligible if they are staff members (TEACHER, MANAGER, ADMIN) and have active status
+     *
+     * @return true if user can be assigned to shifts, false otherwise
+     */
+    public boolean isEligibleForShiftAssignment() {
+        // Check if user has active status
+        if (!"active".equalsIgnoreCase(status)) {
+            return false;
+        }
+
+        // Check if user is staff (not student)
+        if (roleId == null) {
+            return false;
+        }
+
+        // Only TEACHER (2), MANAGER (3), and ADMIN (4) can be assigned shifts
+        return roleId >= 2 && roleId <= 4;
     }
     
     @PrePersist

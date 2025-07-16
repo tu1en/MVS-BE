@@ -100,4 +100,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT COUNT(DISTINCT e.user.id) FROM ClassroomEnrollment e WHERE e.classroom.id IN :classroomIds")
     long countStudentsByClassroomIds(@Param("classroomIds") List<Long> classroomIds);
+
+    /**
+     * Find all active users (status = 'active')
+     * @return list of active users
+     */
+    @Query("SELECT u FROM User u WHERE u.status = 'active'")
+    List<User> findActiveUsers();
 }

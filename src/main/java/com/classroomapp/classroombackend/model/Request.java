@@ -38,7 +38,11 @@ public class Request {
     @Column(columnDefinition = "TEXT", length = 4000)
     private String formResponses; // JSON string containing form responses
 
-    @Column(nullable = false, length = 50)    private String status = "PENDING"; // PENDING, APPROVED, REJECTED
+    @Column(nullable = false, length = 50)
+    private String status = "PENDING"; // PENDING, COMPLETED
+
+    @Column(length = 50)
+    private String resultStatus; // APPROVED, REJECTED (only set when status is COMPLETED)
 
     @Column(columnDefinition = "TEXT", length = 4000)
     private String rejectReason;
@@ -52,5 +56,14 @@ public class Request {
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+    }
+
+    // Manual getter and setter for resultStatus to ensure compilation
+    public String getResultStatus() {
+        return resultStatus;
+    }
+
+    public void setResultStatus(String resultStatus) {
+        this.resultStatus = resultStatus;
     }
 }
