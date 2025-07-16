@@ -39,10 +39,15 @@ public class UserServiceImpl implements UserService {
     private UserDto convertToUserDto(User user) {
         UserDto dto = new UserDto();
         dto.setId(user.getId());
-        dto.setName(user.getFullName());
+        dto.setUsername(user.getUsername());
         dto.setEmail(user.getEmail());
-        dto.setEnabled("active".equalsIgnoreCase(user.getStatus()));
+        dto.setFullName(user.getFullName());
+        dto.setName(user.getFullName());
+        dto.setRoleId(user.getRoleId());
         dto.setRoles(Collections.singleton(user.getRole()));
+        dto.setStatus(user.getStatus());
+        dto.setEnabled("active".equalsIgnoreCase(user.getStatus()));
+        dto.setCreatedAt(user.getCreatedAt());
         return dto;
     }
 
