@@ -18,7 +18,7 @@ import com.classroomapp.classroombackend.repository.classroommanagement.Classroo
 
 /**
  * Admin controller for data verification operations
- * Chỉ admin mới có thể truy cập các endpoint này
+ * Chá»‰ admin má»›i cÃ³ thá»ƒ truy cáº­p cÃ¡c endpoint nÃ y
  */
 @RestController
 @RequestMapping("/api/admin/data-verification")
@@ -35,7 +35,7 @@ public class DataVerificationController {
     private ClassroomEnrollmentRepository classroomEnrollmentRepository;
     
     /**
-     * Chạy comprehensive data verification
+     * Cháº¡y comprehensive data verification
      */
     @GetMapping("/run")
     public ResponseEntity<DataVerificationReport> runVerification() {
@@ -48,7 +48,7 @@ public class DataVerificationController {
     }
     
     /**
-     * Lấy health status nhanh
+     * Láº¥y health status nhanh
      */
     @GetMapping("/health")
     public ResponseEntity<String> getHealthStatus() {
@@ -61,7 +61,7 @@ public class DataVerificationController {
     }
     
     /**
-     * Lấy JSON report
+     * Láº¥y JSON report
      */
     @GetMapping("/report/json")
     public ResponseEntity<String> getJsonReport() {
@@ -76,7 +76,7 @@ public class DataVerificationController {
     }
     
     /**
-     * Kiểm tra có critical issues không
+     * Kiá»ƒm tra cÃ³ critical issues khÃ´ng
      */
     @GetMapping("/critical-check")
     public ResponseEntity<Boolean> hasCriticalIssues() {
@@ -89,14 +89,14 @@ public class DataVerificationController {
     }
 
     /**
-     * Kiểm tra submissions consistency - tìm submissions từ non-enrolled students
+     * Kiá»ƒm tra submissions consistency - tÃ¬m submissions tá»« non-enrolled students
      */
     @GetMapping("/submissions-consistency")
     public ResponseEntity<Map<String, Object>> checkSubmissionsConsistency() {
         try {
             Map<String, Object> result = new HashMap<>();
 
-            // Query để tìm submissions từ non-enrolled students
+            // Query Ä‘á»ƒ tÃ¬m submissions tá»« non-enrolled students
             List<Object[]> invalidSubmissions = submissionRepository.findSubmissionsFromNonEnrolledStudents();
 
             result.put("totalInvalidSubmissions", invalidSubmissions.size());

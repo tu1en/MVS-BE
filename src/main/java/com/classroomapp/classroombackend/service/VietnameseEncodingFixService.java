@@ -25,117 +25,117 @@ public class VietnameseEncodingFixService implements CommandLineRunner {
     private final AssignmentRepository assignmentRepository;
     private final SubmissionRepository submissionRepository;
 
-    // Mapping của các ký tự bị lỗi encoding thường gặp
+    // Mapping cá»§a cÃ¡c kÃ½ tá»± bá»‹ lá»—i encoding thÆ°á»ng gáº·p
     private static final Map<String, String> ENCODING_FIX_MAP = new HashMap<>();
     
     static {
-        // Các ký tự tiếng Việt thường bị lỗi
-        ENCODING_FIX_MAP.put("Ã¡", "á");
-        ENCODING_FIX_MAP.put("Ã ", "à");
-        ENCODING_FIX_MAP.put("áº£", "ả");
-        ENCODING_FIX_MAP.put("Ã£", "ã");
-        ENCODING_FIX_MAP.put("áº¡", "ạ");
-        ENCODING_FIX_MAP.put("Ã¢", "â");
-        ENCODING_FIX_MAP.put("áº¥", "ấ");
-        ENCODING_FIX_MAP.put("áº§", "ầ");
-        ENCODING_FIX_MAP.put("áº©", "ẩ");
-        ENCODING_FIX_MAP.put("áº«", "ẫ");
-        ENCODING_FIX_MAP.put("áº­", "ậ");
-        ENCODING_FIX_MAP.put("Ä", "ă");
-        ENCODING_FIX_MAP.put("áº¯", "ắ");
-        ENCODING_FIX_MAP.put("áº±", "ằ");
-        ENCODING_FIX_MAP.put("áº³", "ẳ");
-        ENCODING_FIX_MAP.put("áº¡", "ạ");
-        ENCODING_FIX_MAP.put("Ã©", "é");
-        ENCODING_FIX_MAP.put("Ã¨", "è");
-        ENCODING_FIX_MAP.put("áº»", "ẻ");
-        ENCODING_FIX_MAP.put("áº½", "ẽ");
-        ENCODING_FIX_MAP.put("áº¹", "ẹ");
-        ENCODING_FIX_MAP.put("Ãª", "ê");
-        ENCODING_FIX_MAP.put("áº¿", "ế");
-        ENCODING_FIX_MAP.put("á»", "ề");
-        ENCODING_FIX_MAP.put("á»", "ể");
-        ENCODING_FIX_MAP.put("á»", "ễ");
-        ENCODING_FIX_MAP.put("á»", "ệ");
-        ENCODING_FIX_MAP.put("Ã­", "í");
-        ENCODING_FIX_MAP.put("Ã¬", "ì");
-        ENCODING_FIX_MAP.put("á»", "ỉ");
-        ENCODING_FIX_MAP.put("Ä©", "ĩ");
-        ENCODING_FIX_MAP.put("á»", "ị");
-        ENCODING_FIX_MAP.put("Ã³", "ó");
-        ENCODING_FIX_MAP.put("Ã²", "ò");
-        ENCODING_FIX_MAP.put("á»", "ỏ");
-        ENCODING_FIX_MAP.put("Ãµ", "õ");
-        ENCODING_FIX_MAP.put("á»", "ọ");
-        ENCODING_FIX_MAP.put("Ã´", "ô");
-        ENCODING_FIX_MAP.put("á»", "ố");
-        ENCODING_FIX_MAP.put("á»", "ồ");
-        ENCODING_FIX_MAP.put("á»", "ổ");
-        ENCODING_FIX_MAP.put("á»", "ỗ");
-        ENCODING_FIX_MAP.put("á»", "ộ");
-        ENCODING_FIX_MAP.put("Æ¡", "ơ");
-        ENCODING_FIX_MAP.put("á»", "ớ");
-        ENCODING_FIX_MAP.put("á»", "ờ");
-        ENCODING_FIX_MAP.put("á»", "ở");
-        ENCODING_FIX_MAP.put("á»", "ỡ");
-        ENCODING_FIX_MAP.put("á»£", "ợ");
-        ENCODING_FIX_MAP.put("Ãº", "ú");
-        ENCODING_FIX_MAP.put("Ã¹", "ù");
-        ENCODING_FIX_MAP.put("á»§", "ủ");
-        ENCODING_FIX_MAP.put("Å©", "ũ");
-        ENCODING_FIX_MAP.put("á»¥", "ụ");
-        ENCODING_FIX_MAP.put("Æ°", "ư");
-        ENCODING_FIX_MAP.put("á»", "ứ");
-        ENCODING_FIX_MAP.put("á»", "ừ");
-        ENCODING_FIX_MAP.put("á»", "ử");
-        ENCODING_FIX_MAP.put("á»", "ữ");
-        ENCODING_FIX_MAP.put("á»±", "ự");
-        ENCODING_FIX_MAP.put("Ã½", "ý");
-        ENCODING_FIX_MAP.put("á»³", "ỳ");
-        ENCODING_FIX_MAP.put("á»·", "ỷ");
-        ENCODING_FIX_MAP.put("á»¹", "ỹ");
-        ENCODING_FIX_MAP.put("á»µ", "ỵ");
-        ENCODING_FIX_MAP.put("Ä", "đ");
+        // CÃ¡c kÃ½ tá»± tiáº¿ng Viá»‡t thÆ°á»ng bá»‹ lá»—i
+        ENCODING_FIX_MAP.put("ÃƒÂ¡", "Ã¡");
+        ENCODING_FIX_MAP.put("Ãƒ ", "Ã ");
+        ENCODING_FIX_MAP.put("Ã¡ÂºÂ£", "áº£");
+        ENCODING_FIX_MAP.put("ÃƒÂ£", "Ã£");
+        ENCODING_FIX_MAP.put("Ã¡ÂºÂ¡", "áº¡");
+        ENCODING_FIX_MAP.put("ÃƒÂ¢", "Ã¢");
+        ENCODING_FIX_MAP.put("Ã¡ÂºÂ¥", "áº¥");
+        ENCODING_FIX_MAP.put("Ã¡ÂºÂ§", "áº§");
+        ENCODING_FIX_MAP.put("Ã¡ÂºÂ©", "áº©");
+        ENCODING_FIX_MAP.put("Ã¡ÂºÂ«", "áº«");
+        ENCODING_FIX_MAP.put("Ã¡ÂºÂ­", "áº­");
+        ENCODING_FIX_MAP.put("Ã„", "Äƒ");
+        ENCODING_FIX_MAP.put("Ã¡ÂºÂ¯", "áº¯");
+        ENCODING_FIX_MAP.put("Ã¡ÂºÂ±", "áº±");
+        ENCODING_FIX_MAP.put("Ã¡ÂºÂ³", "áº³");
+        ENCODING_FIX_MAP.put("Ã¡ÂºÂ¡", "áº¡");
+        ENCODING_FIX_MAP.put("ÃƒÂ©", "Ã©");
+        ENCODING_FIX_MAP.put("ÃƒÂ¨", "Ã¨");
+        ENCODING_FIX_MAP.put("Ã¡ÂºÂ»", "áº»");
+        ENCODING_FIX_MAP.put("Ã¡ÂºÂ½", "áº½");
+        ENCODING_FIX_MAP.put("Ã¡ÂºÂ¹", "áº¹");
+        ENCODING_FIX_MAP.put("ÃƒÂª", "Ãª");
+        ENCODING_FIX_MAP.put("Ã¡ÂºÂ¿", "áº¿");
+        ENCODING_FIX_MAP.put("Ã¡Â»", "á»");
+        ENCODING_FIX_MAP.put("Ã¡Â»", "á»ƒ");
+        ENCODING_FIX_MAP.put("Ã¡Â»", "á»…");
+        ENCODING_FIX_MAP.put("Ã¡Â»", "á»‡");
+        ENCODING_FIX_MAP.put("ÃƒÂ­", "Ã­");
+        ENCODING_FIX_MAP.put("ÃƒÂ¬", "Ã¬");
+        ENCODING_FIX_MAP.put("Ã¡Â»", "á»‰");
+        ENCODING_FIX_MAP.put("Ã„Â©", "Ä©");
+        ENCODING_FIX_MAP.put("Ã¡Â»", "á»‹");
+        ENCODING_FIX_MAP.put("ÃƒÂ³", "Ã³");
+        ENCODING_FIX_MAP.put("ÃƒÂ²", "Ã²");
+        ENCODING_FIX_MAP.put("Ã¡Â»", "á»");
+        ENCODING_FIX_MAP.put("ÃƒÂµ", "Ãµ");
+        ENCODING_FIX_MAP.put("Ã¡Â»", "á»");
+        ENCODING_FIX_MAP.put("ÃƒÂ´", "Ã´");
+        ENCODING_FIX_MAP.put("Ã¡Â»", "á»‘");
+        ENCODING_FIX_MAP.put("Ã¡Â»", "á»“");
+        ENCODING_FIX_MAP.put("Ã¡Â»", "á»•");
+        ENCODING_FIX_MAP.put("Ã¡Â»", "á»—");
+        ENCODING_FIX_MAP.put("Ã¡Â»", "á»™");
+        ENCODING_FIX_MAP.put("Ã†Â¡", "Æ¡");
+        ENCODING_FIX_MAP.put("Ã¡Â»", "á»›");
+        ENCODING_FIX_MAP.put("Ã¡Â»", "á»");
+        ENCODING_FIX_MAP.put("Ã¡Â»", "á»Ÿ");
+        ENCODING_FIX_MAP.put("Ã¡Â»", "á»¡");
+        ENCODING_FIX_MAP.put("Ã¡Â»Â£", "á»£");
+        ENCODING_FIX_MAP.put("ÃƒÂº", "Ãº");
+        ENCODING_FIX_MAP.put("ÃƒÂ¹", "Ã¹");
+        ENCODING_FIX_MAP.put("Ã¡Â»Â§", "á»§");
+        ENCODING_FIX_MAP.put("Ã…Â©", "Å©");
+        ENCODING_FIX_MAP.put("Ã¡Â»Â¥", "á»¥");
+        ENCODING_FIX_MAP.put("Ã†Â°", "Æ°");
+        ENCODING_FIX_MAP.put("Ã¡Â»", "á»©");
+        ENCODING_FIX_MAP.put("Ã¡Â»", "á»«");
+        ENCODING_FIX_MAP.put("Ã¡Â»", "á»­");
+        ENCODING_FIX_MAP.put("Ã¡Â»", "á»¯");
+        ENCODING_FIX_MAP.put("Ã¡Â»Â±", "á»±");
+        ENCODING_FIX_MAP.put("ÃƒÂ½", "Ã½");
+        ENCODING_FIX_MAP.put("Ã¡Â»Â³", "á»³");
+        ENCODING_FIX_MAP.put("Ã¡Â»Â·", "á»·");
+        ENCODING_FIX_MAP.put("Ã¡Â»Â¹", "á»¹");
+        ENCODING_FIX_MAP.put("Ã¡Â»Âµ", "á»µ");
+        ENCODING_FIX_MAP.put("Ã„", "Ä‘");
         
-        // Các pattern phổ biến bị lỗi
-        ENCODING_FIX_MAP.put("c?p", "cấp");
-        ENCODING_FIX_MAP.put("h?c", "học");
-        ENCODING_FIX_MAP.put("Vi?t", "Việt");
-        ENCODING_FIX_MAP.put("ti?ng", "tiếng");
-        ENCODING_FIX_MAP.put("Ti?ng", "Tiếng");
-        ENCODING_FIX_MAP.put("ngh?", "nghệ");
-        ENCODING_FIX_MAP.put("co b?n", "cơ bản");
-        ENCODING_FIX_MAP.put("l?p", "lập");
-        ENCODING_FIX_MAP.put("L?p", "Lập");
-        ENCODING_FIX_MAP.put("Nguy?n", "Nguyễn");
-        ENCODING_FIX_MAP.put("Tr?n", "Trần");
-        ENCODING_FIX_MAP.put("Th?", "Thị");
-        ENCODING_FIX_MAP.put("Ph?m", "Phạm");
-        ENCODING_FIX_MAP.put("Van", "Văn");
-        ENCODING_FIX_MAP.put("t?p", "tập");
-        ENCODING_FIX_MAP.put("Bài t?p", "Bài tập");
-        ENCODING_FIX_MAP.put("v?", "về");
-        ENCODING_FIX_MAP.put("Ma tr?n", "Ma trận");
-        ENCODING_FIX_MAP.put("D?nh", "Định");
-        ENCODING_FIX_MAP.put("th?c", "thức");
-        ENCODING_FIX_MAP.put("tác ph?m", "tác phẩm");
-        ENCODING_FIX_MAP.put("tho", "thơ");
-        ENCODING_FIX_MAP.put("H?", "Hồ");
-        ENCODING_FIX_MAP.put("Ki?m", "Kiểm");
-        ENCODING_FIX_MAP.put("gi?a", "giữa");
-        ENCODING_FIX_MAP.put("k?", "kỳ");
-        ENCODING_FIX_MAP.put("cu?i", "cuối");
-        ENCODING_FIX_MAP.put("h?t", "hết");
-        ENCODING_FIX_MAP.put("môn", "môn");
-        ENCODING_FIX_MAP.put("V?n", "Văn");
-        ENCODING_FIX_MAP.put("th?c", "thực");
-        ENCODING_FIX_MAP.put("hành", "hành");
+        // CÃ¡c pattern phá»• biáº¿n bá»‹ lá»—i
+        ENCODING_FIX_MAP.put("c?p", "cáº¥p");
+        ENCODING_FIX_MAP.put("h?c", "há»c");
+        ENCODING_FIX_MAP.put("Vi?t", "Viá»‡t");
+        ENCODING_FIX_MAP.put("ti?ng", "tiáº¿ng");
+        ENCODING_FIX_MAP.put("Ti?ng", "Tiáº¿ng");
+        ENCODING_FIX_MAP.put("ngh?", "nghá»‡");
+        ENCODING_FIX_MAP.put("co b?n", "cÆ¡ báº£n");
+        ENCODING_FIX_MAP.put("l?p", "láº­p");
+        ENCODING_FIX_MAP.put("L?p", "Láº­p");
+        ENCODING_FIX_MAP.put("Nguy?n", "Nguyá»…n");
+        ENCODING_FIX_MAP.put("Tr?n", "Tráº§n");
+        ENCODING_FIX_MAP.put("Th?", "Thá»‹");
+        ENCODING_FIX_MAP.put("Ph?m", "Pháº¡m");
+        ENCODING_FIX_MAP.put("Van", "VÄƒn");
+        ENCODING_FIX_MAP.put("t?p", "táº­p");
+        ENCODING_FIX_MAP.put("BÃ i t?p", "BÃ i táº­p");
+        ENCODING_FIX_MAP.put("v?", "vá»");
+        ENCODING_FIX_MAP.put("Ma tr?n", "Ma tráº­n");
+        ENCODING_FIX_MAP.put("D?nh", "Äá»‹nh");
+        ENCODING_FIX_MAP.put("th?c", "thá»©c");
+        ENCODING_FIX_MAP.put("tÃ¡c ph?m", "tÃ¡c pháº©m");
+        ENCODING_FIX_MAP.put("tho", "thÆ¡");
+        ENCODING_FIX_MAP.put("H?", "Há»“");
+        ENCODING_FIX_MAP.put("Ki?m", "Kiá»ƒm");
+        ENCODING_FIX_MAP.put("gi?a", "giá»¯a");
+        ENCODING_FIX_MAP.put("k?", "ká»³");
+        ENCODING_FIX_MAP.put("cu?i", "cuá»‘i");
+        ENCODING_FIX_MAP.put("h?t", "háº¿t");
+        ENCODING_FIX_MAP.put("mÃ´n", "mÃ´n");
+        ENCODING_FIX_MAP.put("V?n", "VÄƒn");
+        ENCODING_FIX_MAP.put("th?c", "thá»±c");
+        ENCODING_FIX_MAP.put("hÃ nh", "hÃ nh");
     }
 
     @Override
     @Transactional
     public void run(String... args) throws Exception {
-        log.info("🔧 Bắt đầu kiểm tra và sửa lỗi encoding tiếng Việt...");
+        log.info("ðŸ”§ Báº¯t Ä‘áº§u kiá»ƒm tra vÃ  sá»­a lá»—i encoding tiáº¿ng Viá»‡t...");
         
         try {
             int fixedCount = 0;
@@ -153,13 +153,13 @@ public class VietnameseEncodingFixService implements CommandLineRunner {
             fixedCount += fixSubmissionData();
             
             if (fixedCount > 0) {
-                log.info("✅ Đã sửa {} lỗi encoding tiếng Việt", fixedCount);
+                log.info("âœ… ÄÃ£ sá»­a {} lá»—i encoding tiáº¿ng Viá»‡t", fixedCount);
             } else {
-                log.info("✅ Không tìm thấy lỗi encoding nào cần sửa");
+                log.info("âœ… KhÃ´ng tÃ¬m tháº¥y lá»—i encoding nÃ o cáº§n sá»­a");
             }
             
         } catch (Exception e) {
-            log.error("❌ Lỗi khi sửa encoding tiếng Việt: {}", e.getMessage(), e);
+            log.error("âŒ Lá»—i khi sá»­a encoding tiáº¿ng Viá»‡t: {}", e.getMessage(), e);
         }
     }
 
@@ -176,7 +176,7 @@ public class VietnameseEncodingFixService implements CommandLineRunner {
                     classroom.setName(fixedName);
                     classroomRepository.save(classroom);
                     fixedCount++;
-                    log.info("📝 Sửa tên lớp: '{}' -> '{}'", originalName, fixedName);
+                    log.info("ðŸ“ Sá»­a tÃªn lá»›p: '{}' -> '{}'", originalName, fixedName);
                 }
             }
             
@@ -188,7 +188,7 @@ public class VietnameseEncodingFixService implements CommandLineRunner {
                     classroom.setDescription(fixedDesc);
                     classroomRepository.save(classroom);
                     fixedCount++;
-                    log.info("📝 Sửa mô tả lớp: '{}' -> '{}'", originalDesc, fixedDesc);
+                    log.info("ðŸ“ Sá»­a mÃ´ táº£ lá»›p: '{}' -> '{}'", originalDesc, fixedDesc);
                 }
             }
         }
@@ -209,7 +209,7 @@ public class VietnameseEncodingFixService implements CommandLineRunner {
                     user.setFullName(fixedName);
                     userRepository.save(user);
                     fixedCount++;
-                    log.info("👤 Sửa tên người dùng: '{}' -> '{}'", originalName, fixedName);
+                    log.info("ðŸ‘¤ Sá»­a tÃªn ngÆ°á»i dÃ¹ng: '{}' -> '{}'", originalName, fixedName);
                 }
             }
         }
@@ -230,7 +230,7 @@ public class VietnameseEncodingFixService implements CommandLineRunner {
                     assignment.setTitle(fixedTitle);
                     assignmentRepository.save(assignment);
                     fixedCount++;
-                    log.info("📚 Sửa tiêu đề bài tập: '{}' -> '{}'", originalTitle, fixedTitle);
+                    log.info("ðŸ“š Sá»­a tiÃªu Ä‘á» bÃ i táº­p: '{}' -> '{}'", originalTitle, fixedTitle);
                 }
             }
             
@@ -242,7 +242,7 @@ public class VietnameseEncodingFixService implements CommandLineRunner {
                     assignment.setDescription(fixedDesc);
                     assignmentRepository.save(assignment);
                     fixedCount++;
-                    log.info("📚 Sửa mô tả bài tập: '{}' -> '{}'", originalDesc, fixedDesc);
+                    log.info("ðŸ“š Sá»­a mÃ´ táº£ bÃ i táº­p: '{}' -> '{}'", originalDesc, fixedDesc);
                 }
             }
         }
@@ -263,7 +263,7 @@ public class VietnameseEncodingFixService implements CommandLineRunner {
                     submission.setComment(fixedComment);
                     submissionRepository.save(submission);
                     fixedCount++;
-                    log.info("💬 Sửa comment bài nộp: '{}' -> '{}'", originalComment, fixedComment);
+                    log.info("ðŸ’¬ Sá»­a comment bÃ i ná»™p: '{}' -> '{}'", originalComment, fixedComment);
                 }
             }
             
@@ -275,7 +275,7 @@ public class VietnameseEncodingFixService implements CommandLineRunner {
                     submission.setFeedback(fixedFeedback);
                     submissionRepository.save(submission);
                     fixedCount++;
-                    log.info("📝 Sửa feedback bài nộp: '{}' -> '{}'", originalFeedback, fixedFeedback);
+                    log.info("ðŸ“ Sá»­a feedback bÃ i ná»™p: '{}' -> '{}'", originalFeedback, fixedFeedback);
                 }
             }
         }
@@ -284,10 +284,10 @@ public class VietnameseEncodingFixService implements CommandLineRunner {
     }
 
     /**
-     * Sửa text tiếng Việt bị lỗi encoding
+     * Sá»­a text tiáº¿ng Viá»‡t bá»‹ lá»—i encoding
      * 
-     * @param text Text cần sửa
-     * @return Text đã được sửa
+     * @param text Text cáº§n sá»­a
+     * @return Text Ä‘Ã£ Ä‘Æ°á»£c sá»­a
      */
     public String fixVietnameseText(String text) {
         if (text == null || text.isEmpty()) {
@@ -296,31 +296,31 @@ public class VietnameseEncodingFixService implements CommandLineRunner {
         
         String fixedText = text;
         
-        // Áp dụng các fix từ mapping
+        // Ãp dá»¥ng cÃ¡c fix tá»« mapping
         for (Map.Entry<String, String> entry : ENCODING_FIX_MAP.entrySet()) {
             fixedText = fixedText.replace(entry.getKey(), entry.getValue());
         }
         
-        // Sử dụng regex để fix các pattern phổ biến
-        // Fix dấu hỏi chấm trong tiếng Việt
-        fixedText = fixedText.replaceAll("\\b([A-Za-z]+)\\?([a-z]+)\\b", "$1ỏ$2");
-        fixedText = fixedText.replaceAll("\\b([A-Za-z]+)\\?([A-Za-z]+)\\b", "$1ệ$2");
+        // Sá»­ dá»¥ng regex Ä‘á»ƒ fix cÃ¡c pattern phá»• biáº¿n
+        // Fix dáº¥u há»i cháº¥m trong tiáº¿ng Viá»‡t
+        fixedText = fixedText.replaceAll("\\b([A-Za-z]+)\\?([a-z]+)\\b", "$1á»$2");
+        fixedText = fixedText.replaceAll("\\b([A-Za-z]+)\\?([A-Za-z]+)\\b", "$1á»‡$2");
         
         return fixedText;
     }
 
     /**
-     * Kiểm tra xem text có chứa ký tự tiếng Việt bị lỗi encoding không
+     * Kiá»ƒm tra xem text cÃ³ chá»©a kÃ½ tá»± tiáº¿ng Viá»‡t bá»‹ lá»—i encoding khÃ´ng
      * 
-     * @param text Text cần kiểm tra
-     * @return true nếu có lỗi encoding
+     * @param text Text cáº§n kiá»ƒm tra
+     * @return true náº¿u cÃ³ lá»—i encoding
      */
     public boolean hasEncodingIssues(String text) {
         if (text == null || text.isEmpty()) {
             return false;
         }
         
-        // Kiểm tra các pattern thường gặp
+        // Kiá»ƒm tra cÃ¡c pattern thÆ°á»ng gáº·p
         return text.contains("?") && (
             text.contains("c?p") || 
             text.contains("h?c") || 
@@ -359,7 +359,7 @@ public class VietnameseEncodingFixService implements CommandLineRunner {
     }
 
     /**
-     * Kết quả validation
+     * Káº¿t quáº£ validation
      */
     public static class ValidationResult {
         private boolean isValid;

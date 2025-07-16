@@ -109,7 +109,7 @@ public class AuthController {
 
             Map<String, String> response = new HashMap<>();
 
-            // Chuyển đổi roleId thành tên vai trò để thêm vào token
+            // Chuyá»ƒn Ä‘á»•i roleId thÃ nh tÃªn vai trÃ² Ä‘á»ƒ thÃªm vÃ o token
             String roleName = jwtUtil.convertRoleIdToName(user.getRoleId());
             System.out.println("Login successful for user: " + username + " with role: " + roleName + " (roleId: " + user.getRoleId() + ")");
             
@@ -121,12 +121,12 @@ public class AuthController {
             claims.put("role", user.getRoleId());
             claims.put("roles", new String[]{roleName});
             
-            // Generate JWT token mới với claims đầy đủ
+            // Generate JWT token má»›i vá»›i claims Ä‘áº§y Ä‘á»§
             String token = Jwts.builder()
                 .setClaims(claims)
                 .setSubject(user.getEmail()) // CONSISTENT: Subject is always email
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)) // 24 giờ
+                .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)) // 24 giá»
                 .signWith(jwtUtil.getSecretKeyFromString(), SignatureAlgorithm.HS512)
                 .compact();
 
@@ -207,7 +207,7 @@ public class AuthController {
             decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
         } catch (com.google.firebase.auth.FirebaseAuthException e) {
             log.error("Invalid Google ID token", e);
-            throw new IllegalArgumentException("Token Google không hợp lệ", e);
+            throw new IllegalArgumentException("Token Google khÃ´ng há»£p lá»‡", e);
         }
         
         String email = decodedToken.getEmail();
@@ -216,12 +216,12 @@ public class AuthController {
         // Check if user exists
         Map<String, Object> response = new HashMap<>();
         
-        // Kiểm tra tài khoản tồn tại thay vì tự động tạo mới
+        // Kiá»ƒm tra tÃ i khoáº£n tá»“n táº¡i thay vÃ¬ tá»± Ä‘á»™ng táº¡o má»›i
         boolean userExists = userRepository.findByEmail(email).isPresent();
         if (!userExists) {
             log.warn("Google login failed: No account found for email: {}", email);
             response.put("success", false);
-            response.put("message", "Tài khoản này chưa được đăng ký trong hệ thống");
+            response.put("message", "TÃ i khoáº£n nÃ y chÆ°a Ä‘Æ°á»£c Ä‘Äƒng kÃ½ trong há»‡ thá»‘ng");
             response.put("email", email);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
@@ -246,7 +246,7 @@ public class AuthController {
             .compact();
         
         response.put("success", true);
-        response.put("message", "Đăng nhập thành công");
+        response.put("message", "ÄÄƒng nháº­p thÃ nh cÃ´ng");
         response.put("role", roleName);
         response.put("roleId", user.getRoleId().toString());
         response.put("token", token);
@@ -306,7 +306,7 @@ public class AuthController {
 
     @PostMapping("/change-password")
     public ResponseEntity<String> changePassword(@RequestBody Map<String, String> request) {
-        // Lấy thông tin người dùng đã xác thực từ Security Context
+        // Láº¥y thÃ´ng tin ngÆ°á»i dÃ¹ng Ä‘Ã£ xÃ¡c thá»±c tá»« Security Context
         Object principal = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String username;
         if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
@@ -324,15 +324,15 @@ public class AuthController {
         
         // Basic validation
         if (oldPassword == null || newPassword == null || oldPassword.isEmpty() || newPassword.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mật khẩu cũ và mật khẩu mới không được để trống");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Máº­t kháº©u cÅ© vÃ  máº­t kháº©u má»›i khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng");
         }
         
         if (oldPassword.equals(newPassword)) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mật khẩu mới không được trùng với mật khẩu cũ");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Máº­t kháº©u má»›i khÃ´ng Ä‘Æ°á»£c trÃ¹ng vá»›i máº­t kháº©u cÅ©");
         }
         
         if (newPassword.length() > 50) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mật khẩu mới không được vượt quá 50 ký tự");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Máº­t kháº©u má»›i khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 50 kÃ½ tá»±");
         }
         
         User user = userRepository.findByUsername(username)
@@ -340,13 +340,13 @@ public class AuthController {
         
         // Verify old password
         if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mật khẩu cũ không chính xác");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Máº­t kháº©u cÅ© khÃ´ng chÃ­nh xÃ¡c");
         }
         
         // Update password
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
         
-        return ResponseEntity.ok("Đổi mật khẩu thành công");
+        return ResponseEntity.ok("Äá»•i máº­t kháº©u thÃ nh cÃ´ng");
     }
 }

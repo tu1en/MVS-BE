@@ -78,21 +78,21 @@ public class SystemMonitoring {
      * Monitoring category enumeration
      */
     public enum MonitoringCategory {
-        SYSTEM("Hệ thống"),
-        DATABASE("Cơ sở dữ liệu"),
-        APPLICATION("Ứng dụng"),
-        NETWORK("Mạng"),
-        SECURITY("Bảo mật"),
-        PERFORMANCE("Hiệu suất"),
-        STORAGE("Lưu trữ"),
-        MEMORY("Bộ nhớ"),
+        SYSTEM("Há»‡ thá»‘ng"),
+        DATABASE("CÆ¡ sá»Ÿ dá»¯ liá»‡u"),
+        APPLICATION("á»¨ng dá»¥ng"),
+        NETWORK("Máº¡ng"),
+        SECURITY("Báº£o máº­t"),
+        PERFORMANCE("Hiá»‡u suáº¥t"),
+        STORAGE("LÆ°u trá»¯"),
+        MEMORY("Bá»™ nhá»›"),
         CPU("CPU"),
-        DISK("Ổ đĩa"),
-        USER_ACTIVITY("Hoạt động người dùng"),
-        ERROR_RATE("Tỷ lệ lỗi"),
-        RESPONSE_TIME("Thời gian phản hồi"),
+        DISK("á»” Ä‘Ä©a"),
+        USER_ACTIVITY("Hoáº¡t Ä‘á»™ng ngÆ°á»i dÃ¹ng"),
+        ERROR_RATE("Tá»· lá»‡ lá»—i"),
+        RESPONSE_TIME("Thá»i gian pháº£n há»“i"),
         THROUGHPUT("Throughput"),
-        AVAILABILITY("Khả dụng");
+        AVAILABILITY("Kháº£ dá»¥ng");
         
         private final String description;
         
@@ -109,10 +109,10 @@ public class SystemMonitoring {
      * Metric status enumeration
      */
     public enum MetricStatus {
-        NORMAL("Bình thường"),
-        WARNING("Cảnh báo"),
-        CRITICAL("Nghiêm trọng"),
-        UNKNOWN("Không xác định");
+        NORMAL("BÃ¬nh thÆ°á»ng"),
+        WARNING("Cáº£nh bÃ¡o"),
+        CRITICAL("NghiÃªm trá»ng"),
+        UNKNOWN("KhÃ´ng xÃ¡c Ä‘á»‹nh");
         
         private final String description;
         
@@ -250,16 +250,16 @@ public class SystemMonitoring {
         long minutes = java.time.Duration.between(timestamp, now).toMinutes();
         
         if (minutes < 1) {
-            return "Vừa xong";
+            return "Vá»«a xong";
         } else if (minutes < 60) {
-            return minutes + " phút trước";
+            return minutes + " phÃºt trÆ°á»›c";
         } else {
             long hours = minutes / 60;
             if (hours < 24) {
-                return hours + " giờ trước";
+                return hours + " giá» trÆ°á»›c";
             } else {
                 long days = hours / 24;
-                return days + " ngày trước";
+                return days + " ngÃ y trÆ°á»›c";
             }
         }
     }
@@ -287,36 +287,36 @@ public class SystemMonitoring {
         private SystemMonitoring monitoring = new SystemMonitoring();
         
         public MonitoringBuilder metric(String name, Double value, String unit) {
-            monitoring.setMetricName(name);
-            monitoring.setMetricValue(value);
-            monitoring.setMetricUnit(unit);
+            monitoring.metricName = name;
+            monitoring.metricValue = value;
+            monitoring.metricUnit = unit;
             return this;
         }
-        
+
         public MonitoringBuilder category(MonitoringCategory category) {
-            monitoring.setCategory(category);
+            monitoring.category = category;
             return this;
         }
-        
+
         public MonitoringBuilder instance(String instanceId, String hostName) {
-            monitoring.setInstanceId(instanceId);
-            monitoring.setHostName(hostName);
+            monitoring.instanceId = instanceId;
+            monitoring.hostName = hostName;
             return this;
         }
-        
+
         public MonitoringBuilder thresholds(Double warning, Double critical) {
-            monitoring.setThresholdWarning(warning);
-            monitoring.setThresholdCritical(critical);
+            monitoring.thresholdWarning = warning;
+            monitoring.thresholdCritical = critical;
             return this;
         }
         
         public MonitoringBuilder description(String description) {
-            monitoring.setDescription(description);
+            monitoring.description = description;
             return this;
         }
-        
+
         public MonitoringBuilder tags(String tags) {
-            monitoring.setTags(tags);
+            monitoring.tags = tags;
             return this;
         }
         

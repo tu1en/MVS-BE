@@ -1,7 +1,5 @@
 package com.classroomapp.classroombackend.config;
 
-import java.util.List;
-
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
@@ -13,10 +11,9 @@ import com.classroomapp.classroombackend.config.seed.AssignmentSeeder;
 import com.classroomapp.classroombackend.config.seed.ClassroomSeeder;
 import com.classroomapp.classroombackend.config.seed.CourseSeeder;
 import com.classroomapp.classroombackend.config.seed.LectureSeeder;
+import com.classroomapp.classroombackend.config.seed.RequestSeeder;
 import com.classroomapp.classroombackend.config.seed.RoleSeeder;
 import com.classroomapp.classroombackend.config.seed.UserSeeder;
-import com.classroomapp.classroombackend.config.seed.RequestSeeder;
-import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 
 import lombok.RequiredArgsConstructor;
 
@@ -39,14 +36,15 @@ public class DataLoader implements CommandLineRunner {
     @Transactional
     public void run(String... args) throws Exception {
         System.out.println("🌱 [DataLoader] Starting data seeding...");
-        // roleSeeder.seed();
-        // userSeeder.seed();
+        roleSeeder.seed();
+        userSeeder.seed();
         // courseSeeder.seed();
         // List<Classroom> classrooms = classroomSeeder.seed();
         // lectureSeeder.seed(classrooms);
         // assignmentSeeder.seed(); // Re-enabled with @Lazy dependency
         // announcementSeeder.seed(classrooms);
         requestSeeder.seed();
+        // absenceSeeder.seed(); // Moved to MasterSeeder to avoid conflicts
         System.out.println("✅ [DataLoader] Data seeding completed.");
     }
 } 

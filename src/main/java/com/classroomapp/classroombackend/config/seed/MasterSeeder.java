@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.CourseMaterialRepository;
+import com.classroomapp.classroombackend.repository.absencemanagement.AbsenceRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 
@@ -29,6 +30,7 @@ public class MasterSeeder implements CommandLineRunner {
     private final UserRepository userRepository;
     private final CourseMaterialRepository courseMaterialRepository;
     private final ClassroomRepository classroomRepository;
+    private final AbsenceRepository absenceRepository;
     private final UserSeeder userSeeder;
     private final CourseSeeder courseSeeder;
     private final ClassroomSeeder classroomSeeder;
@@ -48,6 +50,7 @@ public class MasterSeeder implements CommandLineRunner {
     private final StudentProgressSeeder studentProgressSeeder;
     private final ComprehensiveGradingSeeder comprehensiveGradingSeeder;
     private final AssignmentTestDataSeeder assignmentTestDataSeeder;
+    private final AbsenceSeeder absenceSeeder;
     private final DatabaseVerificationSeeder databaseVerificationSeeder;
     private final DataVerificationSeeder dataVerificationSeeder;
     private final TimetableEventSeeder timetableEventSeeder;
@@ -84,7 +87,7 @@ public class MasterSeeder implements CommandLineRunner {
             teachingHistorySeeder.seed();
             examSeeder.seed();
             studentProgressSeeder.seed();
-
+            
             log.info("============== Main Seeding Complete ==============");
         } else {
             log.info("Database already has users. Skipping main seeding.");
@@ -141,6 +144,21 @@ public class MasterSeeder implements CommandLineRunner {
             log.info("Course materials already seeded. Skipping.");
         }
         
+    
+        // Always check and seed absence data after users exist
+        if (userRepository.count() > 0 && absenceRepository.count() == 0) {
+            log.info("============== Seeding Absence Data ==============");
+            try {
+                absenceSeeder.seed();
+                log.info("============== Absence Seeding Complete ==============");
+            } catch (Exception e) {
+                log.error("Error seeding absence data: {}", e.getMessage(), e);
+            }
+        } else if (absenceRepository.count() > 0) {
+            log.info("Absence data already exists. Count: {}", absenceRepository.count());
+        } else {
+            log.warn("No users found - cannot seed absence data");
+        }
         // Không gọi lại scheduleSeeder.seed() để tránh xung đột
         log.info("============== Checking Schedule Status ==============");
         log.info("Schedules are already seeded in the main seeding process if needed.");

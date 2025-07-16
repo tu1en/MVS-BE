@@ -63,8 +63,7 @@ public class ProductionApplicationConfig {
     @Value("${app.async.queue-capacity:100}")
     private int asyncQueueCapacity;
 
-    // ==================== PERFORMANCE OPTIMIZATION ====================
-
+    // ==================== PERFORMANCE OPTIMIZATION ======
     /**
      * Cache Manager for improving application performance
      * Caches frequently accessed data like user sessions, classroom data, etc.
@@ -124,8 +123,7 @@ public class ProductionApplicationConfig {
         return executor;
     }
 
-    // ==================== MONITORING & OBSERVABILITY ====================
-
+    // ==================== MONITORING & OBSERVABILITY ======
     /**
      * Application Performance Monitoring
      * Simple performance tracking without external dependencies
@@ -136,8 +134,7 @@ public class ProductionApplicationConfig {
         return "performance-monitor-active";
     }
 
-    // ==================== SECURITY & AUDITING ====================
-
+    // ==================== SECURITY & AUDITING ======
     /**
      * Auditor Provider for JPA Auditing
      * Tracks who created/modified entities
@@ -179,8 +176,7 @@ public class ProductionApplicationConfig {
         return new RestTemplate();
     }
 
-    // ==================== PRODUCTION FEATURES ====================
-
+    // ==================== PRODUCTION FEATURES ======
     /**
      * File Upload Configuration Properties
      */
@@ -222,8 +218,7 @@ public class ProductionApplicationConfig {
         return "production";
     }
 
-    // ==================== INNER CLASSES ====================
-
+    // ==================== INNER CLASSES ======
     /**
      * File Upload Configuration Properties
      */

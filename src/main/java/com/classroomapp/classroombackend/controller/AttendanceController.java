@@ -23,6 +23,11 @@ import com.classroomapp.classroombackend.dto.attendancemanagement.TeachingHistor
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.AttendanceService;
+import com.classroomapp.classroombackend.model.AttendanceLog;
+import com.classroomapp.classroombackend.service.AttendanceLogService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
+import java.time.LocalDate;
 
 import lombok.RequiredArgsConstructor;
 
@@ -37,6 +42,8 @@ public class AttendanceController {
 
     private final AttendanceService attendanceService;
     private final UserRepository userRepository; // Needed to fetch user from security context
+    @Autowired
+    private AttendanceLogService attendanceLogService;
 
     // This controller is now mostly deprecated in favor of AttendanceSessionController.
     // The getAttendanceResult endpoint is kept here as it's a general query
@@ -68,7 +75,7 @@ public class AttendanceController {
      * Gets the personal attendance history for the currently authenticated student in a specific classroom.
      * Accessible by any authenticated user for their own record.
      */
-    @GetMapping("/my-history")
+    @GetMapping("/my-attendance-history")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<MyAttendanceHistoryDto>> getMyAttendanceHistory(@RequestParam Long classroomId) {
         try {
@@ -142,5 +149,54 @@ public class AttendanceController {
         attendanceService.submitAttendance(submitDto);
         return ResponseEntity.ok("Attendance records submitted successfully");
     }
-}
 
+    @GetMapping("/teacher-status")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<List<AttendanceLog>> getTeacherAttendanceStatus(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) String shift) {
+        List<AttendanceLog> logs = attendanceLogService.getTeacherAttendanceStatus(date, shift);
+        return ResponseEntity.ok(logs);
+    }
+
+    @GetMapping("/daily-shift")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<List<AttendanceLog>> getDailyAttendanceByShift(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam String shift) {
+        List<AttendanceLog> logs = attendanceLogService.getDailyAttendanceByShift(date, shift);
+        return ResponseEntity.ok(logs);
+    }
+
+    @GetMapping("/all-logs")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<List<AttendanceLog>> getAllStaffAttendanceLogs(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        List<AttendanceLog> logs = attendanceLogService.getAllStaffAttendanceLogs(date);
+        return ResponseEntity.ok(logs);
+    }
+
+    @GetMapping("/my-attendance-summary")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<AttendanceLog>> getMyAttendanceSummary(@RequestParam Long userId) {
+        List<AttendanceLog> history = attendanceLogService.getPersonalAttendanceHistory(userId, null, null);
+        return ResponseEntity.ok(history);
+    }
+
+    @GetMapping("/my-attendance-history-old")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<List<AttendanceLog>> getMyAttendanceHistoryOld(@RequestParam Long userId) {
+        List<AttendanceLog> history = attendanceLogService.getPersonalAttendanceHistory(userId, null, null);
+        return ResponseEntity.ok(history);
+    }
+
+    @GetMapping("/my-history-range")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<AttendanceLog>> getPersonalAttendanceHistory(
+            @RequestParam Long userId,
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate) {
+        List<AttendanceLog> history = attendanceLogService.getPersonalAttendanceHistory(userId, startDate, endDate);
+        return ResponseEntity.ok(history);
+    }
+}

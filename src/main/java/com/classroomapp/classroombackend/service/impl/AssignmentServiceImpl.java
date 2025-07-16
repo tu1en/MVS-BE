@@ -98,8 +98,23 @@ public class AssignmentServiceImpl implements AssignmentService {
                     .orElseThrow(() -> new ResourceNotFoundException("Classroom not found with id: " + createAssignmentDto.getClassroomId()));
             log.info("Found classroom: id={}, name={}", classroom.getId(), classroom.getName());
 
-            User teacher = userRepository.findByEmail(teacherUsername)
-                    .orElseThrow(() -> new ResourceNotFoundException("User", "email", teacherUsername));
+            // Handle authentication - if teacherUsername is null, get from security context
+            User teacher = null;
+            if (teacherUsername != null) {
+                teacher = userRepository.findByEmail(teacherUsername)
+                        .orElseThrow(() -> new ResourceNotFoundException("User", "email", teacherUsername));
+            } else {
+                // Get current authenticated user from security context
+                org.springframework.security.core.Authentication authentication =
+                    org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                if (authentication != null && authentication.getName() != null) {
+                    String currentUserEmail = authentication.getName();
+                    teacher = userRepository.findByEmail(currentUserEmail)
+                            .orElseThrow(() -> new ResourceNotFoundException("User", "email", currentUserEmail));
+                } else {
+                    throw new AccessDeniedException("No authenticated user found");
+                }
+            }
             log.info("Found teacher: id={}, username={}, email={}", teacher.getId(), teacher.getUsername(), teacher.getEmail());
 
             if (!classroomSecurityService.isTeacherOfClassroom(teacher, classroom.getId())) {

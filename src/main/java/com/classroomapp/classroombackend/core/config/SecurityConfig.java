@@ -2,6 +2,8 @@ package com.classroomapp.classroombackend.core.config;
 
 import java.util.Arrays;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -31,6 +33,8 @@ import lombok.extern.slf4j.Slf4j;
 @EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
 @Slf4j
 public class SecurityConfig {
+
+    private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
     
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
@@ -129,6 +133,10 @@ public class SecurityConfig {
                 .requestMatchers("/api/courses/**").permitAll() // Temporarily allow for debugging
                 .requestMatchers("/api/classrooms/*/details").permitAll() // Temporarily allow for debugging
 
+                // Protected endpoints - Assignments
+                .requestMatchers("/api/assignments/**").authenticated()
+                .requestMatchers("/api/timetable/**").authenticated()
+
                 // Role-based endpoints
                 .requestMatchers("/api/admin/requests/**").hasAnyRole("ADMIN", "MANAGER")
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
@@ -148,7 +156,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             );
-        
+
         log.info("Security filter chain configured successfully");
         return http.build();
     }

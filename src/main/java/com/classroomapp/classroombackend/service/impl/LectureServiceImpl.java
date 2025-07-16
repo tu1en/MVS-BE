@@ -97,7 +97,7 @@ public class LectureServiceImpl implements LectureService {
 
         System.out.println("✅ LectureService: Classroom exists, fetching lectures...");
         List<Lecture> lectures = lectureRepository.findByClassroomId(classroomId);
-        System.out.println("📊 LectureService: Found " + lectures.size() + " lectures");
+        System.out.println("LectureService: Found " + lectures.size() + " lectures");
 
         List<LectureDto> lectureDtos = lectures.stream()
                 .map(lecture -> {
@@ -120,12 +120,13 @@ public class LectureServiceImpl implements LectureService {
                             .collect(Collectors.toList());
 
                     dto.setMaterials(materialDtos);
-                    System.out.println("🔄 LectureService: Mapped lecture: " + dto.getTitle() + " with " + materialDtos.size() + " materials");
+                    System.out.println("LectureService: Mapped lecture: " + dto.getTitle() + " with " + materialDtos.size() + " materials");
+                    System.out.println("LectureService: Mapped lecture: " + dto.getTitle());
                     return dto;
                 })
                 .collect(Collectors.toList());
 
-        System.out.println("✅ LectureService: Returning " + lectureDtos.size() + " lecture DTOs");
+        System.out.println("LectureService: Returning " + lectureDtos.size() + " lecture DTOs");
         return lectureDtos;
     }
 

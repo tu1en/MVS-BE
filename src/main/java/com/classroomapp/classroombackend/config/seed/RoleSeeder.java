@@ -42,13 +42,13 @@ public class RoleSeeder {
                 admin.setId(4);
                 roleRepository.save(admin);
 
-                System.out.println("✅ [RoleSeeder] Created roles with explicit IDs.");
+                System.out.println("Ã¢Å“â€¦ [RoleSeeder] Created roles with explicit IDs.");
 
             } finally {
                 entityManager.createNativeQuery("SET IDENTITY_INSERT roles OFF").executeUpdate();
             }
         } else {
-            System.out.println("✅ [RoleSeeder] Roles already seeded.");
+            System.out.println("Ã¢Å“â€¦ [RoleSeeder] Roles already seeded.");
         }
     }
 } 

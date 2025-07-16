@@ -103,9 +103,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     return;
                 }
 
+                log.info("JWT Filter - Subject from token: {}", subject);
+                log.info("JWT Filter - Token validation successful, loading user details...");
+
+                // Tải thông tin người dùng đầy đủ từ database
+                // CustomUserDetailsService sẽ xử lý việc tìm user bằng email hoặc username
+                org.springframework.security.core.userdetails.UserDetails userDetails =
+                        userDetailsService.loadUserByUsername(subject);
+
                 if (isMaterialDownload) {
-                    log.info("🔽 JWT Filter - MATERIAL DOWNLOAD: Subject from token: {}", subject);
-                    log.info("🔽 JWT Filter - MATERIAL DOWNLOAD: Token validation successful, loading user details...");
+                    log.info("JWT Filter - MATERIAL DOWNLOAD: Subject from token: {}", subject);
+                    log.info("JWT Filter - MATERIAL DOWNLOAD: Token validation successful, loading user details...");
                 } else {
                     log.info("JWT Filter - Subject from token: {}", subject);
                     log.info("JWT Filter - Token validation successful, loading user details...");
@@ -113,8 +121,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 // Load full user information from database
                 // CustomUserDetailsService will handle finding user by email or username
-                org.springframework.security.core.userdetails.UserDetails userDetails =
-                        userDetailsService.loadUserByUsername(subject);
 
                 // Check if user is valid and can be authenticated
                 if (userDetails != null) {

@@ -55,3 +55,7 @@ application-prod.properties
 application-local.properties
 application.properties
 src/main/resources/mve-1-firebase-adminsdk.json
+**/application.properties
+application-*.properties
+**/DatabaseConfig.java
+"src/main/resources/mve-1-firebase-adminsdk.json" 

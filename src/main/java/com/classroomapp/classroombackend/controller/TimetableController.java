@@ -77,20 +77,20 @@ public class TimetableController {
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate) {
 
-        System.out.println("📅 TimetableController.getMyTimetable: Request received");
+        System.out.println("ðŸ“… TimetableController.getMyTimetable: Request received");
         System.out.println("   Authentication: " + (authentication != null ? authentication.getName() : "null"));
         System.out.println("   Start Date: " + startDate);
         System.out.println("   End Date: " + endDate);
 
         if (authentication == null) {
-            System.out.println("❌ TimetableController.getMyTimetable: No authentication provided");
+            System.out.println("âŒ TimetableController.getMyTimetable: No authentication provided");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         try {
             // Get user ID from authentication
             String username = authentication.getName();
-            System.out.println("📅 TimetableController.getMyTimetable: Username from auth: " + username);
+            System.out.println("ðŸ“… TimetableController.getMyTimetable: Username from auth: " + username);
 
             // For now, use a default user ID since we don't have UserRepository injected
             // TODO: Inject UserRepository and get actual user ID
@@ -99,8 +99,8 @@ public class TimetableController {
             LocalDate start = startDate != null ? LocalDate.parse(startDate) : LocalDate.now().withDayOfMonth(1);
             LocalDate end = endDate != null ? LocalDate.parse(endDate) : start.plusMonths(1).minusDays(1);
 
-            System.out.println("📅 TimetableController.getMyTimetable: Date range: " + start + " to " + end);
-            System.out.println("📅 TimetableController.getMyTimetable: Getting events for user ID: " + userId);
+            System.out.println("ðŸ“… TimetableController.getMyTimetable: Date range: " + start + " to " + end);
+            System.out.println("ðŸ“… TimetableController.getMyTimetable: Getting events for user ID: " + userId);
 
             // Convert to LocalDateTime for service
             LocalDateTime startDateTime = start.atStartOfDay();
@@ -108,11 +108,11 @@ public class TimetableController {
 
             // Get events for the authenticated user using the new method
             List<TimetableEventDto> events = timetableService.getEventsForUser(userId, startDateTime, endDateTime);
-            System.out.println("📅 TimetableController.getMyTimetable: Found " + events.size() + " events for user");
+            System.out.println("ðŸ“… TimetableController.getMyTimetable: Found " + events.size() + " events for user");
 
             return ResponseEntity.ok(events);
         } catch (Exception e) {
-            System.out.println("❌ TimetableController.getMyTimetable: Error - " + e.getMessage());
+            System.out.println("âŒ TimetableController.getMyTimetable: Error - " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
@@ -294,4 +294,86 @@ public class TimetableController {
         return ResponseEntity.ok(events);
     }
 
+    // Create sample data for a specific classroom
+    @PostMapping("/create-sample-data/{classroomId}")
+    public ResponseEntity<String> createSampleDataForClassroom(@PathVariable Long classroomId) {
+        try {
+            // Láº¥y thá»i gian hiá»‡n táº¡i
+            LocalDateTime now = LocalDateTime.now();
+            int currentYear = now.getYear();
+            int currentMonth = now.getMonthValue();
+            int currentDay = now.getDayOfMonth();
+            
+            // Táº¡o lá»‹ch há»c trong tuáº§n hiá»‡n táº¡i vÃ  tuáº§n tiáº¿p theo
+            
+            // Buá»•i há»c lÃ½ thuyáº¿t
+            CreateEventDto theoryClass = new CreateEventDto();
+            theoryClass.setTitle("BÃ i giáº£ng lÃ½ thuyáº¿t");
+            theoryClass.setDescription("Giá»›i thiá»‡u cÃ¡c khÃ¡i niá»‡m cÆ¡ báº£n vÃ  lÃ½ thuyáº¿t ná»n táº£ng");
+            theoryClass.setStartDatetime(LocalDateTime.of(currentYear, currentMonth, currentDay, 8, 0));
+            theoryClass.setEndDatetime(LocalDateTime.of(currentYear, currentMonth, currentDay, 9, 30));
+            theoryClass.setEventType("CLASS");
+            theoryClass.setClassroomId(classroomId);
+            theoryClass.setLocation("PhÃ²ng há»c 101");
+            theoryClass.setIsAllDay(false);
+            theoryClass.setColor("#007bff");
+            timetableService.createEvent(theoryClass, 1L);
+            
+            // Buá»•i thá»±c hÃ nh
+            CreateEventDto practiceClass = new CreateEventDto();
+            practiceClass.setTitle("Buá»•i thá»±c hÃ nh");
+            practiceClass.setDescription("Ãp dá»¥ng kiáº¿n thá»©c lÃ½ thuyáº¿t vÃ o bÃ i táº­p thá»±c hÃ nh");
+            practiceClass.setStartDatetime(LocalDateTime.of(currentYear, currentMonth, currentDay + 2, 13, 0));
+            practiceClass.setEndDatetime(LocalDateTime.of(currentYear, currentMonth, currentDay + 2, 15, 30));
+            practiceClass.setEventType("CLASS");
+            practiceClass.setClassroomId(classroomId);
+            practiceClass.setLocation("PhÃ²ng thá»±c hÃ nh 202");
+            practiceClass.setIsAllDay(false);
+            practiceClass.setColor("#28a745");
+            timetableService.createEvent(practiceClass, 1L);
+            
+            // BÃ i kiá»ƒm tra
+            CreateEventDto examEvent = new CreateEventDto();
+            examEvent.setTitle("BÃ i kiá»ƒm tra giá»¯a ká»³");
+            examEvent.setDescription("Kiá»ƒm tra kiáº¿n thá»©c Ä‘Ã£ há»c trong ná»­a Ä‘áº§u khÃ³a há»c");
+            examEvent.setStartDatetime(LocalDateTime.of(currentYear, currentMonth, currentDay + 7, 10, 0));
+            examEvent.setEndDatetime(LocalDateTime.of(currentYear, currentMonth, currentDay + 7, 11, 30));
+            examEvent.setEventType("EXAM");
+            examEvent.setClassroomId(classroomId);
+            examEvent.setLocation("PhÃ²ng thi A");
+            examEvent.setIsAllDay(false);
+            examEvent.setColor("#dc3545");
+            timetableService.createEvent(examEvent, 1L);
+            
+            // Háº¡n ná»™p bÃ i táº­p
+            CreateEventDto assignmentDue = new CreateEventDto();
+            assignmentDue.setTitle("Háº¡n ná»™p bÃ i táº­p lá»›n");
+            assignmentDue.setDescription("Ná»™p bÃ¡o cÃ¡o vÃ  mÃ£ nguá»“n cá»§a dá»± Ã¡n");
+            assignmentDue.setStartDatetime(LocalDateTime.of(currentYear, currentMonth, currentDay + 10, 23, 59));
+            assignmentDue.setEndDatetime(LocalDateTime.of(currentYear, currentMonth, currentDay + 10, 23, 59));
+            assignmentDue.setEventType("ASSIGNMENT_DUE");
+            assignmentDue.setClassroomId(classroomId);
+            assignmentDue.setIsAllDay(true);
+            assignmentDue.setColor("#ffc107");
+            timetableService.createEvent(assignmentDue, 1L);
+            
+            // Buá»•i há»i Ä‘Ã¡p
+            CreateEventDto meetingEvent = new CreateEventDto();
+            meetingEvent.setTitle("Buá»•i há»i Ä‘Ã¡p");
+            meetingEvent.setDescription("Giáº£i Ä‘Ã¡p tháº¯c máº¯c vÃ  chuáº©n bá»‹ cho ká»³ thi cuá»‘i ká»³");
+            meetingEvent.setStartDatetime(LocalDateTime.of(currentYear, currentMonth, currentDay + 14, 15, 0));
+            meetingEvent.setEndDatetime(LocalDateTime.of(currentYear, currentMonth, currentDay + 14, 16, 30));
+            meetingEvent.setEventType("MEETING");
+            meetingEvent.setClassroomId(classroomId);
+            meetingEvent.setLocation("PhÃ²ng há»p trá»±c tuyáº¿n");
+            meetingEvent.setIsAllDay(false);
+            meetingEvent.setColor("#6f42c1");
+            timetableService.createEvent(meetingEvent, 1L);
+            
+            return ResponseEntity.ok("ÄÃ£ táº¡o dá»¯ liá»‡u lá»‹ch há»c máº«u thÃ nh cÃ´ng");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Lá»—i khi táº¡o dá»¯ liá»‡u máº«u: " + e.getMessage());
+        }
+    }
 }

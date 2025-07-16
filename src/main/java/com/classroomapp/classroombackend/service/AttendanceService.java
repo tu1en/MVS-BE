@@ -112,5 +112,6 @@ public interface AttendanceService {
      * Submit attendance records for a lecture
      * @param submitDto DTO containing attendance data to submit
      */
+
     void submitAttendance(AttendanceSubmitDto submitDto);
 }
