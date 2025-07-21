@@ -64,9 +64,9 @@ public class TeacherController {
     @GetMapping("/schedules")
     public ResponseEntity<?> getTeacherSchedule(Authentication authentication) {
         try {
-            String username = authentication.getName();
-            User currentUser = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+            String emailOrUsername = authentication.getName();
+            User currentUser = userRepository.findByEmail(emailOrUsername)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "email", emailOrUsername));
             
             // Define a date range, e.g., the current month
             LocalDate today = LocalDate.now();
@@ -94,9 +94,9 @@ public class TeacherController {
             Authentication authentication,
             @PathVariable Integer dayOfWeek) {
         try {
-            String username = authentication.getName();
-            User currentUser = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+            String emailOrUsername = authentication.getName();
+            User currentUser = userRepository.findByEmail(emailOrUsername)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "email", emailOrUsername));
             
             // Validate day of week
             if (dayOfWeek < 0 || dayOfWeek > 6) {
@@ -123,9 +123,9 @@ public class TeacherController {
             Authentication authentication,
             @RequestBody ScheduleDto scheduleDto) {
         try {
-            String username = authentication.getName();
-            User currentUser = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+            String emailOrUsername = authentication.getName();
+            User currentUser = userRepository.findByEmail(emailOrUsername)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "email", emailOrUsername));
             
             // Ensure the teacher ID is set to the current user
             scheduleDto.setTeacherId(currentUser.getId());
@@ -147,9 +147,9 @@ public class TeacherController {
     @GetMapping("/courses")
     public ResponseEntity<List<ClassroomDto>> getTeacherCourses(Authentication authentication) {
         try {
-            String username = authentication.getName();
-            User currentUser = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+            String emailOrUsername = authentication.getName();
+            User currentUser = userRepository.findByEmail(emailOrUsername)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "email", emailOrUsername));
             
             // Use existing classroom service
             List<ClassroomDto> courses = classroomService.GetClassroomsByTeacher(currentUser.getId());

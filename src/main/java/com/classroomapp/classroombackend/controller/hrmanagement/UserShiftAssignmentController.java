@@ -1,12 +1,10 @@
 package com.classroomapp.classroombackend.controller.hrmanagement;
 
-import com.classroomapp.classroombackend.dto.hrmanagement.CreateShiftAssignmentDto;
-import com.classroomapp.classroombackend.dto.hrmanagement.UserShiftAssignmentDto;
-import com.classroomapp.classroombackend.service.hrmanagement.UserShiftAssignmentService;
-import com.classroomapp.classroombackend.utils.AuthUtils;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -15,19 +13,32 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.classroomapp.classroombackend.dto.hrmanagement.CreateShiftAssignmentDto;
+import com.classroomapp.classroombackend.dto.hrmanagement.UserShiftAssignmentDto;
+import com.classroomapp.classroombackend.service.hrmanagement.UserShiftAssignmentService;
+import com.classroomapp.classroombackend.utils.AuthUtils;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * REST Controller for User Shift Assignment management
  * Only accessible by MANAGER and ADMIN roles
  */
 @RestController
-@RequestMapping("/api/hr/shift-assignments")
+@RequestMapping("/api/hr/user-shift-assignments")
 @RequiredArgsConstructor
 @Slf4j
 @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
@@ -37,7 +48,7 @@ public class UserShiftAssignmentController {
     
     /**
      * Create shift assignments for multiple users
-     * POST /api/hr/shift-assignments
+     * POST /api/hr/user-shift-assignments
      */
     @PostMapping
     public ResponseEntity<Map<String, Object>> createShiftAssignments(@Valid @RequestBody CreateShiftAssignmentDto createDto) {
@@ -138,7 +149,7 @@ public class UserShiftAssignmentController {
     
     /**
      * Get all shift assignments with pagination
-     * GET /api/hr/shift-assignments
+     * GET /api/hr/user-shift-assignments
      */
     @GetMapping
     public ResponseEntity<Map<String, Object>> getAssignments(
@@ -183,7 +194,7 @@ public class UserShiftAssignmentController {
     
     /**
      * Get assignments by user
-     * GET /api/hr/shift-assignments/user/{userId}
+     * GET /api/hr/user-shift-assignments/user/{userId}
      */
     @GetMapping("/user/{userId}")
     public ResponseEntity<Map<String, Object>> getAssignmentsByUser(@PathVariable Long userId,
@@ -209,7 +220,7 @@ public class UserShiftAssignmentController {
     
     /**
      * Get assignments by shift
-     * GET /api/hr/shift-assignments/shift/{shiftId}
+     * GET /api/hr/user-shift-assignments/shift/{shiftId}
      */
     @GetMapping("/shift/{shiftId}")
     public ResponseEntity<Map<String, Object>> getAssignmentsByShift(@PathVariable Long shiftId,
@@ -287,7 +298,7 @@ public class UserShiftAssignmentController {
     
     /**
      * Check for overlapping assignments
-     * GET /api/hr/shift-assignments/check-overlap
+     * GET /api/hr/user-shift-assignments/check-overlap
      */
     @GetMapping("/check-overlap")
     public ResponseEntity<Map<String, Object>> checkOverlappingAssignments(
@@ -318,7 +329,7 @@ public class UserShiftAssignmentController {
     
     /**
      * Delete a shift assignment
-     * DELETE /api/hr/shift-assignments/{id}
+     * DELETE /api/hr/user-shift-assignments/{id}
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, Object>> deleteAssignment(@PathVariable Long id) {

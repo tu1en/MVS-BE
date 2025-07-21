@@ -352,9 +352,9 @@ public class FrontendApiBridgeController {
     @GetMapping("/courses/current-student")
     public ResponseEntity<List<ClassroomDto>> getCurrentStudentCourses(Authentication authentication) {
         // For now, return same as classrooms since we don't have separate course entity
-        String username = authentication.getName();
-        User currentUser = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+        String emailOrUsername = authentication.getName();
+        User currentUser = userRepository.findByEmail(emailOrUsername)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", emailOrUsername));
         return ResponseEntity.ok(classroomService.GetClassroomsByStudent(currentUser.getId()));
     }
     
@@ -366,9 +366,9 @@ public class FrontendApiBridgeController {
     @GetMapping("/attendance/current-student")
     public ResponseEntity<?> getCurrentStudentAttendance(Authentication authentication) {
         try {
-            String username = authentication.getName();
-            User currentUser = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+            String emailOrUsername = authentication.getName();
+            User currentUser = userRepository.findByEmail(emailOrUsername)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "email", emailOrUsername));
             
             // Get actual attendance data from service
             List<AttendanceDto> attendanceRecords = attendanceService.findByUserId(currentUser.getId());
@@ -392,9 +392,9 @@ public class FrontendApiBridgeController {
     @GetMapping("/student-messages/unread-count")
     public ResponseEntity<?> getStudentUnreadMessageCount(Authentication authentication) {
         try {
-            String username = authentication.getName();
-            User currentUser = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+            String emailOrUsername = authentication.getName();
+            User currentUser = userRepository.findByEmail(emailOrUsername)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "email", emailOrUsername));
 
             // Get actual unread count from service
             Long unreadCount = messageService.countUnreadMessages(currentUser.getId());
@@ -431,9 +431,9 @@ public class FrontendApiBridgeController {
     @GetMapping("/attendance/current-teacher/stats")
     public ResponseEntity<?> getTeacherAttendanceStats(Authentication authentication) {
         try {
-            String username = authentication.getName();
-            User currentUser = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+            String emailOrUsername = authentication.getName();
+            User currentUser = userRepository.findByEmail(emailOrUsername)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "email", emailOrUsername));
             
             // Get real stats based on teacher's classrooms
             List<ClassroomDto> classrooms = classroomService.GetClassroomsByTeacher(currentUser.getId());
@@ -496,9 +496,9 @@ public class FrontendApiBridgeController {
     @GetMapping("/courses/student")
     public ResponseEntity<List<ClassroomDto>> getStudentCourses(Authentication authentication) {
         // Extract user ID from JWT token
-        String username = authentication.getName();
-        User currentUser = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+        String emailOrUsername = authentication.getName();
+        User currentUser = userRepository.findByEmail(emailOrUsername)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", emailOrUsername));
         return ResponseEntity.ok(classroomService.GetClassroomsByStudent(currentUser.getId()));
     }
 
@@ -520,9 +520,9 @@ public class FrontendApiBridgeController {
     @GetMapping("/teacher/profile")
     public ResponseEntity<?> getTeacherProfile(Authentication authentication) {
         try {
-            String username = authentication.getName();
-            User currentUser = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+            String emailOrUsername = authentication.getName();
+            User currentUser = userRepository.findByEmail(emailOrUsername)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "email", emailOrUsername));
             
             // Return basic teacher profile - should be replaced with actual teacher profile service
             return ResponseEntity.ok(new java.util.HashMap<String, Object>() {{

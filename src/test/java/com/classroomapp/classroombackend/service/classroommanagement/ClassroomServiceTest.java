@@ -21,7 +21,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
-import com.classroomapp.classroombackend.dto.classroommanagement.CreateClassroomDto;
+import com.classroomapp.classroombackend.dto.CreateClassroomDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.UpdateClassroomDto;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
 import com.classroomapp.classroombackend.exception.ValidationException;

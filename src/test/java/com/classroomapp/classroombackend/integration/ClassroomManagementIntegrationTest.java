@@ -1,7 +1,7 @@
 package com.classroomapp.classroombackend.integration;
 
 import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
-import com.classroomapp.classroombackend.dto.classroommanagement.CreateClassroomDto;
+import com.classroomapp.classroombackend.dto.CreateClassroomDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.CreateSessionDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.CreateSlotDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.SessionDto;

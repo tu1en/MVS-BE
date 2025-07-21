@@ -7,7 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
-import com.classroomapp.classroombackend.dto.classroommanagement.CreateClassroomDto;
+import com.classroomapp.classroombackend.dto.CreateClassroomDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.UpdateClassroomDto;
 
 /**
@@ -69,4 +69,19 @@ public interface ClassroomService {
      * Count classrooms by teacher ID
      */
     long countClassroomsByTeacherId(Long teacherId);
+
+    /**
+     * Get classroom details by ID (với đầy đủ thông tin)
+     */
+    ClassroomDto getClassroomDetails(Long id);
+
+    /**
+     * Get classrooms by student username
+     */
+    List<ClassroomDto> getClassroomsByStudentUsername(String username);
+
+    /**
+     * Get classrooms by student ID
+     */
+    List<ClassroomDto> getClassroomsByStudentId(Long studentId);
 }

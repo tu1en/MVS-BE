@@ -9,6 +9,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -291,6 +292,35 @@ public class StudentMessageController {
             System.err.println("Error getting teacher messages: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.ok(java.util.Collections.emptyList());
+        }
+    }
+
+    /**
+     * Mark a message as read
+     * Frontend calls: /api/student-messages/{id}/read
+     * @param messageId
+     * @return Updated message
+     */
+    @PutMapping("/{id}/read")
+    public ResponseEntity<StudentMessageDto> markMessageAsRead(@PathVariable("id") Long messageId) {
+        try {
+            System.out.println("=== MARK MESSAGE AS READ ===");
+            System.out.println("Message ID: " + messageId);
+            
+            StudentMessageDto updatedMessage = messageService.markAsRead(messageId);
+            
+            if (updatedMessage != null) {
+                System.out.println("✅ Successfully marked message " + messageId + " as read");
+                return ResponseEntity.ok(updatedMessage);
+            } else {
+                System.out.println("❌ Message not found: " + messageId);
+                return ResponseEntity.notFound().build();
+            }
+            
+        } catch (Exception e) {
+            System.err.println("❌ Error marking message as read: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.notFound().build();
         }
     }
 }

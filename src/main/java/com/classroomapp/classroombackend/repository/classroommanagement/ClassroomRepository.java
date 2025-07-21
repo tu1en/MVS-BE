@@ -62,4 +62,8 @@ public interface ClassroomRepository extends JpaRepository<Classroom, Long> {
     // Count classrooms by teacher ID
     @Query("SELECT COUNT(c) FROM Classroom c WHERE c.createdBy.id = :teacherId")
     long countByTeacherId(@Param("teacherId") Long teacherId);
+
+    // Find classrooms by student ID (thông qua enrollment relationship)
+    @Query("SELECT c FROM Classroom c JOIN c.enrollments e WHERE e.user.id = :studentId")
+    List<Classroom> findByStudents_Id(@Param("studentId") Long studentId);
 }

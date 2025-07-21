@@ -7,10 +7,8 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.AfterThrowing;
 import org.aspectj.lang.annotation.Around;
-import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -23,8 +21,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 
-@Aspect
-@Component
+// @Aspect
+// @Component
 @Slf4j
 public class AuditLogAspect {
 
@@ -44,10 +42,11 @@ public class AuditLogAspect {
     @Pointcut("execution(* com.classroomapp.classroombackend.controller.AuthController.*(..))")
     public void authenticationMethods() {}
 
-    @Pointcut("execution(* com.classroomapp.classroombackend.service..*Service.create*(..)) || " +
+    @Pointcut("(execution(* com.classroomapp.classroombackend.service..*Service.create*(..)) || " +
               "execution(* com.classroomapp.classroombackend.service..*Service.update*(..)) || " +
               "execution(* com.classroomapp.classroombackend.service..*Service.delete*(..)) || " +
-              "execution(* com.classroomapp.classroombackend.service..*Service.save*(..))")
+              "execution(* com.classroomapp.classroombackend.service..*Service.save*(..))) && " +
+              "!execution(* com.classroomapp.classroombackend.service..*Service.createAuditLog(..))")
     public void crudOperations() {}
 
     @Around("controllerMethods()")
