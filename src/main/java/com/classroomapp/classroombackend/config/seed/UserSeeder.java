@@ -205,8 +205,8 @@ public class UserSeeder {
                 // Create accountant user
                 User accountant = new User();
                 accountant.setId(501L);
-                accountant.setUsername("accountant");
-                accountant.setPassword(passwordEncoder.encode("accountant123"));
+                accountant.setUsername("acc");
+                accountant.setPassword(passwordEncoder.encode("acc123"));
                 accountant.setEmail("accountant@test.com");
                 accountant.setFullName("Nguyễn Thị Kế Toán");
                 accountant.setRoleId(RoleConstants.ACCOUNTANT);

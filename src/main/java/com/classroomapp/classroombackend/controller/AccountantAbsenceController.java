@@ -61,12 +61,15 @@ public class AccountantAbsenceController {
     // Helper method to extract user ID from authentication
     private Long getUserIdFromAuthentication(Authentication authentication) {
         if (authentication == null || !(authentication.getPrincipal() instanceof UserDetails)) {
-            throw new RuntimeException("User is not authenticated or user details are not available.");
+            throw new RuntimeException("Người dùng chưa xác thực hoặc không có thông tin user details.");
         }
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        String username = userDetails.getUsername();
-        return userRepository.findByEmail(username)
-                .map(User::getId)
-                .orElseThrow(() -> new RuntimeException("Authenticated user not found in database: " + username));
+        String principal = userDetails.getUsername();
+        User user = userRepository.findByEmail(principal)
+                .orElseGet(() -> userRepository.findByUsername(principal).orElse(null));
+        if (user == null) {
+            throw new RuntimeException("Không tìm thấy người dùng với thông tin xác thực hiện tại");
+        }
+        return user.getId();
     }
 } 
