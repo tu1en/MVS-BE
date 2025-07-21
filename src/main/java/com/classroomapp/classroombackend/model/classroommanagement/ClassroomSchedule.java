@@ -42,9 +42,10 @@ public class ClassroomSchedule {
     private LocalTime endTime;
     
     @NotBlank
+    @Column(columnDefinition = "NVARCHAR(255)")
     private String location;
-    
-    @Column(length = 500)
+
+    @Column(columnDefinition = "NVARCHAR(500)")
     private String notes;
     
     @Column(name = "is_recurring")

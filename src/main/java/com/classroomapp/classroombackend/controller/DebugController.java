@@ -22,10 +22,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.classroomapp.classroombackend.model.CourseMaterial;
 import com.classroomapp.classroombackend.model.Schedule;
+import com.classroomapp.classroombackend.model.TimetableEvent;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.CourseMaterialRepository;
 import com.classroomapp.classroombackend.repository.ScheduleRepository;
+import com.classroomapp.classroombackend.repository.TimetableEventRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 
@@ -41,6 +43,7 @@ public class DebugController {
     private final ScheduleRepository scheduleRepository;
     private final ClassroomRepository classroomRepository;
     private final CourseMaterialRepository courseMaterialRepository;
+    private final TimetableEventRepository timetableEventRepository;
 
     @GetMapping("/users")
     public ResponseEntity<?> getAllUsers() {
@@ -518,6 +521,24 @@ public class DebugController {
             return ResponseEntity.ok(result);
 
         } catch (Exception e) {
+            result.put("error", "Exception: " + e.getMessage());
+            return ResponseEntity.ok(result);
+        }
+    }
+
+    @GetMapping("/timetable-events")
+    public ResponseEntity<?> getTimetableEvents() {
+        try {
+            List<TimetableEvent> events = timetableEventRepository.findAll();
+            Map<String, Object> result = new HashMap<>();
+            result.put("count", events.size());
+            result.put("events", events.stream().map(event ->
+                "ID: " + event.getId() + ", Title: " + event.getTitle() +
+                ", Type: " + event.getEventType() + ", Start: " + event.getStartDatetime()
+            ).toList());
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            Map<String, Object> result = new HashMap<>();
             result.put("error", "Exception: " + e.getMessage());
             return ResponseEntity.ok(result);
         }

@@ -22,6 +22,9 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
     // Find attendance by user and session
     Optional<Attendance> findByStudentAndSession(User user, AttendanceSession session);
     
+    // Alternative method signature that Service is expecting
+    Optional<Attendance> findBySessionAndStudent(AttendanceSession session, User student);
+    
     // Find all attendance records for a specific session
     List<Attendance> findBySession(AttendanceSession session);
     

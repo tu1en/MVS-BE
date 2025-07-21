@@ -17,9 +17,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.classroomapp.classroombackend.dto.AnnouncementDto;
 import com.classroomapp.classroombackend.dto.ClassroomDto;
 import com.classroomapp.classroombackend.dto.ScheduleDto;
+import com.classroomapp.classroombackend.dto.StudentMessageDto;
 import com.classroomapp.classroombackend.dto.TimetableEventDto;
+import com.classroomapp.classroombackend.dto.absencemanagement.AbsenceDTO;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.assignmentmanagement.AssignmentRepository;
@@ -27,8 +30,11 @@ import com.classroomapp.classroombackend.repository.assignmentmanagement.Submiss
 import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceRepository;
 import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceSessionRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.classroomapp.classroombackend.service.AbsenceService;
+import com.classroomapp.classroombackend.service.AnnouncementService;
 import com.classroomapp.classroombackend.service.ClassroomService;
-import com.classroomapp.classroombackend.service.ScheduleService;
+import com.classroomapp.classroombackend.service.UserScheduleService;
+import com.classroomapp.classroombackend.service.StudentMessageService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -46,7 +52,10 @@ public class TeacherController {
     private final SubmissionRepository submissionRepository;
     private final AttendanceSessionRepository attendanceSessionRepository;
     private final AttendanceRepository attendanceRepository;
-    private final ScheduleService scheduleService;
+    private final UserScheduleService scheduleService;
+    private final AbsenceService absenceService;
+    private final AnnouncementService announcementService;
+    private final StudentMessageService studentMessageService;
 
     /**
      * Get teacher's schedule
@@ -217,6 +226,119 @@ public class TeacherController {
             // Log the exception for debugging purposes
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Failed to retrieve dashboard stats: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Get teacher's leave requests (absences)
+     * Frontend calls: /teacher/leave-requests
+     */
+    @GetMapping("/leave-requests")
+    public ResponseEntity<List<AbsenceDTO>> getTeacherLeaveRequests(Authentication authentication) {
+        try {
+            String username = authentication.getName();
+            User currentUser = userRepository.findByEmail(username)
+                    .orElseGet(() -> userRepository.findByUsername(username)
+                                     .orElseThrow(() -> new ResourceNotFoundException("User not found with email/username: " + username)));
+            
+            List<AbsenceDTO> absences = absenceService.getMyAbsenceRequests(currentUser.getId());
+            return ResponseEntity.ok(absences);
+            
+        } catch (Exception e) {
+            System.err.println("Error in getTeacherLeaveRequests: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.ok(new ArrayList<>());
+        }
+    }
+
+    /**
+     * Get announcements for teacher
+     * Frontend calls: /teacher/announcements
+     */
+    @GetMapping("/announcements")
+    public ResponseEntity<List<AnnouncementDto>> getTeacherAnnouncements(Authentication authentication) {
+        try {
+            // Get announcements for teacher (targetAudience = TEACHERS or ALL)
+            List<AnnouncementDto> teacherAnnouncements = announcementService.getAnnouncementsForTeacher();
+
+            return ResponseEntity.ok(teacherAnnouncements);
+
+        } catch (Exception e) {
+            System.err.println("Error in getTeacherAnnouncements: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.ok(new ArrayList<>());
+        }
+    }
+
+    /**
+     * Get messages for teacher
+     * Frontend calls: /teacher/messages
+     */
+    @GetMapping("/messages")
+    public ResponseEntity<List<StudentMessageDto>> getTeacherMessages(Authentication authentication) {
+        try {
+            String username = authentication.getName();
+            User currentUser = userRepository.findByEmail(username)
+                    .orElseGet(() -> userRepository.findByUsername(username)
+                                     .orElseThrow(() -> new ResourceNotFoundException("User not found with email/username: " + username)));
+
+            // Get both sent and received messages for teacher
+            List<StudentMessageDto> sentMessages = studentMessageService.getSentMessages(currentUser.getId());
+            List<StudentMessageDto> receivedMessages = studentMessageService.getReceivedMessages(currentUser.getId());
+            
+            // Combine both lists
+            List<StudentMessageDto> allMessages = new ArrayList<>();
+            allMessages.addAll(sentMessages);
+            allMessages.addAll(receivedMessages);
+            
+            // Sort by creation date (newest first)
+            allMessages.sort((m1, m2) -> m2.getCreatedAt().compareTo(m1.getCreatedAt()));
+            
+            return ResponseEntity.ok(allMessages);
+            
+        } catch (Exception e) {
+            System.err.println("Error in getTeacherMessages: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.ok(new ArrayList<>());
+        }
+    }
+
+    /**
+     * Get teacher's teaching history
+     * Frontend calls: /teacher/teaching-history
+     */
+    @GetMapping("/teaching-history")
+    public ResponseEntity<Map<String, Object>> getTeacherTeachingHistory(Authentication authentication) {
+        try {
+            String username = authentication.getName();
+            User currentUser = userRepository.findByEmail(username)
+                    .orElseGet(() -> userRepository.findByUsername(username)
+                                     .orElseThrow(() -> new ResourceNotFoundException("User not found with email/username: " + username)));
+
+            // Get teacher's current and past classrooms
+            List<ClassroomDto> classrooms = classroomService.GetClassroomsByTeacher(currentUser.getId());
+            
+            Map<String, Object> teachingHistory = new HashMap<>();
+            teachingHistory.put("totalClassrooms", classrooms.size());
+            teachingHistory.put("classrooms", classrooms);
+            
+            // Calculate teaching statistics
+            long totalStudents = 0;
+            if (!classrooms.isEmpty()) {
+                List<Long> classroomIds = classrooms.stream().map(ClassroomDto::getId).collect(Collectors.toList());
+                totalStudents = userRepository.countStudentsByClassroomIds(classroomIds);
+            }
+            
+            teachingHistory.put("totalStudents", totalStudents);
+            teachingHistory.put("yearsOfTeaching", currentUser.getHireDate() != null ? 
+                LocalDate.now().getYear() - currentUser.getHireDate().getYear() : 0);
+                
+            return ResponseEntity.ok(teachingHistory);
+            
+        } catch (Exception e) {
+            System.err.println("Error in getTeacherTeachingHistory: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Failed to retrieve teaching history: " + e.getMessage()));
         }
     }
 }

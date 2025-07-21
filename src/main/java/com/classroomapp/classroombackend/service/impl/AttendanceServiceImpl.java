@@ -63,6 +63,9 @@ public class AttendanceServiceImpl implements AttendanceService {
     @Override
     @Transactional
     public void submitAttendance(AttendanceSubmitDto submitDto) {
+        // Get current user (teacher) from SecurityContext
+        User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        
         // Validate lecture and classroom existence
         Lecture lecture = lectureRepository.findById(submitDto.getLectureId())
                 .orElseThrow(() -> new BusinessLogicException("Lecture not found with ID: " + submitDto.getLectureId()));
@@ -83,12 +86,25 @@ public class AttendanceServiceImpl implements AttendanceService {
                     AttendanceSession newSession = new AttendanceSession();
                     newSession.setClassroom(classroom);
                     newSession.setLecture(lecture);
+                    newSession.setTeacher(currentUser); // Set teacher who is submitting attendance
                     newSession.setCreatedAt(LocalDateTime.now());
                     newSession.setExpiresAt(LocalDateTime.now().plusHours(1)); // Example: session expires in 1 hour
                     newSession.setIsOpen(true);
                     newSession.setSessionDate(LocalDate.now()); // Set session date to today
+                    newSession.setTeacherClockInTime(LocalDateTime.now()); // Set clock-in time for teacher
                     return attendanceSessionRepository.save(newSession);
                 });
+
+        // If session exists but teacher is not set, set it now
+        if (session.getTeacher() == null) {
+            session.setTeacher(currentUser);
+        }
+        if (session.getTeacherClockInTime() == null) {
+            session.setTeacherClockInTime(LocalDateTime.now()); // ✅ Fix bug teaching history
+        }
+
+        // Save session if teacher or clock-in time was updated
+        attendanceSessionRepository.save(session);
 
         // Ensure session is open and not expired if a new one wasn't created
         if (!session.getIsOpen() ||

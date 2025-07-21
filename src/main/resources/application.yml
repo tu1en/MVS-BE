@@ -1,0 +1,106 @@
+# Spring Boot Application Configuration
+# Admin Modules Demo - System Settings & Workflow Editor
+
+server:
+  port: 8088
+  servlet:
+    context-path: /
+  error:
+    include-message: always
+    include-binding-errors: always
+
+spring:
+  application:
+    name: admin-modules-demo
+    
+  # Database Configuration
+  # Option 1: H2 In-Memory (Development)
+  datasource:
+    url: jdbc:h2:mem:admin_db
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+    
+  # Option 2: PostgreSQL (Production)
+  # datasource:
+  #   url: jdbc:postgresql://localhost:5432/admin_system
+  #   username: postgres
+  #   password: your_password
+  #   driver-class-name: org.postgresql.Driver
+    
+  # JPA/Hibernate Configuration
+  jpa:
+    hibernate:
+      ddl-auto: create-drop  # Development: create-drop, Production: validate
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect  # H2Dialect or PostgreSQLDialect
+        
+  # H2 Console (Development only)
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        trace: false
+        web-allow-others: false
+
+  # Security Configuration (optional - for future JWT implementation)
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # jwt-set-uri: https://your-auth-server/.well-known/jwks.json
+          
+# Logging Configuration
+logging:
+  level:
+    com.doproject: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/admin-modules.log
+
+# Management Endpoints (Actuator)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# Custom Application Properties
+app:
+  admin:
+    default-settings:
+      site-name: "Admin System Demo"
+      language: "vi"
+      session-timeout: 30
+      max-login-attempts: 5
+      lockout-duration: 15
+    security:
+      jwt:
+        secret: "your-secret-key-here-min-256-bits"
+        expiration: 86400000  # 24 hours
+      cors:
+        allowed-origins: 
+          - "http://localhost:3000"
+          - "http://localhost:3001"
+          - "http://127.0.0.1:3000"
+        allowed-methods:
+          - GET
+          - POST  
+          - PUT
+          - DELETE
+          - OPTIONS
+          - PATCH

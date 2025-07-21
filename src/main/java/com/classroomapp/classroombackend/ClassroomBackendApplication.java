@@ -3,28 +3,23 @@ package com.classroomapp.classroombackend;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.cache.annotation.EnableCaching;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import com.classroomapp.classroombackend.config.seed.ClassroomEnrollmentSeeder;
-import com.classroomapp.classroombackend.config.seed.ClassroomSeeder;
-import com.classroomapp.classroombackend.config.seed.LectureSeeder;
-import com.classroomapp.classroombackend.config.seed.RoleSeeder;
-import com.classroomapp.classroombackend.config.seed.UserSeeder;
-import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
-
 @SpringBootApplication
 @EnableCaching
-@Configuration
+@EnableAspectJAutoProxy
 @ComponentScan(basePackages = "com.classroomapp.classroombackend")
+@EntityScan(basePackages = "com.classroomapp.classroombackend.model")
+@EnableJpaRepositories(basePackages = "com.classroomapp.classroombackend.repository")
 public class ClassroomBackendApplication implements WebMvcConfigurer {
     
     public static void main(String[] args) {
@@ -37,20 +32,5 @@ public class ClassroomBackendApplication implements WebMvcConfigurer {
         converters.add(new StringHttpMessageConverter(StandardCharsets.UTF_8));
     }
 
-    @Bean
-    public CommandLineRunner commandLineRunner(RoleSeeder roleSeeder, UserSeeder userSeeder, ClassroomSeeder classroomSeeder, ClassroomEnrollmentSeeder enrollmentSeeder, LectureSeeder lectureSeeder) {
-        return args -> {
-            System.out.println("--- Seeding Database ---");
-            roleSeeder.seed();
-            userSeeder.seed();
-            List<Classroom> seededClassrooms = classroomSeeder.seed();
 
-            // Enroll students. This seeder will find users and classrooms on its own.
-            enrollmentSeeder.seed();
-
-            // Now create lectures for those classrooms
-            lectureSeeder.seed(seededClassrooms);
-            System.out.println("--- Seeding Complete ---");
-        };
-    }
 }

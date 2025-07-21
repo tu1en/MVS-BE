@@ -395,23 +395,36 @@ public class FrontendApiBridgeController {
             String username = authentication.getName();
             User currentUser = userRepository.findByUsername(username)
                     .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
-            
+
             // Get actual unread count from service
             Long unreadCount = messageService.countUnreadMessages(currentUser.getId());
-            
+
             return ResponseEntity.ok(new java.util.HashMap<String, Object>() {{
                 put("data", new java.util.HashMap<String, Long>() {{
                     put("count", unreadCount);
                 }});
             }});
         } catch (Exception e) {
+            System.err.println("Error getting student unread message count: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.ok(new java.util.HashMap<String, Object>() {{
-                put("data", new java.util.HashMap<String, Integer>() {{
-                    put("count", 0);
+                put("data", new java.util.HashMap<String, Long>() {{
+                    put("count", 0L);
                 }});
             }});
         }
-    }    /**
+    }
+
+    /**
+     * Bridge endpoint for dashboard unread message count
+     * Frontend calls: /messages/dashboard/unread-count
+     */
+    @GetMapping("/messages/dashboard/unread-count")
+    public ResponseEntity<?> getDashboardUnreadMessageCount(Authentication authentication) {
+        return getStudentUnreadMessageCount(authentication);
+    }
+
+    /**
      * Bridge endpoint for getting attendance stats for teachers
      * Frontend calls: /attendance/current-teacher/stats
      */
@@ -601,13 +614,55 @@ public class FrontendApiBridgeController {
             return ResponseEntity.ok("Error: " + e.getMessage());
         }
     }    /**
+     * DEBUG ENDPOINT: Check student data for debugging
+     */
+    @GetMapping("/debug/student/{studentId}")
+    public ResponseEntity<java.util.Map<String, Object>> debugStudentData(@PathVariable Long studentId) {
+        try {
+            java.util.Map<String, Object> debugInfo = new java.util.HashMap<>();
+
+            // Check if student exists
+            User student = userRepository.findById(studentId).orElse(null);
+            debugInfo.put("studentExists", student != null);
+            if (student != null) {
+                debugInfo.put("studentName", student.getFullName());
+                debugInfo.put("studentEmail", student.getEmail());
+                debugInfo.put("studentRole", student.getRoleId());
+            }
+
+            // Check classroom enrollments
+            List<ClassroomDto> enrollments = classroomService.GetClassroomsByStudent(studentId);
+            debugInfo.put("enrollmentCount", enrollments.size());
+            debugInfo.put("enrollments", enrollments);
+
+            // Check assignments
+            List<AssignmentDto> assignments = assignmentService.GetAssignmentsByStudent(studentId);
+            debugInfo.put("assignmentCount", assignments.size());
+            debugInfo.put("assignments", assignments);
+
+            // Check messages
+            List<StudentMessageDto> sentMessages = messageService.getSentMessages(studentId);
+            List<StudentMessageDto> receivedMessages = messageService.getReceivedMessages(studentId);
+            debugInfo.put("sentMessageCount", sentMessages.size());
+            debugInfo.put("receivedMessageCount", receivedMessages.size());
+
+            return ResponseEntity.ok(debugInfo);
+        } catch (Exception e) {
+            java.util.Map<String, Object> errorInfo = new java.util.HashMap<>();
+            errorInfo.put("error", e.getMessage());
+            errorInfo.put("stackTrace", java.util.Arrays.toString(e.getStackTrace()));
+            return ResponseEntity.ok(errorInfo);
+        }
+    }
+
+    /**
      * Get conversation between two users
      */    @GetMapping("/student-messages/conversation/{userId1}/{userId2}")
     public ResponseEntity<List<StudentMessageDto>> getConversation(@PathVariable Long userId1, @PathVariable Long userId2) {
         try {
             System.out.println("=== GET CONVERSATION DEBUG ===");
             System.out.println("Getting conversation between user " + userId1 + " and user " + userId2);
-            
+
             // Get real conversation from database - this will create sample messages if none exist
             List<StudentMessageDto> conversation = messageService.getConversation(userId1, userId2);
             

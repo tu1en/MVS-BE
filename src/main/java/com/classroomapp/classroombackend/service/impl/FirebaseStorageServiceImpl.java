@@ -44,10 +44,10 @@ public class FirebaseStorageServiceImpl implements FileStorageService {
             logger.info("Generated path for upload: {}", fullPath);
 
             BlobId blobId = BlobId.of(bucketName, fullPath);
-
             BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
                     .setContentType(file.getContentType())
                     .build();
+
             logger.info("Uploading file to Firebase Storage...");
             Blob blob = storage.create(blobInfo, file.getBytes());
 
@@ -66,11 +66,31 @@ public class FirebaseStorageServiceImpl implements FileStorageService {
             throw new RuntimeException("A general error occurred during file upload.", e);
         }
     }
-    
+
+    @Override
+    public String store(MultipartFile file, String folder) {
+        try {
+            // Similar logic as save(), but return only the URL
+            Storage storage = StorageClient.getInstance().bucket().getStorage();
+
+            String fileName = generateUniqueFileName(file.getOriginalFilename());
+            String fullPath = folder + "/" + fileName;
+
+            BlobId blobId = BlobId.of(bucketName, fullPath);
+            BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
+                    .setContentType(file.getContentType())
+                    .build();
+
+            storage.create(blobInfo, file.getBytes());
+            return String.format("https://storage.googleapis.com/%s/%s", bucketName, fullPath);
+        } catch (IOException e) {
+            logger.error("Error uploading file to Firebase Storage", e);
+            throw new RuntimeException("Failed to store file to Firebase Storage: " + e.getMessage(), e);
+        }
+    }
+
     @Override
     public void delete(String fileName) {
-        // This is a simplified delete, assuming a default folder if none is provided.
-        // A better implementation might require the full path or a more robust lookup.
         this.delete(fileName, "uploads");
     }
 
@@ -90,10 +110,7 @@ public class FirebaseStorageServiceImpl implements FileStorageService {
             logger.error("Error deleting file from Firebase Storage", e);
         }
     }
-    
-    /**
-     * Generate a unique filename to prevent duplicates
-     */
+
     private String generateUniqueFileName(String originalFilename) {
         String extension = "";
         if (originalFilename != null && originalFilename.contains(".")) {

@@ -35,33 +35,46 @@ public class MessageSeeder {
         List<User> teachers = userRepository.findByRoleId(2); // TEACHER
         List<User> managers = userRepository.findByRoleId(3); // MANAGER
 
-        if (students.size() < 2 || teachers.isEmpty() || managers.isEmpty()) {
-            System.out.println("⚠️ [MessageSeeder] Not enough users with required roles to seed messages. Skipping.");
-                return;
-            }
+        System.out.println("📊 [MessageSeeder] Found " + students.size() + " students, " + teachers.size() + " teachers, " + managers.size() + " managers");
+
+        if (students.isEmpty()) {
+            System.out.println("⚠️ [MessageSeeder] No students found. Skipping message seeding.");
+            return;
+        }
+
+        if (teachers.isEmpty()) {
+            System.out.println("⚠️ [MessageSeeder] No teachers found. Skipping message seeding.");
+            return;
+        }
 
         int messageCount = 0;
 
-        // Create 5-10 conversation threads
-        int conversations = 5 + random.nextInt(6);
-        for (int i = 0; i < conversations; i++) {
-            User student = students.get(random.nextInt(students.size()));
-            User teacher = teachers.get(random.nextInt(teachers.size()));
-            createConversation(student, teacher);
-            messageCount += 2;
+        // Create conversations for EACH student with at least one teacher
+        for (User student : students) {
+            // Each student gets 2-3 conversations with different teachers
+            int conversationsPerStudent = 2 + random.nextInt(2); // 2-3 conversations
+            for (int i = 0; i < Math.min(conversationsPerStudent, teachers.size()); i++) {
+                User teacher = teachers.get(i % teachers.size());
+                createConversation(student, teacher);
+                messageCount += 2;
+            }
         }
 
-        // Create some requests to managers
-        User studentForRequest = students.get(0);
-        User teacherForRequest = teachers.get(0);
-        User manager = managers.get(0);
+        // Create some requests to managers if managers exist
+        if (!managers.isEmpty()) {
+            User studentForRequest = students.get(0);
+            User manager = managers.get(0);
+            createMessage(studentForRequest, manager, "Thắc mắc về học phí", "Em chào thầy/cô, em muốn hỏi về chính sách học phí cho học kỳ tới ạ.", "MEDIUM", true);
+            messageCount++;
 
-        createMessage(studentForRequest, manager, "Thắc mắc về học phí", "Em chào thầy/cô, em muốn hỏi về chính sách học phí cho học kỳ tới ạ.", "MEDIUM", true);
-        createMessage(teacherForRequest, manager, "Đề xuất cải tiến giáo trình", "Tôi có một vài ý tưởng để cải tiến nội dung giáo trình môn học, rất mong được trao đổi với ban quản lý.", "LOW", false);
-        messageCount += 2;
+            if (!teachers.isEmpty()) {
+                User teacherForRequest = teachers.get(0);
+                createMessage(teacherForRequest, manager, "Đề xuất cải tiến giáo trình", "Tôi có một vài ý tưởng để cải tiến nội dung giáo trình môn học, rất mong được trao đổi với ban quản lý.", "LOW", false);
+                messageCount++;
+            }
+        }
 
-
-        System.out.println("✅ [MessageSeeder] Created " + messageCount + " sample messages.");
+        System.out.println("✅ [MessageSeeder] Created " + messageCount + " sample messages for " + students.size() + " students.");
     }
 
     private void createConversation(User student, User teacher) {
@@ -84,8 +97,8 @@ public class MessageSeeder {
         String teacherReply = teacherReplies[random.nextInt(teacherReplies.length)];
 
         // Student sends first message
-        StudentMessage msg1 = createMessage(student, teacher, subject, studentMessage, "MEDIUM", true);
-        
+        createMessage(student, teacher, subject, studentMessage, "MEDIUM", true);
+
         // Teacher replies
         createMessage(teacher, student, "Re: " + subject, teacherReply, "MEDIUM", random.nextBoolean());
     }

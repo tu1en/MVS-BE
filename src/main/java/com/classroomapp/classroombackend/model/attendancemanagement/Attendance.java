@@ -1,5 +1,7 @@
 package com.classroomapp.classroombackend.model.attendancemanagement;
 
+import java.time.Instant;
+
 import com.classroomapp.classroombackend.model.usermanagement.User;
 
 import jakarta.persistence.Column;
@@ -24,7 +26,6 @@ import lombok.NoArgsConstructor;
     @UniqueConstraint(columnNames = {"session_id", "student_id"})
 })
 @Data
-
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -44,4 +45,20 @@ public class Attendance {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private AttendanceStatus status;
+
+    @Column(name = "join_time")
+    private Instant joinTime;
+
+    @Column(name = "leave_time")
+    private Instant leaveTime;
+
+    @Column(name = "duration_minutes")
+    private Integer durationMinutes;
+
+    @Builder.Default
+    @Column(name = "created_at")
+    private Instant createdAt = Instant.now();
+
+    @Column(name = "updated_at")
+    private Instant updatedAt;
 }

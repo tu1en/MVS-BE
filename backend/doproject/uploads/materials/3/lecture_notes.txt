@@ -1,4 +1,4 @@
-Sample lecture notes for English
+Sample lecture notes for Khoa học máy tính
 
 These are detailed notes about the course content.
 - Topic 1: Introduction

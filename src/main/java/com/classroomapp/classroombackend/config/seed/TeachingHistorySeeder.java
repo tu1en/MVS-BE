@@ -1,12 +1,19 @@
 package com.classroomapp.classroombackend.config.seed;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.classroomapp.classroombackend.model.Lecture;
+import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSession;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.LectureRepository;
+import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceSessionRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 
@@ -14,74 +21,83 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class TeachingHistorySeeder {
+public class TeachingHistorySeeder implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final ClassroomRepository classroomRepository;
+    private final LectureRepository lectureRepository;
+    private final AttendanceSessionRepository attendanceSessionRepository;
 
-    public void seed() {
-        System.out.println("🔄 [TeachingHistorySeeder] Starting teaching history seeding...");
-        
-        // Find the main teacher user
-        User teacher = userRepository.findByUsername("teacher")
-                .orElseThrow(() -> new RuntimeException("Teacher user not found"));
-        
-        System.out.println("✅ [TeachingHistorySeeder] Found teacher: " + teacher.getFullName() + " (ID: " + teacher.getId() + ")");
-        
-        // Get all classrooms for this teacher
-        List<Classroom> classrooms = classroomRepository.findByTeacher(teacher);
-        if (classrooms.isEmpty()) {
-            System.out.println("⚠️ [TeachingHistorySeeder] No classrooms found for teacher. Skipping teaching history seeding.");
-            return;
-        }
-        
-        System.out.println("✅ [TeachingHistorySeeder] Found " + classrooms.size() + " classrooms for teacher");
-        
-        // Create teaching history records
-        // Note: Since there's no specific TeachingHistory entity, we'll create data that can be used
-        // by the teaching history API endpoints. This might involve creating additional records
-        // in existing entities or creating a new entity if needed.
-        
-        // For now, we'll create some sample data that represents teaching history
-        // This could be implemented as:
-        // 1. Historical classroom assignments
-        // 2. Past semester records
-        // 3. Teaching performance metrics
-        
-        createHistoricalClassroomData(teacher, classrooms);
-        
-        System.out.println("✅ [TeachingHistorySeeder] Teaching history seeding completed");
+    @Override
+    public void run(String... args) {
+        seed();
     }
-    
-    private void createHistoricalClassroomData(User teacher, List<Classroom> currentClassrooms) {
-        // Create historical data by modifying existing classrooms or creating new ones
-        // representing past semesters
-        
-        LocalDate currentDate = LocalDate.now();
-        
-        // Create data for previous semesters
-        for (int semesterBack = 1; semesterBack <= 3; semesterBack++) {
-            LocalDate semesterStart = currentDate.minusMonths(semesterBack * 6);
-            
-            for (int i = 0; i < Math.min(2, currentClassrooms.size()); i++) {
-                Classroom currentClassroom = currentClassrooms.get(i);
-                
-                // Create a historical classroom record
-                Classroom historicalClassroom = new Classroom();
-                historicalClassroom.setName(currentClassroom.getName() + " - Kỳ " + semesterBack);
-                historicalClassroom.setDescription("Lớp học kỳ trước - " + currentClassroom.getDescription());
-                historicalClassroom.setSection(currentClassroom.getSection() + "_H" + semesterBack);
-                historicalClassroom.setSubject(currentClassroom.getSubject());
-                historicalClassroom.setTeacher(teacher);
-                historicalClassroom.setCourseId(currentClassroom.getCourseId());
-                
-                // Save the historical classroom
-                classroomRepository.save(historicalClassroom);
-                
-                System.out.println("📚 [TeachingHistorySeeder] Created historical classroom: " + historicalClassroom.getName());
-            }
+
+    @Transactional
+    public void seed() {
+        // 1️⃣ Fix sessions that have null teacher_id
+        List<AttendanceSession> sessionsWithoutTeacher = attendanceSessionRepository.findAll()
+                .stream()
+                .filter(s -> s.getTeacher() == null)
+                .toList();
+
+        if (!sessionsWithoutTeacher.isEmpty()) {
+            User teacher = userRepository.findByUsername("teacher")
+                    .orElseThrow(() -> new RuntimeException("Teacher user not found"));
+
+            sessionsWithoutTeacher.forEach(s -> {
+                s.setTeacher(teacher);
+                if (s.getTeacherClockInTime() == null) {
+                    s.setTeacherClockInTime(LocalDateTime.now());
+                }
+            });
+
+            attendanceSessionRepository.saveAll(sessionsWithoutTeacher);
+            System.out.println("✅ TeachingHistorySeeder: Fixed " + sessionsWithoutTeacher.size() + " sessions without teacher.");
+            return; // Nếu muốn seed thêm bản ghi mẫu → bỏ return
         }
-        
-        System.out.println("✅ [TeachingHistorySeeder] Created historical classroom data for 3 previous semesters");
+
+        // 2️⃣ Nếu bảng hoàn toàn trống => tạo dữ liệu mẫu
+        if (attendanceSessionRepository.count() == 0) {
+            User teacher = userRepository.findByUsername("teacher")
+                    .orElseGet(() -> {
+                        User newTeacher = new User();
+                        newTeacher.setFullName("Nguyen Van A");
+                        newTeacher.setEmail("teacher@test.com");
+                        newTeacher.setUsername("teacher");
+                        newTeacher.setPassword("$2a$10$7ZwjWu9F8pFKcFdqZxzRJO1LkQjN2WzCfTFdqQnzIzOyV8dGz.r6m");
+                        newTeacher.setRoleId(2); // ROLE_TEACHER
+                        return userRepository.save(newTeacher);
+                    });
+
+            Classroom classroom = new Classroom();
+            classroom.setName("Lập trình Java cơ bản");
+            classroom.setDescription("Môn học lập trình Java dành cho sinh viên năm nhất");
+            classroom.setTeacher(teacher);
+            classroomRepository.save(classroom);
+
+            Lecture lecture = new Lecture();
+            lecture.setTitle("OOP in Java");
+            lecture.setClassroom(classroom);
+            lecture.setLectureDate(LocalDate.now());
+            lectureRepository.save(lecture);
+
+            AttendanceSession session = AttendanceSession.builder()
+                    .classroom(classroom)
+                    .lecture(lecture)
+                    .teacher(teacher)
+                    .sessionDate(LocalDate.now())
+                    .teacherClockInTime(LocalDateTime.now())
+                    .isOpen(false)
+                    .isActive(true)
+                    .autoMarkTeacherAttendance(true)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            attendanceSessionRepository.save(session);
+            System.out.println("✅ TeachingHistorySeeder: Created a new sample teaching history session.");
+        } else {
+            System.out.println("✅ TeachingHistorySeeder: No action needed (teaching history exists).");
+        }
     }
 }

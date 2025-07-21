@@ -1,6 +1,7 @@
 package com.classroomapp.classroombackend.service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.data.domain.Page;
@@ -95,6 +96,16 @@ public interface UserService {
      * @return User entity if found, null otherwise
      */
     User findUserEntityByEmail(String email);
+
+    /**
+     * Find user by email (for backward compatibility)
+     * @param email email to search
+     * @return Optional containing user if found
+     */
+    default Optional<User> findByEmail(String email) {
+        User user = findUserEntityByEmail(email);
+        return user != null ? Optional.of(user) : Optional.empty();
+    }
 
     List<UserDto> getAllUsers();
 }

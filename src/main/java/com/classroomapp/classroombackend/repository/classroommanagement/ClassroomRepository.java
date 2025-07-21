@@ -3,6 +3,8 @@ package com.classroomapp.classroombackend.repository.classroommanagement;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -46,4 +48,18 @@ public interface ClassroomRepository extends JpaRepository<Classroom, Long> {
     // Find classroom IDs by student ID (for schedule service)
     @Query("SELECT c.id FROM Classroom c JOIN c.enrollments e WHERE e.user.id = :studentId")
     List<Long> findClassroomsIdsByStudentId(@Param("studentId") Long studentId);
+
+    // Additional methods for Classroom & Slot Management
+
+    // Search classrooms by name containing keyword (with pagination)
+    @Query("SELECT c FROM Classroom c WHERE LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%'))")
+    Page<Classroom> findByClassroomNameContainingIgnoreCase(@Param("keyword") String keyword, Pageable pageable);
+
+    // Check if classroom name exists for a specific teacher
+    @Query("SELECT COUNT(c) > 0 FROM Classroom c WHERE c.name = :name AND c.createdBy.id = :teacherId")
+    boolean existsByClassroomNameAndTeacherId(@Param("name") String name, @Param("teacherId") Long teacherId);
+
+    // Count classrooms by teacher ID
+    @Query("SELECT COUNT(c) FROM Classroom c WHERE c.createdBy.id = :teacherId")
+    long countByTeacherId(@Param("teacherId") Long teacherId);
 }

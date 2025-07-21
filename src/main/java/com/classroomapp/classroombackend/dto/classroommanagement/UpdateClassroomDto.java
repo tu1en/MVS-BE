@@ -11,4 +11,13 @@ public class UpdateClassroomDto {
     private String name;
 
     private String description;
-} 
+
+    // Alias method for backward compatibility
+    public String getClassroomName() {
+        return name;
+    }
+
+    public boolean hasUpdates() {
+        return (name != null && !name.isEmpty()) || (description != null && !description.isEmpty());
+    }
+}

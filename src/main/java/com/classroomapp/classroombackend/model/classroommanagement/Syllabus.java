@@ -26,18 +26,19 @@ public class Syllabus {
     private Long id;
     
     @NotBlank
+    @Column(columnDefinition = "NVARCHAR(255)")
     private String title;
-    
-    @Column(length = 5000)
+
+    @Column(columnDefinition = "NTEXT")
     private String content;
-    
-    @Column(name = "learning_objectives", length = 2000)
+
+    @Column(name = "learning_objectives", columnDefinition = "NVARCHAR(2000)")
     private String learningObjectives;
-    
-    @Column(name = "required_materials", length = 1000)
+
+    @Column(name = "required_materials", columnDefinition = "NVARCHAR(1000)")
     private String requiredMaterials;
-    
-    @Column(name = "grading_criteria", length = 1000)
+
+    @Column(name = "grading_criteria", columnDefinition = "NVARCHAR(1000)")
     private String gradingCriteria;
     
     // One-to-One relationship with Classroom

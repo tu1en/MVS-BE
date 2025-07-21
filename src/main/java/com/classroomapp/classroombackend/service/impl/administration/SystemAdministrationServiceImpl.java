@@ -2,8 +2,11 @@ package com.classroomapp.classroombackend.service.impl.administration;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -16,17 +19,25 @@ import com.classroomapp.classroombackend.model.administration.SystemConfiguratio
 import com.classroomapp.classroombackend.model.administration.SystemMonitoring;
 import com.classroomapp.classroombackend.model.administration.SystemPermission;
 import com.classroomapp.classroombackend.model.administration.SystemRole;
+import com.classroomapp.classroombackend.repository.administration.AuditLogRepository;
+import com.classroomapp.classroombackend.repository.administration.SystemConfigurationRepository;
 import com.classroomapp.classroombackend.service.administration.SystemAdministrationService;
 
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Simple implementation of SystemAdministrationService for basic functionality
+ * Implementation of SystemAdministrationService with database integration
  */
 @Service
 @Slf4j
 @Transactional
 public class SystemAdministrationServiceImpl implements SystemAdministrationService {
+
+    @Autowired
+    private AuditLogRepository auditLogRepository;
+    
+    @Autowired
+    private SystemConfigurationRepository systemConfigurationRepository;
 
     // Role Management - Simplified implementations
     @Override
@@ -180,53 +191,155 @@ public class SystemAdministrationServiceImpl implements SystemAdministrationServ
         log.info("Resetting configuration {} to default by user {}", configKey, updatedBy);
     }
 
-    // Audit & Logging - Simplified implementations
+    // Audit & Logging - Real implementations
     @Override
     public AuditLog createAuditLog(AuditLog auditLog) {
-        log.info("Creating audit log: {}", auditLog.getDescription());
-        return new AuditLog();
+        try {
+            log.info("Creating audit log: {} - {}", auditLog.getAction(), auditLog.getDescription());
+            
+            // Set timestamp if not set
+            if (auditLog.getTimestamp() == null) {
+                auditLog.setTimestamp(LocalDateTime.now());
+            }
+            
+            // Set default values if not set
+            if (auditLog.getSuccess() == null) {
+                auditLog.setSuccess(true);
+            }
+            
+            if (auditLog.getSeverity() == null) {
+                auditLog.setSeverity(AuditLog.AuditSeverity.INFO);
+            }
+            
+            if (auditLog.getCategory() == null) {
+                auditLog.setCategory(AuditLog.AuditCategory.GENERAL);
+            }
+            
+            return auditLogRepository.save(auditLog);
+        } catch (Exception e) {
+            log.error("Error creating audit log: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to create audit log", e);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AuditLog findAuditLogById(Long id) {
+        try {
+            log.info("Finding audit log by ID: {}", id);
+            return auditLogRepository.findById(id).orElse(null);
+        } catch (Exception e) {
+            log.error("Error finding audit log by ID {}: {}", id, e.getMessage(), e);
+            return null;
+        }
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<AuditLog> getAuditLogs(Pageable pageable) {
-        log.info("Getting audit logs");
-        return new PageImpl<>(new ArrayList<>(), pageable, 0);
+        try {
+            log.info("Getting audit logs with pagination: page={}, size={}", 
+                    pageable.getPageNumber(), pageable.getPageSize());
+            return auditLogRepository.findAll(pageable);
+        } catch (Exception e) {
+            log.error("Error getting audit logs: {}", e.getMessage(), e);
+            return new PageImpl<>(new ArrayList<>(), pageable, 0);
+        }
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<AuditLog> getAuditLogsByUser(Long userId, Pageable pageable) {
-        log.info("Getting audit logs for user: {}", userId);
-        return new PageImpl<>(new ArrayList<>(), pageable, 0);
+        try {
+            log.info("Getting audit logs for user: {}", userId);
+            return auditLogRepository.findByUserId(userId, pageable);
+        } catch (Exception e) {
+            log.error("Error getting audit logs for user {}: {}", userId, e.getMessage(), e);
+            return new PageImpl<>(new ArrayList<>(), pageable, 0);
+        }
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<AuditLog> getAuditLogsByAction(AuditLog.AuditAction action, Pageable pageable) {
-        log.info("Getting audit logs by action: {}", action);
-        return new PageImpl<>(new ArrayList<>(), pageable, 0);
+        try {
+            log.info("Getting audit logs by action: {}", action);
+            return auditLogRepository.findByAction(action, pageable);
+        } catch (Exception e) {
+            log.error("Error getting audit logs by action {}: {}", action, e.getMessage(), e);
+            return new PageImpl<>(new ArrayList<>(), pageable, 0);
+        }
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<AuditLog> getSecurityLogs(Pageable pageable) {
-        log.info("Getting security logs");
-        return new PageImpl<>(new ArrayList<>(), pageable, 0);
+        try {
+            log.info("Getting security logs");
+            return auditLogRepository.findSecurityLogs(pageable);
+        } catch (Exception e) {
+            log.error("Error getting security logs: {}", e.getMessage(), e);
+            return new PageImpl<>(new ArrayList<>(), pageable, 0);
+        }
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<AuditLog> searchAuditLogs(String searchTerm, Pageable pageable) {
-        log.info("Searching audit logs with term: {}", searchTerm);
-        return new PageImpl<>(new ArrayList<>(), pageable, 0);
+        try {
+            log.info("Searching audit logs with term: {}", searchTerm);
+            if (searchTerm == null || searchTerm.trim().isEmpty()) {
+                return auditLogRepository.findAll(pageable);
+            }
+            return auditLogRepository.searchLogs(searchTerm.trim(), pageable);
+        } catch (Exception e) {
+            log.error("Error searching audit logs with term {}: {}", searchTerm, e.getMessage(), e);
+            return new PageImpl<>(new ArrayList<>(), pageable, 0);
+        }
     }
 
     @Override
     @Transactional(readOnly = true)
     public AuditStatistics getAuditStatistics(LocalDateTime since) {
-        log.info("Getting audit statistics since: {}", since);
-        return new AuditStatistics();
+        try {
+            log.info("Getting audit statistics since: {}", since);
+            
+            if (since == null) {
+                since = LocalDateTime.now().minusDays(7); // Default to last 7 days
+            }
+            
+            Object[] stats = auditLogRepository.getAuditStatistics(since);
+            
+            AuditStatistics auditStats = new AuditStatistics();
+            if (stats != null && stats.length >= 5) {
+                auditStats.setTotalLogs(((Number) stats[0]).longValue());
+                auditStats.setSuccessfulLogs(((Number) stats[1]).longValue());
+                auditStats.setFailedLogs(((Number) stats[2]).longValue());
+                auditStats.setUniqueUsers(((Number) stats[3]).longValue());
+                auditStats.setUniqueIPs(((Number) stats[4]).longValue());
+            }
+            
+            // Get action counts
+            List<Object[]> actionCounts = auditLogRepository.countLogsByAction(since);
+            Map<String, Long> actionStats = new HashMap<>();
+            for (Object[] count : actionCounts) {
+                actionStats.put(count[0].toString(), ((Number) count[1]).longValue());
+            }
+            auditStats.setActionCounts(actionStats);
+            
+            // Get category counts
+            List<Object[]> categoryCounts = auditLogRepository.countLogsByCategory(since);
+            Map<String, Long> categoryStats = new HashMap<>();
+            for (Object[] count : categoryCounts) {
+                categoryStats.put(count[0].toString(), ((Number) count[1]).longValue());
+            }
+            auditStats.setCategoryCounts(categoryStats);
+            
+            return auditStats;
+        } catch (Exception e) {
+            log.error("Error getting audit statistics: {}", e.getMessage(), e);
+            return new AuditStatistics();
+        }
     }
 
     // System Monitoring - Simplified implementations
@@ -301,8 +414,32 @@ public class SystemAdministrationServiceImpl implements SystemAdministrationServ
     // Maintenance Operations - Simplified implementations
     @Override
     public CleanupResult cleanupOldAuditLogs(int daysToKeep) {
-        log.info("Cleaning up audit logs older than {} days", daysToKeep);
-        return new CleanupResult();
+        try {
+            log.info("Cleaning up audit logs older than {} days", daysToKeep);
+            
+            LocalDateTime cutoffDate = LocalDateTime.now().minusDays(daysToKeep);
+            
+            // Count logs to be deleted
+            Long logsToDelete = auditLogRepository.countOldLogs(cutoffDate);
+            
+            // Delete old logs
+            auditLogRepository.deleteOldLogs(cutoffDate);
+            
+            CleanupResult result = new CleanupResult();
+            result.setRecordsDeleted(logsToDelete);
+            result.setSuccess(true);
+            result.setMessage(String.format("Successfully deleted %d audit logs older than %d days", 
+                    logsToDelete, daysToKeep));
+            
+            log.info("Cleanup completed: deleted {} audit logs", logsToDelete);
+            return result;
+        } catch (Exception e) {
+            log.error("Error cleaning up audit logs: {}", e.getMessage(), e);
+            CleanupResult result = new CleanupResult();
+            result.setSuccess(false);
+            result.setMessage("Failed to cleanup audit logs: " + e.getMessage());
+            return result;
+        }
     }
 
     @Override

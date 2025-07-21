@@ -38,16 +38,16 @@ public class CourseMaterial {
     @Column(columnDefinition = "NTEXT")
     private String description;
 
-    @Column(name = "file_path", length = 500)
+    @Column(name = "file_path", columnDefinition = "NVARCHAR(500)")
     private String filePath;
 
-    @Column(name = "file_name")
+    @Column(name = "file_name", columnDefinition = "NVARCHAR(255)")
     private String fileName;
 
     @Column(name = "file_size")
     private Long fileSize;
 
-    @Column(name = "file_type", length = 100)
+    @Column(name = "file_type", columnDefinition = "NVARCHAR(100)")
     private String fileType;
 
     @Column(name = "upload_date", nullable = false)

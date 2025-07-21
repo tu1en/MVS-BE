@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.classroomapp.classroombackend.dto.ClassroomDto;
 import com.classroomapp.classroombackend.service.ClassroomService;
+import com.classroomapp.classroombackend.service.VideoConferenceService;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 /**
  * Video Conference Controller
@@ -27,11 +29,16 @@ public class VideoConferenceController {
     
     @Autowired
     private ClassroomService classroomService;
+
+    @Autowired
+    private VideoConferenceService videoConferenceService;
     
     /**
      * Get all available classrooms for video conference
+     * Teachers and students can view available rooms
      */
     @GetMapping("/rooms")
+    @PreAuthorize("hasRole('TEACHER') or hasRole('STUDENT')")
     public ResponseEntity<List<ClassroomDto>> getAvailableRooms() {
         try {
             List<ClassroomDto> classrooms = classroomService.getAllClassrooms();
@@ -60,26 +67,17 @@ public class VideoConferenceController {
     
     /**
      * Create a video conference session for a classroom
+     * Only teachers can start video conferences
      */
     @PostMapping("/rooms/{classroomId}/start")
+    @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<Map<String, Object>> startConference(@PathVariable Long classroomId, @RequestBody Map<String, Object> sessionData) {
         try {
-            ClassroomDto classroom = classroomService.getClassroomById(classroomId);
-            if (classroom == null) {
-                return ResponseEntity.notFound().build();
-            }
-            
-            // Create conference session data
-            Map<String, Object> conferenceSession = Map.of(
-                "roomId", "classroom_" + classroomId,
-                "classroomId", classroomId,
-                "classroomName", classroom.getName(),
-                "signalingUrl", "ws://localhost:8080/signaling",
-                "status", "active",
-                "startedAt", System.currentTimeMillis()
-            );
-            
-            return ResponseEntity.ok(conferenceSession);
+            Map<String, Object> conferenceSession = videoConferenceService.createConferenceSession(classroomId, sessionData);
+            Map<String, Object> startedSession = videoConferenceService.startConferenceSession((String) conferenceSession.get("sessionId"));
+            return ResponseEntity.ok(startedSession);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }
@@ -88,33 +86,52 @@ public class VideoConferenceController {
     /**
      * End a video conference session
      */
-    @PostMapping("/rooms/{classroomId}/end")
-    public ResponseEntity<Map<String, String>> endConference(@PathVariable Long classroomId) {
+    @PostMapping("/sessions/{sessionId}/end")
+    public ResponseEntity<Map<String, Object>> endConference(@PathVariable String sessionId) {
         try {
-            // Log conference end
-            return ResponseEntity.ok(Map.of(
-                "status", "ended",
-                "message", "Conference ended successfully"
-            ));
+            Map<String, Object> result = videoConferenceService.endConferenceSession(sessionId);
+            return ResponseEntity.ok(result);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }
     }
     
     /**
-     * Get conference status for a classroom
+     * Get conference status for a session
      */
-    @GetMapping("/rooms/{classroomId}/status")
-    public ResponseEntity<Map<String, Object>> getConferenceStatus(@PathVariable Long classroomId) {
+    @GetMapping("/sessions/{sessionId}/status")
+    public ResponseEntity<Map<String, Object>> getConferenceStatus(@PathVariable String sessionId) {
         try {
-            // In a real implementation, you would check actual conference status
-            Map<String, Object> status = Map.of(
-                "classroomId", classroomId,
-                "isActive", false, // This would be checked against actual sessions
-                "participantCount", 0
-            );
-            
+            Map<String, Object> status = videoConferenceService.getConferenceStatus(sessionId);
             return ResponseEntity.ok(status);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Get WebRTC configuration
+     */
+    @GetMapping("/webrtc-config")
+    public ResponseEntity<Map<String, Object>> getWebRTCConfig() {
+        try {
+            Map<String, Object> config = videoConferenceService.getWebRTCConfig();
+            return ResponseEntity.ok(config);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Get active conference sessions
+     */
+    @GetMapping("/sessions/active")
+    public ResponseEntity<List<Map<String, Object>>> getActiveSessions() {
+        try {
+            List<Map<String, Object>> sessions = videoConferenceService.getActiveSessions();
+            return ResponseEntity.ok(sessions);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }

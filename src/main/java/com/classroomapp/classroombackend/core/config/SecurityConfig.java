@@ -106,8 +106,13 @@ public class SecurityConfig {
                 
                 // Protected endpoints - Attendance system
                 .requestMatchers("/api/v1/attendance/**").authenticated()
+                .requestMatchers("/api/attendance/**").authenticated() // Added for new attendance endpoints
                 .requestMatchers("/api/attendance-sessions/**").authenticated()
                 .requestMatchers("/api/attendances/**").authenticated()
+
+                // Protected endpoints - Messages system
+                .requestMatchers("/api/messages/**").authenticated()
+                .requestMatchers("/api/student-messages/**").authenticated()
 
                 // Protected endpoints - File operations
                 .requestMatchers("/api/files/**").authenticated()
@@ -141,7 +146,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin/requests/**").hasAnyRole("ADMIN", "MANAGER")
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/manager/**").hasRole("MANAGER")
-                .requestMatchers("/api/teacher/**").hasAuthority("ROLE_TEACHER")
+                .requestMatchers("/api/teacher/**").hasRole("TEACHER")
                 .requestMatchers("/api/student/**").hasRole("STUDENT")
 
                 // HR Management endpoints - Only Manager and Admin can access
@@ -165,19 +170,19 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // Cho phép origin từ frontend React và các nguồn khác
+        // Use allowedOriginPatterns instead of allowedOrigins when allowCredentials is true
+        // This fixes the "When allowCredentials is true, allowedOrigins cannot contain the special value '*'" error
         configuration.setAllowedOriginPatterns(Arrays.asList(
-            "http://localhost:*", 
-            "https://localhost:*"
-        ));
-        
-        configuration.setAllowedOrigins(Arrays.asList(
-            "http://localhost:3000", 
+            "http://localhost:3000",
             "http://localhost:3001", 
-            "http://localhost:8088", 
-            "http://localhost", 
+            "http://localhost:5173",
+            "http://localhost:8088",
+            "http://localhost",
             "https://mvsclassroom.com"
         ));
+        
+        // Remove setAllowedOrigins() completely to avoid conflicts with allowCredentials(true)
+        // configuration.setAllowedOrigins() - REMOVED
         
         // Cho phép các phương thức HTTP
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"));
@@ -203,7 +208,7 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         // Áp dụng cấu hình cho tất cả các đường dẫn
         source.registerCorsConfiguration("/**", configuration);
-        log.info("CORS configuration registered with enhanced settings");
+        log.info("CORS configuration registered with allowedOriginPatterns and allowCredentials");
         return source;
     }
 }

@@ -1,7 +1,6 @@
 package com.classroomapp.classroombackend.config.seed;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -32,90 +31,44 @@ public class ClassroomEnrollmentSeeder {
         if (classroomEnrollmentRepository.count() == 0) {
             List<User> students = userRepository.findAllByRoleId(1L);
             List<Classroom> classrooms = classroomRepository.findAll();
-            
+
             if (students.isEmpty() || classrooms.isEmpty()) {
                 System.out.println("⚠️ [ClassroomEnrollmentSeeder] No students or classrooms found. Skipping.");
                 return;
             }
-            
+
             System.out.println("ℹ️ [ClassroomEnrollmentSeeder] Found " + students.size() + " students and " + classrooms.size() + " classrooms");
-            
-            // Find specific classes by name (partial match)
-            Classroom mathClass = findClassroomByPartialName(classrooms, "Toán");
-            Classroom litClass = findClassroomByPartialName(classrooms, "Văn");
-            Classroom engClass = findClassroomByPartialName(classrooms, "Anh");
-            
-            if (mathClass == null) {
-                System.out.println("⚠️ [ClassroomEnrollmentSeeder] Math class not found");
-            } else {
-                System.out.println("✅ [ClassroomEnrollmentSeeder] Found Math class: " + mathClass.getName());
-            }
-            
-            if (litClass == null) {
-                System.out.println("⚠️ [ClassroomEnrollmentSeeder] Literature class not found");
-            } else {
-                System.out.println("✅ [ClassroomEnrollmentSeeder] Found Literature class: " + litClass.getName());
-            }
-            
-            if (engClass == null) {
-                System.out.println("⚠️ [ClassroomEnrollmentSeeder] English class not found");
-            } else {
-                System.out.println("✅ [ClassroomEnrollmentSeeder] Found English class: " + engClass.getName());
-            }
 
-            // Enroll all students in Math class (everyone needs math)
-            if (mathClass != null) {
-                for (User student : students) {
-                    enrollStudent(mathClass, student);
-                }
-                System.out.println("✅ [ClassroomEnrollmentSeeder] Enrolled " + students.size() + " students in Math class");
-            }
-
-            // Enroll most students in Literature
-            if (litClass != null) {
-                for (int i = 0; i < Math.min(4, students.size()); i++) {
-                    User student = students.get(i);
-                    enrollStudent(litClass, student);
-                }
-                System.out.println("✅ [ClassroomEnrollmentSeeder] Enrolled first 4 students in Literature class");
-            }
-
-            // Enroll some students in English
-            if (engClass != null) {
-                for (int i = 1; i < Math.min(5, students.size()); i++) {
-                    User student = students.get(i);
-                    enrollStudent(engClass, student);
-                }
-                System.out.println("✅ [ClassroomEnrollmentSeeder] Enrolled students 2-5 in English class");
-            }
-
-            // Enroll students in remaining classes
-            List<Classroom> otherClasses = classrooms.stream()
-                    .filter(c -> !c.equals(mathClass) && !c.equals(litClass) && !c.equals(engClass))
-                    .collect(Collectors.toList());
-            
-            if (!otherClasses.isEmpty()) {
-                for (int i = 0; i < Math.min(otherClasses.size(), students.size()); i++) {
-                    User student = students.get(i % students.size());
-                    Classroom classroom = otherClasses.get(i % otherClasses.size());
+            // Enroll EVERY student in EVERY classroom to ensure they have data
+            int totalEnrollments = 0;
+            for (User student : students) {
+                for (Classroom classroom : classrooms) {
                     enrollStudent(classroom, student);
+                    totalEnrollments++;
                 }
-                System.out.println("✅ [ClassroomEnrollmentSeeder] Enrolled students in " + otherClasses.size() + " other classes");
             }
 
-            System.out.println("✅ [ClassroomEnrollmentSeeder] Created classroom enrollments for students across all classes");
+            System.out.println("✅ [ClassroomEnrollmentSeeder] Created " + totalEnrollments + " total enrollments");
+            System.out.println("✅ [ClassroomEnrollmentSeeder] Each of " + students.size() + " students enrolled in all " + classrooms.size() + " classrooms");
+
+            // Verify enrollments for debugging
+            for (User student : students) {
+                List<Classroom> studentClassrooms = classroomRepository.findClassroomsByStudentId(student.getId());
+                System.out.println("📊 [ClassroomEnrollmentSeeder] Student " + student.getFullName() + " (ID: " + student.getId() + ") enrolled in " + studentClassrooms.size() + " classrooms");
+            }
+
         } else {
             System.out.println("✅ [ClassroomEnrollmentSeeder] Classroom enrollments already seeded");
+
+            // Still verify current enrollments for debugging
+            List<User> students = userRepository.findAllByRoleId(1L);
+            for (User student : students) {
+                List<Classroom> studentClassrooms = classroomRepository.findClassroomsByStudentId(student.getId());
+                System.out.println("📊 [ClassroomEnrollmentSeeder] Student " + student.getFullName() + " (ID: " + student.getId() + ") enrolled in " + studentClassrooms.size() + " classrooms");
+            }
         }
     }
-    
-    private Classroom findClassroomByPartialName(List<Classroom> classrooms, String partialName) {
-        return classrooms.stream()
-                .filter(c -> c.getName().contains(partialName))
-                .findFirst()
-                .orElse(null);
-    }
-    
+
     private void enrollStudent(Classroom classroom, User student) {
         ClassroomEnrollmentId enrollmentId = new ClassroomEnrollmentId(classroom.getId(), student.getId());
         if (!classroomEnrollmentRepository.existsById(enrollmentId)) {

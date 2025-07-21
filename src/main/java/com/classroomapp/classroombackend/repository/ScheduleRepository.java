@@ -29,4 +29,12 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
     List<Schedule> findByTeacherIdOrderByDayAndTime(@Param("teacherId") Long teacherId);
 
     List<Schedule> findByClassroomIdIn(List<Long> classroomIds);
+    
+    // Find schedules by user ID (for general user schedule queries)
+    @Query("SELECT s FROM Schedule s WHERE s.teacher.id = :userId OR s.classroom.id IN (SELECT c.id FROM Classroom c WHERE c.student.id = :userId)")
+    List<Schedule> findByUserId(@Param("userId") Long userId);
+    
+    // Find schedules by student ID
+    @Query("SELECT s FROM Schedule s WHERE s.classroom.id IN (SELECT c.id FROM Classroom c WHERE c.student.id = :studentId)")
+    List<Schedule> findByStudentId(@Param("studentId") Long studentId);
 } 

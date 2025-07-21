@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
+import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.CascadeType;
@@ -47,7 +48,7 @@ public class Lecture {
     @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
     private String title;
     
-    @Column(name = "content", columnDefinition = "TEXT")
+    @Column(name = "content", columnDefinition = "NTEXT")
     private String content;
     
     @ManyToOne(fetch = FetchType.LAZY)
@@ -73,5 +74,12 @@ public class Lecture {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+    
+    /**
+     * Get teacher from classroom
+     */
+    public User getTeacher() {
+        return classroom != null ? classroom.getTeacher() : null;
     }
 }

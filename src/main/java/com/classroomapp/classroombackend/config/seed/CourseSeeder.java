@@ -16,38 +16,58 @@ public class CourseSeeder {
     private CourseRepository courseRepository;
 
     public void seed() {
-        if (courseRepository.count() == 0) {
-            Course math = new Course();
-            math.setName("Advanced Mathematics");
-            math.setDescription("A comprehensive study of mathematical concepts and their applications.");
-            courseRepository.save(math);
+        try {
+            System.out.println("🔍 [CourseSeeder] Starting course seeding...");
+            long count = courseRepository.count();
+            System.out.println("🔍 [CourseSeeder] Current course count: " + count);
 
-            Course history = new Course();
-            history.setName("World History");
-            history.setDescription("A survey of major historical events from ancient civilizations to the modern era.");
-            courseRepository.save(history);
+            if (count == 0) {
+                System.out.println("🔍 [CourseSeeder] Creating courses...");
 
-            Course literature = new Course();
-            literature.setName("Vietnamese Literature");
-            literature.setDescription("An exploration of Vietnamese literary works throughout history.");
-            courseRepository.save(literature);
+                Course math = new Course();
+                math.setName("Toán học nâng cao");
+                math.setDescription("Nghiên cứu toàn diện các khái niệm toán học và ứng dụng của chúng.");
+                courseRepository.save(math);
+                System.out.println("✅ [CourseSeeder] Created: " + math.getName());
 
-            Course english = new Course();
-            english.setName("Communicative English");
-            english.setDescription("Developing English communication skills for an international environment.");
-            courseRepository.save(english);
+                Course history = new Course();
+                history.setName("Lịch sử thế giới");
+                history.setDescription("Khảo sát các sự kiện lịch sử quan trọng từ các nền văn minh cổ đại đến thời hiện đại.");
+                courseRepository.save(history);
+                System.out.println("✅ [CourseSeeder] Created: " + history.getName());
 
-            Course cs = new Course();
-            cs.setName("Computer Science");
-            cs.setDescription("Fundamental concepts of computer science and programming.");
-            courseRepository.save(cs);
+                Course literature = new Course();
+                literature.setName("Văn học Việt Nam");
+                literature.setDescription("Khám phá các tác phẩm văn học Việt Nam qua các thời kỳ lịch sử.");
+                courseRepository.save(literature);
+                System.out.println("✅ [CourseSeeder] Created: " + literature.getName());
 
-            Course physics = new Course();
-            physics.setName("General Physics");
-            physics.setDescription("An introduction to the fundamental principles of physics.");
-            courseRepository.save(physics);
+                Course english = new Course();
+                english.setName("Tiếng Anh giao tiếp");
+                english.setDescription("Phát triển kỹ năng giao tiếp tiếng Anh trong môi trường quốc tế.");
+                courseRepository.save(english);
+                System.out.println("✅ [CourseSeeder] Created: " + english.getName());
 
-            System.out.println("✅ [CourseSeeder] Created 6 sample courses.");
+                Course cs = new Course();
+                cs.setName("Khoa học máy tính");
+                cs.setDescription("Các khái niệm cơ bản về khoa học máy tính và lập trình.");
+                courseRepository.save(cs);
+                System.out.println("✅ [CourseSeeder] Created: " + cs.getName());
+
+                Course physics = new Course();
+                physics.setName("Vật lý đại cương");
+                physics.setDescription("Giới thiệu các nguyên lý cơ bản của vật lý.");
+                courseRepository.save(physics);
+                System.out.println("✅ [CourseSeeder] Created: " + physics.getName());
+
+                System.out.println("✅ [CourseSeeder] Created 6 sample courses.");
+            } else {
+                System.out.println("ℹ️ [CourseSeeder] Courses already exist, skipping seeding.");
+            }
+        } catch (Exception e) {
+            System.err.println("❌ [CourseSeeder] Error during seeding: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
         }
     }
 } 

@@ -1,0 +1,83 @@
+# File Upload Configuration
+spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+      enabled: true
+      file-size-threshold: 2KB
+      location: ${java.io.tmpdir}
+
+# Custom File Upload Configuration
+app:
+  file-upload:
+    upload-dir: uploads
+    max-file-size: 10485760  # 10MB in bytes
+    max-request-size: 52428800  # 50MB in bytes
+    
+    # Allowed extensions by category
+    allowed-extensions:
+      image: [jpg, jpeg, png, gif, bmp, webp]
+      document: [pdf, doc, docx, xls, xlsx, ppt, pptx, txt]
+      video: [mp4, avi, mov, wmv, flv, webm]
+      audio: [mp3, wav, flac, aac, ogg]
+      archive: [zip, rar, 7z, tar, gz]
+    
+    # File size limits by category (bytes)
+    file-size-limits:
+      image: 5242880      # 5MB
+      document: 10485760  # 10MB
+      video: 104857600    # 100MB
+      audio: 20971520     # 20MB
+      archive: 52428800   # 50MB
+    
+    # Upload paths by category
+    upload-paths:
+      image: images
+      document: documents
+      video: videos
+      audio: audio
+      archive: archives
+      avatar: avatars
+      attachment: attachments
+    
+    # Security settings
+    security:
+      enable-virus-scanning: true
+      enable-content-validation: true
+      enable-path-traversal-protection: true
+      enable-filename-sanitization: true
+      max-filename-length: 255
+      quarantine-dir: quarantine
+      
+      blocked-patterns:
+        - ".*\\.(exe|bat|cmd|com|pif|scr|vbs|js|jar|sh)$"
+        - ".*\\.php.*"
+        - ".*\\.jsp.*"
+        - ".*\\.asp.*"
+      
+      blocked-mime-types:
+        - application/x-executable
+        - application/x-msdownload
+        - application/x-msdos-program
+        - application/x-java-archive
+        - text/x-php
+        - application/x-httpd-php
+    
+    # Virus scan settings
+    virus-scan:
+      enable-clam-av: false
+      clam-av-host: localhost
+      clam-av-port: 3310
+      scan-timeout: 30
+      virus-action: QUARANTINE  # QUARANTINE, DELETE, REJECT
+    
+    # Image processing settings
+    image-processing:
+      enable-resizing: true
+      max-width: 2048
+      max-height: 2048
+      quality: 85
+      generate-thumbnails: true
+      thumbnail-sizes: [150x150, 300x300]
+      strip-exif-data: true

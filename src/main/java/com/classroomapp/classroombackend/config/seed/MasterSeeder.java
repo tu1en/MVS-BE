@@ -20,7 +20,7 @@ import com.classroomapp.classroombackend.repository.usermanagement.UserRepositor
 
 import lombok.RequiredArgsConstructor;
 
-@Component
+// @Component - Disabled to prevent conflict with DataLoader
 @Order(2) // Run after DatabaseCleanupService
 @RequiredArgsConstructor
 @DependsOn("entityManagerFactory") // Wait for JPA to be initialized
@@ -62,37 +62,96 @@ public class MasterSeeder implements CommandLineRunner {
     @Transactional
     public void run(String... args) throws Exception {
         List<Classroom> classrooms;
+
+        // Always seed courses and classrooms first
+        log.info("============== Seeding Essential Data (Courses & Classrooms) ==============");
+        courseSeeder.seed();
+        classrooms = classroomSeeder.seed();
+        log.info("============== Essential Data Seeding Complete ==============");
+
+        // Seed users if not exist
         if (userRepository.count() == 0) {
-            log.info("============== Seeding Database ==============");
-
+            log.info("============== Seeding Users ==============");
             userSeeder.seed();
-            courseSeeder.seed();
-            classrooms = classroomSeeder.seed();
-            classroomEnrollmentSeeder.seed();
-            scheduleSeeder.seed();
-            timetableEventSeeder.seed(); // Seed timetable events
-            requestSeeder.seed(); // Seed role requests
-
-            log.info("============== Starting Lecture Seeding ==============");
-            lectureSeeder.seed(classrooms);
-            log.info("============== Lecture Seeding Complete ==============");
-
-            assignmentSeeder.seed();
-            submissionSeeder.seed();
-            blogSeeder.seed();
-            accomplishmentSeeder.seed();
-            announcementSeeder.seed();
-            attendanceSeeder.seed();
-            messageSeeder.seed();
-            teachingHistorySeeder.seed();
-            examSeeder.seed();
-            studentProgressSeeder.seed();
-            
-            log.info("============== Main Seeding Complete ==============");
+            log.info("============== User Seeding Complete ==============");
         } else {
-            log.info("Database already has users. Skipping main seeding.");
-            classrooms = classroomRepository.findAll();
+            log.info("Users already exist ({}). Skipping user seeding.", userRepository.count());
         }
+
+        // Always seed enrollments (check individually)
+        log.info("============== Seeding Classroom Enrollments ==============");
+        classroomEnrollmentSeeder.seed();
+        log.info("============== Classroom Enrollment Seeding Complete ==============");
+
+        // Always seed schedules
+        log.info("============== Seeding Schedules ==============");
+        scheduleSeeder.seed();
+        log.info("============== Schedule Seeding Complete ==============");
+
+        // Always seed timetable events
+        log.info("============== Seeding Timetable Events ==============");
+        timetableEventSeeder.seed();
+        log.info("============== Timetable Event Seeding Complete ==============");
+
+        // Always seed role requests
+        log.info("============== Seeding Role Requests ==============");
+        requestSeeder.seed();
+        log.info("============== Role Request Seeding Complete ==============");
+
+        // Always seed lectures
+        log.info("============== Starting Lecture Seeding ==============");
+        lectureSeeder.seed(classrooms);
+        log.info("============== Lecture Seeding Complete ==============");
+
+        // Always seed assignments
+        log.info("============== Seeding Assignments ==============");
+        assignmentSeeder.seed();
+        log.info("============== Assignment Seeding Complete ==============");
+
+        // Always seed submissions
+        log.info("============== Seeding Submissions ==============");
+        submissionSeeder.seed();
+        log.info("============== Submission Seeding Complete ==============");
+
+        // Always seed blogs
+        log.info("============== Seeding Blogs ==============");
+        blogSeeder.seed();
+        log.info("============== Blog Seeding Complete ==============");
+
+        // Always seed accomplishments
+        log.info("============== Seeding Accomplishments ==============");
+        accomplishmentSeeder.seed();
+        log.info("============== Accomplishment Seeding Complete ==============");
+
+        // Always seed announcements
+        log.info("============== Seeding Announcements ==============");
+        announcementSeeder.seed();
+        log.info("============== Announcement Seeding Complete ==============");
+
+        // Always seed attendance
+        log.info("============== Seeding Attendance ==============");
+        attendanceSeeder.seed();
+        log.info("============== Attendance Seeding Complete ==============");
+
+        // Always seed messages
+        log.info("============== Seeding Messages ==============");
+        messageSeeder.seed();
+        log.info("============== Message Seeding Complete ==============");
+
+        // Always seed teaching history
+        log.info("============== Seeding Teaching History ==============");
+        teachingHistorySeeder.seed();
+        log.info("============== Teaching History Seeding Complete ==============");
+
+        // Always seed exams
+        log.info("============== Seeding Exams ==============");
+        examSeeder.seed();
+        log.info("============== Exam Seeding Complete ==============");
+
+        // Always seed student progress
+        log.info("============== Seeding Student Progress ==============");
+        studentProgressSeeder.seed();
+        log.info("============== Student Progress Seeding Complete ==============");
 
         // Always verify database state
         databaseVerificationSeeder.verify();

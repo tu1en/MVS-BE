@@ -1,5 +1,7 @@
 package com.classroomapp.classroombackend.config.seed;
 
+import java.time.LocalDate;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -9,8 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.classroomapp.classroombackend.constants.RoleConstants;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
-
-import java.time.LocalDate;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -43,10 +43,10 @@ public class UserSeeder {
                 student.setUsername("student");
                 student.setPassword(passwordEncoder.encode("student123"));
                 student.setEmail("student@test.com");
-                student.setFullName("Student User");
+                student.setFullName("Nguyễn Văn Học");
                 student.setRoleId(RoleConstants.STUDENT);
                 userRepository.save(student);
-                System.out.println("✅ [UserSeeder] Created student user with ID: " + student.getId());
+                System.out.println("✅ [UserSeeder] Đã tạo người dùng học viên với ID: " + student.getId());
 
                 // Create main teacher user
                 User teacher = new User();
@@ -62,7 +62,7 @@ public class UserSeeder {
                 teacher.setAnnualLeaveBalance(12);
                 teacher.setLeaveResetDate(LocalDate.now().plusMonths(6)); // Reset in 6 months
                 userRepository.save(teacher);
-                System.out.println("✅ [UserSeeder] Created teacher user with ID: " + teacher.getId());
+                System.out.println("✅ [UserSeeder] Đã tạo người dùng giáo viên với ID: " + teacher.getId());
 
                 // Create manager user
                 User manager = new User();
@@ -70,7 +70,7 @@ public class UserSeeder {
                 manager.setUsername("manager");
                 manager.setPassword(passwordEncoder.encode("manager123"));
                 manager.setEmail("manager@test.com");
-                manager.setFullName("Manager User");
+                manager.setFullName("Trần Thị Quản Lý");
                 manager.setRoleId(RoleConstants.MANAGER);
                 userRepository.save(manager);
 
@@ -80,7 +80,7 @@ public class UserSeeder {
                 admin.setUsername("admin");
                 admin.setPassword(passwordEncoder.encode("admin123"));
                 admin.setEmail("admin@test.com");
-                admin.setFullName("Administrator");
+                admin.setFullName("Lê Văn Quản Trị");
                 admin.setRoleId(RoleConstants.ADMIN);
                 userRepository.save(admin);
 
@@ -142,7 +142,7 @@ public class UserSeeder {
                 student2.setUsername("student2");
                 student2.setPassword(passwordEncoder.encode("student123"));
                 student2.setEmail("student2@test.com");
-                student2.setFullName("Alice Johnson");
+                student2.setFullName("Lê Thị Hoa");
                 student2.setRoleId(RoleConstants.STUDENT);
                 userRepository.save(student2);
 
@@ -151,7 +151,7 @@ public class UserSeeder {
                 student3.setUsername("student3");
                 student3.setPassword(passwordEncoder.encode("student123"));
                 student3.setEmail("student3@test.com");
-                student3.setFullName("Bob Wilson");
+                student3.setFullName("Hoàng Văn Bình");
                 student3.setRoleId(RoleConstants.STUDENT);
                 userRepository.save(student3);
 
@@ -160,7 +160,7 @@ public class UserSeeder {
                 student4.setUsername("student4");
                 student4.setPassword(passwordEncoder.encode("student123"));
                 student4.setEmail("student4@test.com");
-                student4.setFullName("Carol Davis");
+                student4.setFullName("Ngô Thị Cẩm");
                 student4.setRoleId(RoleConstants.STUDENT);
                 userRepository.save(student4);
 
@@ -169,7 +169,7 @@ public class UserSeeder {
                 student5.setUsername("student5");
                 student5.setPassword(passwordEncoder.encode("student123"));
                 student5.setEmail("student5@test.com");
-                student5.setFullName("David Chen");
+                student5.setFullName("Vũ Minh Đức");
                 student5.setRoleId(RoleConstants.STUDENT);
                 userRepository.save(student5);
 
@@ -216,9 +216,9 @@ public class UserSeeder {
                 accountant.setAnnualLeaveBalance(12);
                 accountant.setLeaveResetDate(LocalDate.now().plusMonths(6));
                 userRepository.save(accountant);
-                System.out.println("✅ [UserSeeder] Created accountant user with ID: " + accountant.getId());
+                System.out.println("✅ [UserSeeder] Đã tạo người dùng kế toán với ID: " + accountant.getId());
 
-                System.out.println("✅ [UserSeeder] Created users with standardized, explicit IDs.");
+                System.out.println("✅ [UserSeeder] Đã tạo người dùng với ID chuẩn hóa rõ ràng.");
 
             } finally {
                 // IMPORTANT: Disable explicit ID insertion
@@ -230,7 +230,7 @@ public class UserSeeder {
                 User createdTeacher = userRepository.findByUsername("teacher").orElse(null);
                 User createdManager = userRepository.findByUsername("manager").orElse(null);
 
-                System.out.println("🔍 [UserSeeder] Verification of created users:");
+                System.out.println("🔍 [UserSeeder] Xác minh người dùng đã tạo:");
                 if (createdStudent != null) {
                     System.out.println("   📚 Student: ID=" + createdStudent.getId() + ", Expected=101");
                 }

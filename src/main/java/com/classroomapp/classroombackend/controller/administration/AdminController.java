@@ -358,6 +358,30 @@ public class AdminController {
         }
     }
     
+    /**
+     * Get audit log by ID
+     * GET /api/admin/audit-logs/{id}
+     */
+    @GetMapping("/audit-logs/{id}")
+    public ResponseEntity<AuditLog> getAuditLogById(@PathVariable Long id) {
+        log.info("Getting audit log by ID: {}", id);
+        
+        try {
+            // Use the repository directly since we don't have a service method for this yet
+            // In a real implementation, we would add this method to the service interface
+            AuditLog auditLog = adminService.findAuditLogById(id);
+            
+            if (auditLog != null) {
+                return ResponseEntity.ok(auditLog);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            log.error("Error getting audit log by ID {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.badRequest().build();
+        }
+    }
+    
     // System Monitoring
     
     /**

@@ -19,8 +19,9 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-@Component
-@Order(Ordered.HIGHEST_PRECEDENCE)
+// Disabled to avoid conflicts with SecurityConfig CORS configuration
+// @Component
+// @Order(Ordered.HIGHEST_PRECEDENCE)
 public class CustomCorsFilter implements Filter {
 
     private final Logger logger = LoggerFactory.getLogger(CustomCorsFilter.class);

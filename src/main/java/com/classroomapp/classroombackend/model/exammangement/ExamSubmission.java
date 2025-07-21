@@ -39,7 +39,7 @@ public class ExamSubmission {
 
     private Instant submittedAt; // Time when the student submitted the exam
 
-    @Column(length = 2000)
+    @Column(columnDefinition = "NVARCHAR(2000)")
     private String content; // Could be answers, comments, etc.
 
     // Similar to SubmissionAttachment, you might want a separate entity for attachments
@@ -48,6 +48,8 @@ public class ExamSubmission {
 
     // Grading information
     private Integer score;
+
+    @Column(columnDefinition = "NTEXT")
     private String feedback;
     private Instant gradedAt;
 

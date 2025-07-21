@@ -1,12 +1,13 @@
 package com.classroomapp.classroombackend.dto;
 
 /**
- * Lớp mẫu chung cho tất cả các phản hồi API
+ * Lớp mẫu chung cho tất cả các phản hồi API với generic type
+ * @param <T> Kiểu dữ liệu của payload
  */
-public class ApiResponse {
+public class ApiResponse<T> {
     private boolean success; // Trạng thái thành công hay thất bại
     private String message;  // Thông điệp phản hồi
-    private Object data;     // Dữ liệu bổ sung (nếu có)
+    private T data;     // Dữ liệu bổ sung (nếu có)
 
     /**
      * Constructor với trạng thái và thông điệp
@@ -27,7 +28,7 @@ public class ApiResponse {
      * @param message thông điệp phản hồi
      * @param data dữ liệu bổ sung
      */
-    public ApiResponse(boolean success, String message, Object data) {
+    public ApiResponse(boolean success, String message, T data) {
         this.success = success;
         this.message = message;
         this.data = data;
@@ -74,7 +75,7 @@ public class ApiResponse {
      * 
      * @return dữ liệu bổ sung
      */
-    public Object getData() {
+    public T getData() {
         return data;
     }
 
@@ -83,7 +84,53 @@ public class ApiResponse {
      * 
      * @param data dữ liệu bổ sung mới
      */
-    public void setData(Object data) {
+    public void setData(T data) {
         this.data = data;
+    }
+
+    /**
+     * Static factory method để tạo response thành công
+     * 
+     * @param data dữ liệu trả về
+     * @param <T> kiểu dữ liệu
+     * @return ApiResponse chứa data và thông điệp thành công
+     */
+    public static <T> ApiResponse<T> success(T data) {
+        return new ApiResponse<>(true, "Thành công", data);
+    }
+
+    /**
+     * Static factory method để tạo response thành công với thông điệp tùy chỉnh
+     * 
+     * @param data dữ liệu trả về
+     * @param message thông điệp tùy chỉnh
+     * @param <T> kiểu dữ liệu
+     * @return ApiResponse chứa data và thông điệp tùy chỉnh
+     */
+    public static <T> ApiResponse<T> success(T data, String message) {
+        return new ApiResponse<>(true, message, data);
+    }
+
+    /**
+     * Static factory method để tạo response lỗi
+     * 
+     * @param message thông điệp lỗi
+     * @param <T> kiểu dữ liệu
+     * @return ApiResponse chứa thông điệp lỗi
+     */
+    public static <T> ApiResponse<T> error(String message) {
+        return new ApiResponse<>(false, message, null);
+    }
+
+    /**
+     * Static factory method để tạo response lỗi với dữ liệu tùy chỉnh
+     * 
+     * @param message thông điệp lỗi
+     * @param data dữ liệu trả về tùy chỉnh (có thể là lỗi chi tiết)
+     * @param <T> kiểu dữ liệu
+     * @return ApiResponse chứa thông điệp lỗi và dữ liệu tùy chỉnh
+     */
+    public static <T> ApiResponse<T> error(String message, T data) {
+        return new ApiResponse<>(false, message, data);
     }
 } 

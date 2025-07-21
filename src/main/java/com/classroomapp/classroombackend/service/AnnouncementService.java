@@ -1,10 +1,12 @@
 package com.classroomapp.classroombackend.service;
 
-import com.classroomapp.classroombackend.dto.AnnouncementDto;
-import com.classroomapp.classroombackend.dto.CreateAnnouncementDto;
+import java.util.List;
+
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
+import com.classroomapp.classroombackend.dto.AnnouncementDto;
+import com.classroomapp.classroombackend.dto.CreateAnnouncementDto;
+import com.classroomapp.classroombackend.dto.UpdateAnnouncementDto;
 
 public interface AnnouncementService {
     
@@ -45,9 +47,9 @@ public interface AnnouncementService {
     List<AnnouncementDto> getAnnouncementsByPriority(Long classroomId, String priority);
     
     /**
-     * Update announcement
+     * Update announcement using UpdateAnnouncementDto
      */
-    AnnouncementDto updateAnnouncement(Long announcementId, CreateAnnouncementDto updateDto);
+    AnnouncementDto updateAnnouncement(Long announcementId, UpdateAnnouncementDto updateDto);
     
     /**
      * Delete announcement
@@ -98,4 +100,9 @@ public interface AnnouncementService {
      * Archive expired announcements
      */
     void archiveExpiredAnnouncements();
+
+    /**
+     * Get announcements for teacher (targetAudience = TEACHERS or ALL)
+     */
+    List<AnnouncementDto> getAnnouncementsForTeacher();
 }

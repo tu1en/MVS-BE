@@ -1,8 +1,11 @@
 package com.classroomapp.classroombackend.controller;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,14 +23,11 @@ import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceResu
 import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceSubmitDto;
 import com.classroomapp.classroombackend.dto.attendancemanagement.MyAttendanceHistoryDto;
 import com.classroomapp.classroombackend.dto.attendancemanagement.TeachingHistoryDto;
+import com.classroomapp.classroombackend.model.AttendanceLog;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
-import com.classroomapp.classroombackend.service.AttendanceService;
-import com.classroomapp.classroombackend.model.AttendanceLog;
 import com.classroomapp.classroombackend.service.AttendanceLogService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
-import java.time.LocalDate;
+import com.classroomapp.classroombackend.service.AttendanceService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -81,22 +81,32 @@ public class AttendanceController {
         try {
             UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             System.out.println("User from security context: " + userDetails.getUsername());
-            
+
             User currentUser = userRepository.findByEmail(userDetails.getUsername())
                     .orElseThrow(() -> new RuntimeException("User not found from security context: " + userDetails.getUsername()));
-            
+
             System.out.println("Found user: " + currentUser.getId() + " - " + currentUser.getEmail());
             System.out.println("Requesting attendance history for classroom: " + classroomId);
 
             List<MyAttendanceHistoryDto> history = attendanceService.getMyAttendanceHistory(currentUser.getId(), classroomId);
             System.out.println("Found " + history.size() + " attendance records");
-            
+
             return ResponseEntity.ok(history);
         } catch (Exception e) {
             System.err.println("Error in getMyAttendanceHistory: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(500).body(new ArrayList<>());
         }
+    }
+
+    /**
+     * Bridge endpoint for frontend compatibility - maps to my-attendance-history
+     * Frontend calls: /api/attendance/my-history
+     */
+    @GetMapping("/my-history")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<MyAttendanceHistoryDto>> getMyHistory(@RequestParam Long classroomId) {
+        return getMyAttendanceHistory(classroomId);
     }
     
     /**

@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -60,8 +62,16 @@ public class LectureRecording {
     @Column(name = "thumbnail_path", length = 500)
     private String thumbnailPath;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private RecordingStatus status = RecordingStatus.PROCESSING;
+
     // JPA relationships
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "lecture_id", insertable = false, updatable = false)
     private Lecture lecture;
+
+    public enum RecordingStatus {
+        PROCESSING, COMPLETED, FAILED, CANCELLED
+    }
 }

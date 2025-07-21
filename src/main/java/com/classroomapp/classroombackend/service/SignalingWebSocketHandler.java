@@ -1,7 +1,11 @@
 package com.classroomapp.classroombackend.service;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
@@ -52,15 +56,39 @@ public class SignalingWebSocketHandler extends TextWebSocketHandler {
             
             switch (type) {
                 case "join":
+                case "join-room":
                     handleJoinRoom(session, jsonMessage);
                     break;
                 case "offer":
                 case "answer":
                 case "ice-candidate":
+                case "candidate":
                     forwardMessageToRoom(session, jsonMessage, roomId);
                     break;
                 case "leave":
+                case "leave-room":
                     handleLeaveRoom(session, roomId);
+                    break;
+                case "screen-share-start":
+                case "screen-share-stop":
+                case "mute-audio":
+                case "unmute-audio":
+                case "mute-video":
+                case "unmute-video":
+                case "chat-message":
+                    forwardMessageToRoom(session, jsonMessage, roomId);
+                    break;
+                case "document-navigation":
+                case "document-sync":
+                case "whiteboard-draw":
+                case "whiteboard-clear":
+                    handleDocumentAndWhiteboardSync(session, jsonMessage, roomId);
+                    break;
+                case "get-room-info":
+                    handleGetRoomInfo(session, roomId);
+                    break;
+                case "ping":
+                    handlePing(session);
                     break;
                 default:
                     logger.warn("Unknown message type: {}", type);
@@ -230,6 +258,159 @@ public class SignalingWebSocketHandler extends TextWebSocketHandler {
                 // Only process the first room found with this session
                 break;
             }
+        }
+    }
+
+    /**
+     * Handle get room info request
+     */
+    private void handleGetRoomInfo(WebSocketSession session, String roomId) {
+        try {
+            Map<WebSocketSession, String> roomSessions = rooms.get(roomId);
+
+            Map<String, Object> roomInfo = Map.of(
+                "type", "room-info",
+                "roomId", roomId,
+                "participantCount", roomSessions != null ? roomSessions.size() : 0,
+                "participants", roomSessions != null ? roomSessions.values() : List.of()
+            );
+
+            String roomInfoMessage = objectMapper.writeValueAsString(roomInfo);
+            session.sendMessage(new TextMessage(roomInfoMessage));
+
+        } catch (Exception e) {
+            logger.error("Error handling get room info: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Handle ping request
+     */
+    private void handlePing(WebSocketSession session) {
+        try {
+            Map<String, Object> pongMessage = Map.of(
+                "type", "pong",
+                "timestamp", System.currentTimeMillis()
+            );
+
+            String pongJson = objectMapper.writeValueAsString(pongMessage);
+            session.sendMessage(new TextMessage(pongJson));
+
+        } catch (Exception e) {
+            logger.error("Error handling ping: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Get room statistics
+     */
+    public Map<String, Object> getRoomStatistics() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalRooms", rooms.size());
+        stats.put("totalSessions", rooms.values().stream().mapToInt(Map::size).sum());
+
+        Map<String, Integer> roomSizes = new HashMap<>();
+        rooms.forEach((roomId, sessions) -> roomSizes.put(roomId, sessions.size()));
+        stats.put("roomSizes", roomSizes);
+
+        return stats;
+    }
+
+    /**
+     * Broadcast message to all rooms
+     */
+    public void broadcastToAllRooms(String message) {
+        rooms.values().forEach(roomSessions -> {
+            roomSessions.keySet().forEach(session -> {
+                if (session.isOpen()) {
+                    try {
+                        session.sendMessage(new TextMessage(message));
+                    } catch (IOException e) {
+                        logger.error("Error broadcasting message to session {}: {}", session.getId(), e.getMessage());
+                    }
+                }
+            });
+        });
+    }
+
+    /**
+     * Get active rooms
+     */
+    public Set<String> getActiveRooms() {
+        return rooms.keySet();
+    }
+
+    /**
+     * Get participants in a room
+     */
+    public List<String> getRoomParticipants(String roomId) {
+        Map<WebSocketSession, String> roomSessions = rooms.get(roomId);
+        return roomSessions != null ? new ArrayList<>(roomSessions.values()) : new ArrayList<>();
+    }
+    
+    /**
+     * Handle document navigation and whiteboard sync
+     * Enhanced for Phase 2 Document Sharing
+     */
+    private void handleDocumentAndWhiteboardSync(WebSocketSession sender, JsonNode message, String roomId) {
+        try {
+            String type = message.get("type").asText();
+            
+            // Log document/whiteboard activities
+            logger.info("Document/Whiteboard sync: {} in room {}", type, roomId);
+            
+            // Add timestamp to message for sync purposes
+            Map<String, Object> enhancedMessage = objectMapper.convertValue(message, Map.class);
+            enhancedMessage.put("timestamp", System.currentTimeMillis());
+            enhancedMessage.put("serverProcessed", true);
+            
+            String enhancedMessageJson = objectMapper.writeValueAsString(enhancedMessage);
+            
+            // Forward to all other participants in the room
+            Map<WebSocketSession, String> roomSessions = rooms.get(roomId);
+            if (roomSessions != null) {
+                for (Map.Entry<WebSocketSession, String> entry : roomSessions.entrySet()) {
+                    WebSocketSession session = entry.getKey();
+                    if (!session.equals(sender) && session.isOpen()) {
+                        try {
+                            session.sendMessage(new TextMessage(enhancedMessageJson));
+                        } catch (IOException e) {
+                            logger.error("Error forwarding document/whiteboard sync to session {}: {}", 
+                                       session.getId(), e.getMessage());
+                        }
+                    }
+                }
+            }
+            
+        } catch (Exception e) {
+            logger.error("Error handling document/whiteboard sync: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Send document navigation update to specific room
+     * Used by DocumentSharingService for server-initiated navigation
+     */
+    public void sendDocumentNavigationUpdate(String roomId, Map<String, Object> navigationData) {
+        try {
+            String navigationJson = objectMapper.writeValueAsString(navigationData);
+            Map<WebSocketSession, String> roomSessions = rooms.get(roomId);
+            
+            if (roomSessions != null) {
+                for (WebSocketSession session : roomSessions.keySet()) {
+                    if (session.isOpen()) {
+                        try {
+                            session.sendMessage(new TextMessage(navigationJson));
+                        } catch (IOException e) {
+                            logger.error("Error sending navigation update to session {}: {}", 
+                                       session.getId(), e.getMessage());
+                        }
+                    }
+                }
+            }
+            
+        } catch (Exception e) {
+            logger.error("Error sending document navigation update: {}", e.getMessage(), e);
         }
     }
 }

@@ -19,7 +19,7 @@ public abstract class AbstractSeeder<T> implements BaseSeeder<T> {
      * Template method pattern - main seeding logic
      */
     @Override
-    public final List<T> seed() {
+    public List<T> seed() {
         String seederName = getSeederName();
         
         if (!shouldSeed()) {

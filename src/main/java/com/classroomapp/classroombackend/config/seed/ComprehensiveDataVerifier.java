@@ -156,7 +156,7 @@ public class ComprehensiveDataVerifier {
             addIssue(IssueSeverity.CRITICAL, "CLASSROOM_NO_TEACHER", 
                 "Found classrooms without teachers", 
                 "Classroom IDs: " + classroomsWithoutTeacher.stream()
-                    .map(c -> c.getId().toString()).collect(Collectors.joining(", ")));
+                    .map(c -> c.getId() != null ? c.getId().toString() : "NULL").collect(Collectors.joining(", ")));
         }
         
         // Kiểm tra Classroom -> Course relationship (nếu có courseId)
@@ -168,7 +168,7 @@ public class ComprehensiveDataVerifier {
             addIssue(IssueSeverity.CRITICAL, "CLASSROOM_INVALID_COURSE", 
                 "Found classrooms with invalid course references", 
                 "Classroom IDs: " + classroomsWithInvalidCourse.stream()
-                    .map(c -> c.getId().toString()).collect(Collectors.joining(", ")));
+                    .map(c -> c.getId() != null ? c.getId().toString() : "NULL").collect(Collectors.joining(", ")));
         }
         
         // Kiểm tra Assignment -> Classroom relationship
@@ -396,7 +396,7 @@ public class ComprehensiveDataVerifier {
             addIssue(IssueSeverity.CRITICAL, "ORPHANED_LECTURES",
                 "Found lectures without classrooms",
                 "Count: " + orphanedLectures.size() + ", IDs: " +
-                orphanedLectures.stream().map(l -> l.getId().toString()).collect(Collectors.joining(", ")));
+                orphanedLectures.stream().map(l -> l.getId() != null ? l.getId().toString() : "NULL").collect(Collectors.joining(", ")));
         }
     }
 
