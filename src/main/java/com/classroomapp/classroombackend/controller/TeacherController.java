@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.classroomapp.classroombackend.dto.ScheduleDto;
 import com.classroomapp.classroombackend.dto.TimetableEventDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
+import com.classroomapp.classroombackend.dto.absencemanagement.AbsenceDTO;
+import com.classroomapp.classroombackend.dto.absencemanagement.CreateAbsenceDTO;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.assignmentmanagement.AssignmentRepository;
@@ -27,8 +29,11 @@ import com.classroomapp.classroombackend.repository.assignmentmanagement.Submiss
 import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceRepository;
 import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceSessionRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.classroomapp.classroombackend.service.AbsenceService;
 import com.classroomapp.classroombackend.service.ClassroomService;
 import com.classroomapp.classroombackend.service.ScheduleService;
+import org.springframework.security.access.prepost.PreAuthorize;
+import jakarta.validation.Valid;
 
 import lombok.RequiredArgsConstructor;
 
@@ -47,6 +52,7 @@ public class TeacherController {
     private final AttendanceSessionRepository attendanceSessionRepository;
     private final AttendanceRepository attendanceRepository;
     private final ScheduleService scheduleService;
+    private final AbsenceService absenceService;
 
     /**
      * Get teacher's schedule
@@ -218,5 +224,56 @@ public class TeacherController {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Failed to retrieve dashboard stats: " + e.getMessage()));
         }
+    }
+
+    /**
+     * Endpoint: GET /api/teacher/absences
+     * Lấy danh sách đơn nghỉ phép của giáo viên hiện tại
+     */
+    @GetMapping("/absences")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<List<AbsenceDTO>> getMyAbsenceRequests(Authentication authentication) {
+        String principal = authentication.getName();
+        User currentUser = userRepository.findByEmail(principal)
+                .orElseGet(() -> userRepository.findByUsername(principal).orElse(null));
+        if (currentUser == null) {
+            throw new RuntimeException("Không tìm thấy người dùng với thông tin xác thực hiện tại");
+        }
+        List<AbsenceDTO> absences = absenceService.getMyAbsenceRequests(currentUser.getId());
+        return ResponseEntity.ok(absences);
+    }
+
+    /**
+     * Endpoint: POST /api/teacher/absences
+     * Giáo viên tạo đơn nghỉ phép mới
+     */
+    @PostMapping("/absences")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<AbsenceDTO> createAbsenceRequest(@Valid @RequestBody CreateAbsenceDTO createDto, Authentication authentication) {
+        String principal = authentication.getName();
+        User currentUser = userRepository.findByEmail(principal)
+                .orElseGet(() -> userRepository.findByUsername(principal).orElse(null));
+        if (currentUser == null) {
+            throw new RuntimeException("Không tìm thấy người dùng với thông tin xác thực hiện tại");
+        }
+        AbsenceDTO createdAbsence = absenceService.createAbsenceRequest(createDto, currentUser.getId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdAbsence);
+    }
+
+    /**
+     * Endpoint: GET /api/teacher/absences/{absenceId}
+     * Lấy chi tiết đơn nghỉ phép theo ID (chỉ xem được đơn của chính mình)
+     */
+    @GetMapping("/absences/{absenceId}")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<AbsenceDTO> getAbsenceById(@PathVariable Long absenceId, Authentication authentication) {
+        String principal = authentication.getName();
+        User currentUser = userRepository.findByEmail(principal)
+                .orElseGet(() -> userRepository.findByUsername(principal).orElse(null));
+        if (currentUser == null) {
+            throw new RuntimeException("Không tìm thấy người dùng với thông tin xác thực hiện tại");
+        }
+        AbsenceDTO absence = absenceService.getAbsenceById(absenceId, currentUser.getId());
+        return ResponseEntity.ok(absence);
     }
 }

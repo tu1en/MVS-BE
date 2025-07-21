@@ -110,6 +110,13 @@ public class AbsenceSeeder {
                 createAbsence(501L, "accountant@test.com", "Nguyễn Thị Kế Toán",
                     LocalDate.now().plusDays(3), LocalDate.now().plusDays(3), 1,
                     "Nghỉ phép cá nhân", "PENDING");
+                // Thêm ví dụ mới cho tài khoản acc (acc123)
+                createAbsence(501L, "accountant@test.com", "Nguyễn Thị Kế Toán",
+                    LocalDate.now().minusDays(20), LocalDate.now().minusDays(18), 3,
+                    "Nghỉ phép đi du lịch cùng gia đình", "APPROVED");
+                createAbsence(501L, "accountant@test.com", "Nguyễn Thị Kế Toán",
+                    LocalDate.now().plusDays(7), LocalDate.now().plusDays(8), 2,
+                    "Xin nghỉ phép để giải quyết việc cá nhân", "PENDING");
             }
 
             System.out.println("✅ [AbsenceSeeder] Created sample absence requests for all teachers.");
