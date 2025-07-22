@@ -9,8 +9,11 @@ import org.springframework.transaction.annotation.Transactional;
 import com.classroomapp.classroombackend.constants.RoleConstants;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.classroomapp.classroombackend.model.Contract;
+import com.classroomapp.classroombackend.repository.ContractRepository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -23,6 +26,9 @@ public class UserSeeder {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private ContractRepository contractRepository;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -212,10 +218,25 @@ public class UserSeeder {
                 accountant.setRoleId(RoleConstants.ACCOUNTANT);
                 accountant.setPhoneNumber("0901122334");
                 accountant.setDepartment("Kế toán viên");
-                accountant.setHireDate(LocalDate.now().minusYears(2));
-                accountant.setAnnualLeaveBalance(12);
-                accountant.setLeaveResetDate(LocalDate.now().plusMonths(6));
+                accountant.setHireDate(LocalDate.of(2025, 7, 1));
+                // accountant.setLeaveResetDate(LocalDate.now().plusMonths(6)); // Bỏ dòng này, leaveResetDate sẽ lấy từ contract
                 userRepository.save(accountant);
+
+                // Thêm seed contract chính thức cho acc
+                Contract accContract = new Contract();
+                accContract.setUserId(accountant.getId());
+                accContract.setFullName(accountant.getFullName());
+                accContract.setContractType("OFFICIAL");
+                accContract.setPosition("Accountant");
+                accContract.setDepartment(accountant.getDepartment());
+                accContract.setSalary(15000000.0);
+                accContract.setWorkingHours("Full-time");
+                accContract.setStartDate(LocalDate.of(2025, 7, 1));
+                accContract.setEndDate(null); // Không có ngày kết thúc
+                accContract.setStatus("ACTIVE");
+                accContract.setCreatedBy("seeder");
+                accContract.setCreatedAt(LocalDateTime.now());
+                contractRepository.save(accContract);
                 System.out.println("✅ [UserSeeder] Created accountant user with ID: " + accountant.getId());
 
                 System.out.println("✅ [UserSeeder] Created users with standardized, explicit IDs.");
