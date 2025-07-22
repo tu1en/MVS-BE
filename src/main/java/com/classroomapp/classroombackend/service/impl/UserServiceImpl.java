@@ -16,6 +16,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +36,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final JavaMailSender mailSender;
+    private final PasswordEncoder passwordEncoder;
 
     private UserDto convertToUserDto(User user) {
         UserDto dto = new UserDto();
@@ -137,8 +139,9 @@ public class UserServiceImpl implements UserService {
         user.setEmail(userDto.getEmail());
         user.setFullName(userDto.getName());
         user.setStatus(userDto.isEnabled() ? "active" : "disabled");
-        // Set default password (should be handled with proper encoding in real app)
-        user.setPassword("$2a$10$X7VYFDeMB7FB1Mh0vC99v.cAEGAVVwcVXV94R2l9fR1A8oCgJchZ6"); // Encoded '123456789'
+        // Set default password (properly encoded)
+        String defaultPassword = "123456789";
+        user.setPassword(passwordEncoder.encode(defaultPassword));
         // Set role if provided
         if (userDto.getRoles() != null && !userDto.getRoles().isEmpty()) {
             String role = userDto.getRoles().iterator().next();
@@ -226,8 +229,22 @@ public class UserServiceImpl implements UserService {
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
         
-        // Reset password to default '123456789' (encoded)
-        existingUser.setPassword("$2a$10$X7VYFDeMB7FB1Mh0vC99v.cAEGAVVwcVXV94R2l9fR1A8oCgJchZ6");
+        // Check if admin is trying to reset their own password
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String currentUsername = "";
+        if (principal instanceof UserDetails) {
+            currentUsername = ((UserDetails) principal).getUsername();
+        } else {
+            currentUsername = principal.toString();
+        }
+        
+        if (existingUser.getEmail().equals(currentUsername)) {
+            throw new BusinessLogicException("Cannot reset your own password through this method.");
+        }
+        
+        // Reset password to default '123456789' (properly encoded)
+        String defaultPassword = "123456789";
+        existingUser.setPassword(passwordEncoder.encode(defaultPassword));
         
         // Save updated user
         userRepository.save(existingUser);
@@ -283,12 +300,17 @@ public class UserServiceImpl implements UserService {
         }
 
         String newRoleName = roleNames.iterator().next();
+        
+        // Handle both ROLE_ prefixed and non-prefixed role names
+        final String roleNameForDatabase = newRoleName.startsWith("ROLE_") 
+            ? newRoleName.substring(5) // Remove "ROLE_" prefix
+            : newRoleName;
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
-        Role newRole = roleRepository.findByName(newRoleName)
-                .orElseThrow(() -> new BusinessLogicException("Role not found: " + newRoleName));
+        Role newRole = roleRepository.findByName(roleNameForDatabase)
+                .orElseThrow(() -> new BusinessLogicException("Role not found: " + roleNameForDatabase));
 
         // Business rule: Prevent admin from removing their own admin role
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();

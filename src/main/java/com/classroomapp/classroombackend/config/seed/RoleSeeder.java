@@ -42,7 +42,11 @@ public class RoleSeeder {
                 admin.setId(4);
                 roleRepository.save(admin);
 
-                System.out.println("✅ [RoleSeeder] Created roles with explicit IDs.");
+                Role accountant = new Role("ACCOUNTANT");
+                accountant.setId(5);
+                roleRepository.save(accountant);
+
+                System.out.println("✅ [RoleSeeder] Created roles with explicit IDs (including ACCOUNTANT).");
 
             } finally {
                 entityManager.createNativeQuery("SET IDENTITY_INSERT roles OFF").executeUpdate();

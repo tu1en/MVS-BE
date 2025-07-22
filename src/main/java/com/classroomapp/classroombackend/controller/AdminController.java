@@ -98,4 +98,11 @@ public class AdminController {
         userService.deleteUser(userId);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/check-email")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Boolean>> checkEmailExists(@RequestParam String email) {
+        boolean exists = userService.IsEmailExists(email);
+        return ResponseEntity.ok(Map.of("exists", exists));
+    }
 }
