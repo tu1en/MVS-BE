@@ -182,8 +182,13 @@ public class ContractController {
                                                      Authentication authentication) {
         try {
             String terminationReason = request.get("terminationReason");
+            String terminationDate = request.get("terminationDate");
+            String whoApproved = request.get("whoApproved");
+            String settlementInfo = request.get("settlementInfo");
             String terminatedBy = authentication.getName();
-            ContractDto terminatedContract = contractService.terminateContractByUserId(userId, terminationReason, terminatedBy);
+            
+            ContractDto terminatedContract = contractService.terminateContractByUserId(
+                userId, terminationReason, terminationDate, whoApproved, settlementInfo, terminatedBy);
             return ResponseEntity.ok(terminatedContract);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
