@@ -7,8 +7,10 @@ import com.classroomapp.classroombackend.dto.absencemanagement.TeacherLeaveInfoD
 import com.classroomapp.classroombackend.exception.BusinessLogicException;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
 import com.classroomapp.classroombackend.model.Absence;
+import com.classroomapp.classroombackend.model.Contract;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.absencemanagement.AbsenceRepository;
+import com.classroomapp.classroombackend.repository.ContractRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.AbsenceService;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,6 +34,7 @@ public class AbsenceServiceImpl implements AbsenceService {
 
     private final AbsenceRepository absenceRepository;
     private final UserRepository userRepository;
+    private final ContractRepository contractRepository;
     private final ModelMapper modelMapper;
 
     @Override
@@ -42,8 +46,20 @@ public class AbsenceServiceImpl implements AbsenceService {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
         
-        if (user.getRoleId() != RoleConstants.TEACHER && user.getRoleId() != RoleConstants.ACCOUNTANT) {
-            throw new BusinessLogicException("Chỉ giáo viên hoặc kế toán viên mới được tạo đơn nghỉ phép");
+        // Lấy ngày reset nghỉ phép từ hợp đồng chính thức (teacher) hoặc hireDate (accountant)
+        LocalDate leaveResetDate = null;
+        if (user.getRoleId() == RoleConstants.TEACHER) {
+            // Lấy hợp đồng chính thức còn hiệu lực
+            Optional<Contract> officialContract = contractRepository.findByUserIdAndContractTypeAndStatus(userId, "OFFICIAL", "ACTIVE");
+            if (officialContract.isPresent()) {
+                leaveResetDate = officialContract.get().getStartDate();
+            } else {
+                throw new BusinessLogicException("Chỉ giáo viên có hợp đồng chính thức mới được tạo đơn nghỉ phép");
+            }
+        } else if (user.getRoleId() == RoleConstants.ACCOUNTANT) {
+            leaveResetDate = user.getHireDate();
+        } else {
+            throw new BusinessLogicException("Chỉ giáo viên có hợp đồng chính thức hoặc kế toán viên mới được tạo đơn nghỉ phép");
         }
         
         // Validate dates
@@ -68,10 +84,10 @@ public class AbsenceServiceImpl implements AbsenceService {
         }
         
         // Check annual leave balance
-        LocalDate leaveYearStart = user.getLeaveResetDate() != null ? 
-            user.getLeaveResetDate().minusYears(1) : user.getHireDate();
-        LocalDate leaveYearEnd = user.getLeaveResetDate() != null ? 
-            user.getLeaveResetDate() : leaveYearStart.plusYears(1);
+        LocalDate leaveYearStart = leaveResetDate != null ? 
+            leaveResetDate.minusYears(1) : user.getHireDate();
+        LocalDate leaveYearEnd = leaveResetDate != null ? 
+            leaveResetDate : leaveYearStart.plusYears(1);
             
         Integer usedDays = absenceRepository.calculateUsedLeaveDays(userId, leaveYearStart, leaveYearEnd);
         Integer pendingDays = absenceRepository.calculatePendingLeaveDays(userId);
@@ -235,13 +251,18 @@ public class AbsenceServiceImpl implements AbsenceService {
     @Transactional
     public void resetAnnualLeave() {
         log.info("Starting scheduled annual leave reset check");
-        List<User> employees = userRepository.findByRoleId(RoleConstants.TEACHER);
-        employees.addAll(userRepository.findByRoleId(RoleConstants.ACCOUNTANT));
+        List<User> teachers = userRepository.findByRoleId(RoleConstants.TEACHER);
+        List<User> accountants = userRepository.findByRoleId(RoleConstants.ACCOUNTANT);
         LocalDate today = LocalDate.now();
-        for (User employee : employees) {
-            if (employee.getLeaveResetDate() != null && 
-                !employee.getLeaveResetDate().isAfter(today)) {
-                resetUserAnnualLeave(employee.getId());
+        for (User teacher : teachers) {
+            Optional<Contract> officialContract = contractRepository.findByUserIdAndContractTypeAndStatus(teacher.getId(), "OFFICIAL", "ACTIVE");
+            if (officialContract.isPresent() && officialContract.get().getStartDate().isEqual(today)) {
+                resetUserAnnualLeave(teacher.getId());
+            }
+        }
+        for (User accountant : accountants) {
+            if (accountant.getHireDate() != null && accountant.getHireDate().isEqual(today)) {
+                resetUserAnnualLeave(accountant.getId());
             }
         }
         log.info("Completed annual leave reset check");
@@ -253,11 +274,19 @@ public class AbsenceServiceImpl implements AbsenceService {
         log.info("Resetting annual leave for user: {}", userId);
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
-        if (user.getRoleId() == RoleConstants.TEACHER || user.getRoleId() == RoleConstants.ACCOUNTANT) {
-            user.setAnnualLeaveBalance(12); // Reset to 12 days
-            user.setLeaveResetDate(LocalDate.now().plusYears(1)); // Next reset date
+        if (user.getRoleId() == RoleConstants.TEACHER) {
+            Optional<Contract> officialContract = contractRepository.findByUserIdAndContractTypeAndStatus(userId, "OFFICIAL", "ACTIVE");
+            if (officialContract.isPresent()) {
+                user.setAnnualLeaveBalance(12);
+                user.setLeaveResetDate(officialContract.get().getStartDate().plusYears(1));
+                userRepository.save(user);
+                log.info("Annual leave reset completed for teacher: {}", userId);
+            }
+        } else if (user.getRoleId() == RoleConstants.ACCOUNTANT) {
+            user.setAnnualLeaveBalance(12);
+            user.setLeaveResetDate(user.getHireDate().plusYears(1));
             userRepository.save(user);
-            log.info("Annual leave reset completed for user: {}", userId);
+            log.info("Annual leave reset completed for accountant: {}", userId);
         }
     }
 

@@ -52,9 +52,6 @@ public class User {
     @Column(name = "role_id")
     private Integer roleId;
 
-    @Column(name = "enrollment_date")
-    private LocalDate enrollmentDate;
-
     @Column(name = "hire_date")
     private LocalDate hireDate;
 
@@ -122,7 +119,6 @@ public class User {
     public String getFullName() { return fullName; }
     public String getPhoneNumber() { return phoneNumber; }
     public Integer getRoleId() { return roleId; }
-    public LocalDate getEnrollmentDate() { return enrollmentDate; }
     public LocalDate getHireDate() { return hireDate; }
     public String getDepartment() { return department; }
     public LocalDateTime getCreatedAt() { return createdAt; }
@@ -138,7 +134,6 @@ public class User {
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
     public void setRoleId(Integer roleId) { this.roleId = roleId; }
     public void setRoleId(int roleId) { this.roleId = roleId; }
-    public void setEnrollmentDate(LocalDate enrollmentDate) { this.enrollmentDate = enrollmentDate; }
     public void setHireDate(LocalDate hireDate) { this.hireDate = hireDate; }
     public void setDepartment(String department) { this.department = department; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

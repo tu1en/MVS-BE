@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,6 +37,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import jakarta.validation.Valid;
 
 import lombok.RequiredArgsConstructor;
+import com.classroomapp.classroombackend.model.Contract;
+import com.classroomapp.classroombackend.repository.ContractRepository;
+import com.classroomapp.classroombackend.constants.RoleConstants;
 
 /**
  * Teacher-specific controller for teacher dashboard, schedule, and courses
@@ -53,6 +57,7 @@ public class TeacherController {
     private final AttendanceRepository attendanceRepository;
     private final ScheduleService scheduleService;
     private final AbsenceService absenceService;
+    private final ContractRepository contractRepository;
 
     /**
      * Get teacher's schedule
@@ -275,5 +280,16 @@ public class TeacherController {
         }
         AbsenceDTO absence = absenceService.getAbsenceById(absenceId, currentUser.getId());
         return ResponseEntity.ok(absence);
+    }
+
+    @GetMapping("/teacher/official-contract-status")
+    public ResponseEntity<?> getOfficialContractStatus(Authentication authentication) {
+        String username = authentication.getName();
+        User user = userRepository.findByUsername(username).orElse(null);
+        if (user == null || user.getRoleId() != RoleConstants.TEACHER) {
+            return ResponseEntity.ok(Map.of("hasOfficialContract", false));
+        }
+        Optional<Contract> contract = contractRepository.findByUserIdAndContractTypeAndStatus(user.getId(), "OFFICIAL", "ACTIVE");
+        return ResponseEntity.ok(Map.of("hasOfficialContract", contract.isPresent()));
     }
 }
