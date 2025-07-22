@@ -126,8 +126,14 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("Email already registered");
         }
         
+        // Check if username already exists
+        if (userRepository.existsByUsername(userDto.getUsername())) {
+            throw new IllegalArgumentException("Username already exists");
+        }
+        
         // Convert DTO to entity
         User user = new User();
+        user.setUsername(userDto.getUsername());
         user.setEmail(userDto.getEmail());
         user.setFullName(userDto.getName());
         user.setStatus(userDto.isEnabled() ? "active" : "disabled");
