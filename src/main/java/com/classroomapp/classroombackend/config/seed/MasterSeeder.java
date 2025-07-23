@@ -16,6 +16,11 @@ import com.classroomapp.classroombackend.repository.CourseMaterialRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.repository.absencemanagement.AbsenceRepository;
+import com.classroomapp.classroombackend.config.seed.JobPositionSeeder;
+import com.classroomapp.classroombackend.model.RecruitmentApplication;
+import com.classroomapp.classroombackend.model.JobPosition;
+import com.classroomapp.classroombackend.repository.RecruitmentApplicationRepository;
+import com.classroomapp.classroombackend.repository.JobPositionRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -54,6 +59,9 @@ public class MasterSeeder implements CommandLineRunner {
     private final DataVerificationSeeder dataVerificationSeeder;
     private final TimetableEventSeeder timetableEventSeeder;
     private final RequestSeeder requestSeeder;
+    private final JobPositionSeeder jobPositionSeeder;
+    private final RecruitmentApplicationRepository recruitmentApplicationRepository;
+    private final JobPositionRepository jobPositionRepository;
 
     @Override
     @Transactional
@@ -69,6 +77,7 @@ public class MasterSeeder implements CommandLineRunner {
             scheduleSeeder.seed();
             timetableEventSeeder.seed(); // Seed timetable events
             requestSeeder.seed(); // Seed role requests
+            jobPositionSeeder.seed();
 
             log.info("============== Starting Lecture Seeding ==============");
             lectureSeeder.seed(classrooms);
@@ -147,6 +156,25 @@ public class MasterSeeder implements CommandLineRunner {
         log.info("============== Forcing Classroom Enrollment Seeding ==============");
         classroomEnrollmentSeeder.seed();
         log.info("============== Classroom Enrollment Seeding Complete ==============");
+
+        // Luôn seed lại JobPosition nếu bảng rỗng
+        jobPositionSeeder.seed();
+
+        // Seed thêm 5-6 ứng viên nộp CV mẫu nếu chưa có
+        if (recruitmentApplicationRepository.count() < 5) {
+            List<JobPosition> positions = jobPositionRepository.findAll();
+            if (!positions.isEmpty()) {
+                for (int i = 1; i <= 6; i++) {
+                    RecruitmentApplication app = new RecruitmentApplication();
+                    app.setFullName("Ứng viên test " + i);
+                    app.setEmail("testcv" + i + "@gmail.com");
+                    app.setJobPosition(positions.get(i % positions.size()));
+                    app.setStatus("PENDING");
+                    app.setCvUrl("/static/sample_materials/sample.pdf");
+                    recruitmentApplicationRepository.save(app);
+                }
+            }
+        }
     }
 
     /**

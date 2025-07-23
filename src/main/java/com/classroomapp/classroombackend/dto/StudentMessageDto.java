@@ -50,4 +50,10 @@ public class StudentMessageDto {
     public String getContent() { return content; }
     public String getMessageType() { return messageType; }
     public String getPriority() { return priority; }
+
+    public void setId(Long id) { this.id = id; }
+    public void setSenderId(Long senderId) { this.senderId = senderId; }
+    public void setSenderName(String senderName) { this.senderName = senderName; }
+    public void setRecipientId(Long recipientId) { this.recipientId = recipientId; }
+    public void setRecipientName(String recipientName) { this.recipientName = recipientName; }
 }

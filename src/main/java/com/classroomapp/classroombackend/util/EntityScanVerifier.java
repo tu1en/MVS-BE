@@ -21,23 +21,6 @@ public class EntityScanVerifier implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        log.info("🔍 Verifying Entity Scanning for Hibernate + SQL Server...");
-        
-        var metamodel = entityManager.getMetamodel();
-        var entities = metamodel.getEntities();
-        
-        log.info("✅ Found {} entities:", entities.size());
-        
-        for (EntityType<?> entity : entities) {
-            String entityName = entity.getName();
-            String javaType = entity.getJavaType().getSimpleName();
-            String packageName = entity.getJavaType().getPackageName();
-            
-            log.info("📋 Entity: {} (Class: {}) in package: {}", 
-                entityName, javaType, packageName);
-        }
-        
-        log.info("✅ Entity scanning verification completed!");
         log.info("🗄️ Hibernate will now create/update tables in SQL Server");
     }
 }

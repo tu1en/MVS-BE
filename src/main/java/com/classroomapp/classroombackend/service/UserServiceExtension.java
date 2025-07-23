@@ -24,4 +24,5 @@ public interface UserServiceExtension {
      * @return true if created or updated, false otherwise
      */
     boolean createOrUpdateUser(String email, String fullName, String role);
+    boolean createUserWithoutContract(String email, String fullName, String role);
 } 

@@ -79,4 +79,7 @@ public class Classroom {
 
     @OneToMany(mappedBy = "classroom", fetch = FetchType.LAZY)
     private List<Lecture> lectures = new ArrayList<>();
+
+    public String getName() { return name; }
+    public Long getId() { return id; }
 }

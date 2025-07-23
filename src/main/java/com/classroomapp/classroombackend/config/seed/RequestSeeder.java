@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 import org.springframework.stereotype.Component;
 
 import com.classroomapp.classroombackend.dto.StudentRequestFormDTO;
-import com.classroomapp.classroombackend.dto.TeacherRequestFormDTO;
 import com.classroomapp.classroombackend.model.Request;
 import com.classroomapp.classroombackend.repository.requestmanagement.RequestRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,24 +24,12 @@ public class RequestSeeder {
         }
         try {
             // Create a teacher role request
-            TeacherRequestFormDTO teacherForm = new TeacherRequestFormDTO();
-            teacherForm.setEmail("nguyenvanA@gmail.com");
-            teacherForm.setFullName("Nguyễn Văn A");
-            teacherForm.setPhoneNumber("0987654321");
-            teacherForm.setCvFileName("nguyen_van_a_cv.pdf");
-            teacherForm.setCvFileType("application/pdf");
-            teacherForm.setCvFileData(
-                    "U2FtcGxlIENWIGZpbGUgY29udGVudC4gSW4gcmVhbCBpbXBsZW1lbnRhdGlvbiwgdGhpcyB3b3VsZCBiZSBhIGJhc2U2NCBlbmNvZGVkIHN0cmluZyBvZiBhIFBERiBmaWxlLg=="); // Sample base64 data
-            teacherForm.setCvFileUrl("/files/teachers/nguyen_van_a_cv.pdf");
-            teacherForm.setAdditionalInfo(
-                    "Tôi đã có 5 năm kinh nghiệm giảng dạy Toán cấp trung học. Tôi từng làm việc tại trường THPT Chu Văn An và là giáo viên dạy thêm tại nhiều trung tâm luyện thi.");
-
             Request teacherRequest = new Request();
-            teacherRequest.setEmail(teacherForm.getEmail() != null ? teacherForm.getEmail() : "unknown@email.com");
-            teacherRequest.setFullName(teacherForm.getFullName() != null ? teacherForm.getFullName() : "Unknown");
-            teacherRequest.setPhoneNumber(teacherForm.getPhoneNumber() != null ? teacherForm.getPhoneNumber() : "0000000000");
+            teacherRequest.setEmail("nguyenvanA@gmail.com");
+            teacherRequest.setFullName("Nguyễn Văn A");
+            teacherRequest.setPhoneNumber("0987654321");
             teacherRequest.setRequestedRole("TEACHER");
-            teacherRequest.setFormResponses(objectMapper.writeValueAsString(teacherForm));
+            teacherRequest.setFormResponses(objectMapper.writeValueAsString(null)); // No form data for teacher
             teacherRequest.setStatus("PENDING");
             teacherRequest.setCreatedAt(LocalDateTime.now().minusDays(3));
             requestRepository.save(teacherRequest);
