@@ -81,4 +81,30 @@ public class Absence {
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = (createdAt != null) ? createdAt : LocalDateTime.now();
     }
+
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
+    public String getUserEmail() { return userEmail; }
+    public void setUserEmail(String userEmail) { this.userEmail = userEmail; }
+    public String getUserFullName() { return userFullName; }
+    public void setUserFullName(String userFullName) { this.userFullName = userFullName; }
+    public LocalDate getStartDate() { return startDate; }
+    public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
+    public LocalDate getEndDate() { return endDate; }
+    public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
+    public Integer getNumberOfDays() { return numberOfDays; }
+    public void setNumberOfDays(Integer numberOfDays) { this.numberOfDays = numberOfDays; }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+    public Boolean getIsOverLimit() { return isOverLimit; }
+    public void setIsOverLimit(Boolean isOverLimit) { this.isOverLimit = isOverLimit; }
+    public String getResultStatus() { return resultStatus; }
+    public void setResultStatus(String resultStatus) { this.resultStatus = resultStatus; }
+    public String getRejectReason() { return rejectReason; }
+    public void setRejectReason(String rejectReason) { this.rejectReason = rejectReason; }
+    public LocalDateTime getProcessedAt() { return processedAt; }
+    public void setProcessedAt(LocalDateTime processedAt) { this.processedAt = processedAt; }
+    public Long getId() { return id; }
 } 

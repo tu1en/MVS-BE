@@ -64,7 +64,7 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(columnDefinition = "NVARCHAR(10) default 'active'")
+    @Column(columnDefinition = "NVARCHAR(32) default 'active'")
     private String status = "active";
     
     // Leave management fields for Teachers

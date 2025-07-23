@@ -67,4 +67,25 @@ public class Schedule {
             return "Evening";
         }
     }
+
+    public Integer getDayOfWeek() { return dayOfWeek; }
+    public void setDayOfWeek(Integer dayOfWeek) { this.dayOfWeek = dayOfWeek; }
+    public LocalTime getStartTime() { return startTime; }
+    public void setStartTime(LocalTime startTime) { this.startTime = startTime; }
+    public LocalTime getEndTime() { return endTime; }
+    public void setEndTime(LocalTime endTime) { this.endTime = endTime; }
+    public String getRoom() { return room; }
+    public void setRoom(String room) { this.room = room; }
+    public String getSubject() { return subject; }
+    public void setSubject(String subject) { this.subject = subject; }
+    public String getMaterialsUrl() { return materialsUrl; }
+    public void setMaterialsUrl(String materialsUrl) { this.materialsUrl = materialsUrl; }
+    public String getMeetUrl() { return meetUrl; }
+    public void setMeetUrl(String meetUrl) { this.meetUrl = meetUrl; }
+    public User getTeacher() { return teacher; }
+    public void setTeacher(User teacher) { this.teacher = teacher; }
+    public Classroom getClassroom() { return classroom; }
+    public void setClassroom(Classroom classroom) { this.classroom = classroom; }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 } 

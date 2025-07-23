@@ -97,6 +97,38 @@ public class UserServiceExtensionImpl implements UserServiceExtension {
         }
     }
     
+    @Override
+    @Transactional
+    public boolean createUserWithoutContract(String email, String fullName, String role) {
+        try {
+            Optional<User> optionalUser = userRepository.findByEmail(email);
+            if (optionalUser.isPresent()) {
+                // User exists, update role và trạng thái
+                User user = optionalUser.get();
+                user.setRoleId(convertRoleToRoleId(role));
+                user.setStatus("pending_contract");
+                userRepository.save(user);
+                return true;
+            } else {
+                // Create new user với trạng thái chưa có hợp đồng
+                String tempPassword = UUID.randomUUID().toString().substring(0, 8);
+                User user = new User();
+                user.setEmail(email);
+                user.setUsername(email);
+                user.setPassword(passwordEncoder.encode(tempPassword));
+                user.setFullName(fullName);
+                user.setRoleId(convertRoleToRoleId(role));
+                user.setStatus("pending_contract");
+                userRepository.save(user);
+                // Không gửi mail tài khoản ở đây (sẽ gửi khi ký hợp đồng)
+                return true;
+            }
+        } catch (Exception e) {
+            log.error("Error creating user without contract: {}", email, e);
+            return false;
+        }
+    }
+    
     /**
      * Returns a human-readable role name
      */

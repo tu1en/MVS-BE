@@ -93,6 +93,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/greetings/hello").permitAll() // Only allow hello endpoint for health check
                 .requestMatchers("/api/role-requests/**").permitAll()
                 .requestMatchers("/role-requests/**").permitAll() // Allow both with and without /api prefix
+                .requestMatchers(HttpMethod.GET, "/api/job-positions").permitAll()
+                .requestMatchers(HttpMethod.GET, "/job-positions").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/recruitments/apply").permitAll()
                 
                 // Blog endpoints
                 .requestMatchers("/api/blogs").permitAll()
