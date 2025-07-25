@@ -54,11 +54,11 @@ public class ManagerMessagesController {
         StudentMessageDto msg1 = new StudentMessageDto();
         msg1.setId(1L);
         msg1.setSenderId(404L);
-        msg1.setSenderName("Nguyễn Văn A");
+        msg1.setSenderName("Nguyá»…n VÄƒn A");
         msg1.setRecipientId(1L);
         msg1.setRecipientName("Manager");
-        msg1.setSubject("Khiếu nại về lớp học");
-        msg1.setContent("Em muốn khiếu nại về tình hình lớp học...");
+        msg1.setSubject("Khiáº¿u náº¡i vá» lá»›p há»c");
+        msg1.setContent("Em muá»‘n khiáº¿u náº¡i vá» tÃ¬nh hÃ¬nh lá»›p há»c...");
         msg1.setMessageType("COMPLAINT");
         msg1.setPriority("HIGH");
         msg1.setStatus("SENT");
@@ -69,11 +69,11 @@ public class ManagerMessagesController {
         StudentMessageDto msg2 = new StudentMessageDto();
         msg2.setId(2L);
         msg2.setSenderId(405L);
-        msg2.setSenderName("Trần Thị B");
+        msg2.setSenderName("Tráº§n Thá»‹ B");
         msg2.setRecipientId(1L);
         msg2.setRecipientName("Manager");
-        msg2.setSubject("Hỏi về lịch thi");
-        msg2.setContent("Em muốn hỏi về lịch thi cuối kỳ...");
+        msg2.setSubject("Há»i vá» lá»‹ch thi");
+        msg2.setContent("Em muá»‘n há»i vá» lá»‹ch thi cuá»‘i ká»³...");
         msg2.setMessageType("INQUIRY");
         msg2.setPriority("MEDIUM");
         msg2.setStatus("SENT");
@@ -94,7 +94,7 @@ public class ManagerMessagesController {
         Map<String, Object> conv1 = new HashMap<>();
         conv1.put("id", 1);
         conv1.put("participants", List.of("student@test.com", "teacher@test.com"));
-        conv1.put("lastMessage", "Xin chào thầy...");
+        conv1.put("lastMessage", "Xin chÃ o tháº§y...");
         conv1.put("lastMessageTime", "2025-01-11T15:30:00");
         conv1.put("unreadCount", 2);
         conversations.add(conv1);
@@ -102,7 +102,7 @@ public class ManagerMessagesController {
         Map<String, Object> conv2 = new HashMap<>();
         conv2.put("id", 2);
         conv2.put("participants", List.of("manager@test.com", "teacher@test.com"));
-        conv2.put("lastMessage", "Báo cáo tháng này...");
+        conv2.put("lastMessage", "BÃ¡o cÃ¡o thÃ¡ng nÃ y...");
         conv2.put("lastMessageTime", "2025-01-11T14:20:00");
         conv2.put("unreadCount", 0);
         conversations.add(conv2);

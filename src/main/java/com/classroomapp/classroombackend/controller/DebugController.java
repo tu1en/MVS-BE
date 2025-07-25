@@ -1,21 +1,37 @@
 package com.classroomapp.classroombackend.controller;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.classroomapp.classroombackend.model.CourseMaterial;
 import com.classroomapp.classroombackend.model.Schedule;
+import com.classroomapp.classroombackend.model.TimetableEvent;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.CourseMaterialRepository;
 import com.classroomapp.classroombackend.repository.ScheduleRepository;
+import com.classroomapp.classroombackend.repository.TimetableEventRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -26,6 +42,8 @@ public class DebugController {
     private final UserRepository userRepository;
     private final ScheduleRepository scheduleRepository;
     private final ClassroomRepository classroomRepository;
+    private final CourseMaterialRepository courseMaterialRepository;
+    private final TimetableEventRepository timetableEventRepository;
 
     @GetMapping("/users")
     public ResponseEntity<?> getAllUsers() {
@@ -123,8 +141,8 @@ public class DebugController {
             "dateRange", startDate + " to " + endDate,
             "totalSchedules", schedules.size(),
             "message", schedules.isEmpty() ?
-                "❌ NO SCHEDULES FOUND - This is the problem!" :
-                "✅ Schedules found - API should work",
+                "âŒ NO SCHEDULES FOUND - This is the problem!" :
+                "âœ… Schedules found - API should work",
             "sampleSchedules", schedules.stream().limit(5).map(s ->
                 java.util.Map.of(
                     "day", getDayName(s.getDayOfWeek()),
@@ -306,6 +324,223 @@ public class DebugController {
             return ResponseEntity.ok(result.toString());
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Debug endpoint Ä‘á»ƒ kiá»ƒm tra tÃ i liá»‡u ID cá»¥ thá»ƒ
+     */
+    @GetMapping("/material/{materialId}")
+    public ResponseEntity<Map<String, Object>> debugMaterial(@PathVariable Long materialId) {
+        Map<String, Object> result = new HashMap<>();
+
+        try {
+            // Kiá»ƒm tra trong database
+            Optional<CourseMaterial> materialOpt = courseMaterialRepository.findById(materialId);
+
+            if (materialOpt.isPresent()) {
+                CourseMaterial material = materialOpt.get();
+                result.put("database_exists", true);
+                result.put("material_info", Map.of(
+                    "id", material.getId(),
+                    "title", material.getTitle(),
+                    "fileName", material.getFileName(),
+                    "filePath", material.getFilePath(),
+                    "fileSize", material.getFileSize(),
+                    "fileType", material.getFileType(),
+                    "classroomId", material.getClassroomId(),
+                    "uploadedBy", material.getUploadedBy()
+                ));
+
+                // Kiá»ƒm tra file cÃ³ tá»“n táº¡i khÃ´ng
+                String filePath = material.getFilePath();
+                if (filePath != null) {
+                    // Loáº¡i bá» dáº¥u "/" Ä‘áº§u náº¿u cÃ³
+                    if (filePath.startsWith("/")) {
+                        filePath = filePath.substring(1);
+                    }
+
+                    // Thá»­ cÃ¡c Ä‘Æ°á»ng dáº«n khÃ¡c nhau
+                    Path projectRoot = Paths.get(System.getProperty("user.dir"));
+                    Path absolutePath1 = projectRoot.resolve(filePath);
+                    Path absolutePath2 = projectRoot.resolve("backend").resolve("doproject").resolve(filePath);
+                    Path absolutePath3 = Paths.get(filePath);
+
+                    result.put("project_root", projectRoot.toString());
+                    result.put("file_paths_checked", Map.of(
+                        "path1", absolutePath1.toString(),
+                        "path1_exists", Files.exists(absolutePath1),
+                        "path2", absolutePath2.toString(),
+                        "path2_exists", Files.exists(absolutePath2),
+                        "path3", absolutePath3.toString(),
+                        "path3_exists", Files.exists(absolutePath3)
+                    ));
+
+                    // Kiá»ƒm tra file nÃ o tá»“n táº¡i
+                    if (Files.exists(absolutePath1)) {
+                        result.put("file_exists", true);
+                        result.put("working_path", absolutePath1.toString());
+                        result.put("file_size_actual", Files.size(absolutePath1));
+                    } else if (Files.exists(absolutePath2)) {
+                        result.put("file_exists", true);
+                        result.put("working_path", absolutePath2.toString());
+                        result.put("file_size_actual", Files.size(absolutePath2));
+                    } else if (Files.exists(absolutePath3)) {
+                        result.put("file_exists", true);
+                        result.put("working_path", absolutePath3.toString());
+                        result.put("file_size_actual", Files.size(absolutePath3));
+                    } else {
+                        result.put("file_exists", false);
+                        result.put("error", "File khÃ´ng tá»“n táº¡i á»Ÿ báº¥t ká»³ Ä‘Æ°á»ng dáº«n nÃ o");
+                    }
+                }
+
+            } else {
+                result.put("database_exists", false);
+                result.put("error", "TÃ i liá»‡u khÃ´ng tá»“n táº¡i trong database");
+            }
+
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            result.put("error", "Exception: " + e.getMessage());
+            return ResponseEntity.ok(result);
+        }
+    }
+
+    /**
+     * Debug endpoint Ä‘á»ƒ liá»‡t kÃª táº¥t cáº£ tÃ i liá»‡u
+     */
+    @GetMapping("/materials")
+    public ResponseEntity<Map<String, Object>> debugAllMaterials() {
+        Map<String, Object> result = new HashMap<>();
+
+        try {
+            List<CourseMaterial> materials = courseMaterialRepository.findAll();
+            result.put("total_materials", materials.size());
+            result.put("materials", materials.stream().map(m -> Map.of(
+                "id", m.getId(),
+                "title", m.getTitle(),
+                "fileName", m.getFileName(),
+                "filePath", m.getFilePath(),
+                "classroomId", m.getClassroomId()
+            )).toList());
+
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            result.put("error", "Exception: " + e.getMessage());
+            return ResponseEntity.ok(result);
+        }
+    }
+
+    /**
+     * Debug endpoint Ä‘á»ƒ test authentication
+     */
+    @GetMapping("/auth-test")
+    public ResponseEntity<Map<String, Object>> debugAuthTest(HttpServletRequest request) {
+        Map<String, Object> result = new HashMap<>();
+
+        try {
+            // Kiá»ƒm tra headers
+            String authHeader = request.getHeader("Authorization");
+            result.put("auth_header_present", authHeader != null);
+            result.put("auth_header_value", authHeader != null ? authHeader.substring(0, Math.min(20, authHeader.length())) + "..." : null);
+
+            // Kiá»ƒm tra security context
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            result.put("security_context_present", auth != null);
+            result.put("is_authenticated", auth != null && auth.isAuthenticated());
+            result.put("principal_type", auth != null ? auth.getPrincipal().getClass().getSimpleName() : null);
+
+            if (auth != null && auth.getPrincipal() instanceof UserDetails) {
+                UserDetails userDetails = (UserDetails) auth.getPrincipal();
+                result.put("username", userDetails.getUsername());
+                result.put("authorities", userDetails.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .toList());
+            }
+
+            // ThÃ´ng tin request
+            result.put("request_uri", request.getRequestURI());
+            result.put("request_method", request.getMethod());
+            result.put("remote_addr", request.getRemoteAddr());
+
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            result.put("error", "Exception: " + e.getMessage());
+            return ResponseEntity.ok(result);
+        }
+    }
+
+    /**
+     * Debug endpoint Ä‘á»ƒ test download vá»›i authentication
+     */
+    @GetMapping("/test-download/{materialId}")
+    public ResponseEntity<Map<String, Object>> debugTestDownload(@PathVariable Long materialId, HttpServletRequest request) {
+        Map<String, Object> result = new HashMap<>();
+
+        try {
+            // Kiá»ƒm tra authentication
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            result.put("is_authenticated", auth != null && auth.isAuthenticated());
+
+            if (auth != null && auth.getPrincipal() instanceof UserDetails) {
+                UserDetails userDetails = (UserDetails) auth.getPrincipal();
+                result.put("username", userDetails.getUsername());
+                result.put("authorities", userDetails.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .toList());
+
+                // Test truy cáº­p tÃ i liá»‡u
+                Optional<CourseMaterial> materialOpt = courseMaterialRepository.findById(materialId);
+                if (materialOpt.isPresent()) {
+                    CourseMaterial material = materialOpt.get();
+                    result.put("material_found", true);
+                    result.put("material_info", Map.of(
+                        "id", material.getId(),
+                        "title", material.getTitle(),
+                        "classroomId", material.getClassroomId(),
+                        "uploadedBy", material.getUploadedBy()
+                    ));
+
+                    // Kiá»ƒm tra quyá»n truy cáº­p (logic Ä‘Æ¡n giáº£n)
+                    boolean hasAccess = userDetails.getAuthorities().stream()
+                        .anyMatch(auth2 -> auth2.getAuthority().equals("ROLE_STUDENT") ||
+                                          auth2.getAuthority().equals("ROLE_TEACHER") ||
+                                          auth2.getAuthority().equals("ROLE_ADMIN"));
+                    result.put("has_access", hasAccess);
+                } else {
+                    result.put("material_found", false);
+                }
+            } else {
+                result.put("error", "User not authenticated or invalid principal");
+            }
+
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            result.put("error", "Exception: " + e.getMessage());
+            return ResponseEntity.ok(result);
+        }
+    }
+
+    @GetMapping("/timetable-events")
+    public ResponseEntity<?> getTimetableEvents() {
+        try {
+            List<TimetableEvent> events = timetableEventRepository.findAll();
+            Map<String, Object> result = new HashMap<>();
+            result.put("count", events.size());
+            result.put("events", events.stream().map(event ->
+                "ID: " + event.getId() + ", Title: " + event.getTitle() +
+                ", Type: " + event.getEventType() + ", Start: " + event.getStartDatetime()
+            ).toList());
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            Map<String, Object> result = new HashMap<>();
+            result.put("error", "Exception: " + e.getMessage());
+            return ResponseEntity.ok(result);
         }
     }
 }

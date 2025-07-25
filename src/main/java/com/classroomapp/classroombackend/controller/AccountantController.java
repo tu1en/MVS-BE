@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
+// import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,7 +29,7 @@ public class AccountantController {
         User currentUser = userRepository.findByEmail(email)
                 .orElseGet(() -> userRepository.findByUsername(email).orElse(null));
         if (currentUser == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Không tìm thấy người dùng"));
+            return ResponseEntity.badRequest().body(Map.of("error", "KhÃ´ng tÃ¬m tháº¥y ngÆ°á»i dÃ¹ng"));
         }
         Long userId = currentUser.getId();
         int totalAbsences = absenceRepository.findByUserId(userId).size();
@@ -37,25 +37,25 @@ public class AccountantController {
         int approvedAbsences = (int) absenceRepository.findByUserId(userId).stream().filter(a -> "APPROVED".equals(a.getStatus())).count();
         Integer annualLeaveBalance = currentUser.getAnnualLeaveBalance();
 
-        // Tạo object leaveStats
+        // Táº¡o object leaveStats
         Map<String, Object> leaveStats = new HashMap<>();
         leaveStats.put("totalAbsences", totalAbsences);
         leaveStats.put("pendingAbsences", pendingAbsences);
         leaveStats.put("approvedAbsences", approvedAbsences);
         leaveStats.put("annualLeaveBalance", annualLeaveBalance);
 
-        // Tạo object financialStats (placeholder)
+        // Táº¡o object financialStats (placeholder)
         Map<String, Object> financialStats = new HashMap<>();
         financialStats.put("totalInvoices", 0);
         financialStats.put("paidInvoices", 0);
         financialStats.put("pendingPayments", 0);
         financialStats.put("overduePayments", 0);
 
-        // Tạo object messageStats (placeholder)
+        // Táº¡o object messageStats (placeholder)
         Map<String, Object> messageStats = new HashMap<>();
         messageStats.put("unreadMessages", 0);
 
-        // Gộp tất cả vào object trả về
+        // Gá»™p táº¥t cáº£ vÃ o object tráº£ vá»
         Map<String, Object> stats = new HashMap<>();
         stats.put("leaveStats", leaveStats);
         stats.put("financialStats", financialStats);

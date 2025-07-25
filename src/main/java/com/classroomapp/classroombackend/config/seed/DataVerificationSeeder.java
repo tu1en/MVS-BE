@@ -54,10 +54,10 @@ public class DataVerificationSeeder {
         
         if (student != null) {
             log.info("✅ Student User: ID={}, Email={}, Role={}, RoleId={}", 
-                student.getId(), student.getEmail(), student.getRole(), student.getRoleId());
+                student.getId(), student.getEmail(), student.getRole(), student.getRoleEnum().toRoleId());
             
-            if (student.getRoleId() != 1) {
-                log.error("❌ CRITICAL: Student user has wrong role! Expected: 1 (STUDENT), Actual: {}", student.getRoleId());
+            if (student.getRoleEnum().toRoleId() != 1) {
+                log.error("❌ CRITICAL: Student user has wrong role! Expected: 1 (STUDENT), Actual: {}", student.getRoleEnum().toRoleId());
             }
         } else {
             log.error("❌ CRITICAL: Student user not found!");
@@ -65,10 +65,10 @@ public class DataVerificationSeeder {
         
         if (teacher != null) {
             log.info("✅ Main Teacher: ID={}, Email={}, Role={}, RoleId={}", 
-                teacher.getId(), teacher.getEmail(), teacher.getRole(), teacher.getRoleId());
+                teacher.getId(), teacher.getEmail(), teacher.getRole(), teacher.getRoleEnum().toRoleId());
                 
-            if (teacher.getRoleId() != 2) {
-                log.error("❌ CRITICAL: Teacher user has wrong role! Expected: 2 (TEACHER), Actual: {}", teacher.getRoleId());
+            if (teacher.getRoleEnum().toRoleId() != 2) {
+                log.error("❌ CRITICAL: Teacher user has wrong role! Expected: 2 (TEACHER), Actual: {}", teacher.getRoleEnum().toRoleId());
             }
         } else {
             log.error("❌ CRITICAL: Main teacher user not found!");
@@ -76,10 +76,11 @@ public class DataVerificationSeeder {
         
         if (mathTeacher != null) {
             log.info("✅ Math Teacher: ID={}, Email={}, Role={}, RoleId={}", 
-                mathTeacher.getId(), mathTeacher.getEmail(), mathTeacher.getRole(), mathTeacher.getRoleId());
+                mathTeacher.getId(), mathTeacher.getEmail(), mathTeacher.getRole(), mathTeacher.getRoleEnum().toRoleId());
         } else {
             log.warn("⚠️ Math teacher user not found!");
         }
+        
         
         // Count users by role
         List<User> students = userRepository.findByRoleId(1);
@@ -106,9 +107,9 @@ public class DataVerificationSeeder {
                 classroomTeacher != null ? classroomTeacher.getId() : "NULL",
                 classroomTeacher != null ? classroomTeacher.getRole() : "NULL");
                 
-            if (classroomTeacher != null && classroomTeacher.getRoleId() != 2) {
+            if (classroomTeacher != null && classroomTeacher.getRoleEnum().toRoleId() != 2) {
                 log.error("❌ CRITICAL: Classroom {} has teacher with wrong role! Expected: 2 (TEACHER), Actual: {}", 
-                    classroom.getName(), classroomTeacher.getRoleId());
+                    classroom.getName(), classroomTeacher.getRoleEnum().toRoleId());
             }
         }
         
@@ -208,7 +209,7 @@ public class DataVerificationSeeder {
         log.info("   - Email: {}", student.getEmail());
         log.info("   - Username: {}", student.getUsername());
         log.info("   - Role: {}", student.getRole());
-        log.info("   - RoleId: {}", student.getRoleId());
+        log.info("   - RoleId: {}", student.getRoleEnum().toRoleId());
         
         // Check if student is mistakenly assigned as teacher to any classroom
         List<Classroom> classroomsAsTeacher = classroomRepository.findByTeacherId(student.getId());

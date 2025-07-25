@@ -63,8 +63,7 @@ public class ProductionApplicationConfig {
     @Value("${app.async.queue-capacity:100}")
     private int asyncQueueCapacity;
 
-    // ==================== PERFORMANCE OPTIMIZATION ====================
-
+    // ==================== PERFORMANCE OPTIMIZATION ======
     /**
      * Cache Manager for improving application performance
      * Caches frequently accessed data like user sessions, classroom data, etc.
@@ -72,7 +71,7 @@ public class ProductionApplicationConfig {
     @Bean
     @Primary
     public CacheManager cacheManager() {
-        log.info("🚀 Initializing Cache Manager for performance optimization");
+        log.info("ðŸš€ Initializing Cache Manager for performance optimization");
         ConcurrentMapCacheManager cacheManager = new ConcurrentMapCacheManager(
             "users",           // User data cache
             "classrooms",      // Classroom information cache
@@ -91,7 +90,7 @@ public class ProductionApplicationConfig {
      */
     @Bean(name = "taskExecutor")
     public TaskExecutor taskExecutor() {
-        log.info("⚡ Configuring Async Task Executor - Core: {}, Max: {}, Queue: {}",
+        log.info("âš¡ Configuring Async Task Executor - Core: {}, Max: {}, Queue: {}",
                 asyncCorePoolSize, asyncMaxPoolSize, asyncQueueCapacity);
 
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
@@ -112,7 +111,7 @@ public class ProductionApplicationConfig {
      */
     @Bean(name = "emailTaskExecutor")
     public TaskExecutor emailTaskExecutor() {
-        log.info("📧 Configuring Email Task Executor");
+        log.info("ðŸ“§ Configuring Email Task Executor");
 
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(2);
@@ -124,20 +123,18 @@ public class ProductionApplicationConfig {
         return executor;
     }
 
-    // ==================== MONITORING & OBSERVABILITY ====================
-
+    // ==================== MONITORING & OBSERVABILITY ======
     /**
      * Application Performance Monitoring
      * Simple performance tracking without external dependencies
      */
     @Bean
     public String performanceMonitor() {
-        log.info("📊 Performance monitoring initialized for {}", applicationName);
+        log.info("ðŸ“Š Performance monitoring initialized for {}", applicationName);
         return "performance-monitor-active";
     }
 
-    // ==================== SECURITY & AUDITING ====================
-
+    // ==================== SECURITY & AUDITING ======
     /**
      * Auditor Provider for JPA Auditing
      * Tracks who created/modified entities
@@ -175,12 +172,11 @@ public class ProductionApplicationConfig {
      */
     @Bean
     public RestTemplate restTemplate() {
-        log.info("🌐 Configuring RestTemplate for external API calls");
+        log.info("ðŸŒ Configuring RestTemplate for external API calls");
         return new RestTemplate();
     }
 
-    // ==================== PRODUCTION FEATURES ====================
-
+    // ==================== PRODUCTION FEATURES ======
     /**
      * File Upload Configuration Properties
      */
@@ -196,7 +192,7 @@ public class ProductionApplicationConfig {
      */
     @Bean
     public String metricsConfiguration() {
-        log.info("📈 Application metrics configuration initialized");
+        log.info("ðŸ“ˆ Application metrics configuration initialized");
         return "metrics-enabled";
     }
 
@@ -207,7 +203,7 @@ public class ProductionApplicationConfig {
     @Bean
     @Profile("dev")
     public String developmentModeIndicator() {
-        log.warn("🚧 Application running in DEVELOPMENT mode - additional logging enabled");
+        log.warn("ðŸš§ Application running in DEVELOPMENT mode - additional logging enabled");
         return "development";
     }
 
@@ -218,12 +214,11 @@ public class ProductionApplicationConfig {
     @Bean
     @Profile("prod")
     public String productionModeIndicator() {
-        log.info("🚀 Application running in PRODUCTION mode - optimized for performance");
+        log.info("ðŸš€ Application running in PRODUCTION mode - optimized for performance");
         return "production";
     }
 
-    // ==================== INNER CLASSES ====================
-
+    // ==================== INNER CLASSES ======
     /**
      * File Upload Configuration Properties
      */

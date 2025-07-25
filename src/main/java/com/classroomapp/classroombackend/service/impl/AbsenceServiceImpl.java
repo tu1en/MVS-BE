@@ -1,16 +1,14 @@
 package com.classroomapp.classroombackend.service.impl;
 
 import com.classroomapp.classroombackend.constants.RoleConstants;
-import com.classroomapp.classroombackend.dto.absencemanagement.AbsenceDTO;
-import com.classroomapp.classroombackend.dto.absencemanagement.CreateAbsenceDTO;
-import com.classroomapp.classroombackend.dto.absencemanagement.TeacherLeaveInfoDTO;
+import com.classroomapp.classroombackend.dto.absencemanagement.AbsenceDto;
+import com.classroomapp.classroombackend.dto.absencemanagement.CreateAbsenceDto;
+import com.classroomapp.classroombackend.dto.absencemanagement.TeacherLeaveInfoDto;
 import com.classroomapp.classroombackend.exception.BusinessLogicException;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
 import com.classroomapp.classroombackend.model.Absence;
-import com.classroomapp.classroombackend.model.Contract;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.absencemanagement.AbsenceRepository;
-import com.classroomapp.classroombackend.repository.ContractRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.AbsenceService;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +22,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,32 +31,19 @@ public class AbsenceServiceImpl implements AbsenceService {
 
     private final AbsenceRepository absenceRepository;
     private final UserRepository userRepository;
-    private final ContractRepository contractRepository;
     private final ModelMapper modelMapper;
 
     @Override
     @Transactional
-    public AbsenceDTO createAbsenceRequest(CreateAbsenceDTO createDto, Long userId) {
+    public AbsenceDto createAbsenceRequest(CreateAbsenceDto createDto, Long userId) {
         log.info("Creating absence request for user: {}", userId);
         
         // Validate user exists and is a teacher or accountant
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
         
-        // Lấy ngày reset nghỉ phép từ hợp đồng chính thức (teacher) hoặc hireDate (accountant)
-        LocalDate leaveResetDate = null;
-        if (user.getRoleId() == RoleConstants.TEACHER) {
-            // Lấy hợp đồng chính thức còn hiệu lực
-            Optional<Contract> officialContract = contractRepository.findByUserIdAndContractTypeAndStatus(userId, "OFFICIAL", "ACTIVE");
-            if (officialContract.isPresent()) {
-                leaveResetDate = officialContract.get().getStartDate();
-            } else {
-                throw new BusinessLogicException("Chỉ giáo viên có hợp đồng chính thức mới được tạo đơn nghỉ phép");
-            }
-        } else if (user.getRoleId() == RoleConstants.ACCOUNTANT) {
-            leaveResetDate = user.getHireDate();
-        } else {
-            throw new BusinessLogicException("Chỉ giáo viên có hợp đồng chính thức hoặc kế toán viên mới được tạo đơn nghỉ phép");
+        if (user.getRoleId() != RoleConstants.TEACHER && user.getRoleId() != RoleConstants.ACCOUNTANT) {
+            throw new BusinessLogicException("Chá»‰ giÃ¡o viÃªn hoáº·c káº¿ toÃ¡n viÃªn má»›i Ä‘Æ°á»£c táº¡o Ä‘Æ¡n nghá»‰ phÃ©p");
         }
         
         // Validate dates
@@ -80,14 +64,14 @@ public class AbsenceServiceImpl implements AbsenceService {
         
         // Check for overlapping leave requests
         if (absenceRepository.hasOverlappingLeave(userId, createDto.getStartDate(), createDto.getEndDate())) {
-            throw new BusinessLogicException("Bạn đã có đơn nghỉ phép trùng với khoảng thời gian này. Vui lòng chọn ngày khác.");
+            throw new BusinessLogicException("Báº¡n Ä‘Ã£ cÃ³ Ä‘Æ¡n nghá»‰ phÃ©p trÃ¹ng vá»›i khoáº£ng thá»i gian nÃ y. Vui lÃ²ng chá»n ngÃ y khÃ¡c.");
         }
         
         // Check annual leave balance
-        LocalDate leaveYearStart = leaveResetDate != null ? 
-            leaveResetDate.minusYears(1) : user.getHireDate();
-        LocalDate leaveYearEnd = leaveResetDate != null ? 
-            leaveResetDate : leaveYearStart.plusYears(1);
+        LocalDate leaveYearStart = user.getLeaveResetDate() != null ? 
+            user.getLeaveResetDate().minusYears(1) : user.getHireDate();
+        LocalDate leaveYearEnd = user.getLeaveResetDate() != null ? 
+            user.getLeaveResetDate() : leaveYearStart.plusYears(1);
             
         Integer usedDays = absenceRepository.calculateUsedLeaveDays(userId, leaveYearStart, leaveYearEnd);
         Integer pendingDays = absenceRepository.calculatePendingLeaveDays(userId);
@@ -118,7 +102,7 @@ public class AbsenceServiceImpl implements AbsenceService {
     }
 
     @Override
-    public List<AbsenceDTO> getMyAbsenceRequests(Long userId) {
+    public List<AbsenceDto> getMyAbsenceRequests(Long userId) {
         List<Absence> absences = absenceRepository.findByUserId(userId);
         return absences.stream()
             .map(this::convertToDto)
@@ -126,7 +110,7 @@ public class AbsenceServiceImpl implements AbsenceService {
     }
 
     @Override
-    public AbsenceDTO getAbsenceById(Long absenceId, Long userId) {
+    public AbsenceDto getAbsenceById(Long absenceId, Long userId) {
         Absence absence = absenceRepository.findById(absenceId)
             .orElseThrow(() -> new ResourceNotFoundException("Absence not found with id: " + absenceId));
         
@@ -139,7 +123,7 @@ public class AbsenceServiceImpl implements AbsenceService {
     }
 
     @Override
-    public List<AbsenceDTO> getAllAbsenceRequests() {
+    public List<AbsenceDto> getAllAbsenceRequests() {
         log.info("Fetching all absence requests");
         List<Absence> absences = absenceRepository.findAll();
         log.info("Found {} absence requests in database", absences.size());
@@ -149,7 +133,7 @@ public class AbsenceServiceImpl implements AbsenceService {
     }
 
     @Override
-    public List<AbsenceDTO> getPendingAbsenceRequests() {
+    public List<AbsenceDto> getPendingAbsenceRequests() {
         List<Absence> pendingAbsences = absenceRepository.findByStatusOrderByCreatedAtDesc("PENDING");
         return pendingAbsences.stream()
             .map(this::convertToDto)
@@ -157,7 +141,7 @@ public class AbsenceServiceImpl implements AbsenceService {
     }
 
     @Override
-    public List<TeacherLeaveInfoDTO> getAllTeachersLeaveInfo() {
+    public List<TeacherLeaveInfoDto> getAllTeachersLeaveInfo() {
         // Get all teachers and accountants
         log.info("Fetching all teachers and accountants with role ID: {} and {}", RoleConstants.TEACHER, RoleConstants.ACCOUNTANT);
         List<User> employees = userRepository.findByRoleId(RoleConstants.TEACHER);
@@ -170,12 +154,12 @@ public class AbsenceServiceImpl implements AbsenceService {
     }
 
     @Override
-    public TeacherLeaveInfoDTO getTeacherLeaveInfo(Long employeeId) {
+    public TeacherLeaveInfoDto getTeacherLeaveInfo(Long employeeId) {
         User employee = userRepository.findById(employeeId)
-            .orElseThrow(() -> new ResourceNotFoundException("Nhân viên không tồn tại với id: " + employeeId));
+            .orElseThrow(() -> new ResourceNotFoundException("NhÃ¢n viÃªn khÃ´ng tá»“n táº¡i vá»›i id: " + employeeId));
         
         if (employee.getRoleId() != RoleConstants.TEACHER && employee.getRoleId() != RoleConstants.ACCOUNTANT) {
-            throw new BusinessLogicException("Người dùng không phải là giáo viên hoặc kế toán viên");
+            throw new BusinessLogicException("NgÆ°á»i dÃ¹ng khÃ´ng pháº£i lÃ  giÃ¡o viÃªn hoáº·c káº¿ toÃ¡n viÃªn");
         }
         
         return calculateTeacherLeaveInfo(employee);
@@ -183,7 +167,7 @@ public class AbsenceServiceImpl implements AbsenceService {
 
     @Override
     @Transactional
-    public AbsenceDTO approveAbsence(Long absenceId, Long managerId) {
+    public AbsenceDto approveAbsence(Long absenceId, Long managerId) {
         log.info("Approving absence request: {} by manager: {}", absenceId, managerId);
         
         Absence absence = absenceRepository.findById(absenceId)
@@ -224,7 +208,7 @@ public class AbsenceServiceImpl implements AbsenceService {
 
     @Override
     @Transactional
-    public AbsenceDTO rejectAbsence(Long absenceId, String reason, Long managerId) {
+    public AbsenceDto rejectAbsence(Long absenceId, String reason, Long managerId) {
         log.info("Rejecting absence request: {} by manager: {}", absenceId, managerId);
         
         Absence absence = absenceRepository.findById(absenceId)
@@ -251,18 +235,13 @@ public class AbsenceServiceImpl implements AbsenceService {
     @Transactional
     public void resetAnnualLeave() {
         log.info("Starting scheduled annual leave reset check");
-        List<User> teachers = userRepository.findByRoleId(RoleConstants.TEACHER);
-        List<User> accountants = userRepository.findByRoleId(RoleConstants.ACCOUNTANT);
+        List<User> employees = userRepository.findByRoleId(RoleConstants.TEACHER);
+        employees.addAll(userRepository.findByRoleId(RoleConstants.ACCOUNTANT));
         LocalDate today = LocalDate.now();
-        for (User teacher : teachers) {
-            Optional<Contract> officialContract = contractRepository.findByUserIdAndContractTypeAndStatus(teacher.getId(), "OFFICIAL", "ACTIVE");
-            if (officialContract.isPresent() && officialContract.get().getStartDate().isEqual(today)) {
-                resetUserAnnualLeave(teacher.getId());
-            }
-        }
-        for (User accountant : accountants) {
-            if (accountant.getHireDate() != null && accountant.getHireDate().isEqual(today)) {
-                resetUserAnnualLeave(accountant.getId());
+        for (User employee : employees) {
+            if (employee.getLeaveResetDate() != null && 
+                !employee.getLeaveResetDate().isAfter(today)) {
+                resetUserAnnualLeave(employee.getId());
             }
         }
         log.info("Completed annual leave reset check");
@@ -274,24 +253,16 @@ public class AbsenceServiceImpl implements AbsenceService {
         log.info("Resetting annual leave for user: {}", userId);
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
-        if (user.getRoleId() == RoleConstants.TEACHER) {
-            Optional<Contract> officialContract = contractRepository.findByUserIdAndContractTypeAndStatus(userId, "OFFICIAL", "ACTIVE");
-            if (officialContract.isPresent()) {
-                user.setAnnualLeaveBalance(12);
-                user.setLeaveResetDate(officialContract.get().getStartDate().plusYears(1));
-                userRepository.save(user);
-                log.info("Annual leave reset completed for teacher: {}", userId);
-            }
-        } else if (user.getRoleId() == RoleConstants.ACCOUNTANT) {
-            user.setAnnualLeaveBalance(12);
-            user.setLeaveResetDate(user.getHireDate().plusYears(1));
+        if (user.getRoleId() == RoleConstants.TEACHER || user.getRoleId() == RoleConstants.ACCOUNTANT) {
+            user.setAnnualLeaveBalance(12); // Reset to 12 days
+            user.setLeaveResetDate(LocalDate.now().plusYears(1)); // Next reset date
             userRepository.save(user);
-            log.info("Annual leave reset completed for accountant: {}", userId);
+            log.info("Annual leave reset completed for user: {}", userId);
         }
     }
 
-    private TeacherLeaveInfoDTO calculateTeacherLeaveInfo(User employee) {
-        TeacherLeaveInfoDTO info = new TeacherLeaveInfoDTO();
+    private TeacherLeaveInfoDto calculateTeacherLeaveInfo(User employee) {
+        TeacherLeaveInfoDto info = new TeacherLeaveInfoDto();
         info.setUserId(employee.getId());
         info.setEmail(employee.getEmail());
         info.setFullName(employee.getFullName());
@@ -346,8 +317,8 @@ public class AbsenceServiceImpl implements AbsenceService {
         return info;
     }
 
-    private AbsenceDTO convertToDto(Absence absence) {
-        AbsenceDTO dto = modelMapper.map(absence, AbsenceDTO.class);
+    private AbsenceDto convertToDto(Absence absence) {
+        AbsenceDto dto = modelMapper.map(absence, AbsenceDto.class);
         return dto;
     }
 
