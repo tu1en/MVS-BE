@@ -47,7 +47,7 @@ public class Lecture {
     @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
     private String title;
     
-    @Column(name = "content", columnDefinition = "TEXT")
+    @Column(name = "content", columnDefinition = "NVARCHAR(MAX)")
     private String content;
     
     @ManyToOne(fetch = FetchType.LAZY)
