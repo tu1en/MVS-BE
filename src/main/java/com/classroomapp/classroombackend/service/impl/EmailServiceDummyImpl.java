@@ -44,4 +44,16 @@ public class EmailServiceDummyImpl implements EmailService {
         log.info("DUMMY EMAIL SERVICE: Would send approval email to {} ({}) - Role: {}, Password: {}",
                 to, fullName, roleName, temporaryPassword);
     }
+
+    @Override
+    public void sendInterviewInvitationEmail(String to, String name, String jobTitle) {
+        log.info("DUMMY EMAIL SERVICE: Would send interview invitation email to {} ({}) - Job Title: {}",
+                to, name, jobTitle);
+    }
+
+    @Override
+    public void sendInterviewRejectionEmail(String to, String name, String jobTitle, String reason) {
+        log.info("DUMMY EMAIL SERVICE: Would send interview rejection email to {} ({}) - Job Title: {}, Reason: {}",
+                to, name, jobTitle, reason);
+    }
 }

@@ -41,7 +41,7 @@ public class Absence {
     @Column(name = "number_of_days", nullable = false)
     private Integer numberOfDays;
     
-    @Column(columnDefinition = "TEXT", length = 4000, nullable = false)
+    @Column(columnDefinition = "NVARCHAR(MAX)", nullable = false)
     private String description; // Reason for leave
     
     @Column(name = "status", nullable = false, length = 50)
@@ -50,7 +50,7 @@ public class Absence {
     @Column(name = "result_status", length = 50)
     private String resultStatus; // APPROVED, REJECTED, null
     
-    @Column(columnDefinition = "TEXT", length = 4000, nullable = true)
+    @Column(columnDefinition = "NVARCHAR(MAX)", nullable = true)
     private String rejectReason;
     
     @Column(name = "created_at", nullable = false)
