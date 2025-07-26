@@ -10,6 +10,8 @@ public class RecruitmentApplicationDto {
     private String jobTitle;
     private String fullName;
     private String email;
+    private String phoneNumber;
+    private String address;
     private String cvUrl;
     private String status;
     private String rejectReason;

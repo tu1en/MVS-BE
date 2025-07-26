@@ -26,6 +26,12 @@ public class RecruitmentApplication {
     @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
     private String email;
 
+    @Column(name = "phone_number", columnDefinition = "NVARCHAR(20)")
+    private String phoneNumber;
+
+    @Column(columnDefinition = "NVARCHAR(MAX)")
+    private String address;
+
     @Column(name = "cv_url", columnDefinition = "TEXT")
     private String cvUrl;
 

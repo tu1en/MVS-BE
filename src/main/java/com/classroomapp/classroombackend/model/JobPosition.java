@@ -25,6 +25,9 @@ public class JobPosition {
     @Column(name = "salary_range", columnDefinition = "NVARCHAR(255)")
     private String salaryRange;
 
+    @Column(name = "quantity", nullable = false)
+    private Integer quantity = 1;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 

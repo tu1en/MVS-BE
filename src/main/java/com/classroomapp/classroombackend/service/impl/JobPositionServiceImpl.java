@@ -34,6 +34,7 @@ public class JobPositionServiceImpl implements JobPositionService {
         entity.setTitle(dto.getTitle());
         entity.setDescription(dto.getDescription());
         entity.setSalaryRange(dto.getSalaryRange());
+        entity.setQuantity(dto.getQuantity());
         JobPosition saved = jobPositionRepository.save(entity);
         return modelMapper.map(saved, JobPositionDto.class);
     }
