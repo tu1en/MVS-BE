@@ -48,4 +48,21 @@ public interface EmailService {
      * @param temporaryPassword The generated temporary password for the user
      */
     void sendApprovalEmail(String to, String fullName, String roleName, String temporaryPassword);
+
+    /**
+     * Gửi email mời phỏng vấn cho ứng viên
+     * @param to Địa chỉ email ứng viên
+     * @param name Tên ứng viên
+     * @param jobTitle Vị trí ứng tuyển
+     */
+    void sendInterviewInvitationEmail(String to, String name, String jobTitle);
+
+    /**
+     * Gửi email từ chối ứng viên phỏng vấn
+     * @param to Địa chỉ email ứng viên
+     * @param name Tên ứng viên
+     * @param jobTitle Vị trí ứng tuyển
+     * @param reason Lý do từ chối
+     */
+    void sendInterviewRejectionEmail(String to, String name, String jobTitle, String reason);
 }

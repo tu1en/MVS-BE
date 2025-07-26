@@ -28,20 +28,16 @@
 </head>
 <body>
     <div class="header">
-        <h1>Thông báo về yêu cầu của bạn</h1>
+        <h1>Kết quả ứng tuyển vị trí <span th:text="${jobTitle}"></span></h1>
     </div>
     <div class="content">
         <p>Kính gửi <span th:text="${name}"></span>,</p>
-        
-        <p>Chúng tôi rất tiếc phải thông báo rằng yêu cầu đăng ký học của bạn đã bị từ chối.</p>
-        
+        <p>Chúng tôi rất tiếc phải thông báo rằng bạn chưa được chọn vào vòng tiếp theo cho vị trí: <span th:text="${jobTitle}"></span>.</p>
         <div class="reason">
             <p><strong>Lý do:</strong></p>
             <p th:text="${reason}"></p>
         </div>
-        
-        <p>Nếu bạn có bất kỳ thắc mắc nào hoặc muốn biết thêm thông tin, vui lòng liên hệ với chúng tôi.</p>
-        
+        <p>Cảm ơn bạn đã quan tâm và dành thời gian ứng tuyển. Chúc bạn thành công trong những cơ hội tiếp theo!</p>
         <p>Trân trọng,<br>
             Đội ngũ Minh Việt Educational System</p>
     </div>
