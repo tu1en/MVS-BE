@@ -89,6 +89,27 @@ public class EmailServiceImpl implements EmailService {
         sendEmail(to, subject, body);
     }
 
+    @Override
+    public void sendInterviewInvitationEmail(String to, String name, String jobTitle) {
+        String subject = "Thư mời phỏng vấn vị trí: " + jobTitle;
+        Context context = new Context();
+        context.setVariable("name", name);
+        context.setVariable("jobTitle", jobTitle);
+        String body = templateEngine.process("email/interview-invitation", context);
+        sendEmail(to, subject, body);
+    }
+
+    @Override
+    public void sendInterviewRejectionEmail(String to, String name, String jobTitle, String reason) {
+        String subject = "Kết quả ứng tuyển vị trí: " + jobTitle;
+        Context context = new Context();
+        context.setVariable("name", name);
+        context.setVariable("jobTitle", jobTitle);
+        context.setVariable("reason", reason);
+        String body = templateEngine.process("email/interview-rejected", context);
+        sendEmail(to, subject, body);
+    }
+
     private String generateAccountInfoEmailBody(String fullName, String role, String username, String password) {
         StringBuilder bodyBuilder = new StringBuilder();
         bodyBuilder.append("<!DOCTYPE html><html><head><style>");

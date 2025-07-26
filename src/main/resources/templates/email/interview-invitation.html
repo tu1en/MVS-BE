@@ -17,23 +17,23 @@
         .content {
             padding: 20px;
         }
+        .success {
+            color: #52c41a;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>Xác nhận đã nhận yêu cầu</h1>
+        <h1>Thư mời phỏng vấn</h1>
     </div>
     <div class="content">
         <p>Kính gửi <span th:text="${name}"></span>,</p>
-
-        <p>Chúng tôi đã nhận được yêu cầu đăng ký học của bạn.</p>
-
-        <p>Yêu cầu của bạn đang được xem xét. Chúng tôi sẽ thông báo cho bạn ngay khi có kết quả.</p>
-
-        <p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi.</p>
-
+        <p>Chúc mừng bạn đã được duyệt vào vòng phỏng vấn cho vị trí: <span th:text="${jobTitle}"></span>.</p>
+        <p class="success">Vui lòng kiểm tra email hoặc liên hệ với chúng tôi để biết thêm chi tiết về lịch phỏng vấn.</p>
+        <p>Chúc bạn may mắn và thành công!</p>
         <p>Trân trọng,<br>
-        Đội ngũ MVS Classroom</p>
+        Đội ngũ Minh Việt Educational System</p>
     </div>
 </body>
-</html>
+</html> 

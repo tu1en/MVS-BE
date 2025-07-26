@@ -36,7 +36,7 @@ public class RecruitmentApplicationController {
         recruitmentService.updateStatus(id, "APPROVED", null);
         // Gửi mail thông báo duyệt
         RecruitmentApplicationDto app = recruitmentService.getApplication(id);
-        emailService.sendEmail(app.getEmail(), "Kết quả ứng tuyển", "Chúc mừng bạn đã được duyệt vào vòng phỏng vấn cho vị trí: " + app.getJobTitle());
+        emailService.sendInterviewInvitationEmail(app.getEmail(), app.getFullName(), app.getJobTitle());
         return ResponseEntity.ok().build();
     }
     @PostMapping("/{id}/reject")
@@ -45,7 +45,7 @@ public class RecruitmentApplicationController {
         recruitmentService.updateStatus(id, "REJECTED", reason);
         // Gửi mail thông báo từ chối
         RecruitmentApplicationDto app = recruitmentService.getApplication(id);
-        emailService.sendEmail(app.getEmail(), "Kết quả ứng tuyển", "Rất tiếc, bạn đã không được duyệt. Lý do: " + (reason != null ? reason : "Không có"));
+        emailService.sendInterviewRejectionEmail(app.getEmail(), app.getFullName(), app.getJobTitle(), reason != null ? reason : "Không có");
         return ResponseEntity.ok().build();
     }
 }
