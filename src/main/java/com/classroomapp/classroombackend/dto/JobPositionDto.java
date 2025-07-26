@@ -8,4 +8,5 @@ public class JobPositionDto {
     private String title;
     private String description;
     private String salaryRange;
+    private Integer quantity;
 } 

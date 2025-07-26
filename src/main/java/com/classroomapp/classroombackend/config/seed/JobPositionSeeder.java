@@ -12,9 +12,9 @@ public class JobPositionSeeder {
 
     public void seed() {
         if (jobPositionRepository.count() == 0) {
-            jobPositionRepository.save(new JobPosition(null, "Giáo viên lớp 10", "Dạy Toán, Lý, Hoá cho học sinh lớp 10", "12-18 triệu", null, null));
-            jobPositionRepository.save(new JobPosition(null, "Giáo viên lớp 11", "Dạy Toán, Lý, Hoá cho học sinh lớp 11", "13-20 triệu", null, null));
-            jobPositionRepository.save(new JobPosition(null, "Giáo viên lớp 12", "Dạy Toán, Lý, Hoá cho học sinh lớp 12, luyện thi đại học", "15-25 triệu", null, null));
+            jobPositionRepository.save(new JobPosition(null, "Giáo viên lớp 10", "Dạy Toán, Lý, Hoá cho học sinh lớp 10", "12-18 triệu", 3, null, null));
+            jobPositionRepository.save(new JobPosition(null, "Giáo viên lớp 11", "Dạy Toán, Lý, Hoá cho học sinh lớp 11", "13-20 triệu", 2, null, null));
+            jobPositionRepository.save(new JobPosition(null, "Giáo viên lớp 12", "Dạy Toán, Lý, Hoá cho học sinh lớp 12, luyện thi đại học", "15-25 triệu", 4, null, null));
         }
     }
 } 

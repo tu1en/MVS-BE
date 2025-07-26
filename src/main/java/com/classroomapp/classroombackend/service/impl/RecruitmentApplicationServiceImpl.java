@@ -25,7 +25,7 @@ public class RecruitmentApplicationServiceImpl implements RecruitmentApplication
 
     @Override
     @Transactional
-    public RecruitmentApplicationDto apply(Long jobPositionId, String fullName, String email, MultipartFile cvFile) {
+    public RecruitmentApplicationDto apply(Long jobPositionId, String fullName, String email, String phoneNumber, String address, MultipartFile cvFile) {
         JobPosition job = jobPositionRepo.findById(jobPositionId)
                 .orElseThrow(() -> new RuntimeException("Job position not found"));
         String cvUrl = null;
@@ -36,6 +36,8 @@ public class RecruitmentApplicationServiceImpl implements RecruitmentApplication
         entity.setJobPosition(job);
         entity.setFullName(fullName);
         entity.setEmail(email);
+        entity.setPhoneNumber(phoneNumber);
+        entity.setAddress(address);
         entity.setCvUrl(cvUrl);
         entity.setStatus("PENDING");
         RecruitmentApplication saved = recruitmentRepo.save(entity);

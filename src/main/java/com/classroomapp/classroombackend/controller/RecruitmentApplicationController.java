@@ -20,9 +20,11 @@ public class RecruitmentApplicationController {
             @RequestParam Long jobPositionId,
             @RequestParam String fullName,
             @RequestParam String email,
+            @RequestParam String phoneNumber,
+            @RequestParam String address,
             @RequestParam("cv") MultipartFile cvFile
     ) {
-        RecruitmentApplicationDto dto = recruitmentService.apply(jobPositionId, fullName, email, cvFile);
+        RecruitmentApplicationDto dto = recruitmentService.apply(jobPositionId, fullName, email, phoneNumber, address, cvFile);
         return ResponseEntity.ok(dto);
     }
 
