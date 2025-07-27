@@ -135,4 +135,18 @@ public class JwtUtil {
             default: return "USER";
         }
     }
+    
+    // Convert User.RoleEnum to roleName string
+    public String convertUserRoleToName(com.classroomapp.classroombackend.model.usermanagement.User.RoleEnum roleEnum) {
+        if (roleEnum == null) return "USER";
+        
+        switch (roleEnum) {
+            case STUDENT: return "STUDENT";
+            case TEACHER: return "TEACHER";
+            case MANAGER: return "MANAGER";
+            case ADMIN: return "ADMIN";
+            case ACCOUNTANT: return "ACCOUNTANT";
+            default: return "USER";
+        }
+    }
 }

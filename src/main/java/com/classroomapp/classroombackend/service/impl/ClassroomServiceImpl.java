@@ -1,25 +1,21 @@
 package com.classroomapp.classroombackend.service.impl;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.modelmapper.ModelMapper;
-import org.springframework.security.authentication.InsufficientAuthenticationException;
-import org.springframework.security.core.Authentication;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.classroomapp.classroombackend.dto.LectureDto;
-import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDetailsDto;
+import com.classroomapp.classroombackend.dto.CreateClassroomDto;
+import com.classroomapp.classroombackend.dto.UserDto;
+import com.classroomapp.classroombackend.dto.UserMapper;
 import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
-import com.classroomapp.classroombackend.dto.classroommanagement.CourseDetailsDto;
-import com.classroomapp.classroombackend.dto.classroommanagement.CreateClassroomDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.UpdateClassroomDto;
-import com.classroomapp.classroombackend.dto.usermanagement.UserDetailsDto;
-import com.classroomapp.classroombackend.exception.BusinessLogicException;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
+import com.classroomapp.classroombackend.mapper.ClassroomMapper;
 import com.classroomapp.classroombackend.model.StudentProgress;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.classroommanagement.ClassroomEnrollment;
@@ -29,309 +25,266 @@ import com.classroomapp.classroombackend.repository.StudentProgressRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomEnrollmentRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
-import com.classroomapp.classroombackend.security.CustomUserDetails;
-import com.classroomapp.classroombackend.service.ClassroomService;
+import com.classroomapp.classroombackend.service.classroommanagement.ClassroomService;
 
-import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-@Service
+@Service("classroomService")
 @RequiredArgsConstructor
+@Transactional
 @Slf4j
 public class ClassroomServiceImpl implements ClassroomService {
 
-    private static final Logger log = LoggerFactory.getLogger(ClassroomServiceImpl.class);
-
     private final ClassroomRepository classroomRepository;
     private final UserRepository userRepository;
-    private final ClassroomEnrollmentRepository classroomEnrollmentRepository;
+    private final ClassroomMapper classroomMapper;
+    private final ClassroomEnrollmentRepository enrollmentRepository;
     private final StudentProgressRepository studentProgressRepository;
-    private final ModelMapper modelMapper;
 
     @Override
-    public List<ClassroomDto> getAllClassrooms() {
-        return classroomRepository.findAll().stream()
-                .map(classroom -> modelMapper.map(classroom, ClassroomDto.class))
-                .collect(Collectors.toList());
+    public Page<ClassroomDto> getAllClassrooms(Pageable pageable) {
+        log.info("Getting all classrooms with pagination");
+        return classroomRepository.findAll(pageable).map(classroomMapper::toDto);
     }
 
     @Override
     public ClassroomDto getClassroomById(Long id) {
+        log.info("Getting classroom by id: {}", id);
         Classroom classroom = classroomRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Classroom not found with id: " + id));
-        return modelMapper.map(classroom, ClassroomDto.class);
+                .orElseThrow(() -> new ResourceNotFoundException("Classroom", "id", id));
+        ClassroomDto dto = classroomMapper.toDto(classroom);
+        
+        // Add progress calculation for current user if student
+        try {
+            Long currentUserId = getCurrentUserId();
+            dto.setProgressPercentage(calculateStudentProgress(currentUserId, id));
+        } catch (Exception e) {
+            log.warn("Could not calculate progress for classroom {}: {}", id, e.getMessage());
+            dto.setProgressPercentage(0.0);
+        }
+        
+        return dto;
     }
 
     @Override
-    public ClassroomDto GetClassroomById(Long id) {
-        return getClassroomById(id);
-    }
+    public ClassroomDto createClassroom(CreateClassroomDto createDto) {
+        log.info("Creating new classroom with name: {}", createDto.getName());
+        User teacher = userRepository.findById(createDto.getTeacherId())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", createDto.getTeacherId()));
 
-    @Override
-    public ClassroomDetailsDto createClassroom(CreateClassroomDto dto) {
-        User teacher = userRepository.findById(dto.getTeacherId())
-                .orElseThrow(() -> new EntityNotFoundException("Teacher not found with id: " + dto.getTeacherId()));
         Classroom classroom = new Classroom();
-        classroom.setName(dto.getName());
-        classroom.setDescription(dto.getDescription());
+        classroom.setName(createDto.getName());
+        classroom.setDescription(createDto.getDescription());
+        classroom.setSection(createDto.getSection());
+        classroom.setSubject(createDto.getSubject());
         classroom.setTeacher(teacher);
-        classroom.setCourseId(dto.getCourseId());
-        Classroom savedClassroom = classroomRepository.save(classroom);
-        return modelMapper.map(savedClassroom, ClassroomDetailsDto.class);
+
+        Classroom saved = classroomRepository.save(classroom);
+        log.info("Created classroom with id: {}", saved.getId());
+        return classroomMapper.toDto(saved);
     }
 
     @Override
-    @Transactional
-    public ClassroomDto UpdateClassroom(Long id, UpdateClassroomDto updateClassroomDto, UserDetails userDetails) {
-        // 1. Tìm classroom
+    public ClassroomDto updateClassroom(Long id, UpdateClassroomDto updateDto) {
+        log.info("Updating classroom with id: {}", id);
         Classroom classroom = classroomRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Classroom", "id", id));
+
+        if (updateDto.hasUpdates()) {
+            classroom.setName(updateDto.getName());
+            classroom.setDescription(updateDto.getDescription());
+        }
+
+        Classroom updated = classroomRepository.save(classroom);
+        log.info("Updated classroom: {}", updated.getId());
+        return classroomMapper.toDto(updated);
+    }
+
+    @Override
+    public ClassroomDto getClassroomDetails(Long id) {
+        log.info("Getting detailed information for classroom: {}", id);
+        Classroom classroom = classroomRepository.findDetailsById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Classroom not found with id: " + id));
 
-        if (!(userDetails instanceof CustomUserDetails)) {
-            throw new InsufficientAuthenticationException("User details not of expected type");
-        }
-        CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
-        User currentUser = customUserDetails.getUser();
-            
-        boolean isAdminOrManager = customUserDetails.getAuthorities().stream()
-            .anyMatch(role -> role.getAuthority().equals("ROLE_ADMIN") || role.getAuthority().equals("ROLE_MANAGER"));
+        ClassroomDto dto = classroomMapper.toDto(classroom);
         
-        // Người dùng phải là Admin, Manager, hoặc là giáo viên của chính lớp đó
-        if (!isAdminOrManager && (classroom.getTeacher() == null || !classroom.getTeacher().getId().equals(currentUser.getId()))) {
-            throw new BusinessLogicException("You are not authorized to update this classroom.");
+        // Calculate additional statistics
+        if (dto.getEnrolledStudents() != null) {
+            dto.setStudentCount(dto.getEnrolledStudents().size());
         }
-    
-        // 3. Cập nhật các trường được phép
-        classroom.setName(updateClassroomDto.getName());
-        classroom.setDescription(updateClassroomDto.getDescription());
-    
-        Classroom savedClassroom = classroomRepository.save(classroom);
+        if (dto.getAssignments() != null) {
+            dto.setAssignmentCount(dto.getAssignments().size());
+        }
         
-        return convertToDto(savedClassroom);
+        // Calculate progress if current user is a student
+        try {
+            Long currentUserId = getCurrentUserId();
+            dto.setProgressPercentage(calculateStudentProgress(currentUserId, id));
+        } catch (Exception e) {
+            log.warn("Could not calculate progress for classroom {}: {}", id, e.getMessage());
+            dto.setProgressPercentage(0.0);
+        }
+
+        return dto;
     }
-    
+
     @Override
-    public void DeleteClassroom(Long id) {
+    public void deleteClassroom(Long id) {
+        log.info("Deleting classroom with id: {}", id);
+        if (!classroomRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Classroom", "id", id);
+        }
         classroomRepository.deleteById(id);
+        log.info("Deleted classroom: {}", id);
     }
 
     @Override
-    public List<ClassroomDto> GetClassroomsByTeacher(Long teacherId) {
-        // Try fast path: query by teacher ID directly (avoids User lookup)
-        List<Classroom> classrooms = classroomRepository.findByTeacherId(teacherId);
+    public void enrollStudent(Long classroomId, Long studentId) {
+        log.info("Enrolling student {} in classroom {}", studentId, classroomId);
+        Classroom classroom = classroomRepository.findById(classroomId)
+                .orElseThrow(() -> new ResourceNotFoundException("Classroom", "id", classroomId));
+        User student = userRepository.findById(studentId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", studentId));
 
-        if (classrooms.isEmpty()) {
-            // Fallback: look up User entity; might not exist if ID mismatch
-            User teacher = userRepository.findById(teacherId).orElse(null);
-            if (teacher != null) {
-                classrooms = classroomRepository.findByTeacher(teacher);
-            }
+        // Check if enrollment already exists using composite key approach (more robust)
+        ClassroomEnrollmentId enrollmentId = new ClassroomEnrollmentId(classroomId, studentId);
+        boolean alreadyEnrolled = enrollmentRepository.existsById(enrollmentId);
+        if (alreadyEnrolled) {
+            log.warn("Student {} is already enrolled in classroom {}", studentId, classroomId);
+            return;
         }
 
-        // Map to DTOs – could be empty list if still nothing found
-        return classrooms.stream()
-                .map(this::convertToDto)
+        // Create new enrollment with composite key for proper relationship handling
+        ClassroomEnrollment enrollment = new ClassroomEnrollment();
+        enrollment.setId(enrollmentId);
+        enrollment.setClassroom(classroom);
+        enrollment.setUser(student);
+        enrollment.setStatus(ClassroomEnrollment.EnrollmentStatus.ACTIVE);
+        enrollment.setProgressPercentage(0.0);
+        
+        enrollmentRepository.save(enrollment);
+        log.info("Successfully enrolled student {} in classroom {}", studentId, classroomId);
+    }
+
+    @Override
+    public void unenrollStudent(Long classroomId, Long studentId) {
+        log.info("Unenrolling student {} from classroom {}", studentId, classroomId);
+        
+        // Verify classroom and student exist
+        classroomRepository.findById(classroomId)
+                .orElseThrow(() -> new ResourceNotFoundException("Classroom", "id", classroomId));
+        userRepository.findById(studentId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", studentId));
+
+        // Delete enrollment using composite key for proper relationship handling
+        ClassroomEnrollmentId enrollmentId = new ClassroomEnrollmentId(classroomId, studentId);
+        if (enrollmentRepository.existsById(enrollmentId)) {
+            enrollmentRepository.deleteById(enrollmentId);
+            log.info("Successfully unenrolled student {} from classroom {}", studentId, classroomId);
+        } else {
+            log.warn("Student {} was not enrolled in classroom {}", studentId, classroomId);
+        }
+    }
+
+    @Override
+    public Page<ClassroomDto> searchClassrooms(String name, Pageable pageable) {
+        log.info("Searching classrooms with name containing: {}", name);
+        return classroomRepository.findByNameContainingIgnoreCase(name, pageable)
+                .map(classroomMapper::toDto);
+    }
+
+    @Override
+    public List<ClassroomDto> getClassroomsByCurrentTeacher() {
+        String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+        log.info("Getting classrooms for current teacher: {}", currentUsername);
+        
+        User teacher = getCurrentUser();
+        
+        List<Classroom> classrooms = classroomRepository.findByTeacherId(teacher.getId());
+        List<ClassroomDto> result = classrooms.stream()
+                .map(classroomMapper::toDto)
+                .collect(Collectors.toList());
+        
+        log.info("Found {} classrooms for teacher {}", result.size(), currentUsername);
+        return result;
+    }
+
+    @Override
+    public List<ClassroomDto> getClassroomsByCurrentStudent() {
+        String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+        log.info("Getting classrooms for current student: {}", currentUsername);
+        
+        User student = getCurrentUser();
+        
+        List<Classroom> classrooms = classroomRepository.findByStudents_Id(student.getId());
+        if (classrooms.isEmpty()) {
+            log.warn("No classrooms found for student {}. Checking enrollment table...", currentUsername);
+            // Try alternative query using enrollment repository
+            classrooms = enrollmentRepository.findByUserId(student.getId())
+                    .stream()
+                    .map(ClassroomEnrollment::getClassroom)
+                    .collect(Collectors.toList());
+        }
+        
+        List<ClassroomDto> result = classrooms.stream()
+                .map(classroom -> {
+                    ClassroomDto dto = classroomMapper.toDto(classroom);
+                    dto.setProgressPercentage(calculateStudentProgress(student.getId(), classroom.getId()));
+                    return dto;
+                })
+                .collect(Collectors.toList());
+        
+        log.info("Found {} classrooms for student {}", result.size(), currentUsername);
+        return result;
+    }
+
+    @Override
+    public List<UserDto> getStudentsInClassroom(Long classroomId) {
+        log.info("Getting students in classroom: {}", classroomId);
+        
+        // Verify classroom exists
+        classroomRepository.findById(classroomId)
+                .orElseThrow(() -> new ResourceNotFoundException("Classroom", "id", classroomId));
+        
+        return enrollmentRepository.findByClassroomId(classroomId)
+                .stream()
+                .map(enrollment -> UserMapper.toDto(enrollment.getUser()))
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<ClassroomDto> GetClassroomsByStudent(Long studentId) {
-         return classroomEnrollmentRepository.findById_UserId(studentId).stream()
-                .map(ClassroomEnrollment::getClassroom)
+    public List<ClassroomDto> getClassroomsByStudentId(Long studentId) {
+        log.info("Getting classrooms for student: {}", studentId);
+        
+        // Verify student exists
+        userRepository.findById(studentId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", studentId));
+        
+        List<Classroom> classrooms = classroomRepository.findClassroomsByStudentId(studentId);
+        return classrooms.stream()
                 .map(classroom -> {
-                    ClassroomDto dto = modelMapper.map(classroom, ClassroomDto.class);
-                    // Calculate progress percentage for this student in this classroom
+                    ClassroomDto dto = classroomMapper.toDto(classroom);
                     dto.setProgressPercentage(calculateStudentProgress(studentId, classroom.getId()));
-                    // Ensure teacher name is set
-                    if (classroom.getTeacher() != null) {
-                        dto.setTeacherName(classroom.getTeacher().getFullName());
-                    }
                     return dto;
                 })
                 .collect(Collectors.toList());
     }
 
-    @Override
-    public void EnrollStudent(Long classroomId, Long studentId) {
-        Classroom classroom = classroomRepository.findById(classroomId)
-                .orElseThrow(() -> new EntityNotFoundException("Classroom not found with id: " + classroomId));
-        
-        User student = userRepository.findById(studentId)
-                .orElseThrow(() -> new EntityNotFoundException("Student not found with id: " + studentId));
-        
-        // Check if student is already enrolled
-        ClassroomEnrollmentId enrollmentId = new ClassroomEnrollmentId(classroomId, studentId);
-        boolean alreadyEnrolled = classroomEnrollmentRepository.existsById(enrollmentId);
-        if (alreadyEnrolled) {
-            log.info("Student {} is already enrolled in classroom {}", studentId, classroomId);
-            return;
-        }
-        
-        // Create enrollment
-        ClassroomEnrollment enrollment = new ClassroomEnrollment();
-        enrollment.setId(enrollmentId);
-        enrollment.setClassroom(classroom);
-        enrollment.setUser(student);
-        classroomEnrollmentRepository.save(enrollment);
-        log.info("Student {} successfully enrolled in classroom {}", studentId, classroomId);
+    private User getCurrentUser() {
+        String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByUsername(currentUsername)
+                .or(() -> userRepository.findByEmail(currentUsername))
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username/email", currentUsername));
     }
 
-    @Override
-    public void UnenrollStudent(Long classroomId, Long studentId) {
-        // Create the composite ID
-        ClassroomEnrollmentId enrollmentId = new ClassroomEnrollmentId(classroomId, studentId);
-        
-        // Check if enrollment exists
-        if (!classroomEnrollmentRepository.existsById(enrollmentId)) {
-            log.warn("Student {} is not enrolled in classroom {}", studentId, classroomId);
-            return;
-        }
-        
-        // Delete the enrollment
-        classroomEnrollmentRepository.deleteById(enrollmentId);
-        log.info("Student {} successfully unenrolled from classroom {}", studentId, classroomId);
+    private Long getCurrentUserId() {
+        return getCurrentUser().getId();
     }
 
-    @Override
-    public List<ClassroomDto> SearchClassroomsByName(String name) {
-        return classroomRepository.findByNameContainingIgnoreCase(name).stream()
-                .map(classroom -> modelMapper.map(classroom, ClassroomDto.class))
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<ClassroomDto> GetClassroomsBySubject(String subject) {
-        // Implementation needed
-        return new ArrayList<>();
-    }
-
-    @Override
-    public CourseDetailsDto GetCourseDetails(Long classroomId) {
-        Classroom classroom = classroomRepository.findById(classroomId)
-                .orElseThrow(() -> new EntityNotFoundException("Classroom not found with id: " + classroomId));
-        return modelMapper.map(classroom, CourseDetailsDto.class);
-    }
-
-    @Override
-    public List<User> getStudentsInClassroom(Long classroomId) {
-        return classroomEnrollmentRepository.findById_ClassroomId(classroomId).stream()
-            .map(ClassroomEnrollment::getUser)
-            .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<ClassroomDto> GetClassroomsByCurrentTeacher() {
-        try {
-            log.info("GetClassroomsByCurrentTeacher: Getting classrooms for current teacher");
-            Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            String username;
-            if (principal instanceof UserDetails) {
-                username = ((UserDetails)principal).getUsername();
-                log.info("GetClassroomsByCurrentTeacher: Found username from UserDetails: {}", username);
-            } else {
-                username = principal.toString();
-                log.info("GetClassroomsByCurrentTeacher: Found username from toString: {}", username);
-            }
-            
-            // Try to find user by username first, then by email
-            User teacher = userRepository.findByUsername(username)
-                    .orElseGet(() -> userRepository.findByEmail(username)
-                    .orElse(null));
-                    
-            if (teacher == null) {
-                log.warn("GetClassroomsByCurrentTeacher: Teacher not found with username/email: {}", username);
-                return new ArrayList<>();
-            }
-            
-            log.info("GetClassroomsByCurrentTeacher: Found teacher: {} (ID: {})", teacher.getFullName(), teacher.getId());
-            
-            List<ClassroomDto> classrooms = classroomRepository.findByTeacher(teacher).stream()
-                .map(classroom -> modelMapper.map(classroom, ClassroomDto.class))
-                .collect(Collectors.toList());
-                
-            log.info("GetClassroomsByCurrentTeacher: Found {} classrooms for teacher", classrooms.size());
-            
-            return classrooms;
-        } catch (Exception e) {
-            log.error("GetClassroomsByCurrentTeacher: Error getting classrooms for current teacher", e);
-            return new ArrayList<>();
-        }
-    }
-
-    @Override
-    public List<ClassroomDto> getClassroomsByCurrentStudent() {
-        log.info("getClassroomsByCurrentStudent: Getting classrooms for current student");
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !(authentication.getPrincipal() instanceof CustomUserDetails)) {
-            throw new InsufficientAuthenticationException("User is not properly authenticated");
-        }
-        
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-        Long studentId = userDetails.getId();
-        log.info("getClassroomsByCurrentStudent: authenticated user id: {}", studentId);
-
-        return GetClassroomsByStudent(studentId);
-    }
-
-    @Override
-    public ClassroomDetailsDto findClassroomDetailsById(Long classroomId) {
-        Classroom classroom = classroomRepository.findDetailsById(classroomId)
-                .orElseThrow(() -> new ResourceNotFoundException("Classroom not found with id: " + classroomId));
-        return convertToClassroomDetailsDto(classroom);
-    }
-
-    private ClassroomDetailsDto convertToClassroomDetailsDto(Classroom classroom) {
-        ClassroomDetailsDto detailsDto = new ClassroomDetailsDto();
-        detailsDto.setId(classroom.getId());
-        detailsDto.setName(classroom.getName());
-        detailsDto.setDescription(classroom.getDescription());
-
-        if (classroom.getTeacher() != null) {
-            detailsDto.setTeacher(modelMapper.map(classroom.getTeacher(), UserDetailsDto.class));
-        }
-
-        if (classroom.getLectures() != null) {
-            List<LectureDto> lectureDtos = classroom.getLectures().stream()
-                    .map(lecture -> modelMapper.map(lecture, LectureDto.class))
-                    .collect(Collectors.toList());
-            detailsDto.setLectures(lectureDtos);
-        }
-
-        // Assuming CourseDetailsDto can be mapped from Classroom
-        detailsDto.setCourse(modelMapper.map(classroom, CourseDetailsDto.class));
-
-        return detailsDto;
-    }
-    
-    private ClassroomDto convertToDto(Classroom classroom) {
-        ClassroomDto dto = new ClassroomDto();
-        dto.setId(classroom.getId());
-        dto.setName(classroom.getName());
-        dto.setDescription(classroom.getDescription());
-        dto.setSubject(classroom.getSubject());
-        dto.setSection(classroom.getSection());
-        if (classroom.getTeacher() != null) {
-            dto.setTeacherName(classroom.getTeacher().getFullName());
-        }
-        // We explicitly avoid mapping the syllabus here to prevent circular dependency issues
-        // If syllabus summary is needed, it should be a separate lightweight DTO.
-        return dto;
-    }
-    
-    /**
-     * Calculate student progress percentage for a specific classroom
-     * @param studentId The student ID
-     * @param classroomId The classroom ID
-     * @return Progress percentage as Double (0.0 to 100.0)
-     */
     private Double calculateStudentProgress(Long studentId, Long classroomId) {
         try {
-            // First, try to find overall progress record
+            // Try to get overall progress first
             java.util.Optional<StudentProgress> overallProgress = studentProgressRepository
                 .findOverallProgress(studentId, classroomId);
             
@@ -339,13 +292,12 @@ public class ClassroomServiceImpl implements ClassroomService {
                 return overallProgress.get().getProgressPercentage().doubleValue();
             }
             
-            // If no overall progress, calculate based on assignment completion
+            // Fallback to assignment progress
             List<StudentProgress> assignmentProgress = studentProgressRepository
                 .findByStudentIdAndClassroomIdAndProgressType(studentId, classroomId,
                     StudentProgress.ProgressType.ASSIGNMENT);
             
             if (!assignmentProgress.isEmpty()) {
-                // Calculate average progress from assignments
                 double averageProgress = assignmentProgress.stream()
                     .mapToDouble(progress -> progress.getProgressPercentage().doubleValue())
                     .average()
@@ -353,9 +305,8 @@ public class ClassroomServiceImpl implements ClassroomService {
                 return averageProgress;
             }
             
-            // If no progress records exist, return 0%
+            // Return 0 if no progress data available
             return 0.0;
-            
         } catch (Exception e) {
             log.warn("Error calculating progress for student {} in classroom {}: {}", 
                 studentId, classroomId, e.getMessage());

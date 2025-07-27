@@ -5,9 +5,15 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PostLoad;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -52,6 +58,21 @@ public class User {
     @Column(name = "role_id")
     private Integer roleId;
 
+    // Add ManyToOne relationship with Role entity
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "role_id", insertable = false, updatable = false)
+    private Role role;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role_enum", length = 20)
+    private RoleEnum roleEnum;
+
+    @Column(name = "last_login")
+    private LocalDateTime lastLogin;
+
+    @Column(name = "is_deleted", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private Boolean isDeleted = false;
+
     @Column(name = "hire_date")
     private LocalDate hireDate;
 
@@ -76,10 +97,17 @@ public class User {
     
     /**
      * Get the role name as String based on the roleId
+     * This method works even if Role entity is not loaded
      * 
      * @return String representation of the user's role
      */
     public String getRole() {
+        // First try to get from Role entity if loaded
+        if (role != null && role.getName() != null) {
+            return role.getName();
+        }
+        
+        // Fallback to roleId mapping
         if (roleId == null) return "USER";
         
         switch (roleId) {
@@ -92,6 +120,13 @@ public class User {
         }
     }
     
+    /**
+     * Get Role entity (may be null if not loaded)
+     */
+    public Role getRoleEntity() {
+        return role;
+    }
+    
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
@@ -100,9 +135,24 @@ public class User {
         if (updatedAt == null) {
             updatedAt = LocalDateTime.now();
         }
+        
+        if (isDeleted == null) {
+            isDeleted = false;
+        }
+        
+        // Sync role_enum from role_id if needed
+        syncRoleEnum();
+        
         // Set leave reset date cho giáo viên hoặc kế toán viên (1 năm kể từ bây giờ)
         if (roleId != null && (roleId == 2 || roleId == 5) && leaveResetDate == null) { // TEACHER hoặc ACCOUNTANT
             leaveResetDate = LocalDate.now().plusYears(1);
+        }
+    }
+
+    @PostLoad
+    public void syncRoleEnum() {
+        if (roleEnum == null && roleId != null) {
+            roleEnum = RoleEnum.fromRoleId(roleId);
         }
     }
     
@@ -143,4 +193,81 @@ public class User {
     public void setAnnualLeaveBalance(Integer annualLeaveBalance) { this.annualLeaveBalance = annualLeaveBalance; }
     public LocalDate getLeaveResetDate() { return leaveResetDate; }
     public void setLeaveResetDate(LocalDate leaveResetDate) { this.leaveResetDate = leaveResetDate; }
+    
+    public LocalDateTime getLastLogin() { return lastLogin; }
+    public void setLastLogin(LocalDateTime lastLogin) { this.lastLogin = lastLogin; }
+    public Boolean getIsDeleted() { return isDeleted; }
+    public void setIsDeleted(Boolean isDeleted) { this.isDeleted = isDeleted; }
+    public void setRoleEnum(RoleEnum roleEnum) { this.roleEnum = roleEnum; }
+    public void setRole(Role role) { this.role = role; }
+
+    public void setDeleted(boolean deleted) { 
+        this.isDeleted = deleted; 
+    }
+    
+    public boolean isDeleted() { 
+        return isDeleted != null ? isDeleted : false; 
+    }
+
+    // Additional methods required by other services
+    public enum RoleEnum {
+        STUDENT(1, "STUDENT"),
+        TEACHER(2, "TEACHER"), 
+        MANAGER(3, "MANAGER"),
+        ADMIN(4, "ADMIN"),
+        ACCOUNTANT(5, "ACCOUNTANT");
+
+        private final int id;
+        private final String name;
+
+        RoleEnum(int id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+
+        public int getId() { return id; }
+        public String getName() { return name; }
+        public int toRoleId() { return id; }
+        
+        public static RoleEnum fromRoleId(Integer roleId) {
+            if (roleId == null) return STUDENT;
+            
+            switch (roleId) {
+                case 1: return STUDENT;
+                case 2: return TEACHER;
+                case 3: return MANAGER;
+                case 4: return ADMIN;
+                case 5: return ACCOUNTANT;
+                default: return STUDENT;
+            }
+        }
+    }
+
+    public RoleEnum getRoleEnum() {
+        if (roleId == null) return null;
+        
+        switch (roleId) {
+            case 1: return RoleEnum.STUDENT;
+            case 2: return RoleEnum.TEACHER;
+            case 3: return RoleEnum.MANAGER;
+            case 4: return RoleEnum.ADMIN;
+            case 5: return RoleEnum.ACCOUNTANT;
+            default: return null;
+        }
+    }
+
+    public boolean isEligibleForShiftAssignment() {
+        return roleId != null && (roleId == 2 || roleId == 5); // TEACHER or ACCOUNTANT
+    }
+
+    public Long getDepartmentId() {
+        // Return hardcoded department ID based on role for now
+        if (roleId == null) return null;
+        
+        switch (roleId) {
+            case 2: return 1L; // Teachers -> IT Department  
+            case 5: return 2L; // Accountants -> Finance Department
+            default: return 1L; // Default department
+        }
+    }
 }

@@ -3,7 +3,7 @@ package com.classroomapp.classroombackend.dto.assignmentmanagement;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.classroomapp.classroombackend.dto.FileUploadResponse;
+import com.classroomapp.classroombackend.dto.common.FileUploadResponse;
 
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;

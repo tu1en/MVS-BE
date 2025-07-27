@@ -1,6 +1,6 @@
 package com.classroomapp.classroombackend.controller.hrmanagement;
 
-import com.classroomapp.classroombackend.dto.ApiResponse;
+import com.doproject.common.ApiResponse;
 import com.classroomapp.classroombackend.service.hrmanagement.shift.ShiftAssignmentService;
 import com.classroomapp.classroombackend.service.hrmanagement.shift.ShiftScheduleService;
 import com.classroomapp.classroombackend.service.hrmanagement.shift.ShiftSwapService;
@@ -28,14 +28,14 @@ import java.util.Map;
 
 /**
  * REST Controller cho Shift Management Reports
- * Cung cáº¥p cÃ¡c APIs cho bÃ¡o cÃ¡o vÃ  thá»‘ng kÃª shift management
+ * Cung cấp các APIs cho báo cáo và thống kê shift management
  */
 @RestController
 @RequestMapping("/api/hr/shift-reports")
 @RequiredArgsConstructor
 @Slf4j
 @Validated
-@Tag(name = "Shift Reports", description = "APIs cho bÃ¡o cÃ¡o vÃ  thá»‘ng kÃª shift management")
+@Tag(name = "Shift Reports", description = "APIs cho báo cáo và thống kê shift management")
 @SecurityRequirement(name = "bearerAuth")
 public class ShiftReportController {
 
@@ -44,12 +44,12 @@ public class ShiftReportController {
     private final ShiftSwapService shiftSwapService;
     private final ShiftScheduleService shiftScheduleService;
 
-    @Operation(summary = "Dashboard tá»•ng quan", 
-               description = "Láº¥y thá»‘ng kÃª tá»•ng quan cho dashboard")
+    @Operation(summary = "Dashboard tổng quan", 
+               description = "Lấy thống kê tổng quan cho dashboard")
     @GetMapping("/dashboard")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getDashboardStats() {
-        log.info("Láº¥y dashboard statistics");
+        log.info("Lấy dashboard statistics");
 
         Map<String, Object> dashboard = new HashMap<>();
         
@@ -76,15 +76,15 @@ public class ShiftReportController {
             shiftScheduleService.getScheduleStatistics(startOfMonth, endOfMonth);
         dashboard.put("scheduleStats", scheduleStats);
 
-        return ResponseEntity.ok(ApiResponse.success(dashboard, "Láº¥y dashboard statistics thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success("Lấy dashboard statistics thành công", dashboard));
     }
 
-    @Operation(summary = "BÃ¡o cÃ¡o template usage", 
-               description = "BÃ¡o cÃ¡o sá»­ dá»¥ng shift templates")
+    @Operation(summary = "Báo cáo template usage", 
+               description = "Báo cáo sử dụng shift templates")
     @GetMapping("/template-usage")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getTemplateUsageReport() {
-        log.info("Láº¥y template usage report");
+        log.info("Lấy template usage report");
 
         Map<String, Object> report = new HashMap<>();
         
@@ -104,19 +104,19 @@ public class ShiftReportController {
         List<?> overtimeEligible = shiftTemplateService.findOvertimeEligibleTemplates();
         report.put("overtimeEligibleTemplates", overtimeEligible);
 
-        return ResponseEntity.ok(ApiResponse.success(report, "Láº¥y template usage report thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success("Lấy template usage report thành công", report));
     }
 
-    @Operation(summary = "BÃ¡o cÃ¡o attendance", 
-               description = "BÃ¡o cÃ¡o cháº¥m cÃ´ng vÃ  attendance")
+    @Operation(summary = "Báo cáo attendance", 
+               description = "Báo cáo chấm công và attendance")
     @GetMapping("/attendance")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER') or hasRole('ACCOUNTANT')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getAttendanceReport(
-            @Parameter(description = "NgÃ y báº¯t Ä‘áº§u") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @Parameter(description = "NgÃ y káº¿t thÃºc") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
-            @Parameter(description = "ID nhÃ¢n viÃªn (optional)") @RequestParam(required = false) Long employeeId) {
+            @Parameter(description = "Ngày bắt đầu") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @Parameter(description = "Ngày kết thúc") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @Parameter(description = "ID nhân viên (optional)") @RequestParam(required = false) Long employeeId) {
         
-        log.info("Láº¥y attendance report tá»« {} Ä‘áº¿n {} cho employee {}", startDate, endDate, employeeId);
+        log.info("Lấy attendance report từ {} đến {} cho employee {}", startDate, endDate, employeeId);
 
         Map<String, Object> report = new HashMap<>();
         
@@ -140,18 +140,18 @@ public class ShiftReportController {
             report.put("workingHoursSummary", workingHours);
         }
 
-        return ResponseEntity.ok(ApiResponse.success(report, "Láº¥y attendance report thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success("Lấy attendance report thành công", report));
     }
 
-    @Operation(summary = "BÃ¡o cÃ¡o swap requests", 
-               description = "BÃ¡o cÃ¡o yÃªu cáº§u Ä‘á»•i ca")
+    @Operation(summary = "Báo cáo swap requests", 
+               description = "Báo cáo yêu cầu đổi ca")
     @GetMapping("/swap-requests")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getSwapRequestsReport(
-            @Parameter(description = "Thá»i gian báº¯t Ä‘áº§u") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
-            @Parameter(description = "Thá»i gian káº¿t thÃºc") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime) {
+            @Parameter(description = "Thời gian bắt đầu") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
+            @Parameter(description = "Thời gian kết thúc") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime) {
         
-        log.info("Láº¥y swap requests report tá»« {} Ä‘áº¿n {}", startTime, endTime);
+        log.info("Lấy swap requests report từ {} đến {}", startTime, endTime);
 
         Map<String, Object> report = new HashMap<>();
         
@@ -171,22 +171,22 @@ public class ShiftReportController {
         List<?> pendingApproval = shiftSwapService.findPendingManagerApproval();
         report.put("pendingManagerApproval", pendingApproval);
 
-        return ResponseEntity.ok(ApiResponse.success(report, "Láº¥y swap requests report thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success("Lấy swap requests report thành công", report));
     }
 
-    @Operation(summary = "BÃ¡o cÃ¡o schedule performance", 
-               description = "BÃ¡o cÃ¡o hiá»‡u suáº¥t lá»‹ch lÃ m viá»‡c")
+    @Operation(summary = "Báo cáo schedule performance", 
+               description = "Báo cáo hiệu suất lịch làm việc")
     @GetMapping("/schedule-performance")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getSchedulePerformanceReport(
-            @Parameter(description = "NgÃ y báº¯t Ä‘áº§u") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @Parameter(description = "NgÃ y káº¿t thÃºc") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+            @Parameter(description = "Ngày bắt đầu") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @Parameter(description = "Ngày kết thúc") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
         
-        log.info("Láº¥y schedule performance report tá»« {} Ä‘áº¿n {}", startDate, endDate);
+        log.info("Lấy schedule performance report từ {} đến {}", startDate, endDate);
 
         Map<String, Object> report = new HashMap<>();
         
-        // Schedule statistics
+        // Schedule statistics  
         ShiftScheduleService.ScheduleStatistics scheduleStats = 
             shiftScheduleService.getScheduleStatistics(startDate, endDate);
         report.put("scheduleStatistics", scheduleStats);
@@ -203,19 +203,19 @@ public class ShiftReportController {
         List<?> upcomingSchedules = shiftScheduleService.findUpcomingSchedules(7);
         report.put("upcomingSchedules", upcomingSchedules);
 
-        return ResponseEntity.ok(ApiResponse.success(report, "Láº¥y schedule performance report thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success("Lấy schedule performance report thành công", report));
     }
 
-    @Operation(summary = "BÃ¡o cÃ¡o payroll", 
-               description = "BÃ¡o cÃ¡o tÃ­nh lÆ°Æ¡ng dá»±a trÃªn shift assignments")
+    @Operation(summary = "Báo cáo payroll", 
+               description = "Báo cáo tính lương dựa trên shift assignments")
     @GetMapping("/payroll")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER') or hasRole('ACCOUNTANT')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getPayrollReport(
-            @Parameter(description = "NgÃ y báº¯t Ä‘áº§u") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @Parameter(description = "NgÃ y káº¿t thÃºc") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
-            @Parameter(description = "ID nhÃ¢n viÃªn (optional)") @RequestParam(required = false) Long employeeId) {
+            @Parameter(description = "Ngày bắt đầu") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @Parameter(description = "Ngày kết thúc") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @Parameter(description = "ID nhân viên (optional)") @RequestParam(required = false) Long employeeId) {
         
-        log.info("Láº¥y payroll report tá»« {} Ä‘áº¿n {} cho employee {}", startDate, endDate, employeeId);
+        log.info("Lấy payroll report từ {} đến {} cho employee {}", startDate, endDate, employeeId);
 
         Map<String, Object> report = new HashMap<>();
         
@@ -239,19 +239,19 @@ public class ShiftReportController {
             report.put("overtimeAssignments", overtimeAssignments);
         }
 
-        return ResponseEntity.ok(ApiResponse.success(report, "Láº¥y payroll report thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success("Lấy payroll report thành công", report));
     }
 
     @Operation(summary = "Export assignment report", 
-               description = "Export bÃ¡o cÃ¡o assignments ra file Excel/CSV")
+               description = "Export báo cáo assignments ra file Excel/CSV")
     @GetMapping("/export/assignments")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER') or hasRole('ACCOUNTANT')")
     public ResponseEntity<byte[]> exportAssignmentReport(
-            @Parameter(description = "NgÃ y báº¯t Ä‘áº§u") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @Parameter(description = "NgÃ y káº¿t thÃºc") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @Parameter(description = "Ngày bắt đầu") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @Parameter(description = "Ngày kết thúc") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @Parameter(description = "Format file (excel/csv)") @RequestParam(defaultValue = "excel") String format) {
         
-        log.info("Export assignment report tá»« {} Ä‘áº¿n {} format: {}", startDate, endDate, format);
+        log.info("Export assignment report từ {} đến {} format: {}", startDate, endDate, format);
 
         try {
             byte[] reportData = shiftAssignmentService.exportAssignments(startDate, endDate, format);
@@ -267,21 +267,21 @@ public class ShiftReportController {
             
             return new ResponseEntity<>(reportData, headers, HttpStatus.OK);
         } catch (Exception e) {
-            log.error("Lá»—i khi export assignment report: {}", e.getMessage());
+            log.error("Lỗi khi export assignment report: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
     @Operation(summary = "Export swap requests report", 
-               description = "Export bÃ¡o cÃ¡o swap requests ra file Excel/CSV")
+               description = "Export báo cáo swap requests ra file Excel/CSV")
     @GetMapping("/export/swap-requests")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<byte[]> exportSwapRequestsReport(
-            @Parameter(description = "Thá»i gian báº¯t Ä‘áº§u") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
-            @Parameter(description = "Thá»i gian káº¿t thÃºc") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime,
+            @Parameter(description = "Thời gian bắt đầu") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
+            @Parameter(description = "Thời gian kết thúc") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime,
             @Parameter(description = "Format file (excel/csv)") @RequestParam(defaultValue = "excel") String format) {
         
-        log.info("Export swap requests report tá»« {} Ä‘áº¿n {} format: {}", startTime, endTime, format);
+        log.info("Export swap requests report từ {} đến {} format: {}", startTime, endTime, format);
 
         try {
             byte[] reportData = shiftSwapService.exportSwapRequests(startTime, endTime, format);
@@ -298,17 +298,17 @@ public class ShiftReportController {
             
             return new ResponseEntity<>(reportData, headers, HttpStatus.OK);
         } catch (Exception e) {
-            log.error("Lá»—i khi export swap requests report: {}", e.getMessage());
+            log.error("Lỗi khi export swap requests report: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
     @Operation(summary = "Real-time metrics", 
-               description = "Láº¥y metrics real-time cho monitoring")
+               description = "Lấy metrics real-time cho monitoring")
     @GetMapping("/metrics/realtime")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getRealtimeMetrics() {
-        log.info("Láº¥y realtime metrics");
+        log.info("Lấy realtime metrics");
 
         Map<String, Object> metrics = new HashMap<>();
         
@@ -339,11 +339,11 @@ public class ShiftReportController {
         List<?> activeSchedules = shiftScheduleService.findActiveSchedules();
         metrics.put("activeSchedules", activeSchedules.size());
 
-        return ResponseEntity.ok(ApiResponse.success(metrics, "Láº¥y realtime metrics thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success("Lấy realtime metrics thành công", metrics));
     }
 
     @Operation(summary = "Health check cho shift management", 
-               description = "Kiá»ƒm tra tÃ¬nh tráº¡ng hoáº¡t Ä‘á»™ng cá»§a shift management system")
+               description = "Kiểm tra tình trạng hoạt động của shift management system")
     @GetMapping("/health")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getHealthCheck() {
@@ -381,6 +381,6 @@ public class ShiftReportController {
             health.put("error", e.getMessage());
         }
 
-        return ResponseEntity.ok(ApiResponse.success(health, "Health check completed"));
+        return ResponseEntity.ok(ApiResponse.success("Health check completed", health));
     }
 }

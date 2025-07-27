@@ -6,9 +6,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import com.classroomapp.classroombackend.dto.CreateClassroomDto;
+import com.classroomapp.classroombackend.dto.UserDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.UpdateClassroomDto;
-import com.classroomapp.classroombackend.dto.usermanagement.UserDTO;
 
 public interface ClassroomService {
 
@@ -17,7 +17,8 @@ public interface ClassroomService {
     ClassroomDto getClassroomById(Long id);
 
     ClassroomDto createClassroom(CreateClassroomDto createDto);
-ClassroomDto getClassroomDetails(Long id);
+
+    ClassroomDto getClassroomDetails(Long id);
 
     ClassroomDto updateClassroom(Long id, UpdateClassroomDto updateDto);
 
@@ -33,7 +34,7 @@ ClassroomDto getClassroomDetails(Long id);
 
     List<ClassroomDto> getClassroomsByCurrentStudent();
 
-    List<UserDTO> getStudentsInClassroom(Long classroomId);
-    
+    List<UserDto> getStudentsInClassroom(Long classroomId);
+
     List<ClassroomDto> getClassroomsByStudentId(Long studentId);
 }

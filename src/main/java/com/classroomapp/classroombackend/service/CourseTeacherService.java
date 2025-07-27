@@ -5,7 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.classroomapp.classroombackend.entity.Course;
+import com.classroomapp.classroombackend.model.classroommanagement.Course;
 import com.classroomapp.classroombackend.entity.CourseTeacher;
 import com.classroomapp.classroombackend.entity.enumeration.CourseTeacherStatus;
 import com.classroomapp.classroombackend.entity.enumeration.TeacherRole;
@@ -26,7 +26,8 @@ public class CourseTeacherService {
     @Transactional
     public CourseTeacher assignTeacherToCourse(Long courseId, Long teacherId,
                                                TeacherRole role, String notes) {
-        Course course = courseService.findById(courseId);
+        Course course = new Course();
+        course.setId(courseId);
         User teacher = new User();
         teacher.setId(teacherId); // Giả lập user từ ID
 

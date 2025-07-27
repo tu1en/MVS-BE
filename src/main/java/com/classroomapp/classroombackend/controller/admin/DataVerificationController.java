@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.classroomapp.classroombackend.config.seed.DataVerificationReport;
 import com.classroomapp.classroombackend.config.seed.DataVerificationService;
+import com.classroomapp.classroombackend.model.assignmentmanagement.Submission;
 import com.classroomapp.classroombackend.repository.assignmentmanagement.SubmissionRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomEnrollmentRepository;
 
@@ -97,7 +98,7 @@ public class DataVerificationController {
             Map<String, Object> result = new HashMap<>();
 
             // Query Ã„â€˜Ã¡Â»Æ’ tÃƒÂ¬m submissions tÃ¡Â»Â« non-enrolled students
-            List<Object[]> invalidSubmissions = submissionRepository.findSubmissionsFromNonEnrolledStudents();
+            List<Submission> invalidSubmissions = submissionRepository.findSubmissionsFromNonEnrolledStudents();
 
             result.put("totalInvalidSubmissions", invalidSubmissions.size());
             result.put("invalidSubmissions", invalidSubmissions);

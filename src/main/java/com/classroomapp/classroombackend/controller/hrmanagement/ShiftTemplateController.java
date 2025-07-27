@@ -1,6 +1,6 @@
 package com.classroomapp.classroombackend.controller.hrmanagement;
 
-import com.classroomapp.classroombackend.dto.ApiResponse;
+import com.doproject.common.ApiResponse;
 import com.classroomapp.classroombackend.dto.hrmanagement.CreateShiftTemplateDto;
 import com.classroomapp.classroombackend.dto.hrmanagement.ShiftTemplateDto;
 import com.classroomapp.classroombackend.dto.hrmanagement.UpdateShiftTemplateDto;
@@ -31,50 +31,50 @@ import java.util.stream.Collectors;
 
 /**
  * REST Controller cho Shift Template Management
- * Quáº£n lÃ½ cÃ¡c máº«u ca lÃ m viá»‡c vá»›i RBAC security
+ * Quản lý các mẫu ca làm việc với RBAC security
  */
 @RestController
 @RequestMapping("/api/hr/shift-templates")
 @RequiredArgsConstructor
 @Slf4j
 @Validated
-@Tag(name = "Shift Template Management", description = "APIs cho quáº£n lÃ½ máº«u ca lÃ m viá»‡c")
+@Tag(name = "Shift Template Management", description = "APIs cho quản lý mẫu ca làm việc")
 @SecurityRequirement(name = "bearerAuth")
 public class ShiftTemplateController {
 
     private final ShiftTemplateService shiftTemplateService;
     private final ModelMapper modelMapper;
 
-    @Operation(summary = "Láº¥y danh sÃ¡ch táº¥t cáº£ shift templates", 
-               description = "Láº¥y danh sÃ¡ch táº¥t cáº£ máº«u ca lÃ m viá»‡c Ä‘ang hoáº¡t Ä‘á»™ng")
+    @Operation(summary = "Lấy danh sách tất cả shift templates", 
+               description = "Lấy danh sách tất cả mẫu ca làm việc đang hoạt động")
     @ApiResponses(value = {
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "ThÃ nh cÃ´ng"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "KhÃ´ng cÃ³ quyá»n truy cáº­p")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Thành công"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Không có quyền truy cập")
     })
     @GetMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER') or hasRole('TEACHER') or hasRole('ACCOUNTANT')")
     public ResponseEntity<ApiResponse<List<ShiftTemplateDto>>> getAllTemplates() {
-        log.info("Láº¥y danh sÃ¡ch táº¥t cáº£ shift templates");
+        log.info("Lấy danh sách tất cả shift templates");
         
         List<ShiftTemplate> templates = shiftTemplateService.findAllActiveTemplates();
         List<ShiftTemplateDto> templateDtos = templates.stream()
             .map(template -> modelMapper.map(template, ShiftTemplateDto.class))
             .collect(Collectors.toList());
 
-        return ResponseEntity.ok(ApiResponse.success(templateDtos, "Láº¥y danh sÃ¡ch templates thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách templates thành công", templateDtos));
     }
 
-    @Operation(summary = "TÃ¬m kiáº¿m shift templates vá»›i pagination", 
-               description = "TÃ¬m kiáº¿m máº«u ca lÃ m viá»‡c vá»›i filters vÃ  pagination")
+    @Operation(summary = "Tìm kiếm shift templates với pagination", 
+               description = "Tìm kiếm mẫu ca làm việc với filters và pagination")
     @GetMapping("/search")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER') or hasRole('TEACHER') or hasRole('ACCOUNTANT')")
     public ResponseEntity<ApiResponse<Page<ShiftTemplateDto>>> searchTemplates(
-            @Parameter(description = "Tá»« khÃ³a tÃ¬m kiáº¿m") @RequestParam(required = false) String search,
-            @Parameter(description = "Tráº¡ng thÃ¡i active") @RequestParam(required = false) Boolean isActive,
-            @Parameter(description = "Sá»‘ trang (báº¯t Ä‘áº§u tá»« 0)") @RequestParam(defaultValue = "0") @Min(0) int page,
-            @Parameter(description = "KÃ­ch thÆ°á»›c trang") @RequestParam(defaultValue = "10") @Min(1) int size) {
+            @Parameter(description = "Từ khóa tìm kiếm") @RequestParam(required = false) String search,
+            @Parameter(description = "Trạng thái active") @RequestParam(required = false) Boolean isActive,
+            @Parameter(description = "Số trang (bắt đầu từ 0)") @RequestParam(defaultValue = "0") @Min(0) int page,
+            @Parameter(description = "Kích thước trang") @RequestParam(defaultValue = "10") @Min(1) int size) {
         
-        log.info("TÃ¬m kiáº¿m shift templates vá»›i search: {}, isActive: {}, page: {}, size: {}", 
+        log.info("Tìm kiếm shift templates với search: {}, isActive: {}, page: {}, size: {}", 
                 search, isActive, page, size);
 
         Pageable pageable = PageRequest.of(page, size);
@@ -82,82 +82,82 @@ public class ShiftTemplateController {
         Page<ShiftTemplateDto> templateDtos = templates.map(template -> 
             modelMapper.map(template, ShiftTemplateDto.class));
 
-        return ResponseEntity.ok(ApiResponse.success(templateDtos, "TÃ¬m kiáº¿m templates thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success("Tìm kiếm templates thành công", templateDtos));
     }
 
-    @Operation(summary = "Láº¥y shift template theo ID", 
-               description = "Láº¥y thÃ´ng tin chi tiáº¿t cá»§a má»™t máº«u ca lÃ m viá»‡c")
+    @Operation(summary = "Lấy shift template theo ID", 
+               description = "Lấy thông tin chi tiết của một mẫu ca làm việc")
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER') or hasRole('TEACHER') or hasRole('ACCOUNTANT')")
     public ResponseEntity<ApiResponse<ShiftTemplateDto>> getTemplateById(
-            @Parameter(description = "ID cá»§a shift template") @PathVariable Long id) {
+            @Parameter(description = "ID của shift template") @PathVariable Long id) {
         
-        log.info("Láº¥y shift template vá»›i ID: {}", id);
+        log.info("Lấy shift template với ID: {}", id);
 
         ShiftTemplate template = shiftTemplateService.findById(id)
             .orElseThrow(() -> new com.classroomapp.classroombackend.exception.ResourceNotFoundException(
-                "KhÃ´ng tÃ¬m tháº¥y shift template vá»›i ID: " + id));
+                "Không tìm thấy shift template với ID: " + id));
 
         ShiftTemplateDto templateDto = modelMapper.map(template, ShiftTemplateDto.class);
-        return ResponseEntity.ok(ApiResponse.success(templateDto, "Láº¥y template thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success("Lấy template thành công", templateDto));
     }
 
-    @Operation(summary = "Táº¡o shift template má»›i", 
-               description = "Táº¡o máº«u ca lÃ m viá»‡c má»›i (chá»‰ ADMIN vÃ  MANAGER)")
+    @Operation(summary = "Tạo shift template mới", 
+               description = "Tạo mẫu ca làm việc mới (chỉ ADMIN và MANAGER)")
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<ShiftTemplateDto>> createTemplate(
-            @Parameter(description = "ThÃ´ng tin shift template má»›i") @Valid @RequestBody CreateShiftTemplateDto createDto) {
+            @Parameter(description = "Thông tin shift template mới") @Valid @RequestBody CreateShiftTemplateDto createDto) {
         
-        log.info("Táº¡o shift template má»›i: {}", createDto.getTemplateName());
+        log.info("Tạo shift template mới: {}", createDto.getTemplateName());
 
         ShiftTemplate template = modelMapper.map(createDto, ShiftTemplate.class);
         ShiftTemplate created = shiftTemplateService.createTemplate(template);
         ShiftTemplateDto createdDto = modelMapper.map(created, ShiftTemplateDto.class);
 
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success(createdDto, "Táº¡o template thÃ nh cÃ´ng"));
+            .body(ApiResponse.success("Tạo template thành công", createdDto));
     }
 
-    @Operation(summary = "Cáº­p nháº­t shift template", 
-               description = "Cáº­p nháº­t thÃ´ng tin máº«u ca lÃ m viá»‡c (chá»‰ ADMIN vÃ  MANAGER)")
+    @Operation(summary = "Cập nhật shift template", 
+               description = "Cập nhật thông tin mẫu ca làm việc (chỉ ADMIN và MANAGER)")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<ShiftTemplateDto>> updateTemplate(
-            @Parameter(description = "ID cá»§a shift template") @PathVariable Long id,
-            @Parameter(description = "ThÃ´ng tin cáº­p nháº­t") @Valid @RequestBody UpdateShiftTemplateDto updateDto) {
+            @Parameter(description = "ID của shift template") @PathVariable Long id,
+            @Parameter(description = "Thông tin cập nhật") @Valid @RequestBody UpdateShiftTemplateDto updateDto) {
         
-        log.info("Cáº­p nháº­t shift template ID: {}", id);
+        log.info("Cập nhật shift template ID: {}", id);
 
         ShiftTemplate template = modelMapper.map(updateDto, ShiftTemplate.class);
         ShiftTemplate updated = shiftTemplateService.updateTemplate(id, template);
         ShiftTemplateDto updatedDto = modelMapper.map(updated, ShiftTemplateDto.class);
 
-        return ResponseEntity.ok(ApiResponse.success(updatedDto, "Cáº­p nháº­t template thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật template thành công", updatedDto));
     }
 
-    @Operation(summary = "XÃ³a shift template", 
-               description = "XÃ³a máº«u ca lÃ m viá»‡c (soft delete - chá»‰ ADMIN)")
+    @Operation(summary = "Xóa shift template", 
+               description = "Xóa mẫu ca làm việc (soft delete - chỉ ADMIN)")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteTemplate(
-            @Parameter(description = "ID cá»§a shift template") @PathVariable Long id) {
+            @Parameter(description = "ID của shift template") @PathVariable Long id) {
         
-        log.info("XÃ³a shift template ID: {}", id);
+        log.info("Xóa shift template ID: {}", id);
 
         shiftTemplateService.deleteTemplate(id);
-        return ResponseEntity.ok(ApiResponse.success(null, "XÃ³a template thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success("Xóa template thành công", null));
     }
 
-    @Operation(summary = "Láº¥y templates theo khoáº£ng thá»i gian", 
-               description = "TÃ¬m templates trong khoáº£ng thá»i gian cá»¥ thá»ƒ")
+    @Operation(summary = "Lấy templates theo khoảng thời gian", 
+               description = "Tìm templates trong khoảng thời gian cụ thể")
     @GetMapping("/by-time-range")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER') or hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<List<ShiftTemplateDto>>> getTemplatesByTimeRange(
-            @Parameter(description = "Thá»i gian báº¯t Ä‘áº§u (HH:mm:ss)") @RequestParam String startTime,
-            @Parameter(description = "Thá»i gian káº¿t thÃºc (HH:mm:ss)") @RequestParam String endTime) {
+            @Parameter(description = "Thời gian bắt đầu (HH:mm:ss)") @RequestParam String startTime,
+            @Parameter(description = "Thời gian kết thúc (HH:mm:ss)") @RequestParam String endTime) {
         
-        log.info("Láº¥y templates theo time range: {} - {}", startTime, endTime);
+        log.info("Lấy templates theo time range: {} - {}", startTime, endTime);
 
         LocalTime start = LocalTime.parse(startTime);
         LocalTime end = LocalTime.parse(endTime);
@@ -167,34 +167,34 @@ public class ShiftTemplateController {
             .map(template -> modelMapper.map(template, ShiftTemplateDto.class))
             .collect(Collectors.toList());
 
-        return ResponseEntity.ok(ApiResponse.success(templateDtos, "Láº¥y templates theo time range thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success("Lấy templates theo time range thành công", templateDtos));
     }
 
-    @Operation(summary = "Láº¥y templates cÃ³ thá»ƒ lÃ m tÄƒng ca", 
-               description = "Láº¥y danh sÃ¡ch templates Ä‘Æ°á»£c phÃ©p lÃ m tÄƒng ca")
+    @Operation(summary = "Lấy templates có thể làm tăng ca", 
+               description = "Lấy danh sách templates được phép làm tăng ca")
     @GetMapping("/overtime-eligible")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<List<ShiftTemplateDto>>> getOvertimeEligibleTemplates() {
-        log.info("Láº¥y overtime eligible templates");
+        log.info("Lấy overtime eligible templates");
 
         List<ShiftTemplate> templates = shiftTemplateService.findOvertimeEligibleTemplates();
         List<ShiftTemplateDto> templateDtos = templates.stream()
             .map(template -> modelMapper.map(template, ShiftTemplateDto.class))
             .collect(Collectors.toList());
 
-        return ResponseEntity.ok(ApiResponse.success(templateDtos, "Láº¥y overtime templates thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success("Lấy overtime templates thành công", templateDtos));
     }
 
-    @Operation(summary = "Kiá»ƒm tra xung Ä‘á»™t thá»i gian", 
-               description = "Kiá»ƒm tra xung Ä‘á»™t thá»i gian vá»›i templates khÃ¡c")
+    @Operation(summary = "Kiểm tra xung đột thời gian", 
+               description = "Kiểm tra xung đột thời gian với templates khác")
     @GetMapping("/check-conflicts")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<List<ShiftTemplateDto>>> checkTimeConflicts(
-            @Parameter(description = "Thá»i gian báº¯t Ä‘áº§u") @RequestParam String startTime,
-            @Parameter(description = "Thá»i gian káº¿t thÃºc") @RequestParam String endTime,
-            @Parameter(description = "ID template loáº¡i trá»«") @RequestParam(required = false) Long excludeId) {
+            @Parameter(description = "Thời gian bắt đầu") @RequestParam String startTime,
+            @Parameter(description = "Thời gian kết thúc") @RequestParam String endTime,
+            @Parameter(description = "ID template loại trừ") @RequestParam(required = false) Long excludeId) {
         
-        log.info("Kiá»ƒm tra conflicts cho time range: {} - {}", startTime, endTime);
+        log.info("Kiểm tra conflicts cho time range: {} - {}", startTime, endTime);
 
         LocalTime start = LocalTime.parse(startTime);
         LocalTime end = LocalTime.parse(endTime);
@@ -204,47 +204,47 @@ public class ShiftTemplateController {
             .map(template -> modelMapper.map(template, ShiftTemplateDto.class))
             .collect(Collectors.toList());
 
-        return ResponseEntity.ok(ApiResponse.success(conflictDtos, 
-            conflicts.isEmpty() ? "KhÃ´ng cÃ³ xung Ä‘á»™t" : "PhÃ¡t hiá»‡n " + conflicts.size() + " xung Ä‘á»™t"));
+        return ResponseEntity.ok(ApiResponse.success(
+            conflicts.isEmpty() ? "Không có xung đột" : "Phát hiện " + conflicts.size() + " xung đột", conflictDtos));
     }
 
-    @Operation(summary = "Láº¥y thá»‘ng kÃª templates", 
-               description = "Láº¥y thá»‘ng kÃª tá»•ng quan vá» shift templates")
+    @Operation(summary = "Lấy thống kê templates", 
+               description = "Lấy thống kê tổng quan về shift templates")
     @GetMapping("/statistics")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<ShiftTemplateService.TemplateStatistics>> getTemplateStatistics() {
-        log.info("Láº¥y template statistics");
+        log.info("Lấy template statistics");
 
         ShiftTemplateService.TemplateStatistics stats = shiftTemplateService.getTemplateStatistics();
-        return ResponseEntity.ok(ApiResponse.success(stats, "Láº¥y thá»‘ng kÃª thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success("Lấy thống kê thành công", stats));
     }
 
-    @Operation(summary = "Cáº­p nháº­t tráº¡ng thÃ¡i active", 
-               description = "Báº­t/táº¯t tráº¡ng thÃ¡i hoáº¡t Ä‘á»™ng cá»§a template")
+    @Operation(summary = "Cập nhật trạng thái active", 
+               description = "Bật/tắt trạng thái hoạt động của template")
     @PatchMapping("/{id}/active")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<Void>> updateActiveStatus(
-            @Parameter(description = "ID cá»§a shift template") @PathVariable Long id,
-            @Parameter(description = "Tráº¡ng thÃ¡i active") @RequestParam Boolean isActive) {
+            @Parameter(description = "ID của shift template") @PathVariable Long id,
+            @Parameter(description = "Trạng thái active") @RequestParam Boolean isActive) {
         
-        log.info("Cáº­p nháº­t active status cho template ID: {} thÃ nh {}", id, isActive);
+        log.info("Cập nhật active status cho template ID: {} thành {}", id, isActive);
 
         shiftTemplateService.updateActiveStatus(id, isActive);
-        return ResponseEntity.ok(ApiResponse.success(null, 
-            "Cáº­p nháº­t tráº¡ng thÃ¡i " + (isActive ? "kÃ­ch hoáº¡t" : "vÃ´ hiá»‡u hÃ³a") + " thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success(
+            "Cập nhật trạng thái " + (isActive ? "kích hoạt" : "vô hiệu hóa") + " thành công", null));
     }
 
-    @Operation(summary = "Cáº­p nháº­t thá»© tá»± sáº¯p xáº¿p", 
-               description = "Cáº­p nháº­t sort order cá»§a template")
+    @Operation(summary = "Cập nhật thứ tự sắp xếp", 
+               description = "Cập nhật sort order của template")
     @PatchMapping("/{id}/sort-order")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<Void>> updateSortOrder(
-            @Parameter(description = "ID cá»§a shift template") @PathVariable Long id,
-            @Parameter(description = "Thá»© tá»± sáº¯p xáº¿p") @RequestParam Integer sortOrder) {
+            @Parameter(description = "ID của shift template") @PathVariable Long id,
+            @Parameter(description = "Thứ tự sắp xếp") @RequestParam Integer sortOrder) {
         
-        log.info("Cáº­p nháº­t sort order cho template ID: {} thÃ nh {}", id, sortOrder);
+        log.info("Cập nhật sort order cho template ID: {} thành {}", id, sortOrder);
 
         shiftTemplateService.updateSortOrder(id, sortOrder);
-        return ResponseEntity.ok(ApiResponse.success(null, "Cáº­p nháº­t thá»© tá»± sáº¯p xáº¿p thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật thứ tự sắp xếp thành công", null));
     }
 }

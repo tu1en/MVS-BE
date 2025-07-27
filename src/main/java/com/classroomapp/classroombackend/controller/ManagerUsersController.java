@@ -15,9 +15,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.classroomapp.classroombackend.dto.usermanagement.UserDTO;
+import com.classroomapp.classroombackend.dto.UserDto;
 import com.classroomapp.classroombackend.model.enums.UserRole;
-import com.classroomapp.classroombackend.service.usermanagement.UserService;
+import com.classroomapp.classroombackend.service.UserService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,42 +31,46 @@ public class ManagerUsersController {
 
     private final UserService userService;
 
+    // ✅ Lấy tất cả user (có phân trang + tìm kiếm)
     @GetMapping
-    public ResponseEntity<Page<UserDTO>> getAllUsers(
+    public ResponseEntity<Page<UserDto>> getAllUsers(
             @RequestParam(required = false) String keyword,
             @PageableDefault(size = 10, sort = "fullName") Pageable pageable) {
         log.info("Manager requesting all users with keyword: {}", keyword);
-        Page<UserDTO> users = userService.findAllUsers(keyword, pageable);
+        Page<UserDto> users = userService.findAllUsers(keyword, pageable);
         return ResponseEntity.ok(users);
     }
 
+    // ✅ Lấy user theo ID
     @GetMapping("/{userId}")
-    public ResponseEntity<UserDTO> getUserById(@PathVariable Long userId) {
+    public ResponseEntity<UserDto> getUserById(@PathVariable Long userId) {
         log.info("Manager requesting user details for ID: {}", userId);
-        UserDTO user = userService.getUserById(userId);
+        UserDto user = userService.getUserById(userId);
         return ResponseEntity.ok(user);
     }
 
+    // ✅ Lấy user theo Role ID
     @GetMapping("/role/{roleId}")
-    public ResponseEntity<Page<UserDTO>> getUsersByRole(
+    public ResponseEntity<Page<UserDto>> getUsersByRole(
             @PathVariable Integer roleId,
             @PageableDefault(size = 10, sort = "fullName") Pageable pageable) {
         log.info("Manager requesting users by role: {}", roleId);
-        List<UserDTO> users = userService.getUsersByRole(convertRoleIdToEnum(roleId));
+        List<UserDto> users = userService.getUsersByRole(convertRoleIdToEnum(roleId));
 
         int start = (int) pageable.getOffset();
         int end = Math.min((start + pageable.getPageSize()), users.size());
-        List<UserDTO> pageContent = users.subList(start, end);
+        List<UserDto> pageContent = users.subList(start, end);
 
-        Page<UserDTO> page = new org.springframework.data.domain.PageImpl<>(pageContent, pageable, users.size());
+        Page<UserDto> page = new org.springframework.data.domain.PageImpl<>(pageContent, pageable, users.size());
         return ResponseEntity.ok(page);
     }
 
+    // ✅ Thống kê số lượng user theo role
     @GetMapping("/statistics")
     public ResponseEntity<Map<String, Object>> getUserStatistics() {
         log.info("Manager requesting user statistics");
 
-        List<UserDTO> allUsers = userService.getAllUsers();
+        List<UserDto> allUsers = userService.getAllUsers();
         long totalUsers = allUsers.size();
         long students = allUsers.stream().filter(u -> u.getRoleEnum() == UserRole.STUDENT).count();
         long teachers = allUsers.stream().filter(u -> u.getRoleEnum() == UserRole.TEACHER).count();
@@ -83,6 +87,7 @@ public class ManagerUsersController {
         return ResponseEntity.ok(stats);
     }
 
+    // ✅ Helper: Convert roleId sang UserRole
     private UserRole convertRoleIdToEnum(Integer roleId) {
         if (roleId == null) return UserRole.STUDENT;
         switch (roleId) {

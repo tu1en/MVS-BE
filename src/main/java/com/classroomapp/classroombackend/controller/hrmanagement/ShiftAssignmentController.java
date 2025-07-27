@@ -25,16 +25,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.classroomapp.classroombackend.dto.ApiResponse;
+import com.doproject.common.ApiResponse;
 import com.classroomapp.classroombackend.dto.hrmanagement.CreateShiftAssignmentDto;
 import com.classroomapp.classroombackend.dto.hrmanagement.CreateSingleShiftAssignmentDto;
 import com.classroomapp.classroombackend.dto.hrmanagement.ShiftAssignmentDto;
 import com.classroomapp.classroombackend.dto.hrmanagement.UpdateShiftAssignmentDto;
-import com.classroomapp.classroombackend.dto.usermanagement.UserDTO;
 import com.classroomapp.classroombackend.model.hrmanagement.ShiftAssignment;
 import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.service.UserService;
 import com.classroomapp.classroombackend.service.hrmanagement.shift.ShiftAssignmentService;
-import com.classroomapp.classroombackend.service.usermanagement.UserService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -74,7 +73,7 @@ public class ShiftAssignmentController {
         Page<ShiftAssignment> assignments = shiftAssignmentService.searchAssignments(employeeId, startDate, endDate, status, attendanceStatus, search, pageable);
 
         Page<ShiftAssignmentDto> assignmentDtos = assignments.map(a -> modelMapper.map(a, ShiftAssignmentDto.class));
-        return ResponseEntity.ok(ApiResponse.success(assignmentDtos, "Tìm kiếm assignments thành công"));
+        return ResponseEntity.ok(ApiResponse.success("Tìm kiếm assignments thành công", assignmentDtos));
     }
 
     @Operation(summary = "Lấy assignment theo ID")
@@ -83,7 +82,7 @@ public class ShiftAssignmentController {
     public ResponseEntity<ApiResponse<ShiftAssignmentDto>> getAssignmentById(@PathVariable Long id) {
         ShiftAssignment assignment = shiftAssignmentService.findById(id)
                 .orElseThrow(() -> new com.classroomapp.classroombackend.exception.ResourceNotFoundException("Không tìm thấy assignment với ID: " + id));
-        return ResponseEntity.ok(ApiResponse.success(modelMapper.map(assignment, ShiftAssignmentDto.class), "Lấy assignment thành công"));
+        return ResponseEntity.ok(ApiResponse.success("Lấy assignment thành công", modelMapper.map(assignment, ShiftAssignmentDto.class)));
     }
 
     @PostMapping
@@ -91,7 +90,7 @@ public class ShiftAssignmentController {
     public ResponseEntity<ApiResponse<ShiftAssignmentDto>> createAssignment(@Valid @RequestBody CreateSingleShiftAssignmentDto createDto) {
         ShiftAssignment assignment = modelMapper.map(createDto, ShiftAssignment.class);
         ShiftAssignment created = shiftAssignmentService.createAssignment(assignment);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(modelMapper.map(created, ShiftAssignmentDto.class), "Tạo assignment thành công"));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo assignment thành công", modelMapper.map(created, ShiftAssignmentDto.class)));
     }
 
     @PostMapping("/bulk")
@@ -100,42 +99,42 @@ public class ShiftAssignmentController {
         List<ShiftAssignment> assignments = createDtos.stream().map(dto -> modelMapper.map(dto, ShiftAssignment.class)).collect(Collectors.toList());
         List<ShiftAssignment> created = shiftAssignmentService.createBulkAssignments(assignments);
         List<ShiftAssignmentDto> createdDtos = created.stream().map(a -> modelMapper.map(a, ShiftAssignmentDto.class)).collect(Collectors.toList());
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(createdDtos, "Tạo bulk assignments thành công"));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo bulk assignments thành công", createdDtos));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<ShiftAssignmentDto>> updateAssignment(@PathVariable Long id, @Valid @RequestBody UpdateShiftAssignmentDto updateDto) {
         ShiftAssignment updated = shiftAssignmentService.updateAssignment(id, modelMapper.map(updateDto, ShiftAssignment.class));
-        return ResponseEntity.ok(ApiResponse.success(modelMapper.map(updated, ShiftAssignmentDto.class), "Cập nhật assignment thành công"));
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật assignment thành công", modelMapper.map(updated, ShiftAssignmentDto.class)));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteAssignment(@PathVariable Long id) {
         shiftAssignmentService.deleteAssignment(id);
-        return ResponseEntity.ok(ApiResponse.success(null, "Xóa assignment thành công"));
+        return ResponseEntity.ok(ApiResponse.success("Xóa assignment thành công", null));
     }
 
     @PatchMapping("/{id}/cancel")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<Void>> cancelAssignment(@PathVariable Long id, @RequestParam String reason) {
         shiftAssignmentService.cancelAssignment(id, reason);
-        return ResponseEntity.ok(ApiResponse.success(null, "Hủy assignment thành công"));
+        return ResponseEntity.ok(ApiResponse.success("Hủy assignment thành công", null));
     }
 
     @PostMapping("/{id}/check-in")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER') or (hasRole('TEACHER') and @shiftSecurityService.canCheckInAssignment(#id, authentication.name))")
     public ResponseEntity<ApiResponse<ShiftAssignmentDto>> checkIn(@PathVariable Long id, @RequestParam(required = false) String location) {
         ShiftAssignment checkedIn = shiftAssignmentService.checkIn(id, location);
-        return ResponseEntity.ok(ApiResponse.success(modelMapper.map(checkedIn, ShiftAssignmentDto.class), "Check-in thành công"));
+        return ResponseEntity.ok(ApiResponse.success("Check-in thành công", modelMapper.map(checkedIn, ShiftAssignmentDto.class)));
     }
 
     @PostMapping("/{id}/check-out")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER') or (hasRole('TEACHER') and @shiftSecurityService.canCheckOutAssignment(#id, authentication.name))")
     public ResponseEntity<ApiResponse<ShiftAssignmentDto>> checkOut(@PathVariable Long id, @RequestParam(required = false) String location) {
         ShiftAssignment checkedOut = shiftAssignmentService.checkOut(id, location);
-        return ResponseEntity.ok(ApiResponse.success(modelMapper.map(checkedOut, ShiftAssignmentDto.class), "Check-out thành công"));
+        return ResponseEntity.ok(ApiResponse.success("Check-out thành công", modelMapper.map(checkedOut, ShiftAssignmentDto.class)));
     }
 
     @GetMapping("/my-current-week")
@@ -145,12 +144,12 @@ public class ShiftAssignmentController {
         User user = userService.findByUsername(username).orElse(null);
 
         if (user == null) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Không tìm thấy thông tin người dùng", null));
+            return ResponseEntity.badRequest().body(ApiResponse.error("Không tìm thấy thông tin người dùng"));
         }
 
         Long employeeId = user.getId();
         List<ShiftAssignment> assignments = shiftAssignmentService.findCurrentWeekAssignments(employeeId);
         List<ShiftAssignmentDto> assignmentDtos = assignments.stream().map(a -> modelMapper.map(a, ShiftAssignmentDto.class)).collect(Collectors.toList());
-        return ResponseEntity.ok(ApiResponse.success(assignmentDtos, "Lấy assignments tuần hiện tại thành công"));
+        return ResponseEntity.ok(ApiResponse.success("Lấy assignments tuần hiện tại thành công", assignmentDtos));
     }
 }

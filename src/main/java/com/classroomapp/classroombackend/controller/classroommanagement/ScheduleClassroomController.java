@@ -32,17 +32,17 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * REST Controller cho Schedule Management
  */
-@RestController
-@RequestMapping("/api/classroom-management/schedules")
+@RestController("scheduleClassroomController")
+@RequestMapping("/api/v1/classroom/schedules")
 @RequiredArgsConstructor
 @Slf4j
 @CrossOrigin(originPatterns = {"http://localhost:3000", "http://localhost:5173"}, allowedHeaders = "*", allowCredentials = "true")
-public class ScheduleController {
+public class ScheduleClassroomController {
 
     private final ClassroomScheduleService scheduleService;
 
     /**
-     * Láº¥y táº¥t cáº£ schedules theo classroom ID
+     * Lay tat ca schedules theo classroom ID
      */
     @GetMapping("/classroom/{classroomId}")
     @PreAuthorize("hasAnyRole('TEACHER', 'MANAGER', 'ADMIN')")
@@ -50,13 +50,13 @@ public class ScheduleController {
             @PathVariable Long classroomId,
             Authentication authentication) {
         
-        log.info("ðŸ” Getting schedules for classroom ID: {} - User: {}", classroomId, authentication.getName());
+        log.info("Getting schedules for classroom ID: {} - User: {}", classroomId, authentication.getName());
         List<ScheduleDto> schedules = scheduleService.getSchedulesByClassroomId(classroomId);
         return ResponseEntity.ok(schedules);
     }
 
     /**
-     * Láº¥y schedule theo ID
+     * Lay schedule theo ID
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('TEACHER', 'MANAGER', 'ADMIN')")
@@ -64,13 +64,13 @@ public class ScheduleController {
             @PathVariable Long id,
             Authentication authentication) {
         
-        log.info("ðŸ” Getting schedule by ID: {} - User: {}", id, authentication.getName());
+        log.info("Getting schedule by ID: {} - User: {}", id, authentication.getName());
         ScheduleDto schedule = scheduleService.getScheduleById(id);
         return ResponseEntity.ok(schedule);
     }
 
     /**
-     * Láº¥y schedules theo ngÃ y trong tuáº§n
+     * Lay schedules theo ngay trong tuan
      */
     @GetMapping("/day/{dayOfWeek}")
     @PreAuthorize("hasAnyRole('TEACHER', 'MANAGER', 'ADMIN')")
@@ -78,13 +78,13 @@ public class ScheduleController {
             @PathVariable DayOfWeek dayOfWeek,
             Authentication authentication) {
         
-        log.info("ðŸ” Getting schedules for day: {} - User: {}", dayOfWeek, authentication.getName());
+        log.info("Getting schedules for day: {} - User: {}", dayOfWeek, authentication.getName());
         List<ScheduleDto> schedules = scheduleService.getSchedulesByDayOfWeek(dayOfWeek);
         return ResponseEntity.ok(schedules);
     }
 
     /**
-     * TÃ¬m kiáº¿m schedules theo Ä‘á»‹a Ä‘iá»ƒm
+     * Tim kiem schedules theo dia diem
      */
     @GetMapping("/location")
     @PreAuthorize("hasAnyRole('TEACHER', 'MANAGER', 'ADMIN')")
@@ -92,13 +92,13 @@ public class ScheduleController {
             @RequestParam String location,
             Authentication authentication) {
         
-        log.info("ðŸ” Searching schedules by location: {} - User: {}", location, authentication.getName());
+        log.info("Searching schedules by location: {} - User: {}", location, authentication.getName());
         List<ScheduleDto> schedules = scheduleService.getSchedulesByLocation(location);
         return ResponseEntity.ok(schedules);
     }
 
     /**
-     * Táº¡o schedule má»›i
+     * Tao schedule moi
      */
     @PostMapping
     @PreAuthorize("hasAnyRole('TEACHER', 'MANAGER', 'ADMIN')")
@@ -106,21 +106,21 @@ public class ScheduleController {
             @Valid @RequestBody CreateScheduleDto createDto,
             Authentication authentication) {
         
-        log.info("ðŸ“ Creating new schedule for classroom ID: {} - User: {}", 
+        log.info("Creating new schedule for classroom ID: {} - User: {}", 
                 createDto.getClassroomId(), authentication.getName());
         
         try {
             ScheduleDto newSchedule = scheduleService.createSchedule(createDto);
             return ResponseEntity.status(HttpStatus.CREATED).body(newSchedule);
         } catch (IllegalArgumentException e) {
-            log.error("âŒ Validation error creating schedule: {}", e.getMessage());
+            log.error("Validation error creating schedule: {}", e.getMessage());
             Map<String, Object> error = new HashMap<>();
             error.put("success", false);
             error.put("message", e.getMessage());
             error.put("type", "VALIDATION_ERROR");
             return ResponseEntity.badRequest().body(error);
         } catch (RuntimeException e) {
-            log.error("âŒ Error creating schedule: {}", e.getMessage());
+            log.error("Error creating schedule: {}", e.getMessage());
             Map<String, Object> error = new HashMap<>();
             error.put("success", false);
             error.put("message", e.getMessage());
@@ -130,7 +130,7 @@ public class ScheduleController {
     }
 
     /**
-     * Cáº­p nháº­t schedule
+     * Cap nhat schedule
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('TEACHER', 'MANAGER', 'ADMIN')")
@@ -139,20 +139,20 @@ public class ScheduleController {
             @Valid @RequestBody UpdateScheduleDto updateDto,
             Authentication authentication) {
         
-        log.info("ðŸ“ Updating schedule ID: {} - User: {}", id, authentication.getName());
+        log.info("Updating schedule ID: {} - User: {}", id, authentication.getName());
         
         try {
             ScheduleDto updatedSchedule = scheduleService.updateSchedule(id, updateDto);
             return ResponseEntity.ok(updatedSchedule);
         } catch (IllegalArgumentException e) {
-            log.error("âŒ Validation error updating schedule: {}", e.getMessage());
+            log.error("Validation error updating schedule: {}", e.getMessage());
             Map<String, Object> error = new HashMap<>();
             error.put("success", false);
             error.put("message", e.getMessage());
             error.put("type", "VALIDATION_ERROR");
             return ResponseEntity.badRequest().body(error);
         } catch (RuntimeException e) {
-            log.error("âŒ Error updating schedule: {}", e.getMessage());
+            log.error("Error updating schedule: {}", e.getMessage());
             Map<String, Object> error = new HashMap<>();
             error.put("success", false);
             error.put("message", e.getMessage());
@@ -162,7 +162,7 @@ public class ScheduleController {
     }
 
     /**
-     * XÃ³a schedule
+     * Xoa schedule
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
@@ -170,19 +170,19 @@ public class ScheduleController {
             @PathVariable Long id,
             Authentication authentication) {
         
-        log.info("ðŸ—‘ï¸ Deleting schedule ID: {} - User: {}", id, authentication.getName());
+        log.info("Deleting schedule ID: {} - User: {}", id, authentication.getName());
         
         try {
             scheduleService.deleteSchedule(id);
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("message", "XÃ³a lá»‹ch há»c thÃ nh cÃ´ng");
+            response.put("message", "Xoa lich hoc thanh cong");
             response.put("deletedId", id);
             
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
-            log.error("âŒ Error deleting schedule: {}", e.getMessage());
+            log.error("Error deleting schedule: {}", e.getMessage());
             Map<String, Object> error = new HashMap<>();
             error.put("success", false);
             error.put("message", e.getMessage());
@@ -191,7 +191,7 @@ public class ScheduleController {
     }
 
     /**
-     * Kiá»ƒm tra conflict lá»‹ch há»c
+     * Kiem tra conflict lich hoc
      */
     @PostMapping("/check-conflict")
     @PreAuthorize("hasAnyRole('TEACHER', 'MANAGER', 'ADMIN')")
@@ -199,7 +199,7 @@ public class ScheduleController {
             @RequestBody CreateScheduleDto scheduleDto,
             Authentication authentication) {
         
-        log.info("ðŸ” Checking schedule conflict for classroom ID: {} - User: {}", 
+        log.info("Checking schedule conflict for classroom ID: {} - User: {}", 
                 scheduleDto.getClassroomId(), authentication.getName());
         
         boolean hasConflict = scheduleService.hasScheduleConflict(
@@ -211,7 +211,7 @@ public class ScheduleController {
         
         Map<String, Object> response = new HashMap<>();
         response.put("hasConflict", hasConflict);
-        response.put("message", hasConflict ? "CÃ³ xung Ä‘á»™t lá»‹ch há»c" : "KhÃ´ng cÃ³ xung Ä‘á»™t");
+        response.put("message", hasConflict ? "Co xung dot lich hoc" : "Khong co xung dot");
         
         return ResponseEntity.ok(response);
     }

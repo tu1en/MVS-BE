@@ -214,7 +214,7 @@ public class SessionServiceImpl implements SessionService {
 
     private SessionDto convertToDto(Session session) {
         if (session == null) return null;
-        String classroomName = session.getClassroom() != null ? session.getClassroom().getClassroomName() : "Unknown";
+        String classroomName = session.getClassroom() != null ? session.getClassroom().getName() : "Unknown";
         return new SessionDto(
                 session.getId(),
                 session.getClassroom() != null ? session.getClassroom().getId() : null,

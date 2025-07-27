@@ -3,7 +3,6 @@ package com.classroomapp.classroombackend.controller;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -24,11 +23,12 @@ import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto;
 import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
+import com.classroomapp.classroombackend.model.enums.UserRole;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.AssignmentService;
 import com.classroomapp.classroombackend.service.AttendanceService;
-import com.classroomapp.classroombackend.service.ClassroomService;
+import com.classroomapp.classroombackend.service.classroommanagement.ClassroomService;
 import com.classroomapp.classroombackend.service.StudentMessageService;
 import com.classroomapp.classroombackend.service.UserService;
 
@@ -82,7 +82,7 @@ public class FrontendApiBridgeController {
     @GetMapping("/users/students")
     public ResponseEntity<List<UserDto>> getAllStudents() {
         try {
-            return ResponseEntity.ok(userService.FindUsersByRole(1)); // Role 1 = STUDENT
+            return ResponseEntity.ok(userService.getUsersByRole(UserRole.STUDENT));
         } catch (Exception e) {
             System.err.println("Error fetching students: " + e.getMessage());
             e.printStackTrace();
@@ -96,25 +96,9 @@ public class FrontendApiBridgeController {
      * Frontend calls: /api/users/teachers
      */
     @GetMapping("/users/teachers")
-    public ResponseEntity<List<com.classroomapp.classroombackend.dto.UserDto>> getAllTeachers() {
+    public ResponseEntity<List<UserDto>> getAllTeachers() {
         try {
-            // Get teachers directly from repository since service method is broken
-            List<User> teachers = userRepository.findByRoleId(2); // Role 2 = TEACHER
-            List<com.classroomapp.classroombackend.dto.UserDto> teacherDtos = teachers.stream()
-                .map(user -> {
-                    com.classroomapp.classroombackend.dto.UserDto dto = new com.classroomapp.classroombackend.dto.UserDto();
-                    dto.setId(user.getId());
-                    dto.setUsername(user.getUsername());
-                    dto.setEmail(user.getEmail());
-                    dto.setFullName(user.getFullName());
-                    dto.setRoleId(user.getRoleId());
-                    dto.setStatus(user.getStatus());
-                    return dto;
-                })
-                .collect(Collectors.toList());
-
-            System.out.println("Found " + teacherDtos.size() + " teachers");
-            return ResponseEntity.ok(teacherDtos);
+            return ResponseEntity.ok(userService.getUsersByRole(UserRole.TEACHER));
         } catch (Exception e) {
             System.err.println("Error fetching teachers: " + e.getMessage());
             e.printStackTrace();
@@ -311,7 +295,7 @@ public class FrontendApiBridgeController {
     //     String username = authentication.getName();
     //     User currentUser = userRepository.findByUsername(username)
     //             .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
-    //     return ResponseEntity.ok(classroomService.GetClassroomsByTeacher(currentUser.getId()));
+    //     return ResponseEntity.ok(classroomService.getClassroomsByCurrentTeacher());
     // }
     
     /**
@@ -341,7 +325,7 @@ public class FrontendApiBridgeController {
     //     String username = authentication.getName();
     //     User currentUser = userRepository.findByUsername(username)
     //             .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
-    //     return ResponseEntity.ok(classroomService.GetClassroomsByStudent(currentUser.getId()));
+    //     return ResponseEntity.ok(classroomService.getClassroomsByStudentId(currentUser.getId()));
     // }
     
     /**
@@ -355,7 +339,7 @@ public class FrontendApiBridgeController {
         String username = authentication.getName();
         User currentUser = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
-        return ResponseEntity.ok(classroomService.GetClassroomsByStudent(currentUser.getId()));
+        return ResponseEntity.ok(classroomService.getClassroomsByStudentId(currentUser.getId()));
     }
     
     /**
@@ -423,7 +407,7 @@ public class FrontendApiBridgeController {
                     .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
             
             // Get real stats based on teacher's classrooms
-            List<ClassroomDto> classrooms = classroomService.GetClassroomsByTeacher(currentUser.getId());
+            List<ClassroomDto> classrooms = classroomService.getClassroomsByCurrentTeacher();
             List<AssignmentDto> assignments = assignmentService.findByTeacherId(currentUser.getId());
             
             // Calculate stats
@@ -486,7 +470,7 @@ public class FrontendApiBridgeController {
         String username = authentication.getName();
         User currentUser = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
-        return ResponseEntity.ok(classroomService.GetClassroomsByStudent(currentUser.getId()));
+        return ResponseEntity.ok(classroomService.getClassroomsByStudentId(currentUser.getId()));
     }
 
     /**

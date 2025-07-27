@@ -1,11 +1,9 @@
 package com.classroomapp.classroombackend.controller.hrmanagement;
 
-import com.classroomapp.classroombackend.dto.hrmanagement.CreateShiftSwapRequestDto;
-import com.classroomapp.classroombackend.dto.hrmanagement.ShiftSwapRequestDto;
-import com.classroomapp.classroombackend.model.hrmanagement.ShiftSwapRequest;
-import com.classroomapp.classroombackend.model.usermanagement.User;
-import com.classroomapp.classroombackend.service.hrmanagement.shift.ShiftSwapService;
-import com.classroomapp.classroombackend.service.usermanagement.UserService;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,12 +14,24 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.classroomapp.classroombackend.dto.hrmanagement.CreateShiftSwapRequestDto;
+import com.classroomapp.classroombackend.dto.hrmanagement.ShiftSwapRequestDto;
+import com.classroomapp.classroombackend.model.hrmanagement.ShiftSwapRequest;
+import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.service.UserService;
+import com.classroomapp.classroombackend.service.hrmanagement.shift.ShiftSwapService;
 
 import jakarta.validation.Valid;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 
 /**
  * Controller cho quản lý Shift Swap Requests
@@ -330,12 +340,12 @@ public class ShiftSwapController {
         }
     }
 
-    /**
-     * Helper method để lấy current user từ authentication
-     */
-    private User getCurrentUser(Authentication authentication) {
-        String username = authentication.getName();
-        return userService.findByUsernameOrEmail(username, username)
-                         .orElseThrow(() -> new RuntimeException("Không tìm thấy user hiện tại"));
-    }
+private User getCurrentUser(Authentication authentication) {
+    String usernameOrEmail = authentication.getName();
+    
+    return userService.findByUsername(usernameOrEmail)
+            .or(() -> userService.findByEmail(usernameOrEmail))
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy user hiện tại"));
+}
+
 }

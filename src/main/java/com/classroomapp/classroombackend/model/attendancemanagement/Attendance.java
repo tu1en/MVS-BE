@@ -2,6 +2,8 @@ package com.classroomapp.classroombackend.model.attendancemanagement;
 
 import com.classroomapp.classroombackend.model.usermanagement.User;
 
+import java.time.Instant;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -44,4 +46,13 @@ public class Attendance {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private AttendanceStatus status;
+
+    @Column(name = "join_time")
+    private Instant joinTime;
+
+    @Column(name = "leave_time")
+    private Instant leaveTime;
+
+    @Column(name = "duration_minutes")
+    private Integer durationMinutes;
 }

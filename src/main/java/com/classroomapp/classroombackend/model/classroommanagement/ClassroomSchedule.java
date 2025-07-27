@@ -44,6 +44,16 @@ public class ClassroomSchedule {
     @NotBlank
     private String location;
     
+    private String subject;
+    
+    private String room;
+    
+    @Column(name = "materials_url")
+    private String materialsUrl;
+    
+    @Column(name = "meet_url")
+    private String meetUrl;
+    
     @Column(length = 500)
     private String notes;
     

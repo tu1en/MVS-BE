@@ -2,7 +2,7 @@ package com.classroomapp.classroombackend.model.assignmentmanagement;
 
 import java.time.LocalDateTime;
 
-import com.classroomapp.classroombackend.dto.FileUploadResponse;
+import com.classroomapp.classroombackend.dto.common.FileUploadResponse;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

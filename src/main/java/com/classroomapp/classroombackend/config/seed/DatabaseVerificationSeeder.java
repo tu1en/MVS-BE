@@ -47,11 +47,34 @@ public class DatabaseVerificationSeeder {
                 System.out.println("📋 [DatabaseVerification] Teacher's schedules:");
                 for (int i = 0; i < Math.min(5, teacherSchedules.size()); i++) {
                     Schedule schedule = teacherSchedules.get(i);
+                    
+                    // ✅ Fixed: Use new datetime fields instead of legacy fields
+                    String dayInfo = "N/A";
+                    String timeInfo = "N/A";
+                    String titleInfo = "Untitled";
+                    String locationInfo = "No location";
+                    
+                    if (schedule.getStartDatetime() != null) {
+                        dayInfo = getDayName(schedule.getStartDatetime().getDayOfWeek().getValue() - 1);
+                        timeInfo = schedule.getStartDatetime().toLocalTime().toString();
+                        
+                        if (schedule.getEndDatetime() != null) {
+                            timeInfo += "-" + schedule.getEndDatetime().toLocalTime().toString();
+                        }
+                    }
+                    
+                    if (schedule.getTitle() != null) {
+                        titleInfo = schedule.getTitle();
+                    }
+                    
+                    if (schedule.getLocation() != null) {
+                        locationInfo = schedule.getLocation();
+                    }
+                    
                     System.out.println("   - Schedule " + (i+1) + ": " + 
-                                     getDayName(schedule.getDayOfWeek()) + " " +
-                                     schedule.getStartTime() + "-" + schedule.getEndTime() + 
-                                     " | " + schedule.getSubject() + 
-                                     " | Room: " + schedule.getRoom());
+                                     dayInfo + " " + timeInfo + 
+                                     " | " + titleInfo + 
+                                     " | Location: " + locationInfo);
                 }
                 if (teacherSchedules.size() > 5) {
                     System.out.println("   ... and " + (teacherSchedules.size() - 5) + " more schedules");
@@ -82,8 +105,17 @@ public class DatabaseVerificationSeeder {
         System.out.println("✅ [DatabaseVerification] Verification completed");
     }
     
+    // ✅ Fixed: Handle both int and DayOfWeek parameter types
     private String getDayName(int dayOfWeek) {
         String[] days = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
-        return days[dayOfWeek];
+        if (dayOfWeek >= 0 && dayOfWeek < days.length) {
+            return days[dayOfWeek];
+        }
+        return "Unknown";
+    }
+    
+    private String getDayName(java.time.DayOfWeek dayOfWeek) {
+        if (dayOfWeek == null) return "Unknown";
+        return getDayName(dayOfWeek.getValue() - 1); // Convert to 0-based index
     }
 }

@@ -1,16 +1,16 @@
 package com.classroomapp.classroombackend.dto.common;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
 /**
- * DTO há»£p nháº¥t cho káº¿t quáº£ upload file
- * Káº¿t há»£p functionality tá»« FileUploadResponse vÃ  FileUploadResult
+ * DTO hợp nhất cho kết quả upload file
+ * Kết hợp functionality từ FileUploadResponse và FileUploadResult
  */
 @Data
 @Builder
@@ -19,110 +19,110 @@ import java.util.List;
 public class FileUploadResponse {
 
     /**
-     * Upload cÃ³ thÃ nh cÃ´ng khÃ´ng
+     * Upload có thành công không
      */
     private boolean success;
 
     /**
-     * ID cá»§a file trong database
+     * ID của file trong database
      */
     private Long fileId;
 
     /**
-     * TÃªn file gá»‘c
+     * Tên file gốc
      */
     private String originalFilename;
 
     /**
-     * TÃªn file Ä‘Ã£ Ä‘Æ°á»£c sanitize (alias cho fileName Ä‘á»ƒ tÆ°Æ¡ng thÃ­ch)
+     * Tên file đã được sanitize (alias cho fileName để tương thích)
      */
     private String filename;
-    
+
     /**
-     * Alias cho filename Ä‘á»ƒ tÆ°Æ¡ng thÃ­ch vá»›i version cÅ©
+     * Alias cho filename để tương thích với version cũ
      */
     public String getFileName() {
         return filename;
     }
-    
+
     public void setFileName(String fileName) {
         this.filename = fileName;
     }
 
     /**
-     * ÄÆ°á»ng dáº«n relative Ä‘áº¿n file
+     * Đường dẫn relative đến file
      */
     private String filePath;
 
     /**
-     * URL public Ä‘á»ƒ access file (alias cho fileUrl Ä‘á»ƒ tÆ°Æ¡ng thÃ­ch)
+     * URL public để access file (alias cho fileUrl để tương thích)
      */
     private String fileUrl;
 
     /**
-     * KÃ­ch thÆ°á»›c file (bytes)
+     * Kích thước file (bytes)
      */
     private Long fileSize;
-    
+
     /**
-     * Alias cho fileSize Ä‘á»ƒ tÆ°Æ¡ng thÃ­ch vá»›i version cÅ©
+     * Alias cho fileSize để tương thích với version cũ
      */
     public long getSize() {
         return fileSize != null ? fileSize : 0L;
     }
-    
+
     public void setSize(long size) {
         this.fileSize = size;
     }
 
     /**
-     * MIME type cá»§a file (alias cho fileType Ä‘á»ƒ tÆ°Æ¡ng thÃ­ch)
+     * MIME type của file (alias cho fileType để tương thích)
      */
     private String mimeType;
-    
+
     /**
-     * Alias cho mimeType Ä‘á»ƒ tÆ°Æ¡ng thÃ­ch vá»›i version cÅ©
+     * Alias cho mimeType để tương thích với version cũ
      */
     public String getFileType() {
         return mimeType;
     }
-    
+
     public void setFileType(String fileType) {
         this.mimeType = fileType;
     }
 
     /**
-     * Thá»i gian upload
+     * Thời gian upload
      */
     private LocalDateTime uploadedAt;
 
     /**
-     * ThÃ´ng tin lá»—i náº¿u cÃ³
+     * Thông tin lỗi nếu có
      */
     private String error;
 
     /**
-     * Danh má»¥c file
+     * Danh mục file
      */
     private String category;
 
     /**
-     * ThÃ´ng tin báº£o máº­t
+     * Thông tin bảo mật
      */
     private SecurityInfo securityInfo;
 
     /**
-     * ThÃ´ng tin quÃ©t virus
+     * Thông tin quét virus
      */
     private VirusScanInfo virusScanInfo;
 
     /**
-     * Metadata cá»§a file
+     * Metadata của file
      */
     private FileMetadata metadata;
 
     /**
-     * Danh sÃ¡ch thumbnails (cho image files)
+     * Danh sách thumbnails (cho image files)
      */
     private List<String> thumbnails;
 
@@ -180,14 +180,14 @@ public class FileUploadResponse {
     }
 
     /**
-     * Kiá»ƒm tra xem file cÃ³ pháº£i lÃ  image khÃ´ng
+     * Kiểm tra xem file có phải là image không
      */
     public boolean isImage() {
         return mimeType != null && mimeType.startsWith("image/");
     }
 
     /**
-     * Kiá»ƒm tra xem file cÃ³ pháº£i lÃ  document khÃ´ng
+     * Kiểm tra xem file có phải là document không
      */
     public boolean isDocument() {
         return mimeType != null && (
@@ -198,29 +198,27 @@ public class FileUploadResponse {
     }
 
     /**
-     * Láº¥y URL cá»§a thumbnail vá»›i kÃ­ch thÆ°á»›c cá»¥ thá»ƒ
+     * Lấy URL của thumbnail với kích thước cụ thể
      */
     public String getThumbnailUrl(String size) {
         if (thumbnails == null || thumbnails.isEmpty()) {
             return null;
         }
-        
-        // TÃ¬m thumbnail vá»›i size phÃ¹ há»£p
+
         for (String thumbnail : thumbnails) {
             if (thumbnail.contains("_" + size + ".")) {
                 return "/uploads/" + thumbnail;
             }
         }
-        
-        // Return first thumbnail if specific size not found
+
         return "/uploads/" + thumbnails.get(0);
     }
 
     /**
      * Create success result
      */
-    public static FileUploadResponse success(Long fileId, String originalFilename, String filename, 
-                                         String filePath, Long fileSize, String mimeType, String category) {
+    public static FileUploadResponse success(Long fileId, String originalFilename, String filename,
+                                             String filePath, Long fileSize, String mimeType, String category) {
         return FileUploadResponse.builder()
             .success(true)
             .fileId(fileId)
@@ -235,7 +233,7 @@ public class FileUploadResponse {
     }
 
     /**
-     * Create simple success result (tÆ°Æ¡ng thÃ­ch vá»›i version cÅ©)
+     * Create simple success result (tương thích với version cũ)
      */
     public static FileUploadResponse success(String fileName, String fileUrl, String fileType, long size) {
         return FileUploadResponse.builder()
@@ -298,5 +296,28 @@ public class FileUploadResponse {
             .format(format)
             .build());
         return this;
+    }
+
+    // ✅ Constructor tương thích với code cũ
+    public FileUploadResponse(String fileName, String fileUrl, String fileType, long size) {
+        this.filename = fileName;
+        this.fileUrl = fileUrl;
+        this.mimeType = fileType;
+        this.fileSize = size;
+        this.success = true;
+        this.uploadedAt = LocalDateTime.now();
+    }
+
+    // ✅ Custom builder methods để hỗ trợ code cũ
+    public static class FileUploadResponseBuilder {
+        public FileUploadResponseBuilder fileType(String fileType) {
+            this.mimeType = fileType;
+            return this;
+        }
+
+        public FileUploadResponseBuilder size(long size) {
+            this.fileSize = size;
+            return this;
+        }
     }
 }

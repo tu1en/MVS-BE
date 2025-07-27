@@ -72,4 +72,11 @@ public class AssignmentDto {
         this.submissionStatus = null;
         this.score = null;
     }
+    
+    // Constructor needed by ClassroomMapper (simple version)
+    public AssignmentDto(Long id, String title, LocalDateTime dueDate) {
+        this.id = id;
+        this.title = title;
+        this.dueDate = dueDate;
+    }
 } 

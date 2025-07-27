@@ -13,7 +13,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
  * Configuration for Jackson ObjectMapper and CORS
  * Production: update allowed origins and methods
  */
-@Configuration
+@Configuration("doprojectWebConfig")
 public class WebConfig implements WebMvcConfigurer {
     
     /**

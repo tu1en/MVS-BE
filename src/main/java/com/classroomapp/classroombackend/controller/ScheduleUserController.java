@@ -21,11 +21,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@RestController
-@RequestMapping("/api/schedules")
+@RestController("scheduleUserController")
+@RequestMapping("/api/v1/users/schedules")
 @RequiredArgsConstructor
 @Slf4j
-public class ScheduleController {
+public class ScheduleUserController {
 
     private final ScheduleService scheduleService;
 
@@ -55,7 +55,7 @@ public class ScheduleController {
 
     @GetMapping("/classroom/{classroomId}")
     public ResponseEntity<List<ScheduleDto>> getSchedulesByClassroomId(@PathVariable Long classroomId) {
-        log.info("GET /api/schedules/classroom/{} - Fetching schedules for classroom", classroomId);
+        log.info("GET /api/v1/users/schedules/classroom/{} - Fetching schedules for classroom", classroomId);
         List<ScheduleDto> schedules = scheduleService.getSchedulesByClassroomId(classroomId);
         log.info("Found {} schedules for classroom ID {}", schedules.size(), classroomId);
         return ResponseEntity.ok(schedules);
@@ -63,7 +63,7 @@ public class ScheduleController {
 
     @GetMapping("/{scheduleId}/lectures")
     public ResponseEntity<List<LectureDto>> getLecturesBySchedule(@PathVariable Long scheduleId) {
-        log.info("GET /api/schedules/{}/lectures - Fetching lectures for schedule", scheduleId);
+        log.info("GET /api/v1/users/schedules/{}/lectures - Fetching lectures for schedule", scheduleId);
         List<LectureDto> lectures = scheduleService.getLecturesByScheduleId(scheduleId);
         log.info("Found {} lectures for schedule ID {}", lectures.size(), scheduleId);
         return ResponseEntity.ok(lectures);
@@ -91,7 +91,7 @@ public class ScheduleController {
     
     @PostMapping("/sample/{classroomId}")
     public ResponseEntity<String> createSampleSchedules(@PathVariable Long classroomId) {
-        log.info("POST /api/schedules/sample/{} - Creating sample schedules", classroomId);
+        log.info("POST /api/v1/users/schedules/sample/{} - Creating sample schedules", classroomId);
         try {
             scheduleService.createSampleSchedules(classroomId);
             return ResponseEntity.ok("Đã tạo lịch học mẫu cho lớp học");

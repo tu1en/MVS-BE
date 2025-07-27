@@ -256,7 +256,7 @@ public class LiveSessionPermissionServiceImpl implements LiveSessionPermissionSe
                     LiveSessionPermission permission = LiveSessionPermission.builder()
                             .liveStream(liveStream)
                             .student(student)
-                            .teacher(liveStream.getLecture().getTeacher()) // Default to lecture teacher
+                            .teacher(liveStream.getLecture().getClassroom().getTeacher()) // Default to lecture teacher
                             .permissionType(permissionType)
                             .permissionStatus(PermissionStatus.GRANTED)
                             .grantedAt(LocalDateTime.now())
@@ -441,7 +441,7 @@ public class LiveSessionPermissionServiceImpl implements LiveSessionPermissionSe
                 permission = LiveSessionPermission.builder()
                         .liveStream(liveStream)
                         .student(student)
-                        .teacher(liveStream.getLecture().getTeacher())
+                        .teacher(liveStream.getLecture().getClassroom().getTeacher())
                         .permissionType(permissionType)
                         .permissionStatus(PermissionStatus.PENDING)
                         .reason(reason)

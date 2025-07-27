@@ -1,26 +1,31 @@
 package com.classroomapp.classroombackend.controller;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.classroomapp.classroombackend.dto.StudentMessageDto;
-import com.classroomapp.classroombackend.service.StudentMessageService;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.classroomapp.classroombackend.service.StudentMessageService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-
 @RestController
-@RequestMapping("/api/manager/messages")
-@PreAuthorize("hasRole('MANAGER')")
+@RequestMapping("/api/messages") // Changed to /api/messages
 @RequiredArgsConstructor
 @Slf4j
 public class ManagerMessagesController {
@@ -28,7 +33,8 @@ public class ManagerMessagesController {
     private final StudentMessageService messageService;
     private final UserRepository userRepository;
 
-    @GetMapping
+    @GetMapping("/manager/all") // Added /manager/all
+    @PreAuthorize("hasRole('MANAGER')") // Moved @PreAuthorize here
     public ResponseEntity<List<StudentMessageDto>> getAllMessages() {
         log.info("Manager requesting all messages");
         try {
@@ -84,7 +90,8 @@ public class ManagerMessagesController {
         return mockMessages;
     }
 
-    @GetMapping("/conversations")
+    @GetMapping("/manager/conversations") // Added /manager/conversations
+    @PreAuthorize("hasRole('MANAGER')") // Added @PreAuthorize
     public ResponseEntity<List<Map<String, Object>>> getAllConversations() {
         log.info("Manager requesting all conversations overview");
         
@@ -110,7 +117,8 @@ public class ManagerMessagesController {
         return ResponseEntity.ok(conversations);
     }
 
-    @GetMapping("/conversation/{userId1}/{userId2}")
+    @GetMapping("/manager/conversation/{userId1}/{userId2}") // Added /manager/conversation
+    @PreAuthorize("hasRole('MANAGER')") // Added @PreAuthorize
     public ResponseEntity<List<StudentMessageDto>> getConversation(
             @PathVariable Long userId1, 
             @PathVariable Long userId2) {
@@ -119,7 +127,8 @@ public class ManagerMessagesController {
         return ResponseEntity.ok(messages);
     }
 
-    @PostMapping("/send")
+    @PostMapping("/manager/send") // Added /manager/send
+    @PreAuthorize("hasRole('MANAGER')") // Added @PreAuthorize
     public ResponseEntity<StudentMessageDto> sendMessage(
             @RequestBody StudentMessageDto messageDto,
             Authentication authentication) {
@@ -137,7 +146,8 @@ public class ManagerMessagesController {
         }
     }
 
-    @GetMapping("/statistics")
+    @GetMapping("/manager/statistics") // Added /manager/statistics
+    @PreAuthorize("hasRole('MANAGER')") // Added @PreAuthorize
     public ResponseEntity<Map<String, Object>> getMessageStatistics() {
         log.info("Manager requesting message statistics");
         
@@ -150,11 +160,40 @@ public class ManagerMessagesController {
         return ResponseEntity.ok(stats);
     }
 
-    @PutMapping("/{messageId}/read")
+    @PutMapping("/manager/{messageId}/read") // Added /manager/{messageId}/read
+    @PreAuthorize("hasRole('MANAGER')") // Added @PreAuthorize
     public ResponseEntity<StudentMessageDto> markMessageAsRead(@PathVariable Long messageId) {
         log.info("Manager marking message {} as read", messageId);
         StudentMessageDto message = messageService.markAsRead(messageId);
         return ResponseEntity.ok(message);
+    }
+
+    // Endpoint mới cho unread count (không cần role MANAGER)
+    @GetMapping("/dashboard/unread-count")
+    @PreAuthorize("hasAnyRole('STUDENT', 'MANAGER', 'TEACHER')")
+    public ResponseEntity<Map<String, Object>> getUnreadMessageCount(Authentication authentication) {
+        log.info("Getting unread message count for user");
+        
+        try {
+            Long userId = getUserIdFromAuthentication(authentication);
+            Long unreadCount = messageService.countUnreadMessages(userId);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("count", unreadCount);
+            response.put("status", "success");
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error getting unread message count: {}", e.getMessage(), e);
+            
+            // Return fallback data
+            Map<String, Object> response = new HashMap<>();
+            response.put("count", 0);
+            response.put("status", "error");
+            response.put("message", e.getMessage());
+            
+            return ResponseEntity.ok(response);
+        }
     }
 
     // Helper method to extract user ID from authentication

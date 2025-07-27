@@ -16,6 +16,8 @@ public class SyllabusDto {
     private String title;
     
     private String content;
+    private String subject;
+
     
     private String learningObjectives;
     
@@ -24,4 +26,6 @@ public class SyllabusDto {
     private String gradingCriteria;
     
     private Long classroomId;
+    
+    private String classroomName;
 }

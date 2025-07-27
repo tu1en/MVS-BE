@@ -21,4 +21,8 @@ public class CreateClassroomDto {
     private String section;
     
     private String subject;
+
+    private Long teacherId;
+
+    private Long courseId;
 } 

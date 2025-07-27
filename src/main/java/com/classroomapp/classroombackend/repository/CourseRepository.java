@@ -11,9 +11,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.classroomapp.classroombackend.entity.Course;
-import com.classroomapp.classroombackend.model.classroommanagement.Syllabus;
 import com.classroomapp.classroombackend.entity.enumeration.CourseStatus;
+import com.classroomapp.classroombackend.entity.enumeration.CourseTeacherStatus;
+import com.classroomapp.classroombackend.model.classroommanagement.Course;
+import com.classroomapp.classroombackend.model.classroommanagement.Syllabus;
 
 @Repository
 public interface CourseRepository extends JpaRepository<Course, Long> {
@@ -35,7 +36,7 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
            "c.syllabus.subject LIKE LOWER(CONCAT('%', :subject, '%')) AND " +
            "c.isDeleted = false AND " +
            "(:status IS NULL OR c.status = :status)")
-    List<Course> findBySubjectAndStatus(@Param("subject") String subject,@Param("status") CourseStatus status);
+    List<Course> findBySubjectAndStatus(@Param("subject") String subject, @Param("status") CourseStatus status);
 
     // Vietnamese search
     @Query("SELECT c FROM Course c WHERE " +
@@ -76,11 +77,33 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     // Find courses starting after date
     List<Course> findByStartDateAfterAndIsDeletedFalseOrderByStartDateAsc(LocalDate startDate);
 
-    // Find courses without teachers
-    @Query("SELECT c FROM Course c WHERE c.id NOT IN " +
-           "(SELECT ct.course.id FROM CourseTeacher ct WHERE ct.isActive = true AND ct.status = 'ACCEPTED')" +
-           "AND c.isDeleted = false AND c.status = 'ACTIVE'")
-    Page<Course> findCoursesWithoutTeacher(Pageable pageable);
+    /**
+     * ✅ Fixed Method: Find courses without teachers (HQL with enum)
+     */
+    @Query("SELECT c FROM Course c " +
+           "WHERE c.id NOT IN (" +
+           "SELECT ct.course.id FROM CourseTeacher ct " +
+           "WHERE ct.isActive = true AND ct.status = :teacherStatus) " +
+           "AND c.isDeleted = false AND c.status = :courseStatus")
+    Page<Course> findCoursesWithoutTeacher(
+            @Param("teacherStatus") CourseTeacherStatus teacherStatus,
+            @Param("courseStatus") CourseStatus courseStatus,
+            Pageable pageable);
+
+    /**
+     * ✅ Alternative: Native Query version
+     */
+    @Query(value = "SELECT * FROM courses c WHERE c.id NOT IN (" +
+                   "SELECT course_id FROM course_teachers ct WHERE ct.is_active = true AND ct.status = :teacherStatus) " +
+                   "AND c.is_deleted = false AND c.status = :courseStatus",
+           countQuery = "SELECT COUNT(*) FROM courses c WHERE c.id NOT IN (" +
+                        "SELECT course_id FROM course_teachers ct WHERE ct.is_active = true AND ct.status = :teacherStatus) " +
+                        "AND c.is_deleted = false AND c.status = :courseStatus",
+           nativeQuery = true)
+    Page<Course> findCoursesWithoutTeacherNative(
+            @Param("teacherStatus") String teacherStatus,
+            @Param("courseStatus") String courseStatus,
+            Pageable pageable);
 
     // Find active courses with count
     @Query("SELECT COUNT(c) FROM Course c WHERE c.isDeleted = false AND c.status = 'ACTIVE'")

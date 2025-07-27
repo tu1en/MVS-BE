@@ -24,14 +24,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.classroomapp.classroombackend.dto.ApiResponse;
+import com.doproject.common.ApiResponse;
 import com.classroomapp.classroombackend.dto.hrmanagement.CreateShiftScheduleDto;
 import com.classroomapp.classroombackend.dto.hrmanagement.ShiftScheduleDto;
 import com.classroomapp.classroombackend.dto.hrmanagement.UpdateShiftScheduleDto;
 import com.classroomapp.classroombackend.model.hrmanagement.ShiftSchedule;
 import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.service.UserService;
 import com.classroomapp.classroombackend.service.hrmanagement.shift.ShiftScheduleService;
-import com.classroomapp.classroombackend.service.usermanagement.UserService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -44,14 +44,14 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * REST Controller cho Shift Schedule Management
- * Quáº£n lÃ½ lifecycle cá»§a lá»‹ch lÃ m viá»‡c (Draft â†’ Published â†’ Archived)
+ * Quản lý lifecycle của lịch làm việc (Draft → Published → Archived)
  */
 @RestController
 @RequestMapping("/api/hr/shift-schedules")
 @RequiredArgsConstructor
 @Slf4j
 @Validated
-@Tag(name = "Shift Schedule Management", description = "APIs cho quáº£n lÃ½ lá»‹ch lÃ m viá»‡c")
+@Tag(name = "Shift Schedule Management", description = "APIs cho quản lý lịch làm việc")
 @SecurityRequirement(name = "bearerAuth")
 public class ShiftScheduleController {
 
@@ -59,21 +59,21 @@ public class ShiftScheduleController {
     private final UserService userService;
     private final ModelMapper modelMapper;
 
-    @Operation(summary = "TÃ¬m kiáº¿m shift schedules", 
-               description = "TÃ¬m kiáº¿m lá»‹ch lÃ m viá»‡c vá»›i filters vÃ  pagination")
+    @Operation(summary = "Tìm kiếm shift schedules", 
+               description = "Tìm kiếm lịch làm việc với filters và pagination")
     @GetMapping("/search")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER') or hasRole('TEACHER') or hasRole('ACCOUNTANT')")
     public ResponseEntity<ApiResponse<Page<ShiftScheduleDto>>> searchSchedules(
-            @Parameter(description = "Tráº¡ng thÃ¡i schedule") @RequestParam(required = false) ShiftSchedule.ScheduleStatus status,
-            @Parameter(description = "Loáº¡i schedule") @RequestParam(required = false) ShiftSchedule.ScheduleType scheduleType,
-            @Parameter(description = "ID ngÆ°á»i táº¡o") @RequestParam(required = false) Long createdById,
-            @Parameter(description = "NgÃ y báº¯t Ä‘áº§u") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @Parameter(description = "NgÃ y káº¿t thÃºc") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
-            @Parameter(description = "Tá»« khÃ³a tÃ¬m kiáº¿m") @RequestParam(required = false) String search,
-            @Parameter(description = "Sá»‘ trang") @RequestParam(defaultValue = "0") @Min(0) int page,
-            @Parameter(description = "KÃ­ch thÆ°á»›c trang") @RequestParam(defaultValue = "10") @Min(1) int size) {
+            @Parameter(description = "Trạng thái schedule") @RequestParam(required = false) ShiftSchedule.ScheduleStatus status,
+            @Parameter(description = "Loại schedule") @RequestParam(required = false) ShiftSchedule.ScheduleType scheduleType,
+            @Parameter(description = "ID người tạo") @RequestParam(required = false) Long createdById,
+            @Parameter(description = "Ngày bắt đầu") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @Parameter(description = "Ngày kết thúc") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @Parameter(description = "Từ khóa tìm kiếm") @RequestParam(required = false) String search,
+            @Parameter(description = "Số trang") @RequestParam(defaultValue = "0") @Min(0) int page,
+            @Parameter(description = "Kích thước trang") @RequestParam(defaultValue = "10") @Min(1) int size) {
         
-        log.info("TÃ¬m kiáº¿m schedules vá»›i status: {}, type: {}", status, scheduleType);
+        log.info("Tìm kiếm schedules với status: {}, type: {}", status, scheduleType);
 
         Pageable pageable = PageRequest.of(page, size);
         Page<ShiftSchedule> schedules = shiftScheduleService.searchSchedules(
@@ -82,296 +82,296 @@ public class ShiftScheduleController {
         Page<ShiftScheduleDto> scheduleDtos = schedules.map(schedule -> 
             modelMapper.map(schedule, ShiftScheduleDto.class));
 
-        return ResponseEntity.ok(ApiResponse.success(scheduleDtos, "TÃ¬m kiáº¿m schedules thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success("Tìm kiếm schedules thành công", scheduleDtos));
     }
 
-    @Operation(summary = "Láº¥y schedule theo ID", 
-               description = "Láº¥y thÃ´ng tin chi tiáº¿t cá»§a schedule")
+    @Operation(summary = "Lấy schedule theo ID", 
+               description = "Lấy thông tin chi tiết của schedule")
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER') or hasRole('TEACHER') or hasRole('ACCOUNTANT')")
     public ResponseEntity<ApiResponse<ShiftScheduleDto>> getScheduleById(
-            @Parameter(description = "ID cá»§a schedule") @PathVariable Long id) {
+            @Parameter(description = "ID của schedule") @PathVariable Long id) {
         
-        log.info("Láº¥y schedule vá»›i ID: {}", id);
+        log.info("Lấy schedule với ID: {}", id);
 
         ShiftSchedule schedule = shiftScheduleService.findById(id)
             .orElseThrow(() -> new com.classroomapp.classroombackend.exception.ResourceNotFoundException(
-                "KhÃ´ng tÃ¬m tháº¥y schedule vá»›i ID: " + id));
+                "Không tìm thấy schedule với ID: " + id));
 
         ShiftScheduleDto scheduleDto = modelMapper.map(schedule, ShiftScheduleDto.class);
-        return ResponseEntity.ok(ApiResponse.success(scheduleDto, "Láº¥y schedule thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success("Lấy schedule thành công", scheduleDto));
     }
 
-    @Operation(summary = "Táº¡o schedule má»›i", 
-               description = "Táº¡o lá»‹ch lÃ m viá»‡c má»›i (chá»‰ ADMIN vÃ  MANAGER)")
+    @Operation(summary = "Tạo schedule mới", 
+               description = "Tạo lịch làm việc mới (chỉ ADMIN và MANAGER)")
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<ShiftScheduleDto>> createSchedule(
-            @Parameter(description = "ThÃ´ng tin schedule má»›i") @Valid @RequestBody CreateShiftScheduleDto createDto,
+            @Parameter(description = "Thông tin schedule mới") @Valid @RequestBody CreateShiftScheduleDto createDto,
             Authentication authentication) {
         
-        log.info("Táº¡o schedule má»›i: {} bá»Ÿi user: {}", createDto.getScheduleName(), authentication.getName());
+        log.info("Tạo schedule mới: {} bởi user: {}", createDto.getScheduleName(), authentication.getName());
 
         ShiftSchedule schedule = modelMapper.map(createDto, ShiftSchedule.class);
         
         // Set creator from authentication
         User creator = userService.findByEmail(authentication.getName())
             .orElseThrow(() -> new com.classroomapp.classroombackend.exception.ResourceNotFoundException(
-                "KhÃ´ng tÃ¬m tháº¥y user: " + authentication.getName()));
+                "Không tìm thấy user: " + authentication.getName()));
         schedule.setCreatedBy(creator);
 
         ShiftSchedule created = shiftScheduleService.createSchedule(schedule);
         ShiftScheduleDto createdDto = modelMapper.map(created, ShiftScheduleDto.class);
 
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success(createdDto, "Táº¡o schedule thÃ nh cÃ´ng"));
+            .body(ApiResponse.success("Tạo schedule thành công", createdDto));
     }
 
-    @Operation(summary = "Cáº­p nháº­t schedule", 
-               description = "Cáº­p nháº­t thÃ´ng tin schedule (chá»‰ draft schedules)")
+    @Operation(summary = "Cập nhật schedule", 
+               description = "Cập nhật thông tin schedule (chỉ draft schedules)")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<ShiftScheduleDto>> updateSchedule(
-            @Parameter(description = "ID cá»§a schedule") @PathVariable Long id,
-            @Parameter(description = "ThÃ´ng tin cáº­p nháº­t") @Valid @RequestBody UpdateShiftScheduleDto updateDto) {
+            @Parameter(description = "ID của schedule") @PathVariable Long id,
+            @Parameter(description = "Thông tin cập nhật") @Valid @RequestBody UpdateShiftScheduleDto updateDto) {
         
-        log.info("Cáº­p nháº­t schedule ID: {}", id);
+        log.info("Cập nhật schedule ID: {}", id);
 
         ShiftSchedule schedule = modelMapper.map(updateDto, ShiftSchedule.class);
         ShiftSchedule updated = shiftScheduleService.updateSchedule(id, schedule);
         ShiftScheduleDto updatedDto = modelMapper.map(updated, ShiftScheduleDto.class);
 
-        return ResponseEntity.ok(ApiResponse.success(updatedDto, "Cáº­p nháº­t schedule thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật schedule thành công", updatedDto));
     }
 
-    @Operation(summary = "XÃ³a schedule", 
-               description = "XÃ³a schedule (chá»‰ draft schedules khÃ´ng cÃ³ assignments)")
+    @Operation(summary = "Xóa schedule", 
+               description = "Xóa schedule (chỉ draft schedules không có assignments)")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSchedule(
-            @Parameter(description = "ID cá»§a schedule") @PathVariable Long id) {
+            @Parameter(description = "ID của schedule") @PathVariable Long id) {
         
-        log.info("XÃ³a schedule ID: {}", id);
+        log.info("Xóa schedule ID: {}", id);
 
         shiftScheduleService.deleteSchedule(id);
-        return ResponseEntity.ok(ApiResponse.success(null, "XÃ³a schedule thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success("Xóa schedule thành công", null));
     }
 
-    @Operation(summary = "Xuáº¥t báº£n schedule", 
-               description = "Xuáº¥t báº£n schedule tá»« draft sang published")
+    @Operation(summary = "Xuất bản schedule", 
+               description = "Xuất bản schedule từ draft sang published")
     @PostMapping("/{id}/publish")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<ShiftScheduleDto>> publishSchedule(
-            @Parameter(description = "ID cá»§a schedule") @PathVariable Long id,
+            @Parameter(description = "ID của schedule") @PathVariable Long id,
             Authentication authentication) {
         
-        log.info("Xuáº¥t báº£n schedule ID: {} bá»Ÿi user: {}", id, authentication.getName());
+        log.info("Xuất bản schedule ID: {} bởi user: {}", id, authentication.getName());
 
         User publisher = userService.findByEmail(authentication.getName())
             .orElseThrow(() -> new com.classroomapp.classroombackend.exception.ResourceNotFoundException(
-                "KhÃ´ng tÃ¬m tháº¥y user: " + authentication.getName()));
+                "Không tìm thấy user: " + authentication.getName()));
 
         ShiftSchedule published = shiftScheduleService.publishSchedule(id, publisher);
         ShiftScheduleDto publishedDto = modelMapper.map(published, ShiftScheduleDto.class);
 
-        return ResponseEntity.ok(ApiResponse.success(publishedDto, "Xuáº¥t báº£n schedule thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success("Xuất bản schedule thành công", publishedDto));
     }
 
-    @Operation(summary = "LÆ°u trá»¯ schedule", 
-               description = "LÆ°u trá»¯ schedule Ä‘Ã£ káº¿t thÃºc")
+    @Operation(summary = "Lưu trữ schedule", 
+               description = "Lưu trữ schedule đã kết thúc")
     @PostMapping("/{id}/archive")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<ShiftScheduleDto>> archiveSchedule(
-            @Parameter(description = "ID cá»§a schedule") @PathVariable Long id) {
+            @Parameter(description = "ID của schedule") @PathVariable Long id) {
         
-        log.info("LÆ°u trá»¯ schedule ID: {}", id);
+        log.info("Lưu trữ schedule ID: {}", id);
 
         ShiftSchedule archived = shiftScheduleService.archiveSchedule(id);
         ShiftScheduleDto archivedDto = modelMapper.map(archived, ShiftScheduleDto.class);
 
-        return ResponseEntity.ok(ApiResponse.success(archivedDto, "LÆ°u trá»¯ schedule thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success("Lưu trữ schedule thành công", archivedDto));
     }
 
-    @Operation(summary = "Há»§y schedule", 
-               description = "Há»§y schedule vá»›i lÃ½ do")
+    @Operation(summary = "Hủy schedule", 
+               description = "Hủy schedule với lý do")
     @PostMapping("/{id}/cancel")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<Void>> cancelSchedule(
-            @Parameter(description = "ID cá»§a schedule") @PathVariable Long id,
-            @Parameter(description = "LÃ½ do há»§y") @RequestParam String reason) {
+            @Parameter(description = "ID của schedule") @PathVariable Long id,
+            @Parameter(description = "Lý do hủy") @RequestParam String reason) {
         
-        log.info("Há»§y schedule ID: {} vá»›i lÃ½ do: {}", id, reason);
+        log.info("Hủy schedule ID: {} với lý do: {}", id, reason);
 
         shiftScheduleService.cancelSchedule(id, reason);
-        return ResponseEntity.ok(ApiResponse.success(null, "Há»§y schedule thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success("Hủy schedule thành công", null));
     }
 
-    @Operation(summary = "Láº¥y schedules theo tráº¡ng thÃ¡i", 
-               description = "Láº¥y táº¥t cáº£ schedules theo tráº¡ng thÃ¡i cá»¥ thá»ƒ")
+    @Operation(summary = "Lấy schedules theo trạng thái", 
+               description = "Lấy tất cả schedules theo trạng thái cụ thể")
     @GetMapping("/by-status/{status}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER') or hasRole('TEACHER') or hasRole('ACCOUNTANT')")
     public ResponseEntity<ApiResponse<List<ShiftScheduleDto>>> getSchedulesByStatus(
-            @Parameter(description = "Tráº¡ng thÃ¡i schedule") @PathVariable ShiftSchedule.ScheduleStatus status) {
+            @Parameter(description = "Trạng thái schedule") @PathVariable ShiftSchedule.ScheduleStatus status) {
         
-        log.info("Láº¥y schedules theo status: {}", status);
+        log.info("Lấy schedules theo status: {}", status);
 
         List<ShiftSchedule> schedules = shiftScheduleService.findByStatus(status);
         List<ShiftScheduleDto> scheduleDtos = schedules.stream()
             .map(schedule -> modelMapper.map(schedule, ShiftScheduleDto.class))
             .collect(Collectors.toList());
 
-        return ResponseEntity.ok(ApiResponse.success(scheduleDtos, "Láº¥y schedules theo status thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success("Lấy schedules theo status thành công", scheduleDtos));
     }
 
-    @Operation(summary = "Láº¥y active schedules", 
-               description = "Láº¥y táº¥t cáº£ schedules Ä‘ang hoáº¡t Ä‘á»™ng")
+    @Operation(summary = "Lấy active schedules", 
+               description = "Lấy tất cả schedules đang hoạt động")
     @GetMapping("/active")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER') or hasRole('TEACHER') or hasRole('ACCOUNTANT')")
     public ResponseEntity<ApiResponse<List<ShiftScheduleDto>>> getActiveSchedules() {
-        log.info("Láº¥y active schedules");
+        log.info("Lấy active schedules");
 
         List<ShiftSchedule> schedules = shiftScheduleService.findActiveSchedules();
         List<ShiftScheduleDto> scheduleDtos = schedules.stream()
             .map(schedule -> modelMapper.map(schedule, ShiftScheduleDto.class))
             .collect(Collectors.toList());
 
-        return ResponseEntity.ok(ApiResponse.success(scheduleDtos, "Láº¥y active schedules thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success("Lấy active schedules thành công", scheduleDtos));
     }
 
-    @Operation(summary = "Láº¥y active schedule cho ngÃ y", 
-               description = "Láº¥y schedule Ä‘ang hoáº¡t Ä‘á»™ng cho ngÃ y cá»¥ thá»ƒ")
+    @Operation(summary = "Lấy active schedule cho ngày", 
+               description = "Lấy schedule đang hoạt động cho ngày cụ thể")
     @GetMapping("/active-for-date/{date}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER') or hasRole('TEACHER') or hasRole('ACCOUNTANT')")
     public ResponseEntity<ApiResponse<ShiftScheduleDto>> getActiveScheduleForDate(
-            @Parameter(description = "NgÃ y") @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+            @Parameter(description = "Ngày") @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         
-        log.info("Láº¥y active schedule cho ngÃ y: {}", date);
+        log.info("Lấy active schedule cho ngày: {}", date);
 
         ShiftSchedule schedule = shiftScheduleService.findActiveScheduleForDate(date)
             .orElseThrow(() -> new com.classroomapp.classroombackend.exception.ResourceNotFoundException(
-                "KhÃ´ng cÃ³ schedule hoáº¡t Ä‘á»™ng cho ngÃ y: " + date));
+                "Không có schedule hoạt động cho ngày: " + date));
 
         ShiftScheduleDto scheduleDto = modelMapper.map(schedule, ShiftScheduleDto.class);
-        return ResponseEntity.ok(ApiResponse.success(scheduleDto, "Láº¥y active schedule thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success("Lấy active schedule thành công", scheduleDto));
     }
 
     @Operation(summary = "Generate weekly schedule", 
-               description = "Tá»± Ä‘á»™ng táº¡o lá»‹ch lÃ m viá»‡c hÃ ng tuáº§n")
+               description = "Tự động tạo lịch làm việc hàng tuần")
     @PostMapping("/generate-weekly")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<ShiftScheduleDto>> generateWeeklySchedule(
-            @Parameter(description = "NgÃ y báº¯t Ä‘áº§u tuáº§n") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @Parameter(description = "TÃªn schedule") @RequestParam String name,
+            @Parameter(description = "Ngày bắt đầu tuần") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @Parameter(description = "Tên schedule") @RequestParam String name,
             Authentication authentication) {
         
-        log.info("Generate weekly schedule tá»« {} vá»›i tÃªn: {}", startDate, name);
+        log.info("Generate weekly schedule từ {} với tên: {}", startDate, name);
 
         User creator = userService.findByEmail(authentication.getName())
             .orElseThrow(() -> new com.classroomapp.classroombackend.exception.ResourceNotFoundException(
-                "KhÃ´ng tÃ¬m tháº¥y user: " + authentication.getName()));
+                "Không tìm thấy user: " + authentication.getName()));
 
         ShiftSchedule generated = shiftScheduleService.generateWeeklySchedule(startDate, name, creator);
         ShiftScheduleDto generatedDto = modelMapper.map(generated, ShiftScheduleDto.class);
 
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success(generatedDto, "Generate weekly schedule thÃ nh cÃ´ng"));
+            .body(ApiResponse.success("Generate weekly schedule thành công", generatedDto));
     }
 
     @Operation(summary = "Generate monthly schedule", 
-               description = "Tá»± Ä‘á»™ng táº¡o lá»‹ch lÃ m viá»‡c hÃ ng thÃ¡ng")
+               description = "Tự động tạo lịch làm việc hàng tháng")
     @PostMapping("/generate-monthly")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<ShiftScheduleDto>> generateMonthlySchedule(
-            @Parameter(description = "NgÃ y trong thÃ¡ng") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @Parameter(description = "TÃªn schedule") @RequestParam String name,
+            @Parameter(description = "Ngày trong tháng") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @Parameter(description = "Tên schedule") @RequestParam String name,
             Authentication authentication) {
         
-        log.info("Generate monthly schedule cho thÃ¡ng {} vá»›i tÃªn: {}", startDate, name);
+        log.info("Generate monthly schedule cho tháng {} với tên: {}", startDate, name);
 
         User creator = userService.findByEmail(authentication.getName())
             .orElseThrow(() -> new com.classroomapp.classroombackend.exception.ResourceNotFoundException(
-                "KhÃ´ng tÃ¬m tháº¥y user: " + authentication.getName()));
+                "Không tìm thấy user: " + authentication.getName()));
 
         ShiftSchedule generated = shiftScheduleService.generateMonthlySchedule(startDate, name, creator);
         ShiftScheduleDto generatedDto = modelMapper.map(generated, ShiftScheduleDto.class);
 
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success(generatedDto, "Generate monthly schedule thÃ nh cÃ´ng"));
+            .body(ApiResponse.success("Generate monthly schedule thành công", generatedDto));
     }
 
     @Operation(summary = "Copy schedule", 
-               description = "Copy schedule tá»« schedule khÃ¡c")
+               description = "Copy schedule từ schedule khác")
     @PostMapping("/{sourceId}/copy")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<ShiftScheduleDto>> copySchedule(
             @Parameter(description = "ID source schedule") @PathVariable Long sourceId,
-            @Parameter(description = "NgÃ y báº¯t Ä‘áº§u má»›i") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate newStartDate,
-            @Parameter(description = "TÃªn schedule má»›i") @RequestParam String newName) {
+            @Parameter(description = "Ngày bắt đầu mới") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate newStartDate,
+            @Parameter(description = "Tên schedule mới") @RequestParam String newName) {
         
-        log.info("Copy schedule tá»« ID: {} vá»›i start date: {}", sourceId, newStartDate);
+        log.info("Copy schedule từ ID: {} với start date: {}", sourceId, newStartDate);
 
         ShiftSchedule copied = shiftScheduleService.copySchedule(sourceId, newStartDate, newName);
         ShiftScheduleDto copiedDto = modelMapper.map(copied, ShiftScheduleDto.class);
 
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success(copiedDto, "Copy schedule thÃ nh cÃ´ng"));
+            .body(ApiResponse.success("Copy schedule thành công", copiedDto));
     }
 
-    @Operation(summary = "Láº¥y thá»‘ng kÃª schedules", 
-               description = "Láº¥y thá»‘ng kÃª tá»•ng quan vá» schedules")
+    @Operation(summary = "Lấy thống kê schedules", 
+               description = "Lấy thống kê tổng quan về schedules")
     @GetMapping("/statistics")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<ShiftScheduleService.ScheduleStatistics>> getScheduleStatistics(
-            @Parameter(description = "NgÃ y báº¯t Ä‘áº§u") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @Parameter(description = "NgÃ y káº¿t thÃºc") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+            @Parameter(description = "Ngày bắt đầu") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @Parameter(description = "Ngày kết thúc") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
         
-        log.info("Láº¥y schedule statistics tá»« {} Ä‘áº¿n {}", startDate, endDate);
+        log.info("Lấy schedule statistics từ {} đến {}", startDate, endDate);
 
         ShiftScheduleService.ScheduleStatistics stats = shiftScheduleService.getScheduleStatistics(startDate, endDate);
-        return ResponseEntity.ok(ApiResponse.success(stats, "Láº¥y thá»‘ng kÃª thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success("Lấy thống kê thành công", stats));
     }
 
     @Operation(summary = "Auto-archive old schedules", 
-               description = "Tá»± Ä‘á»™ng lÆ°u trá»¯ schedules cÅ©")
+               description = "Tự động lưu trữ schedules cũ")
     @PostMapping("/auto-archive")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Integer>> autoArchiveOldSchedules(
-            @Parameter(description = "Sá»‘ ngÃ y sau khi káº¿t thÃºc") @RequestParam(defaultValue = "30") int daysAfterEnd) {
+            @Parameter(description = "Số ngày sau khi kết thúc") @RequestParam(defaultValue = "30") int daysAfterEnd) {
         
-        log.info("Auto-archive schedules cÅ© hÆ¡n {} ngÃ y", daysAfterEnd);
+        log.info("Auto-archive schedules cũ hơn {} ngày", daysAfterEnd);
 
         int archived = shiftScheduleService.autoArchiveOldSchedules(daysAfterEnd);
-        return ResponseEntity.ok(ApiResponse.success(archived, 
-            "Auto-archive " + archived + " schedules thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success(
+            "Auto-archive " + archived + " schedules thành công", archived));
     }
 
     @Operation(summary = "Cleanup old drafts", 
-               description = "XÃ³a draft schedules cÅ© khÃ´ng sá»­ dá»¥ng")
+               description = "Xóa draft schedules cũ không sử dụng")
     @PostMapping("/cleanup-drafts")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Integer>> cleanupOldDrafts(
-            @Parameter(description = "Sá»‘ ngÃ y cÅ©") @RequestParam(defaultValue = "7") int daysOld) {
+            @Parameter(description = "Số ngày cũ") @RequestParam(defaultValue = "7") int daysOld) {
         
-        log.info("Cleanup draft schedules cÅ© hÆ¡n {} ngÃ y", daysOld);
+        log.info("Cleanup draft schedules cũ hơn {} ngày", daysOld);
 
         int deleted = shiftScheduleService.cleanupOldDrafts(daysOld);
-        return ResponseEntity.ok(ApiResponse.success(deleted, 
-            "Cleanup " + deleted + " draft schedules thÃ nh cÃ´ng"));
+        return ResponseEntity.ok(ApiResponse.success(
+            "Cleanup " + deleted + " draft schedules thành công", deleted));
     }
 
     @Operation(summary = "Validate schedule conflicts", 
-               description = "Kiá»ƒm tra xung Ä‘á»™t vá»›i schedules khÃ¡c")
+               description = "Kiểm tra xung đột với schedules khác")
     @PostMapping("/validate-conflicts")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<ShiftScheduleService.ScheduleConflictResult>> validateScheduleConflicts(
-            @Parameter(description = "ThÃ´ng tin schedule Ä‘á»ƒ kiá»ƒm tra") @Valid @RequestBody CreateShiftScheduleDto createDto) {
+            @Parameter(description = "Thông tin schedule để kiểm tra") @Valid @RequestBody CreateShiftScheduleDto createDto) {
         
         log.info("Validate conflicts cho schedule");
 
         ShiftSchedule schedule = modelMapper.map(createDto, ShiftSchedule.class);
         ShiftScheduleService.ScheduleConflictResult result = shiftScheduleService.validateScheduleConflicts(schedule);
 
-        return ResponseEntity.ok(ApiResponse.success(result, 
-            result.hasConflict() ? "PhÃ¡t hiá»‡n xung Ä‘á»™t" : "KhÃ´ng cÃ³ xung Ä‘á»™t"));
+        return ResponseEntity.ok(ApiResponse.success(
+            result.hasConflict() ? "Phát hiện xung đột" : "Không có xung đột", result));
     }
 }

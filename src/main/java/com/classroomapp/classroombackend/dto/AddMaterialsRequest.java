@@ -2,6 +2,8 @@ package com.classroomapp.classroombackend.dto;
 
 import java.util.List;
 
+import com.classroomapp.classroombackend.dto.common.FileUploadResponse;
+
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
 

@@ -4,7 +4,7 @@ import java.security.Principal;
 import java.util.List;
 
 import com.classroomapp.classroombackend.dto.CreateLectureDto;
-import com.classroomapp.classroombackend.dto.FileUploadResponse;
+import com.classroomapp.classroombackend.dto.common.FileUploadResponse;
 import com.classroomapp.classroombackend.dto.LectureDetailsDto;
 import com.classroomapp.classroombackend.dto.LectureDto;
 import com.classroomapp.classroombackend.dto.LectureMaterialDto;

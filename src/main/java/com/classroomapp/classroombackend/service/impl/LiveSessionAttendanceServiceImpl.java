@@ -69,7 +69,7 @@ public class LiveSessionAttendanceServiceImpl implements LiveSessionAttendanceSe
 
             Lecture lecture = lectureOpt.get();
             Classroom classroom = lecture.getClassroom();
-            User teacher = lecture.getTeacher();
+            User teacher = lecture.getClassroom().getTeacher();
 
             AttendanceSession attendanceSession = AttendanceSession.builder()
                     .lecture(lecture)

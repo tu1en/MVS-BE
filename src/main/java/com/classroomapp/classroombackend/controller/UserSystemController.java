@@ -18,64 +18,55 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.classroomapp.classroombackend.dto.UserDto;
 import com.classroomapp.classroombackend.dto.usermanagement.UpdateUserRolesRequest;
 import com.classroomapp.classroombackend.dto.usermanagement.UpdateUserStatusRequest;
-import com.classroomapp.classroombackend.dto.usermanagement.UserDTO;
 import com.classroomapp.classroombackend.exception.BusinessLogicException;
-import com.classroomapp.classroombackend.service.usermanagement.UserService;
+import com.classroomapp.classroombackend.service.UserService;
 
 import jakarta.validation.Valid;
 
-@RestController
-@RequestMapping("/api/admin/users")
+@RestController("userSystemController")
+@RequestMapping("/api/v1/system/users")
 @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-public class UserAdminController {
+public class UserSystemController {
 
     @Autowired
     private UserService userService;
 
     @GetMapping
-    public ResponseEntity<Page<UserDTO>> getAllUsers(
+    public ResponseEntity<Page<UserDto>> getAllUsers(
             @RequestParam(required = false) String keyword,
             @PageableDefault(size = 10, sort = "fullName") Pageable pageable) {
-        Page<UserDTO> users = userService.findAllUsers(keyword, pageable);
+        Page<UserDto> users = userService.findAllUsers(keyword, pageable);
         return ResponseEntity.ok(users);
     }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserDTO> createUser(
-            @Valid @RequestBody UserDTO UserDTO) {
-        UserDTO createdUser = userService.createUser(UserDTO);
-        return ResponseEntity.ok(createdUser);
+    public ResponseEntity<UserDto> createUser(@Valid @RequestBody UserDto userDto) {
+        return ResponseEntity.ok(userService.createUser(userDto));
     }
 
     @PutMapping("/{userId}/status")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserDTO> updateUserStatus(
-            @PathVariable Long userId,
+    public ResponseEntity<UserDto> updateUserStatus(@PathVariable Long userId,
             @Valid @RequestBody UpdateUserStatusRequest statusRequest) {
-        UserDTO updatedUser = userService.updateUserStatus(userId, statusRequest.getEnabled());
-        return ResponseEntity.ok(updatedUser);
+        return ResponseEntity.ok(userService.updateUserStatus(userId, statusRequest.getEnabled()));
     }
 
     @PutMapping("/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserDTO> updateUser(
-            @PathVariable Long userId,
-            @Valid @RequestBody UserDTO UserDTO) {
-        UserDTO updatedUser = userService.updateUser(userId, UserDTO);
-        return ResponseEntity.ok(updatedUser);
+    public ResponseEntity<UserDto> updateUser(@PathVariable Long userId, @Valid @RequestBody UserDto userDto) {
+        return ResponseEntity.ok(userService.updateUser(userId, userDto));
     }
 
     @PutMapping("/{userId}/roles")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> updateUserRoles(
-            @PathVariable Long userId,
+    public ResponseEntity<?> updateUserRoles(@PathVariable Long userId,
             @Valid @RequestBody UpdateUserRolesRequest rolesRequest) {
         try {
-            UserDTO updatedUser = userService.updateUserRoles(userId, rolesRequest.getRoles());
-            return ResponseEntity.ok(updatedUser);
+            return ResponseEntity.ok(userService.updateUserRoles(userId, rolesRequest.getRoles()));
         } catch (BusinessLogicException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
@@ -97,5 +88,11 @@ public class UserAdminController {
     public ResponseEntity<Void> deleteUser(@PathVariable Long userId) {
         userService.deleteUser(userId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/check-email")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Boolean>> checkEmailExists(@RequestParam String email) {
+        return ResponseEntity.ok(Map.of("exists", userService.emailExists(email)));
     }
 }

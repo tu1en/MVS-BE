@@ -51,4 +51,8 @@ public class AssignmentAttachment {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
     }
+
+    public String getFilePath() {
+        return this.fileUrl;
+    }
 } 

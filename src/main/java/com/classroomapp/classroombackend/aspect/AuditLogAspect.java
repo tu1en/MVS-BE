@@ -36,10 +36,10 @@ public class AuditLogAspect {
     private ObjectMapper objectMapper;
 
     @Pointcut("execution(* com.classroomapp.classroombackend.controller..*(..)) && " +
-              "!execution(* com.classroomapp.classroombackend.controller.administration.AdminController.getAuditLogs*(..))")
+              "!execution(* com.classroomapp.classroombackend.controller.administration.SystemAdminController.getAuditLogs*(..))")
     public void controllerMethods() {}
 
-    @Pointcut("execution(* com.classroomapp.classroombackend.controller.AuthController.*(..))")
+    @Pointcut("execution(* com.classroomapp.classroombackend.auth.controller.AuthController.*(..))")
     public void authenticationMethods() {}
 
     @Pointcut("(execution(* com.classroomapp.classroombackend.service..*Service.create*(..)) || " +

@@ -17,9 +17,6 @@ import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
 import com.classroomapp.classroombackend.service.VideoConferenceService;
 import com.classroomapp.classroombackend.service.classroommanagement.ClassroomService;
 
-/**
- * Implementation of VideoConferenceService
- */
 @Service
 public class VideoConferenceServiceImpl implements VideoConferenceService {
 
@@ -28,29 +25,64 @@ public class VideoConferenceServiceImpl implements VideoConferenceService {
     @Autowired
     private ClassroomService classroomService;
 
-    // In-memory storage for conference sessions (in production, use Redis or database)
+    // In-memory storage for conference sessions
     private final Map<String, Map<String, Object>> activeSessions = new ConcurrentHashMap<>();
     private final Map<String, List<Map<String, Object>>> sessionParticipants = new ConcurrentHashMap<>();
 
+    // ✅ Implement interface methods
     @Override
+    public void startConference(Long roomId) {
+        String sessionId = activeSessions.entrySet().stream()
+                .filter(entry -> roomId.equals(entry.getValue().get("classroomId")))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElse(null);
+
+        if (sessionId != null) {
+            startConferenceSession(sessionId);
+        } else {
+            throw new IllegalArgumentException("No session found for classroom: " + roomId);
+        }
+    }
+
+    @Override
+    public void endConference(Long roomId) {
+        String sessionId = activeSessions.entrySet().stream()
+                .filter(entry -> roomId.equals(entry.getValue().get("classroomId")))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElse(null);
+
+        if (sessionId != null) {
+            endConferenceSession(sessionId);
+        } else {
+            throw new IllegalArgumentException("No session found for classroom: " + roomId);
+        }
+    }
+
+    @Override
+    public boolean isConferenceActive(Long roomId) {
+        return activeSessions.values().stream()
+                .anyMatch(session -> roomId.equals(session.get("classroomId")) &&
+                        "active".equals(session.get("status")));
+    }
+
+    // ✅ Existing methods
     public Map<String, Object> createConferenceSession(Long classroomId, Map<String, Object> sessionData) {
         logger.info("Creating conference session for classroom ID: {}", classroomId);
 
-        // Validate classroom exists
         ClassroomDto classroom = classroomService.getClassroomById(classroomId);
         if (classroom == null) {
             throw new IllegalArgumentException("Classroom not found with id: " + classroomId);
         }
 
-        // Generate session ID
         String sessionId = generateRoomId(classroomId);
 
-        // Create session details
         Map<String, Object> session = new HashMap<>();
         session.put("sessionId", sessionId);
         session.put("roomId", "classroom_" + classroomId);
         session.put("classroomId", classroomId);
-        session.put("classroomName", classroom.getClassroomName()); // FIXED HERE
+        session.put("classroomName", classroom.getName()); // ✅ Fix field name
         session.put("status", "created");
         session.put("createdAt", LocalDateTime.now());
         session.put("participantCount", 0);
@@ -60,7 +92,6 @@ public class VideoConferenceServiceImpl implements VideoConferenceService {
         session.put("chatEnabled", sessionData.getOrDefault("chatEnabled", true));
         session.put("signalingUrl", "ws://localhost:8088/signaling");
 
-        // Store session
         activeSessions.put(sessionId, session);
         sessionParticipants.put(sessionId, new ArrayList<>());
 
@@ -68,49 +99,34 @@ public class VideoConferenceServiceImpl implements VideoConferenceService {
         return session;
     }
 
-    @Override
     public Map<String, Object> startConferenceSession(String sessionId) {
         logger.info("Starting conference session: {}", sessionId);
-
         Map<String, Object> session = activeSessions.get(sessionId);
-        if (session == null) {
-            throw new IllegalArgumentException("Conference session not found: " + sessionId);
-        }
+        if (session == null) throw new IllegalArgumentException("Conference session not found: " + sessionId);
 
         session.put("status", "active");
         session.put("startedAt", LocalDateTime.now());
 
-        logger.info("Started conference session: {}", sessionId);
         return session;
     }
 
-    @Override
     public Map<String, Object> endConferenceSession(String sessionId) {
         logger.info("Ending conference session: {}", sessionId);
-
         Map<String, Object> session = activeSessions.get(sessionId);
-        if (session == null) {
-            throw new IllegalArgumentException("Conference session not found: " + sessionId);
-        }
+        if (session == null) throw new IllegalArgumentException("Conference session not found: " + sessionId);
 
         session.put("status", "ended");
         session.put("endedAt", LocalDateTime.now());
         session.put("participantCount", 0);
-
-        // Clear participants
         sessionParticipants.put(sessionId, new ArrayList<>());
-
-        logger.info("Ended conference session: {}", sessionId);
 
         Map<String, Object> result = new HashMap<>();
         result.put("status", "ended");
         result.put("message", "Conference ended successfully");
         result.put("sessionId", sessionId);
-
         return result;
     }
 
-    @Override
     public Map<String, Object> getConferenceStatus(String sessionId) {
         Map<String, Object> session = activeSessions.get(sessionId);
         if (session == null) {
@@ -127,21 +143,15 @@ public class VideoConferenceServiceImpl implements VideoConferenceService {
         status.put("participantCount", session.get("participantCount"));
         status.put("classroomId", session.get("classroomId"));
         status.put("isActive", "active".equals(session.get("status")));
-
         return status;
     }
 
-    @Override
     public void addParticipant(String sessionId, String participantId, String participantName) {
         Map<String, Object> session = activeSessions.get(sessionId);
-        if (session == null) {
-            throw new IllegalArgumentException("Conference session not found: " + sessionId);
-        }
+        if (session == null) throw new IllegalArgumentException("Conference session not found: " + sessionId);
 
         List<Map<String, Object>> participants = sessionParticipants.get(sessionId);
-
-        boolean exists = participants.stream()
-                .anyMatch(p -> participantId.equals(p.get("participantId")));
+        boolean exists = participants.stream().anyMatch(p -> participantId.equals(p.get("participantId")));
 
         if (!exists) {
             Map<String, Object> participant = new HashMap<>();
@@ -155,24 +165,19 @@ public class VideoConferenceServiceImpl implements VideoConferenceService {
         }
     }
 
-    @Override
     public void removeParticipant(String sessionId, String participantId) {
         Map<String, Object> session = activeSessions.get(sessionId);
-        if (session == null) {
-            return;
-        }
+        if (session == null) return;
 
         List<Map<String, Object>> participants = sessionParticipants.get(sessionId);
         participants.removeIf(p -> participantId.equals(p.get("participantId")));
         session.put("participantCount", participants.size());
     }
 
-    @Override
     public List<Map<String, Object>> getActiveParticipants(String sessionId) {
         return sessionParticipants.getOrDefault(sessionId, new ArrayList<>());
     }
 
-    @Override
     public List<Map<String, Object>> getActiveSessions() {
         return activeSessions.values().stream()
                 .filter(session -> "active".equals(session.get("status")))
@@ -188,33 +193,22 @@ public class VideoConferenceServiceImpl implements VideoConferenceService {
                 .toList();
     }
 
-    @Override
     public List<Map<String, Object>> getSessionsByClassroom(Long classroomId) {
         return activeSessions.values().stream()
                 .filter(session -> classroomId.equals(session.get("classroomId")))
                 .toList();
     }
 
-    @Override
     public String generateRoomId(Long classroomId) {
         return "conference_" + classroomId + "_" + UUID.randomUUID().toString().substring(0, 8);
     }
 
-    @Override
     public boolean validateSessionData(Map<String, Object> sessionData) {
-        if (sessionData == null) {
-            return false;
-        }
-
+        if (sessionData == null) return false;
         Object maxParticipants = sessionData.get("maxParticipants");
-        if (maxParticipants instanceof Integer && (Integer) maxParticipants < 1) {
-            return false;
-        }
-
-        return true;
+        return !(maxParticipants instanceof Integer && (Integer) maxParticipants < 1);
     }
 
-    @Override
     public Map<String, Object> getWebRTCConfig() {
         Map<String, Object> config = new HashMap<>();
         List<Map<String, Object>> iceServers = new ArrayList<>();
@@ -229,11 +223,9 @@ public class VideoConferenceServiceImpl implements VideoConferenceService {
 
         config.put("iceServers", iceServers);
         config.put("iceCandidatePoolSize", 10);
-
         return config;
     }
 
-    @Override
     public void updateParticipantStatus(String sessionId, String participantId, String status) {
         List<Map<String, Object>> participants = sessionParticipants.get(sessionId);
         if (participants != null) {
@@ -244,31 +236,21 @@ public class VideoConferenceServiceImpl implements VideoConferenceService {
         }
     }
 
-    @Override
     public void setScreenSharingEnabled(String sessionId, boolean enabled) {
         Map<String, Object> session = activeSessions.get(sessionId);
-        if (session != null) {
-            session.put("screenSharingEnabled", enabled);
-        }
+        if (session != null) session.put("screenSharingEnabled", enabled);
     }
 
-    @Override
     public void setRecordingEnabled(String sessionId, boolean enabled) {
         Map<String, Object> session = activeSessions.get(sessionId);
-        if (session != null) {
-            session.put("recordingEnabled", enabled);
-        }
+        if (session != null) session.put("recordingEnabled", enabled);
     }
 
-    @Override
     public Map<String, Object> getSessionStatistics(String sessionId) {
         Map<String, Object> session = activeSessions.get(sessionId);
-        if (session == null) {
-            return new HashMap<>();
-        }
+        if (session == null) return new HashMap<>();
 
         List<Map<String, Object>> participants = sessionParticipants.get(sessionId);
-
         Map<String, Object> stats = new HashMap<>();
         stats.put("sessionId", sessionId);
         stats.put("totalParticipants", participants.size());
@@ -284,10 +266,7 @@ public class VideoConferenceServiceImpl implements VideoConferenceService {
 
     private long calculateSessionDuration(Map<String, Object> session) {
         LocalDateTime startedAt = (LocalDateTime) session.get("startedAt");
-        if (startedAt == null) {
-            return 0;
-        }
-
+        if (startedAt == null) return 0;
         LocalDateTime endTime = (LocalDateTime) session.getOrDefault("endedAt", LocalDateTime.now());
         return java.time.Duration.between(startedAt, endTime).toMinutes();
     }

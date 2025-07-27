@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
-import com.classroomapp.classroombackend.repository.classroommanagement.CourseRepository;
+import com.classroomapp.classroombackend.repository.CourseRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 
 @Component

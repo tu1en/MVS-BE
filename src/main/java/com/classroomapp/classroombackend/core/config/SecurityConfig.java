@@ -1,6 +1,7 @@
 package com.classroomapp.classroombackend.core.config;
 
 import java.util.Arrays;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;

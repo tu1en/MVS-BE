@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -17,7 +18,8 @@ import com.google.firebase.cloud.StorageClient;
 
 import lombok.extern.slf4j.Slf4j;
 
-@Service
+@Service("firebaseStorageService")
+@Profile("firebase")
 @Slf4j
 public class FirebaseStorageServiceImpl implements FirebaseStorageService {
 

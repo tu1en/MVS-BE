@@ -23,7 +23,7 @@ import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.security.JwtUtil;
 import com.classroomapp.classroombackend.service.RequestService;
-import com.classroomapp.classroombackend.service.usermanagement.UserService;
+import com.classroomapp.classroombackend.service.UserService;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;
 
@@ -35,7 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Controller xử lý các API liên quan đến Authentication
  */
-@RestController
+@RestController("authController")
 @RequestMapping("/api/auth")
 @Slf4j
 public class AuthController {
@@ -77,18 +77,25 @@ public class AuthController {
             String username = credentials.get("username");
             String password = credentials.get("password");
 
+            log.info("Login attempt for user: {}", username);
+
             User user = userRepository.findByUsername(username)
                     .orElse(userRepository.findByEmail(username).orElse(null));
 
             if (user == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Không tìm thấy người dùng"));
+                log.warn("Login failed: User not found - {}", username);
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Không tìm thấy người dùng / User not found"));
             }
 
             if (!passwordEncoder.matches(password, user.getPassword())) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Sai mật khẩu"));
+                log.warn("Login failed: Invalid password for user - {}", username);
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Sai mật khẩu / Invalid password"));
             }
 
             String roleName = jwtUtil.convertUserRoleToName(user.getRoleEnum());
+            log.info("User {} authenticated successfully with role {}", username, roleName);
 
             Map<String, Object> claims = new HashMap<>();
             claims.put("sub", user.getEmail());
@@ -101,15 +108,17 @@ public class AuthController {
                     .setClaims(claims)
                     .setSubject(user.getEmail())
                     .setIssuedAt(new Date(System.currentTimeMillis()))
-                    .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)) // 24h
+                    .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000))
                     .signWith(jwtUtil.getSecretKeyFromString(), SignatureAlgorithm.HS512)
                     .compact();
 
+            log.info("JWT token generated for user: {}", username);
+
             Map<String, String> response = new HashMap<>();
             response.put("role", roleName);
-            response.put("roleId", user.getRoleEnum().toRoleId().toString());
+            response.put("roleId", String.valueOf(user.getRoleEnum().toRoleId()));
             response.put("token", token);
-            response.put("userId", user.getId().toString());
+            response.put("userId", String.valueOf(user.getId()));
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -124,11 +133,13 @@ public class AuthController {
     @PostMapping("/forgot-password")
     public ResponseEntity<String> forgotPassword(@RequestBody Map<String, String> request) {
         String email = request.get("email");
+        log.info("Password reset requested for email: {}", email);
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng"));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng / User not found"));
 
         String roleName = jwtUtil.convertUserRoleToName(user.getRoleEnum());
+        log.info("Generating reset token for user: {}", email);
         Map<String, Object> claims = new HashMap<>();
         claims.put("sub", user.getUsername());
         claims.put("email", user.getEmail());
@@ -163,27 +174,33 @@ public class AuthController {
     @PostMapping("/google-login")
     public ResponseEntity<Map<String, Object>> googleLogin(@RequestBody Map<String, String> credentials) {
         String idToken = credentials.get("idToken");
+        log.info("Google login attempt received");
 
         FirebaseToken decodedToken;
         try {
             decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
+            log.info("Google token verified successfully");
         } catch (com.google.firebase.auth.FirebaseAuthException e) {
-            throw new IllegalArgumentException("Token Google không hợp lệ", e);
+            log.error("Google token verification failed", e);
+            throw new IllegalArgumentException("Token Google không hợp lệ / Invalid Google token", e);
         }
 
         String email = decodedToken.getEmail();
+        log.info("Google login attempt for email: {}", email);
 
         Map<String, Object> response = new HashMap<>();
         boolean userExists = userRepository.findByEmail(email).isPresent();
         if (!userExists) {
+            log.warn("Google login failed: No account found for email: {}", email);
             response.put("success", false);
-            response.put("message", "Tài khoản này chưa được đăng ký trong hệ thống");
+            response.put("message", "Tài khoản này chưa được đăng ký trong hệ thống / Account not registered in the system");
             response.put("email", email);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
 
         User user = userRepository.findByEmail(email).get();
         String roleName = jwtUtil.convertUserRoleToName(user.getRoleEnum());
+        log.info("User found with email {}, role: {}", email, roleName);
 
         Map<String, Object> claims = new HashMap<>();
         claims.put("sub", user.getEmail());
@@ -199,12 +216,14 @@ public class AuthController {
                 .signWith(jwtUtil.getSecretKeyFromString(), SignatureAlgorithm.HS512)
                 .compact();
 
+        log.info("JWT token generated for Google login user: {}", email);
+
         response.put("success", true);
-        response.put("message", "Đăng nhập thành công");
+        response.put("message", "Đăng nhập thành công / Login successful");
         response.put("role", roleName);
-        response.put("roleId", user.getRoleId().toString());
+        response.put("roleId", String.valueOf(user.getRoleEnum().toRoleId()));
         response.put("token", token);
-        response.put("userId", user.getId().toString());
+        response.put("userId", String.valueOf(user.getId()));
 
         return ResponseEntity.ok(response);
     }
@@ -214,18 +233,21 @@ public class AuthController {
      */
     @GetMapping("/validate")
     public ResponseEntity<Map<String, Object>> validateToken() {
+        log.info("Token validation request received");
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated()) {
+            log.warn("Token validation failed: No valid authentication found");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("valid", false, "message", "Token không hợp lệ"));
+                    .body(Map.of("valid", false, "message", "Token không hợp lệ / Invalid token"));
         }
 
         String username = authentication.getName();
+        log.info("Token validation successful for user: {}", username);
 
         Map<String, Object> response = new HashMap<>();
         response.put("valid", true);
-        response.put("message", "Token hợp lệ");
+        response.put("message", "Token hợp lệ / Token is valid");
         response.put("username", username);
         response.put("authorities", authentication.getAuthorities().stream()
                 .map(auth -> auth.getAuthority())
@@ -239,40 +261,53 @@ public class AuthController {
      */
     @PostMapping("/change-password")
     public ResponseEntity<String> changePassword(@RequestBody Map<String, String> request) {
+        log.info("Password change request received");
+        
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String username = (principal instanceof org.springframework.security.core.userdetails.UserDetails)
                 ? ((org.springframework.security.core.userdetails.UserDetails) principal).getUsername()
                 : principal.toString();
 
         if (username == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Người dùng chưa xác thực");
+            log.warn("Password change failed: User not authenticated");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body("Người dùng chưa xác thực / User not authenticated");
         }
 
         String oldPassword = request.get("oldPassword");
         String newPassword = request.get("newPassword");
 
         if (oldPassword == null || newPassword == null || oldPassword.isEmpty() || newPassword.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mật khẩu cũ và mật khẩu mới không được để trống");
+            log.warn("Password change failed: Empty passwords provided");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body("Mật khẩu cũ và mật khẩu mới không được để trống / Old and new passwords cannot be empty");
         }
 
         if (oldPassword.equals(newPassword)) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mật khẩu mới không được trùng mật khẩu cũ");
+            log.warn("Password change failed: New password same as old password");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body("Mật khẩu mới không được trùng mật khẩu cũ / New password must be different from old password");
         }
 
         if (newPassword.length() > 50) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mật khẩu mới không được vượt quá 50 ký tự");
+            log.warn("Password change failed: New password too long");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body("Mật khẩu mới không được vượt quá 50 ký tự / New password cannot exceed 50 characters");
         }
 
         User user = userRepository.findByEmail(username)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng"));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng / User not found"));
 
         if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mật khẩu cũ không chính xác");
+            log.warn("Password change failed: Incorrect old password for user: {}", username);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body("Mật khẩu cũ không chính xác / Incorrect old password");
         }
 
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
+        log.info("Password changed successfully for user: {}", username);
 
-        return ResponseEntity.ok("Đổi mật khẩu thành công");
+        return ResponseEntity.ok("Đổi mật khẩu thành công / Password changed successfully");
     }
 }

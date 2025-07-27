@@ -60,7 +60,7 @@ class SessionServiceTest {
     void setUp() {
         testClassroom = new Classroom();
         testClassroom.setId(1L);
-        testClassroom.setClassroomName("Test Classroom");
+        // testClassroom.setClassroomName("Test Classroom");
 
         testSession = new Session();
         testSession.setId(1L);

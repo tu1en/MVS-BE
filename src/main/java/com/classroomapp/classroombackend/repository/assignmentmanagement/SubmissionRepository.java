@@ -47,6 +47,11 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
     
     // Find submissions by student with score
     List<Submission> findByStudentAndScoreIsNotNull(User student);
+
+    // Find submissions from non-enrolled students for data verification
+    @Query("SELECT s FROM Submission s WHERE s.student.id NOT IN " +
+           "(SELECT e.user.id FROM ClassroomEnrollment e WHERE e.classroom.id = s.assignment.classroom.id)")
+    List<Submission> findSubmissionsFromNonEnrolledStudents();
     
     // Find submissions by student for specific assignment
     List<Submission> findByStudentAndAssignment(User student, Assignment assignment);

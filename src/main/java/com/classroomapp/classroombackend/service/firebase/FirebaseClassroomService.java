@@ -50,7 +50,7 @@ public class FirebaseClassroomService {
 
                 Map<String, Object> classroomData = new HashMap<>();
                 classroomData.put("id", classroom.getId());
-                classroomData.put("classroomName", classroom.getClassroomName());
+                classroomData.put("classroomName", classroom.getName());
                 classroomData.put("description", classroom.getDescription());
                 classroomData.put("teacherId", classroom.getTeacherId());
                 classroomData.put("lastUpdated", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));

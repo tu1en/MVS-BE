@@ -37,4 +37,8 @@ public enum UserRole {
         return this.ordinal() + 1; // Simpler mapping
     }
     
+    public Integer getRoleId() {
+        return toRoleId(); // Alias for toRoleId() for compatibility
+    }
+    
 }
