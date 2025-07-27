@@ -1,13 +1,14 @@
 package com.classroomapp.classroombackend.service.impl;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 import com.classroomapp.classroombackend.dto.classroommanagement.CourseDetailsDto;
-import com.classroomapp.classroombackend.repository.classroommanagement.CourseRepository;
+import com.classroomapp.classroombackend.repository.CourseRepository;
 import com.classroomapp.classroombackend.service.CourseService;
 
 import lombok.RequiredArgsConstructor;
@@ -24,5 +25,12 @@ public class CourseServiceImpl implements CourseService {
         return courseRepository.findAll().stream()
                 .map(course -> modelMapper.map(course, CourseDetailsDto.class))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Optional<CourseDetailsDto> findById(Long id) {
+        ModelMapper modelMapper = new ModelMapper();
+        return courseRepository.findById(id)
+                .map(course -> modelMapper.map(course, CourseDetailsDto.class));
     }
 } 

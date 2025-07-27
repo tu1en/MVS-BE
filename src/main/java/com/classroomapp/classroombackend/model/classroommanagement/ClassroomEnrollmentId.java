@@ -52,4 +52,33 @@ public class ClassroomEnrollmentId implements Serializable {
     public int hashCode() {
         return Objects.hash(classroomId, userId);
     }
+    private static final long serialVersionUID = 1L;
+
+    // @Column(name = "classroom_id")
+    // private Long classroomId;
+
+    // @Column(name = "user_id") 
+    // private Long userId;
+
+    // @Override
+    // public boolean equals(Object o) {
+    //     if (this == o) return true;
+    //     if (o == null || getClass() != o.getClass()) return false;
+    //     ClassroomEnrollmentId that = (ClassroomEnrollmentId) o;
+    //     return Objects.equals(classroomId, that.classroomId) && 
+    //            Objects.equals(userId, that.userId);
+    // }
+
+    // @Override
+    // public int hashCode() {
+    //     return Objects.hash(classroomId, userId);
+    // }
+
+    @Override
+    public String toString() {
+        return "ClassroomEnrollmentId{" +
+                "classroomId=" + classroomId +
+                ", userId=" + userId +
+                '}';
+    }
 } 

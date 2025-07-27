@@ -1,0 +1,19 @@
+[core]
+	repositoryformatversion = 0
+	filemode = false
+	bare = false
+	logallrefupdates = true
+	symlinks = false
+	ignorecase = true
+[user]
+	name = Thịnhne
+	email = thinhcche171897@fpt.edu.vn
+[branch "master"]
+	vscode-merge-base = origin/master
+[branch "thinhne"]
+	vscode-merge-base = origin/master
+[pull]
+	rebase = false
+[remote "origin"]
+	url = https://github.com/tu1en/MVS-BE.git
+	fetch = +refs/heads/*:refs/remotes/origin/*

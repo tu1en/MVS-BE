@@ -28,8 +28,8 @@ public class ManagerReportsController {
         Map<String, Object> response = new HashMap<>();
         
         // Response structure matching frontend expectations
-        response.put("title", "Báo cáo Điểm danh - " + period);
-        response.put("description", "Thống kê tình hình điểm danh theo " + period);
+        response.put("title", "BÃ¡o cÃ¡o Äiá»ƒm danh - " + period);
+        response.put("description", "Thá»‘ng kÃª tÃ¬nh hÃ¬nh Ä‘iá»ƒm danh theo " + period);
         
         // Data object with all statistics
         Map<String, Object> data = new HashMap<>();
@@ -40,7 +40,7 @@ public class ManagerReportsController {
         
         // Class data for charts and tables
         List<Map<String, Object>> classData = new ArrayList<>();
-        String[] classNames = {"Toán 10A", "Văn 10B", "Anh 10C", "Lý 10D", "Hóa 10E"};
+        String[] classNames = {"ToÃ¡n 10A", "VÄƒn 10B", "Anh 10C", "LÃ½ 10D", "HÃ³a 10E"};
         for (String className : classNames) {
             Map<String, Object> classInfo = new HashMap<>();
             classInfo.put("className", className);
@@ -65,8 +65,8 @@ public class ManagerReportsController {
         Map<String, Object> response = new HashMap<>();
         
         // Response structure matching frontend expectations
-        response.put("title", "Báo cáo Học tập - " + period);
-        response.put("description", "Thống kê kết quả học tập theo " + period);
+        response.put("title", "BÃ¡o cÃ¡o Há»c táº­p - " + period);
+        response.put("description", "Thá»‘ng kÃª káº¿t quáº£ há»c táº­p theo " + period);
         
         // Data object with all statistics
         Map<String, Object> data = new HashMap<>();
@@ -79,7 +79,7 @@ public class ManagerReportsController {
         
         // Subject data for charts
         List<Map<String, Object>> subjectData = new ArrayList<>();
-        String[] subjects = {"Toán", "Văn", "Anh", "Lý", "Hóa", "Sinh", "Sử", "Địa"};
+        String[] subjects = {"ToÃ¡n", "VÄƒn", "Anh", "LÃ½", "HÃ³a", "Sinh", "Sá»­", "Äá»‹a"};
         for (String subject : subjects) {
             Map<String, Object> subjectInfo = new HashMap<>();
             subjectInfo.put("subject", subject);
@@ -103,8 +103,8 @@ public class ManagerReportsController {
         Map<String, Object> response = new HashMap<>();
         
         // Response structure matching frontend expectations
-        response.put("title", "Báo cáo Tài chính - " + period);
-        response.put("description", "Thống kê tình hình tài chính theo " + period);
+        response.put("title", "BÃ¡o cÃ¡o TÃ i chÃ­nh - " + period);
+        response.put("description", "Thá»‘ng kÃª tÃ¬nh hÃ¬nh tÃ i chÃ­nh theo " + period);
         
         // Data object with all statistics
         Map<String, Object> data = new HashMap<>();
@@ -116,7 +116,7 @@ public class ManagerReportsController {
         
         // Monthly revenue data for charts
         List<Map<String, Object>> monthlyData = new ArrayList<>();
-        String[] months = {"Tháng 1", "Tháng 2", "Tháng 3"};
+        String[] months = {"ThÃ¡ng 1", "ThÃ¡ng 2", "ThÃ¡ng 3"};
         long[] revenues = {850000000L, 800000000L, 850000000L};
         for (int i = 0; i < months.length; i++) {
             Map<String, Object> month = new HashMap<>();
@@ -130,7 +130,7 @@ public class ManagerReportsController {
         
         // Expense categories for pie chart
         List<Map<String, Object>> expenseData = new ArrayList<>();
-        String[] categories = {"Lương giáo viên", "Cơ sở vật chất", "Học liệu", "Quản lý", "Marketing", "Khác"};
+        String[] categories = {"LÆ°Æ¡ng giÃ¡o viÃªn", "CÆ¡ sá»Ÿ váº­t cháº¥t", "Há»c liá»‡u", "Quáº£n lÃ½", "Marketing", "KhÃ¡c"};
         double[] percentages = {60.0, 15.0, 10.0, 8.0, 5.0, 2.0};
         for (int i = 0; i < categories.length; i++) {
             Map<String, Object> category = new HashMap<>();
@@ -167,11 +167,11 @@ public class ManagerReportsController {
         
         List<Map<String, Object>> recentActivities = new ArrayList<>();
         String[] activities = {
-            "Học sinh Nguyễn Văn A nộp bài tập Toán",
-            "Giáo viên Trần Thị B tạo bài kiểm tra mới",
-            "Lớp 10A hoàn thành bài kiểm tra Văn",
-            "Phụ huynh Lê Văn C thanh toán học phí",
-            "Sinh viên mới đăng ký khóa học Anh văn"
+            "Há»c sinh Nguyá»…n VÄƒn A ná»™p bÃ i táº­p ToÃ¡n",
+            "GiÃ¡o viÃªn Tráº§n Thá»‹ B táº¡o bÃ i kiá»ƒm tra má»›i",
+            "Lá»›p 10A hoÃ n thÃ nh bÃ i kiá»ƒm tra VÄƒn",
+            "Phá»¥ huynh LÃª VÄƒn C thanh toÃ¡n há»c phÃ­",
+            "Sinh viÃªn má»›i Ä‘Äƒng kÃ½ khÃ³a há»c Anh vÄƒn"
         };
         
         for (int i = 0; i < activities.length; i++) {

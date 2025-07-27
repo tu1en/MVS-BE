@@ -1,8 +1,11 @@
 package com.classroomapp.classroombackend.controller;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,14 +23,11 @@ import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceResu
 import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceSubmitDto;
 import com.classroomapp.classroombackend.dto.attendancemanagement.MyAttendanceHistoryDto;
 import com.classroomapp.classroombackend.dto.attendancemanagement.TeachingHistoryDto;
+import com.classroomapp.classroombackend.model.AttendanceLog;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
-import com.classroomapp.classroombackend.service.AttendanceService;
-import com.classroomapp.classroombackend.model.AttendanceLog;
 import com.classroomapp.classroombackend.service.AttendanceLogService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
-import java.time.LocalDate;
+import com.classroomapp.classroombackend.service.AttendanceService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -75,7 +75,7 @@ public class AttendanceController {
      * Gets the personal attendance history for the currently authenticated student in a specific classroom.
      * Accessible by any authenticated user for their own record.
      */
-    @GetMapping("/my-attendance-history")
+    @GetMapping("/my-history")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<MyAttendanceHistoryDto>> getMyAttendanceHistory(@RequestParam Long classroomId) {
         try {

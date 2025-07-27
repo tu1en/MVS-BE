@@ -11,4 +11,9 @@ public class UpdateClassroomDto {
     private String name;
 
     private String description;
+
+    public boolean hasUpdates() {
+        return (name != null && !name.trim().isEmpty()) || 
+               (description != null && !description.trim().isEmpty());
+    }
 } 

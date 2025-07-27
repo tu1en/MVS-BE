@@ -1,7 +1,7 @@
 package com.classroomapp.classroombackend.controller;
 
-import com.classroomapp.classroombackend.dto.absencemanagement.AbsenceDTO;
-import com.classroomapp.classroombackend.dto.absencemanagement.TeacherLeaveInfoDTO;
+import com.classroomapp.classroombackend.dto.absencemanagement.AbsenceDto;
+import com.classroomapp.classroombackend.dto.absencemanagement.TeacherLeaveInfoDto;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.repository.absencemanagement.AbsenceRepository;
@@ -77,17 +77,17 @@ public class ManagerAbsenceController {
             // Force create some test absences directly
             log.info("Creating test absence records manually...");
             
-            createTestAbsence(201L, "teacher@test.com", "Nguyễn Văn Minh", 
+            createTestAbsence(201L, "teacher@test.com", "Nguyá»…n VÄƒn Minh", 
                 LocalDate.now().minusDays(30), LocalDate.now().minusDays(28), 3, 
-                "Nghỉ phép để tham gia hội thảo", "APPROVED");
+                "Nghá»‰ phÃ©p Ä‘á»ƒ tham gia há»™i tháº£o", "APPROVED");
                 
-            createTestAbsence(202L, "math@test.com", "Trần Văn Đức",
+            createTestAbsence(202L, "math@test.com", "Tráº§n VÄƒn Äá»©c",
                 LocalDate.now().plusDays(10), LocalDate.now().plusDays(12), 3,
-                "Xin nghỉ phép để tham dự đám cưới", "PENDING");
+                "Xin nghá»‰ phÃ©p Ä‘á»ƒ tham dá»± Ä‘Ã¡m cÆ°á»›i", "PENDING");
                 
-            createTestAbsence(203L, "literature@test.com", "Phạm Thị Lan",
+            createTestAbsence(203L, "literature@test.com", "Pháº¡m Thá»‹ Lan",
                 LocalDate.now().minusDays(60), LocalDate.now().minusDays(53), 8,
-                "Nghỉ phép sinh con", "APPROVED");
+                "Nghá»‰ phÃ©p sinh con", "APPROVED");
             
             long newCount = absenceRepository.count();
             result.put("message", "Successfully created test absence records");
@@ -130,38 +130,38 @@ public class ManagerAbsenceController {
     }
 
     @GetMapping("/requests")
-    public ResponseEntity<List<AbsenceDTO>> getAllAbsenceRequests() {
-        List<AbsenceDTO> absences = absenceService.getAllAbsenceRequests();
+    public ResponseEntity<List<AbsenceDto>> getAllAbsenceRequests() {
+        List<AbsenceDto> absences = absenceService.getAllAbsenceRequests();
         return ResponseEntity.ok(absences);
     }
 
     @GetMapping("/requests/pending")
-    public ResponseEntity<List<AbsenceDTO>> getPendingAbsenceRequests() {
-        List<AbsenceDTO> pendingAbsences = absenceService.getPendingAbsenceRequests();
+    public ResponseEntity<List<AbsenceDto>> getPendingAbsenceRequests() {
+        List<AbsenceDto> pendingAbsences = absenceService.getPendingAbsenceRequests();
         return ResponseEntity.ok(pendingAbsences);
     }
 
     @GetMapping("/employees")
-    public ResponseEntity<List<TeacherLeaveInfoDTO>> getAllEmployeesLeaveInfo() {
-        List<TeacherLeaveInfoDTO> employeesInfo = absenceService.getAllTeachersLeaveInfo();
+    public ResponseEntity<List<TeacherLeaveInfoDto>> getAllEmployeesLeaveInfo() {
+        List<TeacherLeaveInfoDto> employeesInfo = absenceService.getAllTeachersLeaveInfo();
         return ResponseEntity.ok(employeesInfo);
     }
 
     @GetMapping("/employees/{employeeId}")
-    public ResponseEntity<TeacherLeaveInfoDTO> getEmployeeLeaveInfo(@PathVariable Long employeeId) {
-        TeacherLeaveInfoDTO employeeInfo = absenceService.getTeacherLeaveInfo(employeeId);
+    public ResponseEntity<TeacherLeaveInfoDto> getEmployeeLeaveInfo(@PathVariable Long employeeId) {
+        TeacherLeaveInfoDto employeeInfo = absenceService.getTeacherLeaveInfo(employeeId);
         return ResponseEntity.ok(employeeInfo);
     }
 
     @PostMapping("/requests/{absenceId}/approve")
-    public ResponseEntity<AbsenceDTO> approveAbsence(
+    public ResponseEntity<AbsenceDto> approveAbsence(
             @PathVariable Long absenceId,
             Authentication authentication) {
         try {
             log.info("Processing approval request for absence ID: {}", absenceId);
             Long managerId = getUserIdFromAuthentication(authentication);
             log.info("Manager ID from authentication: {}", managerId);
-            AbsenceDTO approvedAbsence = absenceService.approveAbsence(absenceId, managerId);
+            AbsenceDto approvedAbsence = absenceService.approveAbsence(absenceId, managerId);
             return ResponseEntity.ok(approvedAbsence);
         } catch (Exception e) {
             log.error("Error approving absence request {}: {}", absenceId, e.getMessage(), e);
@@ -170,13 +170,13 @@ public class ManagerAbsenceController {
     }
 
     @PostMapping("/requests/{absenceId}/reject")
-    public ResponseEntity<AbsenceDTO> rejectAbsence(
+    public ResponseEntity<AbsenceDto> rejectAbsence(
             @PathVariable Long absenceId,
             @RequestBody String reason,
             Authentication authentication) {
         try {
             Long managerId = getUserIdFromAuthentication(authentication);
-            AbsenceDTO rejectedAbsence = absenceService.rejectAbsence(absenceId, reason, managerId);
+            AbsenceDto rejectedAbsence = absenceService.rejectAbsence(absenceId, reason, managerId);
             return ResponseEntity.ok(rejectedAbsence);
         } catch (Exception e) {
             log.error("Error rejecting absence request {}: {}", absenceId, e.getMessage(), e);

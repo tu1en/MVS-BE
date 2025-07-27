@@ -15,7 +15,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Configuration
+@Configuration("classroomWebConfig")
 public class WebConfig implements WebMvcConfigurer {
     
     // Remove CORS configuration from here since it's handled in SecurityConfig

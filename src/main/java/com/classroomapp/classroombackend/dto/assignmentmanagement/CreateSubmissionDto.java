@@ -2,7 +2,7 @@ package com.classroomapp.classroombackend.dto.assignmentmanagement;
 
 import java.util.List;
 
-import com.classroomapp.classroombackend.dto.FileUploadResponse;
+import com.classroomapp.classroombackend.dto.common.FileUploadResponse;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

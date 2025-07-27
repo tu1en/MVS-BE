@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSession;
+import com.classroomapp.classroombackend.model.Lecture;
 
 @Repository
 public interface AttendanceSessionRepository extends JpaRepository<AttendanceSession, Long> {
@@ -30,4 +31,12 @@ public interface AttendanceSessionRepository extends JpaRepository<AttendanceSes
     List<AttendanceSession> findTeachingHistoryByTeacherId(@Param("teacherId") Long teacherId);
 
     long countByClassroomIdIn(List<Long> classroomIds);
+
+    /**
+     * Find attendance sessions by lecture and active status, ordered by creation time descending
+     * @param lecture The lecture
+     * @param isActive Active status
+     * @return List of matching sessions
+     */
+    List<AttendanceSession> findByLectureAndIsActiveOrderByCreatedAtDesc(Lecture lecture, boolean isActive);
 }

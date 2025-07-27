@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,35 +14,42 @@ import com.classroomapp.classroombackend.repository.StudentMessageRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.StudentMessageService;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 @Service
+@RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class StudentMessageServiceImpl implements StudentMessageService {
-    
-    @Autowired
-    private StudentMessageRepository messageRepository;
-    
-    @Autowired
-    private UserRepository userRepository;
-    
+
+    private final StudentMessageRepository messageRepository;
+    private final UserRepository userRepository;
+
     @Override
     public StudentMessageDto sendMessage(StudentMessageDto messageDto) {
-        User sender = userRepository.findById(messageDto.getSenderId())
+        try {
+            User sender = userRepository.findById(messageDto.getSenderId())
                 .orElseThrow(() -> new RuntimeException("Sender not found"));
-        User recipient = userRepository.findById(messageDto.getRecipientId())
+            User recipient = userRepository.findById(messageDto.getRecipientId())
                 .orElseThrow(() -> new RuntimeException("Recipient not found"));
-        
-        StudentMessage message = new StudentMessage();
-        message.setSender(sender);
-        message.setRecipient(recipient);
-        message.setSubject(messageDto.getSubject());
-        message.setContent(messageDto.getContent());
-        message.setMessageType(messageDto.getMessageType() != null ? messageDto.getMessageType() : "GENERAL");
-        message.setPriority(messageDto.getPriority() != null ? messageDto.getPriority() : "MEDIUM");
-        message.setStatus("SENT");
-        message.setIsRead(false);
-        
-        StudentMessage savedMessage = messageRepository.save(message);
-        return convertToDto(savedMessage);
+
+            StudentMessage message = new StudentMessage();
+            message.setSender(sender);
+            message.setRecipient(recipient);
+            message.setSubject(messageDto.getSubject());
+            message.setContent(messageDto.getContent());
+            message.setMessageType(messageDto.getMessageType() != null ? messageDto.getMessageType() : "GENERAL");
+            message.setPriority(messageDto.getPriority() != null ? messageDto.getPriority() : "MEDIUM");
+            message.setStatus("SENT");
+            message.setIsRead(false);
+
+            StudentMessage savedMessage = messageRepository.save(message);
+            return convertToDto(savedMessage);
+        } catch (Exception e) {
+            log.error("Error sending message: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to send message: " + e.getMessage());
+        }
     }
     
     @Override
@@ -250,7 +256,7 @@ public class StudentMessageServiceImpl implements StudentMessageService {
             dto.setSenderId(message.getSender().getId());
             dto.setSenderName(message.getSender().getFullName());
         } else {
-            dto.setSenderId(null); // Or a placeholder ID
+            dto.setSenderId(null); // Hoặc một ID giữ chỗ
             dto.setSenderName("Unknown Sender");
         }
         
@@ -258,7 +264,7 @@ public class StudentMessageServiceImpl implements StudentMessageService {
             dto.setRecipientId(message.getRecipient().getId());
             dto.setRecipientName(message.getRecipient().getFullName());
         } else {
-            dto.setRecipientId(null); // Or a placeholder ID
+            dto.setRecipientId(null); // Hoặc một ID giữ chỗ
             dto.setRecipientName("Unknown Recipient");
         }
         

@@ -65,7 +65,13 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
     
     // Find contracts created by specific user
     List<Contract> findByCreatedBy(String createdBy);
-
-    // Find contract by user, type, and status
+    
+    /**
+     * Find contract by user ID, contract type, and status
+     * @param userId the user ID
+     * @param contractType the contract type
+     * @param status the status
+     * @return Optional containing contract if found
+     */
     Optional<Contract> findByUserIdAndContractTypeAndStatus(Long userId, String contractType, String status);
 }

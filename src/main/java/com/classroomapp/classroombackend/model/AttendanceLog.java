@@ -1,8 +1,14 @@
 package com.classroomapp.classroombackend.model;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+
+import com.classroomapp.classroombackend.model.hrmanagement.Shift;
+import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.model.AttendanceStatus;
 
 @Entity
 @Table(name = "attendance_logs")
@@ -11,47 +17,40 @@ public class AttendanceLog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "staff_id", nullable = false, 
+                foreignKey = @ForeignKey(name = "fk_attendance_staff"))
+    private User staff;
 
-    @Column(name = "user_name", nullable = false)
-    private String userName;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "shift_id", foreignKey = @ForeignKey(name = "fk_attendance_shift"))
+    private Shift shift;
 
-    @Column(name = "role")
-    private String role;
+    @Column(name = "attendance_date", nullable = false)
+    private LocalDate attendanceDate;
 
-    @Column(name = "department")
-    private String department;
+    @Column(name = "check_in_time")
+    private LocalDateTime checkInTime;
 
-    @Column(name = "date", nullable = false)
-    private LocalDate date;
+    @Column(name = "check_out_time")
+    private LocalDateTime checkOutTime;
 
-    @Column(name = "shift")
-    private String shift;
+    @Column(name = "expected_check_in")
+    private LocalTime expectedCheckIn;
 
-    @Column(name = "check_in")
-    private LocalTime checkIn;
+    @Column(name = "expected_check_out")
+    private LocalTime expectedCheckOut;
 
-    @Column(name = "check_out")
-    private LocalTime checkOut;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private AttendanceStatus status = AttendanceStatus.PRESENT;
 
-    @Column(name = "status")
-    private String status;
+    @Column(name = "working_hours", precision = 4, scale = 2)
+    private BigDecimal workingHours = BigDecimal.ZERO;
 
     // Constructors
     public AttendanceLog() {}
 
-    public AttendanceLog(Long userId, String userName, String role, String department, LocalDate date, String shift, LocalTime checkIn, LocalTime checkOut, String status) {
-        this.userId = userId;
-        this.userName = userName;
-        this.role = role;
-        this.department = department;
-        this.date = date;
-        this.shift = shift;
-        this.checkIn = checkIn;
-        this.checkOut = checkOut;
-        this.status = status;
-    }
 
     // Getters and Setters
     public Long getId() {
@@ -62,75 +61,82 @@ public class AttendanceLog {
         this.id = id;
     }
 
-    public Long getUserId() {
-        return userId;
+    public User getStaff() {
+        return staff;
     }
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public void setStaff(User staff) {
+        this.staff = staff;
     }
 
-    public String getUserName() {
-        return userName;
-    }
-
-    public void setUserName(String userName) {
-        this.userName = userName;
-    }
-
-    public String getRole() {
-        return role;
-    }
-
-    public void setRole(String role) {
-        this.role = role;
-    }
-
-    public String getDepartment() {
-        return department;
-    }
-
-    public void setDepartment(String department) {
-        this.department = department;
-    }
-
-    public LocalDate getDate() {
-        return date;
-    }
-
-    public void setDate(LocalDate date) {
-        this.date = date;
-    }
-
-    public String getShift() {
+    public Shift getShift() {
         return shift;
     }
 
-    public void setShift(String shift) {
+    public void setShift(Shift shift) {
         this.shift = shift;
     }
 
-    public LocalTime getCheckIn() {
-        return checkIn;
+    public LocalDate getAttendanceDate() {
+        return attendanceDate;
     }
 
-    public void setCheckIn(LocalTime checkIn) {
-        this.checkIn = checkIn;
+    public void setAttendanceDate(LocalDate attendanceDate) {
+        this.attendanceDate = attendanceDate;
     }
 
-    public LocalTime getCheckOut() {
-        return checkOut;
+    public LocalDateTime getCheckInTime() {
+        return checkInTime;
     }
 
-    public void setCheckOut(LocalTime checkOut) {
-        this.checkOut = checkOut;
+    public void setCheckInTime(LocalDateTime checkInTime) {
+        this.checkInTime = checkInTime;
     }
 
-    public String getStatus() {
+    public LocalDateTime getCheckOutTime() {
+        return checkOutTime;
+    }
+
+    public void setCheckOutTime(LocalDateTime checkOutTime) {
+        this.checkOutTime = checkOutTime;
+    }
+
+    public LocalTime getExpectedCheckIn() {
+        return expectedCheckIn;
+    }
+
+    public void setExpectedCheckIn(LocalTime expectedCheckIn) {
+        this.expectedCheckIn = expectedCheckIn;
+    }
+
+    public LocalTime getExpectedCheckOut() {
+        return expectedCheckOut;
+    }
+
+    public void setExpectedCheckOut(LocalTime expectedCheckOut) {
+        this.expectedCheckOut = expectedCheckOut;
+    }
+
+    public AttendanceStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(AttendanceStatus status) {
         this.status = status;
+    }
+
+    public BigDecimal getWorkingHours() {
+        return workingHours;
+    }
+
+    public void setWorkingHours(BigDecimal workingHours) {
+        this.workingHours = workingHours;
+    }
+    
+    public void calculateWorkingHours() {
+        if (checkInTime != null && checkOutTime != null) {
+            long minutes = java.time.Duration.between(checkInTime, checkOutTime).toMinutes();
+            workingHours = BigDecimal.valueOf(minutes).divide(BigDecimal.valueOf(60), 2, BigDecimal.ROUND_HALF_UP);
+        }
     }
 }

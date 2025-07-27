@@ -7,6 +7,7 @@ import java.util.List;
 
 import com.classroomapp.classroombackend.model.Lecture;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
+import com.classroomapp.classroombackend.model.usermanagement.User;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -48,6 +49,10 @@ public class AttendanceSession {
     @ManyToOne(fetch = jakarta.persistence.FetchType.LAZY)
     @JoinColumn(name = "classroom_id", nullable = false)
     private Classroom classroom;
+
+    @ManyToOne(fetch = jakarta.persistence.FetchType.LAZY)
+    @JoinColumn(name = "teacher_id", nullable = true)
+    private User teacher;
 
     @Column(name = "created_at", nullable = true)
     private LocalDateTime createdAt;

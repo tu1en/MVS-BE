@@ -21,9 +21,11 @@ import com.classroomapp.classroombackend.repository.usermanagement.UserRepositor
 import com.classroomapp.classroombackend.service.AnnouncementService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AnnouncementServiceImpl implements AnnouncementService {
 
     private final AnnouncementRepository announcementRepository;
@@ -194,7 +196,10 @@ public class AnnouncementServiceImpl implements AnnouncementService {
 
     @Override
     public List<AnnouncementDto> getAnnouncementsByCreator(Long createdBy) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        List<Announcement> announcements = announcementRepository.findByCreatedByOrderByCreatedAtDesc(createdBy);
+        return announcements.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
     }
 
     @Override

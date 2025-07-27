@@ -52,8 +52,22 @@ public class LectureRecording {
     @Column(name = "thumbnail_path", length = 500)
     private String thumbnailPath;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private RecordingStatus status = RecordingStatus.ACTIVE;
+
     // JPA relationships
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "lecture_id", insertable = false, updatable = false)
     private Lecture lecture;
+
+    // Inner enum for recording status
+    public enum RecordingStatus {
+        ACTIVE,
+        INACTIVE,
+        PROCESSING,
+        COMPLETED,
+        FAILED,
+        ARCHIVED
+    }
 }

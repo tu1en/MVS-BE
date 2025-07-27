@@ -1,24 +1,28 @@
 package com.classroomapp.classroombackend.service.impl;
 
-import com.classroomapp.classroombackend.model.AttendanceExplanation;
-import com.classroomapp.classroombackend.model.ExplanationStatus;
-import com.classroomapp.classroombackend.repository.AttendanceExplanationRepository;
-import com.classroomapp.classroombackend.service.AttendanceExplanationService;
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.apache.poi.ss.usermodel.Font;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+
+import com.classroomapp.classroombackend.model.AttendanceExplanation;
+import com.classroomapp.classroombackend.model.ExplanationStatus;
+import com.classroomapp.classroombackend.repository.AttendanceExplanationRepository;
+import com.classroomapp.classroombackend.service.AttendanceExplanationService;
 
 @Service
 public class AttendanceExplanationServiceImpl implements AttendanceExplanationService {
@@ -30,6 +34,17 @@ public class AttendanceExplanationServiceImpl implements AttendanceExplanationSe
     public AttendanceExplanation submitExplanation(AttendanceExplanation explanation) {
         explanation.setSubmittedAt(LocalDateTime.now());
         explanation.setStatus(ExplanationStatus.PENDING);
+        
+        // ✅ Ensure explanationText is not null
+        if (explanation.getExplanationText() == null || explanation.getExplanationText().isEmpty()) {
+            explanation.setExplanationText(explanation.getReason());
+        }
+        
+        // ✅ Ensure violationId is set
+        if (explanation.getViolationId() == null) {
+            explanation.setViolationId(1L);
+        }
+        
         return repository.save(explanation);
     }
 
@@ -83,9 +98,9 @@ public class AttendanceExplanationServiceImpl implements AttendanceExplanationSe
         try (Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("Attendance Explanations");
 
-            // Create header row
+            // Create header row - ✅ Updated to include explanation_text
             Row headerRow = sheet.createRow(0);
-            String[] headers = {"ID", "Submitter", "Absence Date", "Reason", "Submitted At", "Status", "Approver", "Department"};
+            String[] headers = {"ID", "Submitter", "Absence Date", "Reason", "Explanation Text", "Submitted At", "Status", "Approver", "Department", "Violation ID"};
             for (int i = 0; i < headers.length; i++) {
                 Cell cell = headerRow.createCell(i);
                 cell.setCellValue(headers[i]);
@@ -96,7 +111,7 @@ public class AttendanceExplanationServiceImpl implements AttendanceExplanationSe
                 cell.setCellStyle(style);
             }
 
-            // Create data rows
+            // Create data rows - ✅ Updated to include explanation_text
             int rowNum = 1;
             DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
             DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
@@ -106,10 +121,12 @@ public class AttendanceExplanationServiceImpl implements AttendanceExplanationSe
                 row.createCell(1).setCellValue(exp.getSubmitterName());
                 row.createCell(2).setCellValue(exp.getAbsenceDate().format(dateFormatter));
                 row.createCell(3).setCellValue(exp.getReason());
-                row.createCell(4).setCellValue(exp.getSubmittedAt().format(dateTimeFormatter));
-                row.createCell(5).setCellValue(exp.getStatus().toString());
-                row.createCell(6).setCellValue(exp.getApproverName() != null ? exp.getApproverName() : "N/A");
-                row.createCell(7).setCellValue(exp.getDepartment() != null ? exp.getDepartment() : "N/A");
+                row.createCell(4).setCellValue(exp.getExplanationText() != null ? exp.getExplanationText() : "N/A"); // ✅ New field
+                row.createCell(5).setCellValue(exp.getSubmittedAt().format(dateTimeFormatter));
+                row.createCell(6).setCellValue(exp.getStatus().toString());
+                row.createCell(7).setCellValue(exp.getApproverName() != null ? exp.getApproverName() : "N/A");
+                row.createCell(8).setCellValue(exp.getDepartment() != null ? exp.getDepartment() : "N/A");
+                row.createCell(9).setCellValue(exp.getViolationId() != null ? exp.getViolationId().toString() : "1"); // ✅ New field
             }
 
             // Auto-size columns

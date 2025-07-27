@@ -31,9 +31,14 @@ public class Syllabus {
     @Column(length = 5000)
     private String content;
     
+    @Column(length = 2000)
+    private String description;
+    
     @Column(name = "learning_objectives", length = 2000)
     private String learningObjectives;
     
+    
+    private String subject; // ✅ Thêm field này
     @Column(name = "required_materials", length = 1000)
     private String requiredMaterials;
     

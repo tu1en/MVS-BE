@@ -47,4 +47,30 @@ public class AssignmentDto {
     private LocalDateTime createdAt;
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime updatedAt;
+    
+    // Frontend integration fields
+    private String submissionStatus;
+    private Double score;
+
+    // Constructor needed by ClassroomMapper
+    public AssignmentDto(Long id, String title, LocalDateTime dueDate) {
+        this.id = id;
+        this.title = title;
+        this.dueDate = dueDate;
+    }
+    
+    // Full constructor
+    public AssignmentDto(Long id, String title, String description, LocalDateTime dueDate,
+                         Integer points, String fileAttachmentUrl, Long classroomId, 
+                         String classroomName, String subject) {
+        this.id = id;
+        this.title = title;
+        this.description = description;
+        this.dueDate = dueDate;
+        this.points = points;
+        this.fileAttachmentUrl = fileAttachmentUrl;
+        this.classroomId = classroomId;
+        this.classroomName = classroomName;
+        this.subject = subject;
+    }
 }

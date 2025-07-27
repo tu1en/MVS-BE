@@ -18,21 +18,21 @@ public class AttendanceLogService {
 
     public List<AttendanceLog> getTeacherAttendanceStatus(LocalDate date, String shift) {
         if (shift != null && !shift.isEmpty()) {
-            return attendanceLogRepository.findByRoleAndDate("TEACHER", date);
+            return attendanceLogRepository.findByStaffRoleIdAndAttendanceDate(2, date); // 2 = TEACHER
         }
-        return attendanceLogRepository.findByRoleAndDate("TEACHER", date);
+        return attendanceLogRepository.findByStaffRoleIdAndAttendanceDate(2, date); // 2 = TEACHER
     }
 
     public List<AttendanceLog> getDailyAttendanceByShift(LocalDate date, String shift) {
-        return attendanceLogRepository.findByDateAndShift(date, shift);
+        return attendanceLogRepository.findByAttendanceDateAndShiftName(date, shift);
     }
 
     public List<AttendanceLog> getAllStaffAttendanceLogs(LocalDate date) {
-        return attendanceLogRepository.findByDate(date);
+        return attendanceLogRepository.findByAttendanceDate(date);
     }
 
     public List<AttendanceLog> getPersonalAttendanceHistory(Long userId, LocalDate startDate, LocalDate endDate) {
-        return attendanceLogRepository.findByUserIdAndDateBetween(userId, startDate, endDate);
+        return attendanceLogRepository.findByStaffIdAndAttendanceDateBetween(userId, startDate, endDate);
     }
 
     public Page<AttendanceLog> getAttendanceLogsWithPagination(LocalDate date, int page, int size) {

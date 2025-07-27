@@ -30,13 +30,13 @@ import com.classroomapp.classroombackend.dto.BulkGradingResultDto;
 import com.classroomapp.classroombackend.dto.CreateFeedbackDto;
 import com.classroomapp.classroombackend.dto.CreateRubricDto;
 import com.classroomapp.classroombackend.dto.FeedbackDto;
-import com.classroomapp.classroombackend.dto.FileUploadResponse;
 import com.classroomapp.classroombackend.dto.GradeDto;
 import com.classroomapp.classroombackend.dto.GradingAnalyticsDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.CreateAssignmentDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.GradeSubmissionDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.SubmissionDto;
+import com.classroomapp.classroombackend.dto.common.FileUploadResponse;
 import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
 import com.classroomapp.classroombackend.model.assignmentmanagement.Submission;
 import com.classroomapp.classroombackend.model.assignmentmanagement.SubmissionAttachment;
@@ -653,4 +653,5 @@ public class AssignmentController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
+    
 }

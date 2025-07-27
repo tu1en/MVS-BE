@@ -1,13 +1,22 @@
 package com.classroomapp.classroombackend.controller;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.classroomapp.classroombackend.dto.UserDto;
+import com.classroomapp.classroombackend.model.enums.UserRole;
 import com.classroomapp.classroombackend.service.UserService;
 
 import lombok.RequiredArgsConstructor;
@@ -22,6 +31,7 @@ public class ManagerUsersController {
 
     private final UserService userService;
 
+    // ✅ Lấy tất cả user (có phân trang + tìm kiếm)
     @GetMapping
     public ResponseEntity<Page<UserDto>> getAllUsers(
             @RequestParam(required = false) String keyword,
@@ -31,52 +41,62 @@ public class ManagerUsersController {
         return ResponseEntity.ok(users);
     }
 
+    // ✅ Lấy user theo ID
     @GetMapping("/{userId}")
     public ResponseEntity<UserDto> getUserById(@PathVariable Long userId) {
         log.info("Manager requesting user details for ID: {}", userId);
-        UserDto user = userService.FindUserById(userId);
+        UserDto user = userService.getUserById(userId);
         return ResponseEntity.ok(user);
     }
 
+    // ✅ Lấy user theo Role ID
     @GetMapping("/role/{roleId}")
     public ResponseEntity<Page<UserDto>> getUsersByRole(
             @PathVariable Integer roleId,
             @PageableDefault(size = 10, sort = "fullName") Pageable pageable) {
         log.info("Manager requesting users by role: {}", roleId);
-        // For now, using existing method - should be enhanced to support pagination
-        java.util.List<UserDto> users = userService.FindUsersByRole(roleId);
-        
-        // Convert List to Page manually (simple implementation)
+        List<UserDto> users = userService.getUsersByRole(convertRoleIdToEnum(roleId));
+
         int start = (int) pageable.getOffset();
         int end = Math.min((start + pageable.getPageSize()), users.size());
-        java.util.List<UserDto> pageContent = users.subList(start, end);
-        
-        Page<UserDto> page = new org.springframework.data.domain.PageImpl<>(
-            pageContent, pageable, users.size());
-        
+        List<UserDto> pageContent = users.subList(start, end);
+
+        Page<UserDto> page = new org.springframework.data.domain.PageImpl<>(pageContent, pageable, users.size());
         return ResponseEntity.ok(page);
     }
 
+    // ✅ Thống kê số lượng user theo role
     @GetMapping("/statistics")
-    public ResponseEntity<java.util.Map<String, Object>> getUserStatistics() {
+    public ResponseEntity<Map<String, Object>> getUserStatistics() {
         log.info("Manager requesting user statistics");
-        
-        java.util.Map<String, Object> stats = new java.util.HashMap<>();
-        
-        // Get counts by role
-        java.util.List<UserDto> allUsers = userService.FindAllUsers();
+
+        List<UserDto> allUsers = userService.getAllUsers();
         long totalUsers = allUsers.size();
-        long students = allUsers.stream().filter(u -> u.getRoleId() == 1).count();
-        long teachers = allUsers.stream().filter(u -> u.getRoleId() == 2).count();
-        long managers = allUsers.stream().filter(u -> u.getRoleId() == 3).count();
-        long admins = allUsers.stream().filter(u -> u.getRoleId() == 0).count();
-        
+        long students = allUsers.stream().filter(u -> u.getRoleEnum() == UserRole.STUDENT).count();
+        long teachers = allUsers.stream().filter(u -> u.getRoleEnum() == UserRole.TEACHER).count();
+        long managers = allUsers.stream().filter(u -> u.getRoleEnum() == UserRole.MANAGER).count();
+        long admins = allUsers.stream().filter(u -> u.getRoleEnum() == UserRole.ADMIN).count();
+
+        Map<String, Object> stats = new HashMap<>();
         stats.put("totalUsers", totalUsers);
         stats.put("students", students);
         stats.put("teachers", teachers);
         stats.put("managers", managers);
         stats.put("admins", admins);
-        
+
         return ResponseEntity.ok(stats);
     }
-} 
+
+    // ✅ Helper: Convert roleId sang UserRole
+    private UserRole convertRoleIdToEnum(Integer roleId) {
+        if (roleId == null) return UserRole.STUDENT;
+        switch (roleId) {
+            case 1: return UserRole.STUDENT;
+            case 2: return UserRole.TEACHER;
+            case 3: return UserRole.MANAGER;
+            case 4: return UserRole.ADMIN;
+            case 5: return UserRole.ACCOUNTANT;
+            default: return UserRole.STUDENT;
+        }
+    }
+}

@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -18,7 +19,6 @@ import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -46,8 +46,9 @@ public class Assignment {
     private String description;
 
     @NotNull
-    @Future // Must be a future date
-    @Column(name = "due_date")
+    @Column(name = "due_date", nullable = false)
+    // @FutureOrPresent(message = "Due date must be present or future")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Ho_Chi_Minh")
     private LocalDateTime dueDate;
 
     @Min(0) // Points must be positive

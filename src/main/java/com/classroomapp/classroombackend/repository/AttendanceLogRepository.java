@@ -9,9 +9,9 @@ import java.util.List;
 
 @Repository
 public interface AttendanceLogRepository extends JpaRepository<AttendanceLog, Long> {
-    List<AttendanceLog> findByDate(LocalDate date);
-    List<AttendanceLog> findByUserId(Long userId);
-    List<AttendanceLog> findByRoleAndDate(String role, LocalDate date);
-    List<AttendanceLog> findByDateAndShift(LocalDate date, String shift);
-    List<AttendanceLog> findByUserIdAndDateBetween(Long userId, LocalDate startDate, LocalDate endDate);
+    List<AttendanceLog> findByAttendanceDate(LocalDate date);
+    List<AttendanceLog> findByStaffId(Long userId);
+    List<AttendanceLog> findByStaffRoleIdAndAttendanceDate(Integer roleId, LocalDate date);
+    List<AttendanceLog> findByAttendanceDateAndShiftName(LocalDate date, String shift);
+    List<AttendanceLog> findByStaffIdAndAttendanceDateBetween(Long userId, LocalDate startDate, LocalDate endDate);
 }
