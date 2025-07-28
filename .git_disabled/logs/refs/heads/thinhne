@@ -1,8 +1,0 @@
-a2d6dcb51d63d6c5db543d11cd03da291874e28f d1f019ec466689adce80e70d36bf75de3a6fa9c8 Thịnhne <thinhcche171897@fpt.edu.vn> 1752639725 +0700	commit: Fix .gitignore, remove firebase admin sdk json from git
-d1f019ec466689adce80e70d36bf75de3a6fa9c8 5e491b868777676a97bf54c822ed31e64a985a6d Thịnhne <thinhcche171897@fpt.edu.vn> 1752668564 +0700	commit (merge): Merge master into thinhne - resolved conflicts and integrated HR modules
-5e491b868777676a97bf54c822ed31e64a985a6d fff093e1d4868eefc32451032d6dafe1a89c7c04 Thịnhne <thinhcche171897@fpt.edu.vn> 1752668981 +0700	commit: Fix compilation issues and verify application functionality - Spring Boot app running successfully on port 8088
-fff093e1d4868eefc32451032d6dafe1a89c7c04 9d579febffe4ac6e736144f1df262950657b1b8f Thịnhne <thinhcche171897@fpt.edu.vn> 1752669130 +0700	pull origin master: Merge made by the 'ort' strategy.
-9d579febffe4ac6e736144f1df262950657b1b8f 56beb99b00bfb9dd7db2d6f9f0e5c652be83af29 Thịnhne <thinhcche171897@fpt.edu.vn> 1753092074 +0700	commit: thinhne first
-56beb99b00bfb9dd7db2d6f9f0e5c652be83af29 f1c8d8bc9da893d1873937ee1e78d55bbc2567f6 Thịnhne <thinhcche171897@fpt.edu.vn> 1753104788 +0700	commit: đăng lên lại
-f1c8d8bc9da893d1873937ee1e78d55bbc2567f6 455449d14d4302c3941fa4f2d8738612a97c0cca Thịnhne <thinhcche171897@fpt.edu.vn> 1753166706 +0700	commit: fix: cập nhật code cục bộ
-455449d14d4302c3941fa4f2d8738612a97c0cca eb32433709f3d902414fd68a286ae7f80b45a0e2 Thịnhne <thinhcche171897@fpt.edu.vn> 1753166962 +0700	commit (merge): resolve merge conflicts
