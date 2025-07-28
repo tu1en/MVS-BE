@@ -34,7 +34,10 @@ buildNumber.properties
 .mvn/timing.properties
 .mvn/wrapper/maven-wrapper.jar
 
-# IDE
+# JSON config files (Firebase, credentials)
+src/main/resources/*.json
+
+# IDE specific
 .idea/
 *.iws
 *.iml
@@ -44,13 +47,55 @@ buildNumber.properties
 .project
 .classpath
 
-# OS
+# OS generated files
 .DS_Store
 Thumbs.db
 
-# Application specific
-*.properties.backup
+# Spring Boot specific
 **/application.properties
 application-*.properties
+**/application.yml
+application-*.yml
+*.properties.backup
+
+# Environment files
+.env
+*.env
+
+# Custom config or sensitive classes
 **/DatabaseConfig.java
-"src/main/resources/mve-1-firebase-adminsdk.json" 
+
+# Custom folders (user specific)
+.git_disabled/
+database/
+sql/
+uploads/
+backup/
+tmp/
+temp/
+
+# Test reports & cache
+surefire-reports/
+test-output/
+reports/
+.cache/
+
+# Logs directory
+logs/
+.git_disabled/
+database/
+sql/
+uploads/
+backup/
+tmp/
+logs/
+
+# Node (if using frontend in same repo)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Gradle (if hybrid build)
+.gradle/
+build/
