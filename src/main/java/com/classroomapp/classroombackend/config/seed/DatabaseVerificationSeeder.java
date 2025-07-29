@@ -75,6 +75,11 @@ public class DatabaseVerificationSeeder {
                                      dayInfo + " " + timeInfo + 
                                      " | " + titleInfo + 
                                      " | Location: " + locationInfo);
+                    System.out.println("   - Schedule " + (i+1) + ": " + 
+                                     getDayName(schedule.getDayOfWeek()) + " " +
+                                     schedule.getStartTime() + "-" + schedule.getEndTime() + 
+                                     " | " + schedule.getSubject() + 
+                                     " | Room: " + schedule.getRoom());
                 }
                 if (teacherSchedules.size() > 5) {
                     System.out.println("   ... and " + (teacherSchedules.size() - 5) + " more schedules");
@@ -119,3 +124,5 @@ public class DatabaseVerificationSeeder {
         return getDayName(dayOfWeek.getValue() - 1); // Convert to 0-based index
     }
 }
+ 
+

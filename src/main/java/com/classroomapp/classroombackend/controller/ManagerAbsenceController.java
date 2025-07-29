@@ -1,7 +1,7 @@
 package com.classroomapp.classroombackend.controller;
 
-import com.classroomapp.classroombackend.dto.absencemanagement.AbsenceDto;
-import com.classroomapp.classroombackend.dto.absencemanagement.TeacherLeaveInfoDto;
+import com.classroomapp.classroombackend.dto.absencemanagement.AbsenceDTO;
+import com.classroomapp.classroombackend.dto.absencemanagement.TeacherLeaveInfoDTO;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.repository.absencemanagement.AbsenceRepository;
@@ -130,38 +130,38 @@ public class ManagerAbsenceController {
     }
 
     @GetMapping("/requests")
-    public ResponseEntity<List<AbsenceDto>> getAllAbsenceRequests() {
-        List<AbsenceDto> absences = absenceService.getAllAbsenceRequests();
+    public ResponseEntity<List<AbsenceDTO>> getAllAbsenceRequests() {
+        List<AbsenceDTO> absences = absenceService.getAllAbsenceRequests();
         return ResponseEntity.ok(absences);
     }
 
     @GetMapping("/requests/pending")
-    public ResponseEntity<List<AbsenceDto>> getPendingAbsenceRequests() {
-        List<AbsenceDto> pendingAbsences = absenceService.getPendingAbsenceRequests();
+    public ResponseEntity<List<AbsenceDTO>> getPendingAbsenceRequests() {
+        List<AbsenceDTO> pendingAbsences = absenceService.getPendingAbsenceRequests();
         return ResponseEntity.ok(pendingAbsences);
     }
 
     @GetMapping("/employees")
-    public ResponseEntity<List<TeacherLeaveInfoDto>> getAllEmployeesLeaveInfo() {
-        List<TeacherLeaveInfoDto> employeesInfo = absenceService.getAllTeachersLeaveInfo();
+    public ResponseEntity<List<TeacherLeaveInfoDTO>> getAllEmployeesLeaveInfo() {
+        List<TeacherLeaveInfoDTO> employeesInfo = absenceService.getAllTeachersLeaveInfo();
         return ResponseEntity.ok(employeesInfo);
     }
 
     @GetMapping("/employees/{employeeId}")
-    public ResponseEntity<TeacherLeaveInfoDto> getEmployeeLeaveInfo(@PathVariable Long employeeId) {
-        TeacherLeaveInfoDto employeeInfo = absenceService.getTeacherLeaveInfo(employeeId);
+    public ResponseEntity<TeacherLeaveInfoDTO> getEmployeeLeaveInfo(@PathVariable Long employeeId) {
+        TeacherLeaveInfoDTO employeeInfo = absenceService.getTeacherLeaveInfo(employeeId);
         return ResponseEntity.ok(employeeInfo);
     }
 
     @PostMapping("/requests/{absenceId}/approve")
-    public ResponseEntity<AbsenceDto> approveAbsence(
+    public ResponseEntity<AbsenceDTO> approveAbsence(
             @PathVariable Long absenceId,
             Authentication authentication) {
         try {
             log.info("Processing approval request for absence ID: {}", absenceId);
             Long managerId = getUserIdFromAuthentication(authentication);
             log.info("Manager ID from authentication: {}", managerId);
-            AbsenceDto approvedAbsence = absenceService.approveAbsence(absenceId, managerId);
+            AbsenceDTO approvedAbsence = absenceService.approveAbsence(absenceId, managerId);
             return ResponseEntity.ok(approvedAbsence);
         } catch (Exception e) {
             log.error("Error approving absence request {}: {}", absenceId, e.getMessage(), e);
@@ -170,13 +170,13 @@ public class ManagerAbsenceController {
     }
 
     @PostMapping("/requests/{absenceId}/reject")
-    public ResponseEntity<AbsenceDto> rejectAbsence(
+    public ResponseEntity<AbsenceDTO> rejectAbsence(
             @PathVariable Long absenceId,
             @RequestBody String reason,
             Authentication authentication) {
         try {
             Long managerId = getUserIdFromAuthentication(authentication);
-            AbsenceDto rejectedAbsence = absenceService.rejectAbsence(absenceId, reason, managerId);
+            AbsenceDTO rejectedAbsence = absenceService.rejectAbsence(absenceId, reason, managerId);
             return ResponseEntity.ok(rejectedAbsence);
         } catch (Exception e) {
             log.error("Error rejecting absence request {}: {}", absenceId, e.getMessage(), e);

@@ -1,9 +1,9 @@
 package com.classroomapp.classroombackend.service.impl;
 
 import com.classroomapp.classroombackend.constants.RoleConstants;
-import com.classroomapp.classroombackend.dto.absencemanagement.AbsenceDto;
-import com.classroomapp.classroombackend.dto.absencemanagement.CreateAbsenceDto;
-import com.classroomapp.classroombackend.dto.absencemanagement.TeacherLeaveInfoDto;
+import com.classroomapp.classroombackend.dto.absencemanagement.AbsenceDTO;
+import com.classroomapp.classroombackend.dto.absencemanagement.CreateAbsenceDTO;
+import com.classroomapp.classroombackend.dto.absencemanagement.TeacherLeaveInfoDTO;
 import com.classroomapp.classroombackend.exception.BusinessLogicException;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
 import com.classroomapp.classroombackend.model.Absence;
@@ -35,7 +35,7 @@ public class AbsenceServiceImpl implements AbsenceService {
 
     @Override
     @Transactional
-    public AbsenceDto createAbsenceRequest(CreateAbsenceDto createDto, Long userId) {
+    public AbsenceDTO createAbsenceRequest(CreateAbsenceDTO createDto, Long userId) {
         log.info("Creating absence request for user: {}", userId);
         
         // Validate user exists and is a teacher or accountant
@@ -102,7 +102,7 @@ public class AbsenceServiceImpl implements AbsenceService {
     }
 
     @Override
-    public List<AbsenceDto> getMyAbsenceRequests(Long userId) {
+    public List<AbsenceDTO> getMyAbsenceRequests(Long userId) {
         List<Absence> absences = absenceRepository.findByUserId(userId);
         return absences.stream()
             .map(this::convertToDto)
@@ -110,7 +110,7 @@ public class AbsenceServiceImpl implements AbsenceService {
     }
 
     @Override
-    public AbsenceDto getAbsenceById(Long absenceId, Long userId) {
+    public AbsenceDTO getAbsenceById(Long absenceId, Long userId) {
         Absence absence = absenceRepository.findById(absenceId)
             .orElseThrow(() -> new ResourceNotFoundException("Absence not found with id: " + absenceId));
         
@@ -123,7 +123,7 @@ public class AbsenceServiceImpl implements AbsenceService {
     }
 
     @Override
-    public List<AbsenceDto> getAllAbsenceRequests() {
+    public List<AbsenceDTO> getAllAbsenceRequests() {
         log.info("Fetching all absence requests");
         List<Absence> absences = absenceRepository.findAll();
         log.info("Found {} absence requests in database", absences.size());
@@ -133,7 +133,7 @@ public class AbsenceServiceImpl implements AbsenceService {
     }
 
     @Override
-    public List<AbsenceDto> getPendingAbsenceRequests() {
+    public List<AbsenceDTO> getPendingAbsenceRequests() {
         List<Absence> pendingAbsences = absenceRepository.findByStatusOrderByCreatedAtDesc("PENDING");
         return pendingAbsences.stream()
             .map(this::convertToDto)
@@ -141,7 +141,7 @@ public class AbsenceServiceImpl implements AbsenceService {
     }
 
     @Override
-    public List<TeacherLeaveInfoDto> getAllTeachersLeaveInfo() {
+    public List<TeacherLeaveInfoDTO> getAllTeachersLeaveInfo() {
         // Get all teachers and accountants
         log.info("Fetching all teachers and accountants with role ID: {} and {}", RoleConstants.TEACHER, RoleConstants.ACCOUNTANT);
         List<User> employees = userRepository.findByRoleId(RoleConstants.TEACHER);
@@ -154,7 +154,7 @@ public class AbsenceServiceImpl implements AbsenceService {
     }
 
     @Override
-    public TeacherLeaveInfoDto getTeacherLeaveInfo(Long employeeId) {
+    public TeacherLeaveInfoDTO getTeacherLeaveInfo(Long employeeId) {
         User employee = userRepository.findById(employeeId)
             .orElseThrow(() -> new ResourceNotFoundException("NhÃ¢n viÃªn khÃ´ng tá»“n táº¡i vá»›i id: " + employeeId));
         
@@ -167,7 +167,7 @@ public class AbsenceServiceImpl implements AbsenceService {
 
     @Override
     @Transactional
-    public AbsenceDto approveAbsence(Long absenceId, Long managerId) {
+    public AbsenceDTO approveAbsence(Long absenceId, Long managerId) {
         log.info("Approving absence request: {} by manager: {}", absenceId, managerId);
         
         Absence absence = absenceRepository.findById(absenceId)
@@ -208,7 +208,7 @@ public class AbsenceServiceImpl implements AbsenceService {
 
     @Override
     @Transactional
-    public AbsenceDto rejectAbsence(Long absenceId, String reason, Long managerId) {
+    public AbsenceDTO rejectAbsence(Long absenceId, String reason, Long managerId) {
         log.info("Rejecting absence request: {} by manager: {}", absenceId, managerId);
         
         Absence absence = absenceRepository.findById(absenceId)
@@ -261,8 +261,8 @@ public class AbsenceServiceImpl implements AbsenceService {
         }
     }
 
-    private TeacherLeaveInfoDto calculateTeacherLeaveInfo(User employee) {
-        TeacherLeaveInfoDto info = new TeacherLeaveInfoDto();
+    private TeacherLeaveInfoDTO calculateTeacherLeaveInfo(User employee) {
+        TeacherLeaveInfoDTO info = new TeacherLeaveInfoDTO();
         info.setUserId(employee.getId());
         info.setEmail(employee.getEmail());
         info.setFullName(employee.getFullName());
@@ -317,8 +317,8 @@ public class AbsenceServiceImpl implements AbsenceService {
         return info;
     }
 
-    private AbsenceDto convertToDto(Absence absence) {
-        AbsenceDto dto = modelMapper.map(absence, AbsenceDto.class);
+    private AbsenceDTO convertToDto(Absence absence) {
+        AbsenceDTO dto = modelMapper.map(absence, AbsenceDTO.class);
         return dto;
     }
 

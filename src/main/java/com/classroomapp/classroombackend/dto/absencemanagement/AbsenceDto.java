@@ -7,7 +7,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
-public class AbsenceDto {
+public class AbsenceDTO {
     private Long id;
     private Long userId;
     private String userEmail;

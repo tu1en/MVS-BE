@@ -1,27 +1,27 @@
 package com.classroomapp.classroombackend.service;
 
-import com.classroomapp.classroombackend.dto.absencemanagement.AbsenceDto;
-import com.classroomapp.classroombackend.dto.absencemanagement.CreateAbsenceDto;
-import com.classroomapp.classroombackend.dto.absencemanagement.TeacherLeaveInfoDto;
+import com.classroomapp.classroombackend.dto.absencemanagement.AbsenceDTO;
+import com.classroomapp.classroombackend.dto.absencemanagement.CreateAbsenceDTO;
+import com.classroomapp.classroombackend.dto.absencemanagement.TeacherLeaveInfoDTO;
 
 import java.util.List;
 
 public interface AbsenceService {
     
     // Employee operations (Teacher + Accountant)
-    AbsenceDto createAbsenceRequest(CreateAbsenceDto createDto, Long userId);
-    List<AbsenceDto> getMyAbsenceRequests(Long userId);
-    AbsenceDto getAbsenceById(Long absenceId, Long userId);
+    AbsenceDTO createAbsenceRequest(CreateAbsenceDTO createDto, Long userId);
+    List<AbsenceDTO> getMyAbsenceRequests(Long userId);
+    AbsenceDTO getAbsenceById(Long absenceId, Long userId);
     
     // Manager operations
-    List<AbsenceDto> getAllAbsenceRequests();
-    List<AbsenceDto> getPendingAbsenceRequests();
-    List<TeacherLeaveInfoDto> getAllTeachersLeaveInfo(); // Tráº£ vá» cáº£ Teacher vÃ  Accountant
-    TeacherLeaveInfoDto getTeacherLeaveInfo(Long employeeId); // Tráº£ vá» info cho Teacher hoáº·c Accountant
+    List<AbsenceDTO> getAllAbsenceRequests();
+    List<AbsenceDTO> getPendingAbsenceRequests();
+    List<TeacherLeaveInfoDTO> getAllTeachersLeaveInfo(); // Tráº£ vá» cáº£ Teacher vÃ  Accountant
+    TeacherLeaveInfoDTO getTeacherLeaveInfo(Long employeeId); // Tráº£ vá» info cho Teacher hoáº·c Accountant
     
     // Approval operations
-    AbsenceDto approveAbsence(Long absenceId, Long managerId);
-    AbsenceDto rejectAbsence(Long absenceId, String reason, Long managerId);
+    AbsenceDTO approveAbsence(Long absenceId, Long managerId);
+    AbsenceDTO rejectAbsence(Long absenceId, String reason, Long managerId);
     
     // Utility operations
     void resetAnnualLeave(); // Scheduled task to reset leave for all teachers

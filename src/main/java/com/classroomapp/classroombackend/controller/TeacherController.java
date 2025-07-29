@@ -26,8 +26,8 @@ import com.classroomapp.classroombackend.dto.AnnouncementDto;
 import com.classroomapp.classroombackend.dto.CreateAnnouncementDto;
 import com.classroomapp.classroombackend.dto.ScheduleDto;
 import com.classroomapp.classroombackend.dto.TimetableEventDto;
-import com.classroomapp.classroombackend.dto.absencemanagement.AbsenceDto;
-import com.classroomapp.classroombackend.dto.absencemanagement.CreateAbsenceDto;
+import com.classroomapp.classroombackend.dto.absencemanagement.AbsenceDTO;
+import com.classroomapp.classroombackend.dto.absencemanagement.CreateAbsenceDTO;
 import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
 import com.classroomapp.classroombackend.model.Contract;
@@ -207,7 +207,7 @@ public class TeacherController {
     // ================================
     @GetMapping("/leave-requests")
     @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<List<AbsenceDto>> getMyLeaveRequests(Authentication authentication) {
+    public ResponseEntity<List<AbsenceDTO>> getMyLeaveRequests(Authentication authentication) {
         log.info("Teacher requesting leave requests");
         
         try {
@@ -216,7 +216,7 @@ public class TeacherController {
                     .orElseGet(() -> userRepository.findByUsername(principal)
                             .orElseThrow(() -> new ResourceNotFoundException("User not found: " + principal)));
             
-            List<AbsenceDto> leaveRequests = absenceService.getMyAbsenceRequests(currentUser.getId());
+            List<AbsenceDTO> leaveRequests = absenceService.getMyAbsenceRequests(currentUser.getId());
             return ResponseEntity.ok(leaveRequests);
             
         } catch (Exception e) {
@@ -227,7 +227,7 @@ public class TeacherController {
 
     @PostMapping("/leave-requests")
     @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<AbsenceDto> submitLeaveRequest(@Valid @RequestBody CreateAbsenceDto createDto, Authentication authentication) {
+    public ResponseEntity<AbsenceDTO> submitLeaveRequest(@Valid @RequestBody CreateAbsenceDTO createDto, Authentication authentication) {
         log.info("Teacher submitting leave request");
         
         try {
@@ -236,7 +236,7 @@ public class TeacherController {
                     .orElseGet(() -> userRepository.findByUsername(principal)
                             .orElseThrow(() -> new ResourceNotFoundException("User not found: " + principal)));
             
-            AbsenceDto createdRequest = absenceService.createAbsenceRequest(createDto, currentUser.getId());
+            AbsenceDTO createdRequest = absenceService.createAbsenceRequest(createDto, currentUser.getId());
             return ResponseEntity.status(HttpStatus.CREATED).body(createdRequest);
             
         } catch (Exception e) {
@@ -247,7 +247,7 @@ public class TeacherController {
 
     @GetMapping("/leave-requests/{absenceId}")
     @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<AbsenceDto> getLeaveRequestById(@PathVariable Long absenceId, Authentication authentication) {
+    public ResponseEntity<AbsenceDTO> getLeaveRequestById(@PathVariable Long absenceId, Authentication authentication) {
         log.info("Teacher requesting leave request with ID: {}", absenceId);
         
         try {
@@ -256,7 +256,7 @@ public class TeacherController {
                     .orElseGet(() -> userRepository.findByUsername(principal)
                             .orElseThrow(() -> new ResourceNotFoundException("User not found: " + principal)));
             
-            AbsenceDto leaveRequest = absenceService.getAbsenceById(absenceId, currentUser.getId());
+            AbsenceDTO leaveRequest = absenceService.getAbsenceById(absenceId, currentUser.getId());
             return ResponseEntity.ok(leaveRequest);
             
         } catch (Exception e) {
@@ -270,21 +270,21 @@ public class TeacherController {
     // ================================
     @GetMapping("/absences")
     @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<List<AbsenceDto>> getMyAbsenceRequests(Authentication authentication) {
+    public ResponseEntity<List<AbsenceDTO>> getMyAbsenceRequests(Authentication authentication) {
         // Redirect to the new endpoint
         return getMyLeaveRequests(authentication);
     }
 
     @PostMapping("/absences")
     @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<AbsenceDto> createAbsenceRequest(@Valid @RequestBody CreateAbsenceDto createDto, Authentication authentication) {
+    public ResponseEntity<AbsenceDTO> createAbsenceRequest(@Valid @RequestBody CreateAbsenceDTO createDto, Authentication authentication) {
         // Redirect to the new endpoint
         return submitLeaveRequest(createDto, authentication);
     }
 
     @GetMapping("/absences/{absenceId}")
     @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<AbsenceDto> getAbsenceById(@PathVariable Long absenceId, Authentication authentication) {
+    public ResponseEntity<AbsenceDTO> getAbsenceById(@PathVariable Long absenceId, Authentication authentication) {
         // Redirect to the new endpoint
         return getLeaveRequestById(absenceId, authentication);
     }

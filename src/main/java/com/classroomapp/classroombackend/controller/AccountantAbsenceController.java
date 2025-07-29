@@ -1,7 +1,7 @@
 package com.classroomapp.classroombackend.controller;
 
-import com.classroomapp.classroombackend.dto.absencemanagement.AbsenceDto;
-import com.classroomapp.classroombackend.dto.absencemanagement.CreateAbsenceDto;
+import com.classroomapp.classroombackend.dto.absencemanagement.AbsenceDTO;
+import com.classroomapp.classroombackend.dto.absencemanagement.CreateAbsenceDTO;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.AbsenceService;
@@ -28,13 +28,13 @@ public class AccountantAbsenceController {
     private final UserRepository userRepository;
 
     @PostMapping
-    public ResponseEntity<AbsenceDto> createAbsenceRequest(
-            @Valid @RequestBody CreateAbsenceDto createDto,
+    public ResponseEntity<AbsenceDTO> createAbsenceRequest(
+            @Valid @RequestBody CreateAbsenceDTO createDto,
             Authentication authentication) {
         try {
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
             Long userId = getUserIdFromAuthentication(authentication);
-            AbsenceDto createdAbsence = absenceService.createAbsenceRequest(createDto, userId);
+            AbsenceDTO createdAbsence = absenceService.createAbsenceRequest(createDto, userId);
             return ResponseEntity.status(HttpStatus.CREATED).body(createdAbsence);
         } catch (Exception e) {
             log.error("Error creating absence request: {}", e.getMessage(), e);
@@ -43,18 +43,18 @@ public class AccountantAbsenceController {
     }
 
     @GetMapping
-    public ResponseEntity<List<AbsenceDto>> getMyAbsenceRequests(Authentication authentication) {
+    public ResponseEntity<List<AbsenceDTO>> getMyAbsenceRequests(Authentication authentication) {
         Long userId = getUserIdFromAuthentication(authentication);
-        List<AbsenceDto> absences = absenceService.getMyAbsenceRequests(userId);
+        List<AbsenceDTO> absences = absenceService.getMyAbsenceRequests(userId);
         return ResponseEntity.ok(absences);
     }
 
     @GetMapping("/{absenceId}")
-    public ResponseEntity<AbsenceDto> getAbsenceById(
+    public ResponseEntity<AbsenceDTO> getAbsenceById(
             @PathVariable Long absenceId,
             Authentication authentication) {
         Long userId = getUserIdFromAuthentication(authentication);
-        AbsenceDto absence = absenceService.getAbsenceById(absenceId, userId);
+        AbsenceDTO absence = absenceService.getAbsenceById(absenceId, userId);
         return ResponseEntity.ok(absence);
     }
 

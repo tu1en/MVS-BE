@@ -9,7 +9,7 @@ import jakarta.validation.constraints.Positive;
 import java.time.LocalDate;
 
 @Data
-public class CreateAbsenceDto {
+public class CreateAbsenceDTO {
     @NotNull(message = "Start date is required")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate startDate;
