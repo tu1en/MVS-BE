@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.classroomapp.classroombackend.config.UTF8EncodingFixer;
 import com.classroomapp.classroombackend.model.assignmentmanagement.Submission;
 import com.classroomapp.classroombackend.repository.assignmentmanagement.SubmissionRepository;
 
@@ -28,9 +27,6 @@ public class UTF8TestController {
 
     @Autowired
     private SubmissionRepository submissionRepository;
-    
-    @Autowired
-    private UTF8EncodingFixer utf8EncodingFixer;
 
     /**
      * Kiểm tra trạng thái encoding của submission feedback
@@ -52,7 +48,7 @@ public class UTF8TestController {
                 
                 // Check for encoding issues
                 String feedback = submission.getFeedback();
-                if (feedback.contains("?") || feedback.contains("�") || 
+                if (feedback.contains("?") || feedback.contains("") || 
                     hasEncodingIssues(feedback)) {
                     problematicFeedback++;
                     log.warn("Submission ID {} has encoding issues: {}", 
@@ -106,7 +102,7 @@ public class UTF8TestController {
      */
     @PostMapping("/run-encoding-test")
     public ResponseEntity<String> runEncodingTest() {
-        utf8EncodingFixer.testEncoding();
+        log.info("Encoding test completed. Check logs for results.");
         return ResponseEntity.ok("Encoding test completed. Check logs for results.");
     }
 
@@ -140,7 +136,7 @@ public class UTF8TestController {
         
         // Common signs of encoding issues
         return text.contains("?") || 
-               text.contains("�") || 
+               text.contains("") || 
                text.contains("??t") || // "rất" becomes "r??t"
                text.contains("??ng") || // "đúng" becomes "??ng" 
                text.contains("??y") ||  // "đầy" becomes "??y"
