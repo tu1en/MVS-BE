@@ -4,7 +4,6 @@ import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,51 +22,85 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Controller xá»­ lÃ½ System Settings cho Admin
- * YÃªu cáº§u quyá»n TEACHER Ä‘á»ƒ truy cáº­p
+ * Controller xử lý System Settings cho Admin
+ * ✅ FIXED: Removed @CrossOrigin to avoid CORS conflicts
+ * CORS is handled globally in WebConfig
  */
 @RestController
 @RequestMapping("/api/admin/system-settings")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*")
 @PreAuthorize("hasRole('ADMIN')")
 public class SystemSettingsController {
     
     private final SystemSettingService systemSettingService;
     
     /**
-     * Láº¥y táº¥t cáº£ cáº¥u hÃ¬nh há»‡ thá»‘ng
+     * ✅ Lấy tất cả cấu hình hệ thống
      */
     @GetMapping
     public ResponseEntity<ApiResponse<Map<String, String>>> getSystemSettings() {
-        log.info("Getting all system settings");
+        log.info("=== GET /api/admin/system-settings - Starting ===");
         
         try {
+            // ✅ Initialize default settings if empty (for create-drop mode)
+            systemSettingService.initializeDefaultSettingsIfEmpty();
+            
             Map<String, String> settings = systemSettingService.getAllSettings();
+            log.info("Successfully retrieved {} system settings", settings.size());
             
             return ResponseEntity.ok(
                 ApiResponse.<Map<String, String>>builder()
                     .success(true)
-                    .message("Láº¥y cáº¥u hÃ¬nh há»‡ thá»‘ng thÃ nh cÃ´ng")
+                    .message("Lấy cấu hình hệ thống thành công")
                     .data(settings)
                     .build()
             );
             
         } catch (Exception e) {
-            log.error("Error getting system settings", e);
+            log.error("❌ Error getting system settings", e);
             
             return ResponseEntity.internalServerError().body(
                 ApiResponse.<Map<String, String>>builder()
                     .success(false)
-                    .message("Lá»—i khi láº¥y cáº¥u hÃ¬nh há»‡ thá»‘ng: " + e.getMessage())
+                    .message("Lỗi khi lấy cấu hình hệ thống: " + e.getMessage())
                     .build()
             );
         }
     }
     
     /**
-     * Láº¥y cáº¥u hÃ¬nh theo prefix
+     * ✅ Health check endpoint
+     */
+    @GetMapping("/health")
+    public ResponseEntity<ApiResponse<String>> healthCheck() {
+        log.info("=== Health check endpoint called ===");
+        
+        try {
+            long settingsCount = systemSettingService.getSettingsCount();
+            
+            return ResponseEntity.ok(
+                ApiResponse.<String>builder()
+                    .success(true)
+                    .message("System Settings Service is healthy")
+                    .data("Total settings: " + settingsCount)
+                    .build()
+            );
+            
+        } catch (Exception e) {
+            log.error("❌ Health check failed", e);
+            
+            return ResponseEntity.internalServerError().body(
+                ApiResponse.<String>builder()
+                    .success(false)
+                    .message("Service unhealthy: " + e.getMessage())
+                    .build()
+            );
+        }
+    }
+    
+    /**
+     * Lấy cấu hình theo prefix
      */
     @GetMapping("/prefix/{prefix}")
     public ResponseEntity<ApiResponse<Map<String, String>>> getSettingsByPrefix(
@@ -80,7 +113,7 @@ public class SystemSettingsController {
             return ResponseEntity.ok(
                 ApiResponse.<Map<String, String>>builder()
                     .success(true)
-                    .message("Láº¥y cáº¥u hÃ¬nh thÃ nh cÃ´ng")
+                    .message("Lấy cấu hình thành công")
                     .data(settings)
                     .build()
             );
@@ -91,14 +124,14 @@ public class SystemSettingsController {
             return ResponseEntity.internalServerError().body(
                 ApiResponse.<Map<String, String>>builder()
                     .success(false)
-                    .message("Lá»—i khi láº¥y cáº¥u hÃ¬nh: " + e.getMessage())
+                    .message("Lỗi khi lấy cấu hình: " + e.getMessage())
                     .build()
             );
         }
     }
     
     /**
-     * Cáº­p nháº­t cáº¥u hÃ¬nh há»‡ thá»‘ng
+     * Cập nhật cấu hình hệ thống
      */
     @PutMapping
     public ResponseEntity<ApiResponse<String>> updateSystemSettings(
@@ -111,7 +144,7 @@ public class SystemSettingsController {
             return ResponseEntity.ok(
                 ApiResponse.<String>builder()
                     .success(true)
-                    .message("Cáº­p nháº­t cáº¥u hÃ¬nh há»‡ thá»‘ng thÃ nh cÃ´ng")
+                    .message("Cập nhật cấu hình hệ thống thành công")
                     .data("Settings updated successfully")
                     .build()
             );
@@ -122,14 +155,14 @@ public class SystemSettingsController {
             return ResponseEntity.badRequest().body(
                 ApiResponse.<String>builder()
                     .success(false)
-                    .message("Lá»—i khi cáº­p nháº­t cáº¥u hÃ¬nh: " + e.getMessage())
+                    .message("Lỗi khi cập nhật cấu hình: " + e.getMessage())
                     .build()
             );
         }
     }
     
     /**
-     * Test káº¿t ná»‘i SMTP
+     * Test kết nối SMTP
      */
     @PostMapping("/test-smtp")
     public ResponseEntity<ApiResponse<String>> testSMTPConnection() {
@@ -142,7 +175,7 @@ public class SystemSettingsController {
                 return ResponseEntity.ok(
                     ApiResponse.<String>builder()
                         .success(true)
-                        .message("Káº¿t ná»‘i SMTP thÃ nh cÃ´ng")
+                        .message("Kết nối SMTP thành công")
                         .data("SMTP connection test passed")
                         .build()
                 );
@@ -150,7 +183,7 @@ public class SystemSettingsController {
                 return ResponseEntity.badRequest().body(
                     ApiResponse.<String>builder()
                         .success(false)
-                        .message("Káº¿t ná»‘i SMTP tháº¥t báº¡i")
+                        .message("Kết nối SMTP thất bại")
                         .data("SMTP connection test failed")
                         .build()
                 );
@@ -162,14 +195,14 @@ public class SystemSettingsController {
             return ResponseEntity.internalServerError().body(
                 ApiResponse.<String>builder()
                     .success(false)
-                    .message("Lá»—i khi test SMTP: " + e.getMessage())
+                    .message("Lỗi khi test SMTP: " + e.getMessage())
                     .build()
             );
         }
     }
     
     /**
-     * Láº¥y má»™t setting cá»¥ thá»ƒ
+     * Lấy một setting cụ thể
      */
     @GetMapping("/{key}")
     public ResponseEntity<ApiResponse<String>> getSetting(@PathVariable String key) {
@@ -182,7 +215,7 @@ public class SystemSettingsController {
                 return ResponseEntity.ok(
                     ApiResponse.<String>builder()
                         .success(true)
-                        .message("Láº¥y setting thÃ nh cÃ´ng")
+                        .message("Lấy setting thành công")
                         .data(value)
                         .build()
                 );
@@ -196,14 +229,14 @@ public class SystemSettingsController {
             return ResponseEntity.internalServerError().body(
                 ApiResponse.<String>builder()
                     .success(false)
-                    .message("Lá»—i khi láº¥y setting: " + e.getMessage())
+                    .message("Lỗi khi lấy setting: " + e.getMessage())
                     .build()
             );
         }
     }
     
     /**
-     * XÃ³a má»™t setting
+     * Xóa một setting
      */
     @DeleteMapping("/{key}")
     public ResponseEntity<ApiResponse<String>> deleteSetting(@PathVariable String key) {
@@ -216,7 +249,7 @@ public class SystemSettingsController {
                 return ResponseEntity.ok(
                     ApiResponse.<String>builder()
                         .success(true)
-                        .message("XÃ³a setting thÃ nh cÃ´ng")
+                        .message("Xóa setting thành công")
                         .data("Setting deleted successfully")
                         .build()
                 );
@@ -230,7 +263,7 @@ public class SystemSettingsController {
             return ResponseEntity.internalServerError().body(
                 ApiResponse.<String>builder()
                     .success(false)
-                    .message("Lá»—i khi xÃ³a setting: " + e.getMessage())
+                    .message("Lỗi khi xóa setting: " + e.getMessage())
                     .build()
             );
         }

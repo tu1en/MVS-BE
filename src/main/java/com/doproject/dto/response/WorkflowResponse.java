@@ -8,12 +8,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * DTO cho response cá»§a workflow
+ * DTO Response cho Workflow operations
  */
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class WorkflowResponse {
     
     private Long id;

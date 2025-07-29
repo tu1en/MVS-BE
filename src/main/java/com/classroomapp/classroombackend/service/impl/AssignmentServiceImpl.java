@@ -23,12 +23,12 @@ import com.classroomapp.classroombackend.dto.BulkGradingResultDto;
 import com.classroomapp.classroombackend.dto.CreateFeedbackDto;
 import com.classroomapp.classroombackend.dto.CreateRubricDto;
 import com.classroomapp.classroombackend.dto.FeedbackDto;
-import com.classroomapp.classroombackend.dto.common.FileUploadResponse;
 import com.classroomapp.classroombackend.dto.GradeDto;
 import com.classroomapp.classroombackend.dto.GradingAnalyticsDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.CreateAssignmentDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.GradeSubmissionDto;
+import com.classroomapp.classroombackend.dto.common.FileUploadResponse;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
 import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
 import com.classroomapp.classroombackend.model.assignmentmanagement.AssignmentAttachment;
@@ -122,37 +122,132 @@ public class AssignmentServiceImpl implements AssignmentService {
             log.info("Security check passed: User {} is authorized to create assignments in classroom {}",
                     teacher.getUsername(), classroom.getId());
 
-            Assignment assignment = modelMapper.map(createAssignmentDto, Assignment.class);
+            // ✨ STEP 1: Create Assignment entity WITHOUT attachments first
+            Assignment assignment = new Assignment();
+            assignment.setTitle(createAssignmentDto.getTitle());
+            assignment.setDescription(createAssignmentDto.getDescription());
+            assignment.setDueDate(createAssignmentDto.getDueDate());
+            assignment.setPoints(createAssignmentDto.getPoints());
             assignment.setClassroom(classroom);
-            log.info("Created assignment entity: title={}, dueDate={}, points={}",
+            
+            // ✨ Initialize empty attachments list to prevent null pointer
+            assignment.setAttachments(new ArrayList<>());
+
+            log.info("📝 Created assignment entity: title={}, dueDate={}, points={}",
                     assignment.getTitle(), assignment.getDueDate(), assignment.getPoints());
 
+            // ✨ STEP 2: Save Assignment FIRST to get the ID
+            Assignment savedAssignment = assignmentRepository.save(assignment);
+            log.info("✅ Successfully saved assignment with ID: {}", savedAssignment.getId());
+
+            // ✨ STEP 3: Now process attachments with the saved assignment ID
             if (createAssignmentDto.getAttachments() != null && !createAssignmentDto.getAttachments().isEmpty()) {
-                log.info("Processing {} attachments for assignment", createAssignmentDto.getAttachments().size());
-                for (FileUploadResponse fileInfo : createAssignmentDto.getAttachments()) {
+                log.info("📎 Processing {} attachments for assignment {}", 
+                    createAssignmentDto.getAttachments().size(), savedAssignment.getId());
+                
+                List<AssignmentAttachment> attachmentEntities = new ArrayList<>();
+                
+                for (int i = 0; i < createAssignmentDto.getAttachments().size(); i++) {
+                    FileUploadResponse fileInfo = createAssignmentDto.getAttachments().get(i);
+                    
+                    log.info("🔍 Processing attachment {}: {}", i, fileInfo);
+                    
+                    // ✅ Skip null entries
+                    if (fileInfo == null) {
+                        log.warn("⚠️ Skipping null attachment at index {}", i);
+                        continue;
+                    }
+                    
+                    // 🔍 Extract file information with multiple fallback strategies
+                    String fileName = null;
+                    String fileUrl = null;
+                    String fileType = null;
+                    Long fileSize = null;
+                    
+                    // Try different getter methods based on FileUploadResponse structure
+                    try {
+                        // Primary strategy: use originalFilename
+                        fileName = fileInfo.getOriginalFilename();
+                        // Remove fallback attempts as they cause linter errors and are not needed based on FileUploadResponse structure
+                        // if (fileName == null || fileName.trim().isEmpty()) {
+                        //     // Fallback 1: use filename field
+                        //     fileName = fileInfo.getFilename();
+                        //     if (fileName == null || fileName.trim().isEmpty()) {
+                        //         // Fallback 2: use getFileName() method
+                        //         fileName = fileInfo.getFileName();
+                        //     }
+                        // }
+                        
+                        fileUrl = fileInfo.getFileUrl();
+                        fileType = fileInfo.getFileType(); // Maps to mimeType
+                        fileSize = fileInfo.getFileSize();  // Maps to fileSize field
+                        
+                    } catch (Exception e) {
+                        log.error("❌ Error extracting file info from attachment {}: {}", i, e.getMessage());
+                        continue;
+                    }
+                    
+                    log.info("📄 Extracted file data: fileName={}, fileUrl={}, fileType={}, fileSize={}", 
+                        fileName, fileUrl, fileType, fileSize);
+                    
+                    // ✅ Validate required fields
+                    if (fileName == null || fileName.trim().isEmpty()) {
+                        log.warn("⚠️ Skipping attachment {} - fileName is null or empty", i);
+                        continue;
+                    }
+                    if (fileUrl == null || fileUrl.trim().isEmpty()) {
+                        log.warn("⚠️ Skipping attachment {} - fileUrl is null or empty for file: {}", i, fileName);
+                        continue;
+                    }
+                    
+                    // 🏗️ Create AssignmentAttachment entity
                     AssignmentAttachment attachment = new AssignmentAttachment();
-                    attachment.setFileName(fileInfo.getFileName());
-                    attachment.setFileUrl(fileInfo.getFileUrl());
-                    attachment.setFileType(fileInfo.getFileType());
-                    attachment.setFileSize(fileInfo.getSize());
-                    assignment.addAttachment(attachment);
-                    log.info("Added attachment: fileName={}, fileType={}, fileSize={}",
-                            fileInfo.getFileName(), fileInfo.getFileType(), fileInfo.getSize());
+                    attachment.setFileName(fileName.trim());
+                    attachment.setFileUrl(fileUrl.trim());
+                    attachment.setFileType(fileType != null ? fileType.trim() : "application/octet-stream");
+                    attachment.setFileSize(fileSize != null ? fileSize : 0L);
+                    
+                    // 🔗 CRITICAL: Set the assignment relationship
+                    attachment.setAssignment(savedAssignment);
+                    
+                    attachmentEntities.add(attachment);
+                    
+                    log.info("✅ Created attachment entity: fileName={}, fileType={}, fileSize={}, assignmentId={}", 
+                        fileName, fileType, fileSize, savedAssignment.getId());
                 }
+                
+                // 💾 STEP 4: Save attachments if any were created
+                if (!attachmentEntities.isEmpty()) {
+                    // Set the attachments list and save
+                    savedAssignment.setAttachments(attachmentEntities);
+                    
+                    // Save the assignment with attachments
+                    try {
+                        savedAssignment = assignmentRepository.save(savedAssignment);
+                        log.info("✅ Successfully saved assignment with {} attachments", 
+                            savedAssignment.getAttachments().size());
+                    } catch (Exception e) {
+                        log.error("❌ Error saving assignment with attachments: {}", e.getMessage(), e);
+                        throw new RuntimeException("Failed to save assignment with attachments: " + e.getMessage(), e);
+                    }
+                } else {
+                    log.warn("⚠️ No valid attachments were processed");
+                }
+                
             } else {
-                log.info("No attachments provided for assignment");
+                log.info("ℹ️ No attachments provided for assignment");
             }
 
-            Assignment savedAssignment = assignmentRepository.save(assignment);
-            log.info("Successfully saved assignment with ID: {}", savedAssignment.getId());
-
+            // 🔄 Convert to DTO and return
             AssignmentDto result = modelMapper.map(savedAssignment, AssignmentDto.class);
-            log.info("Assignment creation completed successfully: assignmentId={}, title={}",
-                    result.getId(), result.getTitle());
+            log.info("🎉 Assignment creation completed successfully: assignmentId={}, title={}, attachmentCount={}",
+                    result.getId(), result.getTitle(), 
+                    savedAssignment.getAttachments() != null ? savedAssignment.getAttachments().size() : 0);
+            
             return result;
 
         } catch (Exception e) {
-            log.error("Error creating assignment: {}", e.getMessage(), e);
+            log.error("💥 Error creating assignment: {}", e.getMessage(), e);
             throw e;
         }
     }

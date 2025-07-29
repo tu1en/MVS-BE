@@ -24,7 +24,8 @@ import com.classroomapp.classroombackend.filter.JwtAuthenticationFilter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Spring Security configuration for the application
+ * ✅ FIXED: Spring Security configuration with proper CORS handling
+ * 🎯 SINGLE SOURCE OF TRUTH for CORS configuration
  */
 @Configuration
 @EnableWebSecurity
@@ -40,8 +41,6 @@ public class SecurityConfig {
     
     /**
      * Password encoder bean for password hashing
-     * 
-     * @return password encoder
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -50,10 +49,6 @@ public class SecurityConfig {
     
     /**
      * Authentication manager bean for Spring Security
-     * 
-     * @param authenticationConfiguration authentication configuration
-     * @return authentication manager
-     * @throws Exception if authentication manager cannot be created
      */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
@@ -62,15 +57,19 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        log.info("Configuring security filter chain");
+        log.info("🔧 Configuring security filter chain with CORS");
+        
         http
-            // First configure CORS
+            // ✅ FIRST: Configure CORS (must be first)
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            // Then disable CSRF
+            
+            // ✅ SECOND: Disable CSRF
             .csrf(csrf -> csrf.disable())
-            // Add the JWT filter before the standard authentication filter
+            
+            // ✅ THIRD: Add JWT filter
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-            // Then configure authorization rules
+            
+            // ✅ FOURTH: Configure authorization rules
             .authorizeHttpRequests(authorize -> authorize
                 // Allow OPTIONS requests for CORS preflight
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
@@ -80,15 +79,15 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/register").permitAll()
                 .requestMatchers("/api/auth/google-login").permitAll()
                 .requestMatchers("/api/auth/reset-password").permitAll()
-                .requestMatchers("/api/auth/change-password").authenticated() // Requires authentication
-                .requestMatchers("/api/auth/validate").authenticated() // Requires authentication for token validation
+                .requestMatchers("/api/auth/change-password").authenticated()
+                .requestMatchers("/api/auth/validate").authenticated()
                 .requestMatchers("/api/public/**").permitAll()
-                .requestMatchers("/api/health").permitAll() // Health check endpoint
-                .requestMatchers("/api/v1/health").permitAll() // Health check endpoint v1
-                .requestMatchers("/api/test").permitAll() // Test endpoint
-                .requestMatchers("/api/v1/greetings/hello").permitAll() // Only allow hello endpoint for health check
+                .requestMatchers("/api/health").permitAll()
+                .requestMatchers("/api/v1/health").permitAll()
+                .requestMatchers("/api/test").permitAll()
+                .requestMatchers("/api/v1/greetings/hello").permitAll()
                 .requestMatchers("/api/role-requests/**").permitAll()
-                .requestMatchers("/role-requests/**").permitAll() // Allow both with and without /api prefix
+                .requestMatchers("/role-requests/**").permitAll()
                 
                 // Blog endpoints
                 .requestMatchers("/api/blogs").permitAll()
@@ -102,7 +101,7 @@ public class SecurityConfig {
                 
                 // Protected endpoints - Attendance system
                 .requestMatchers("/api/v1/attendance/**").authenticated()
-                .requestMatchers("/api/attendance/**").authenticated() // Added for new attendance endpoints
+                .requestMatchers("/api/attendance/**").authenticated()
                 .requestMatchers("/api/attendance-sessions/**").authenticated()
                 .requestMatchers("/api/attendances/**").authenticated()
 
@@ -114,29 +113,25 @@ public class SecurityConfig {
                 .requestMatchers("/api/files/**").authenticated()
                 .requestMatchers("/files/**").authenticated()
 
-                // Protected endpoints - Assignments (with debug exception)
-                .requestMatchers("/api/assignments/debug/**").permitAll() // Debug endpoints
-                .requestMatchers("/api/assignments/classroom/**").permitAll() // Temporarily allow for debugging
-                .requestMatchers("/api/assignments/**").authenticated()
-                .requestMatchers("/api/timetable/**").authenticated()
-
-                // Debug endpoints - allow all for debugging
-                .requestMatchers("/api/debug/**").permitAll() // Debug endpoints
-
-                // Notification endpoints - temporarily allow for debugging
-                .requestMatchers("/api/notifications/teacher").permitAll() // Debug teacher notifications
-                .requestMatchers("/api/notifications/role/**").permitAll() // Debug role notifications
-
-                // Materials endpoints - require authentication for all operations
-                .requestMatchers("/api/materials/**").authenticated() // All material operations need auth
-
-                // Course endpoints - temporarily allow for debugging
-                .requestMatchers("/api/courses/**").permitAll() // Temporarily allow for debugging
-                .requestMatchers("/api/classrooms/*/details").permitAll() // Temporarily allow for debugging
-
                 // Protected endpoints - Assignments
+                .requestMatchers("/api/assignments/debug/**").permitAll()
+                .requestMatchers("/api/assignments/classroom/**").permitAll()
                 .requestMatchers("/api/assignments/**").authenticated()
                 .requestMatchers("/api/timetable/**").authenticated()
+
+                // Debug endpoints
+                .requestMatchers("/api/debug/**").permitAll()
+
+                // Notification endpoints
+                .requestMatchers("/api/notifications/teacher").permitAll()
+                .requestMatchers("/api/notifications/role/**").permitAll()
+
+                // Materials endpoints
+                .requestMatchers("/api/materials/**").authenticated()
+
+                // Course endpoints
+                .requestMatchers("/api/courses/**").permitAll()
+                .requestMatchers("/api/classrooms/*/details").permitAll()
 
                 // Role-based endpoints
                 .requestMatchers("/api/admin/requests/**").hasAnyRole("ADMIN", "MANAGER")
@@ -145,7 +140,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/teacher/**").hasRole("TEACHER")
                 .requestMatchers("/api/student/**").hasRole("STUDENT")
 
-                // HR Management endpoints - Only Manager and Admin can access
+                // HR Management endpoints
                 .requestMatchers("/api/hr/**").hasAnyRole("MANAGER", "ADMIN")
 
                 // Accountant specific endpoints
@@ -154,39 +149,44 @@ public class SecurityConfig {
                 // All other requests need authentication
                 .anyRequest().authenticated()
             )
+            
+            // ✅ FIFTH: Configure session management
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             );
 
-        log.info("Security filter chain configured successfully");
+        log.info("✅ Security filter chain configured successfully");
         return http.build();
     }
 
+    /**
+     * ✅ FIXED: CORS configuration source - SINGLE SOURCE OF TRUTH
+     * 🎯 This is the ONLY place where CORS is configured
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+        log.info("🔧 Configuring CORS - Single source of truth");
+        
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // Use allowedOriginPatterns instead of allowedOrigins when allowCredentials is true
-        // This fixes the "When allowCredentials is true, allowedOrigins cannot contain the special value '*'" error
+        // ✅ FIXED: Use allowedOriginPatterns for credentials support
         configuration.setAllowedOriginPatterns(Arrays.asList(
-            "http://localhost:3000",
-            "http://localhost:3001", 
-            "http://localhost:5173",
-            "http://localhost:8088",
-            "http://localhost",
-            "https://mvsclassroom.com"
+            "http://localhost:*",      // Any port on localhost
+            "http://127.0.0.1:*",      // Any port on 127.0.0.1  
+            "https://localhost:*",     // HTTPS localhost
+            "https://127.0.0.1:*",     // HTTPS 127.0.0.1
+            "https://mvsclassroom.com" // Production domain
         ));
         
-        // Remove setAllowedOrigins() completely to avoid conflicts with allowCredentials(true)
-        // configuration.setAllowedOrigins() - REMOVED
+        // ✅ Allowed HTTP methods
+        configuration.setAllowedMethods(Arrays.asList(
+            "GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"
+        ));
         
-        // Cho phÃ©p cÃ¡c phÆ°Æ¡ng thá»©c HTTP
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"));
-        
-        // Cho phÃ©p cÃ¡c header HTTP
+        // ✅ Allowed headers
         configuration.setAllowedHeaders(Arrays.asList("*"));
         
-        // Expose headers
+        // ✅ Exposed headers
         configuration.setExposedHeaders(Arrays.asList(
             "Authorization", 
             "Cache-Control", 
@@ -195,16 +195,17 @@ public class SecurityConfig {
             "Access-Control-Allow-Credentials"
         ));
         
-        // Cho phÃ©p gá»­i thÃ´ng tin xÃ¡c thá»±c
+        // ✅ Allow credentials (required for JWT tokens)
         configuration.setAllowCredentials(true);
         
-        // Thá»i gian cache preflight request
+        // ✅ Cache preflight requests for 1 hour
         configuration.setMaxAge(3600L);
         
+        // ✅ Apply to all endpoints
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        // Ãp dá»¥ng cáº¥u hÃ¬nh cho táº¥t cáº£ cÃ¡c Ä‘Æ°á»ng dáº«n
         source.registerCorsConfiguration("/**", configuration);
-        log.info("CORS configuration registered with allowedOriginPatterns and allowCredentials");
+        
+        log.info("✅ CORS configured with allowedOriginPatterns and allowCredentials=true");
         return source;
     }
 }

@@ -49,6 +49,74 @@ public class SystemSettingService {
                 .map(SystemSetting::getValue)
                 .orElse(null);
     }
+
+    /**
+     * Get the count of all system settings.
+     */
+    public long getSettingsCount() {
+        return systemSettingRepository.count();
+    }
+
+    /**
+     * Khởi tạo settings mặc định nếu chưa có
+     * ✅ Called automatically in getSystemSettings() for create-drop mode
+     */
+    @Transactional
+    public void initializeDefaultSettingsIfEmpty() {
+        long count = systemSettingRepository.count();
+        log.info("Current settings count: {}", count);
+        
+        if (count == 0) {
+            log.info("🚀 No settings found, creating default settings...");
+            createDefaultSettings();
+            log.info("✅ Default settings initialized successfully!");
+        } else {
+            log.info("✅ Settings already exist, skipping initialization");
+        }
+    }
+
+    /**
+     * Tạo các settings mặc định
+     */
+    private void createDefaultSettings() {
+        log.info("📝 Creating default system settings...");
+        
+        // General Settings
+        updateSingleSetting("siteName", "Learning Management System");
+        updateSingleSetting("language", "vi");
+        updateSingleSetting("logoUrl", "/images/logo.png");
+        
+        // Email Settings
+        updateSingleSetting("smtpHost", "smtp.gmail.com");
+        updateSingleSetting("smtpPort", "587");
+        updateSingleSetting("smtpUsername", "");
+        updateSingleSetting("smtpPassword", "");
+        updateSingleSetting("smtpTls", "true");
+        updateSingleSetting("smtpAuth", "true");
+        
+        // Security Settings
+        updateSingleSetting("enable2FA", "false");
+        updateSingleSetting("sessionTimeout", "30");
+        updateSingleSetting("passwordPolicy", "minimum_8_characters");
+        updateSingleSetting("maxLoginAttempts", "5");
+        updateSingleSetting("lockoutDuration", "15");
+        
+        // System Settings
+        updateSingleSetting("maintenanceMode", "false");
+        updateSingleSetting("allowRegistration", "true");
+        updateSingleSetting("defaultUserRole", "STUDENT");
+        
+        // File Upload Settings
+        updateSingleSetting("maxFileSize", "10485760");
+        updateSingleSetting("allowedFileTypes", "jpg,jpeg,png,pdf,doc,docx,xls,xlsx");
+        
+        // Notification Settings
+        updateSingleSetting("enableEmailNotifications", "true");
+        updateSingleSetting("enablePushNotifications", "true");
+        
+        long finalCount = systemSettingRepository.count();
+        log.info("📊 Created {} default system settings", finalCount);
+    }
     
     /**
      * Cáº­p nháº­t multiple settings

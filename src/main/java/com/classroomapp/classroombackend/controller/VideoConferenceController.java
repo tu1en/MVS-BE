@@ -85,7 +85,7 @@ public class VideoConferenceController {
                 "roomId", "classroom_" + classroomId,
                 "classroomId", classroomId,
                 "classroomName", classroom.getName(),
-                "signalingUrl", "ws://localhost:8080/signaling",
+                "signalingUrl", "ws://localhost:8088/signaling",
                 "status", "active",
                 "startedAt", System.currentTimeMillis()
             );

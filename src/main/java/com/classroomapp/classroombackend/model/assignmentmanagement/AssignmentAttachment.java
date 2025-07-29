@@ -32,9 +32,11 @@ public class AssignmentAttachment {
     @Column(nullable = false)
     private String fileUrl;
 
+    @Column(name = "fileType", length = 100)
     private String fileType;
 
-    private long fileSize;
+    @Column(name = "fileSize")
+    private Long fileSize;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assignment_id", nullable = false)
@@ -49,10 +51,21 @@ public class AssignmentAttachment {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
     }
 
     public String getFilePath() {
         return this.fileUrl;
+    }
+    
+    public AssignmentAttachment(String fileName, String fileUrl, String fileType, Long fileSize, Assignment assignment) {
+        this.fileName = fileName;
+        this.fileUrl = fileUrl;
+        this.fileType = fileType;
+        this.fileSize = fileSize;
+        this.assignment = assignment;
+        this.createdAt = LocalDateTime.now();
     }
 } 

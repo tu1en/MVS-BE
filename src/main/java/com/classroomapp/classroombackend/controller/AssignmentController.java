@@ -133,6 +133,24 @@ public class AssignmentController {
     @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<AssignmentDto> CreateAssignment(@RequestBody CreateAssignmentDto createAssignmentDto,
                                                          java.security.Principal principal) {
+        log.info("🚀 CreateAssignment endpoint called");
+        log.info("📋 Request payload: {}", createAssignmentDto);
+        log.info("📎 Attachments count: {}", 
+            createAssignmentDto.getAttachments() != null ? createAssignmentDto.getAttachments().size() : 0);
+        
+        // Debug attachments data
+        if (createAssignmentDto.getAttachments() != null) {
+            for (int i = 0; i < createAssignmentDto.getAttachments().size(); i++) {
+                FileUploadResponse attachment = createAssignmentDto.getAttachments().get(i);
+                log.info("📎 Attachment {}: originalFilename={}, fileName={}, fileUrl={}, fileType={}, fileSize={}", 
+                    i, 
+                    attachment != null ? attachment.getOriginalFilename() : "null",
+                    attachment != null ? attachment.getFileName() : "null", 
+                    attachment != null ? attachment.getFileUrl() : "null",
+                    attachment != null ? attachment.getFileType() : "null",
+                    attachment != null ? attachment.getFileSize() : "null");
+            }
+        }
         String teacherUsername = principal != null ? principal.getName() : null;
         return new ResponseEntity<>(assignmentService.CreateAssignment(createAssignmentDto, teacherUsername), HttpStatus.CREATED);
     }
