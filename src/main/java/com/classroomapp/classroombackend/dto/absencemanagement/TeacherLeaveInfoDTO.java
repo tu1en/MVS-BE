@@ -6,7 +6,7 @@ import lombok.Data;
 import java.time.LocalDate;
 
 @Data
-public class TeacherLeaveInfoDTO {
+public class TeacherLeaveInfoDto {
     private Long userId;
     private String email;
     private String fullName;
