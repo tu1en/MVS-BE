@@ -103,16 +103,14 @@ public class AttendanceDataLoader implements CommandLineRunner {
                     explanation.setSubmitterName(user.getFullName());
                     explanation.setDepartment(user.getDepartment() != null ? user.getDepartment() : "Phòng " + getRoleString(user.getRoleId()));
                     explanation.setReason(reasons[i]);
+                    explanation.setExplanationText(reasons[i]); // Set explanation text
                     explanation.setAbsenceDate(LocalDate.now().minusDays(random.nextInt(30)));
                     explanation.setStatus(statuses[random.nextInt(statuses.length)]);
                     explanation.setSubmittedAt(LocalDateTime.now().minusDays(random.nextInt(7)));
                     
-                    // CRITICAL: Set violationId if the field exists
-                    try {
-                        explanation.setViolationId((long) (i + 1));
-                    } catch (Exception e) {
-                        logger.debug("violationId field not found in entity, skipping...");
-                    }
+                    // Set required fields to prevent NULL constraint violations
+                    explanation.setViolationId((long) (i + 1));
+                    explanation.setStaffId(user.getId()); // Map user ID to staff_id (since no separate staff table)
                     
                     if (!explanation.getStatus().equals(ExplanationStatus.PENDING)) {
                         explanation.setApproverName("Manager " + (i % 3 + 1));
@@ -193,13 +191,13 @@ public class AttendanceDataLoader implements CommandLineRunner {
     }
 
     private String getRoleString(Integer roleId) {
-        if (roleId == null) return "Staff";
+        if (roleId == null) return "Unknown Role";
         switch (roleId) {
             case 1: return "Teacher";
             case 2: return "Accountant"; 
             case 3: return "Admin";
             case 4: return "Manager";
-            default: return "Staff";
+            default: return "Unknown Role";
         }
     }
 

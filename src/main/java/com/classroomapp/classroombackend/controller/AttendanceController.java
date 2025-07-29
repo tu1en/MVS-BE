@@ -170,10 +170,9 @@ public class AttendanceController {
 
     @GetMapping("/all-logs")
     @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<List<AttendanceLog>> getAllStaffAttendanceLogs(
+  public ResponseEntity<List<AttendanceLog>> getAllAttendanceLogs(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        List<AttendanceLog> logs = attendanceLogService.getAllStaffAttendanceLogs(date);
-        return ResponseEntity.ok(logs);
+  List<AttendanceLog> logs = attendanceLogService.getAllAttendanceLogs(date);        return ResponseEntity.ok(logs);
     }
 
     @GetMapping("/my-attendance-summary")

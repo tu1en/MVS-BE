@@ -52,9 +52,14 @@ public class AttendanceExplanation {
     @Column(name = "violation_id", nullable = false)
     private Long violationId = 1L; // Default value to satisfy NOT NULL constraint
 
+    // ✅ ADD staff_id field but map it to user (since we only have users, not separate staff)
+    @Column(name = "staff_id", nullable = false)
+    private Long staffId = 1L; // Maps to user ID - represents the user who submitted
+
     // Constructors
     public AttendanceExplanation() {
         this.violationId = 1L; // Ensure default value
+        this.staffId = 1L; // Ensure default value
         this.explanationText = ""; // Default empty string
     }
 
@@ -66,6 +71,7 @@ public class AttendanceExplanation {
         this.status = status;
         this.department = department;
         this.violationId = 1L; // Default value
+        this.staffId = 1L; // Default value
         this.explanationText = reason; // Use reason as explanation text by default
     }
 
@@ -79,6 +85,7 @@ public class AttendanceExplanation {
         this.status = status;
         this.department = department;
         this.violationId = 1L; // Default value
+        this.staffId = 1L; // Default value
     }
 
     // Existing getters and setters...
@@ -172,6 +179,15 @@ public class AttendanceExplanation {
 
     public void setViolationId(Long violationId) {
         this.violationId = violationId;
+    }
+
+    // ✅ NEW getter and setter for staffId (mapped to user)
+    public Long getStaffId() {
+        return staffId;
+    }
+
+    public void setStaffId(Long staffId) {
+        this.staffId = staffId;
     }
         // Hibernate callback
         @PrePersist
