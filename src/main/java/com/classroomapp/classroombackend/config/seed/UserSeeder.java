@@ -1,5 +1,8 @@
 package com.classroomapp.classroombackend.config.seed;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -7,13 +10,10 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.classroomapp.classroombackend.constants.RoleConstants;
-import com.classroomapp.classroombackend.model.usermanagement.User;
-import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.model.Contract;
+import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.ContractRepository;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

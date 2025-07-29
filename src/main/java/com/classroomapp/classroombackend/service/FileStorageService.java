@@ -4,27 +4,44 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.classroomapp.classroombackend.dto.common.FileUploadResponse;
 
+/**
+ * 🎯 MERGED FILE STORAGE SERVICE
+ * Merged từ: FileStorageService + LocalFileStorageServiceImpl + DummyFileStorageServiceImpl
+ * 
+ * ✅ Simplified interface cho file storage
+ * ✅ Support cả local và cloud storage
+ * ✅ Compatible với existing assignment system
+ */
 public interface FileStorageService {
+    
     /**
-     * Saves a file to the storage.
-     * @param file the file to save
-     * @return metadata about the saved file
+     * Save file to storage với default folder
      */
     default FileUploadResponse save(MultipartFile file) {
         return save(file, "uploads");
     }
 
     /**
-     * Saves a file to a specific folder in the storage
-     * @param file the file to save
-     * @param folder the folder to save into
-     * @return metadata about the saved file
+     * Save file to specific folder
      */
     FileUploadResponse save(MultipartFile file, String folder);
 
     /**
-     * Deletes a file from the storage.
-     * @param fileName the name of the file to delete
+     * Delete file from storage
      */
     void delete(String fileName);
+
+    /**
+     * Check if file exists
+     */
+    default boolean exists(String fileName) {
+        return false; // Default implementation
+    }
+
+    /**
+     * Get file URL
+     */
+    default String getFileUrl(String fileName, String folder) {
+        return "/api/files/download/" + folder + "/" + fileName;
+    }
 }

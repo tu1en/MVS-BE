@@ -7,8 +7,10 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.AfterThrowing;
 import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -21,8 +23,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 
-// @Aspect
-// @Component
+@Aspect  // UNCOMMENT này
+@Component  // UNCOMMENT này
 @Slf4j
 public class AuditLogAspect {
 
@@ -35,11 +37,13 @@ public class AuditLogAspect {
     @Autowired
     private ObjectMapper objectMapper;
 
+    // Fix pointcut để đơn giản hơn
     @Pointcut("execution(* com.classroomapp.classroombackend.controller..*(..)) && " +
-              "!execution(* com.classroomapp.classroombackend.controller.administration.SystemAdminController.getAuditLogs*(..))")
+              "!execution(* com.classroomapp.classroombackend.controller.administration.*Controller.getAuditLogs*(..))")
     public void controllerMethods() {}
 
-    @Pointcut("execution(* com.classroomapp.classroombackend.auth.controller.AuthController.*(..))")
+    // Fix pointcut cho auth - bỏ auth.controller, chỉ để controller
+    @Pointcut("execution(* com.classroomapp.classroombackend.controller.auth.*Controller.*(..))")
     public void authenticationMethods() {}
 
     @Pointcut("(execution(* com.classroomapp.classroombackend.service..*Service.create*(..)) || " +
@@ -54,6 +58,11 @@ public class AuditLogAspect {
         long startTime = System.currentTimeMillis();
         String methodName = joinPoint.getSignature().getName();
         String className = joinPoint.getTarget().getClass().getSimpleName();
+
+        // Skip nếu là health check hoặc audit logs
+        if (methodName.contains("health") || methodName.contains("getAuditLogs")) {
+            return joinPoint.proceed();
+        }
 
         HttpServletRequest request = getCurrentRequest();
         String ipAddress = getClientIpAddress(request);
@@ -164,40 +173,57 @@ public class AuditLogAspect {
                                  String entityType, String entityId, String entityName,
                                  String errorMessage, boolean success) {
         try {
-            User currentUser = securityUtils.getCurrentUser();
-            HttpServletRequest request = getCurrentRequest();
+            // Async tạo audit log để tránh ảnh hưởng performance
+            new Thread(() -> {
+                try {
+                    User currentUser = null;
+                    try {
+                        currentUser = securityUtils.getCurrentUser();
+                    } catch (Exception e) {
+                        // Ignore - user có thể anonymous
+                    }
+                    
+                    HttpServletRequest request = getCurrentRequest();
 
-            AuditLog auditLog = new AuditLog();
-            auditLog.setAction(action);
-            auditLog.setCategory(category);
-            auditLog.setSeverity(severity);
-            auditLog.setDescription(description);
-            auditLog.setSuccess(success);
-            auditLog.setTimestamp(LocalDateTime.now());
+                    AuditLog auditLog = new AuditLog();
+                    auditLog.setAction(action);
+                    auditLog.setCategory(category);
+                    auditLog.setSeverity(severity);
+                    auditLog.setDescription(description);
+                    auditLog.setSuccess(success);
+                    auditLog.setTimestamp(LocalDateTime.now());
 
-            if (currentUser != null) {
-                auditLog.setUser(currentUser);
-                auditLog.setUsername(currentUser.getUsername());
-            } else {
-                auditLog.setUsername("anonymous");
-            }
+                    if (currentUser != null) {
+                        auditLog.setUser(currentUser);
+                        auditLog.setUsername(currentUser.getUsername());
+                    } else {
+                        auditLog.setUsername("anonymous");
+                    }
 
-            if (request != null) {
-                auditLog.setIpAddress(getClientIpAddress(request));
-                auditLog.setUserAgent(request.getHeader("User-Agent"));
-                auditLog.setRequestUrl(request.getRequestURL().toString());
-                auditLog.setRequestMethod(request.getMethod());
-                auditLog.setSessionId(request.getSession(false) != null ?
-                        request.getSession(false).getId() : null);
-            }
+                    if (request != null) {
+                        auditLog.setIpAddress(getClientIpAddress(request));
+                        auditLog.setUserAgent(request.getHeader("User-Agent"));
+                        auditLog.setRequestUrl(request.getRequestURL().toString());
+                        auditLog.setRequestMethod(request.getMethod());
+                        try {
+                            auditLog.setSessionId(request.getSession(false) != null ?
+                                    request.getSession(false).getId() : null);
+                        } catch (Exception e) {
+                            // Ignore session errors
+                        }
+                    }
 
-            auditLog.setEntityType(entityType);
-            auditLog.setEntityId(entityId);
-            auditLog.setEntityName(entityName);
-            auditLog.setErrorMessage(errorMessage);
-            auditLog.setModule(inferModule(entityType, category));
+                    auditLog.setEntityType(entityType);
+                    auditLog.setEntityId(entityId);
+                    auditLog.setEntityName(entityName);
+                    auditLog.setErrorMessage(errorMessage);
+                    auditLog.setModule(inferModule(entityType, category));
 
-            systemAdministrationService.createAuditLog(auditLog);
+                    systemAdministrationService.createAuditLog(auditLog);
+                } catch (Exception ex) {
+                    log.error("Failed to create audit log async: {}", ex.getMessage());
+                }
+            }).start();
         } catch (Exception ex) {
             log.error("Failed to create audit log: {}", ex.getMessage(), ex);
         }
@@ -207,32 +233,48 @@ public class AuditLogAspect {
                              String ipAddress, String userAgent, String requestUrl, String requestMethod,
                              long executionTime, boolean success, String errorMessage) {
         try {
-            if (requestUrl != null && (requestUrl.contains("/health") || requestUrl.contains("/metrics"))) {
+            // Skip health checks và audit logs để tránh infinite loop
+            if (requestUrl != null && (requestUrl.contains("/health") || 
+                requestUrl.contains("/metrics") || 
+                requestUrl.contains("/audit-logs"))) {
                 return;
             }
 
-            AuditLog auditLog = new AuditLog();
-            auditLog.setAction(success ? AuditLog.AuditAction.READ : AuditLog.AuditAction.ERROR);
-            auditLog.setCategory(AuditLog.AuditCategory.GENERAL);
-            auditLog.setSeverity(success ? AuditLog.AuditSeverity.INFO : AuditLog.AuditSeverity.ERROR);
-            auditLog.setDescription(String.format("API call: %s.%s", className, methodName));
-            auditLog.setSuccess(success);
-            auditLog.setTimestamp(LocalDateTime.now());
+            // Async để tránh ảnh hưởng performance
+            new Thread(() -> {
+                try {
+                    AuditLog auditLog = new AuditLog();
+                    auditLog.setAction(success ? AuditLog.AuditAction.READ : AuditLog.AuditAction.ERROR);
+                    auditLog.setCategory(AuditLog.AuditCategory.GENERAL);
+                    auditLog.setSeverity(success ? AuditLog.AuditSeverity.INFO : AuditLog.AuditSeverity.ERROR);
+                    auditLog.setDescription(String.format("API call: %s.%s", className, methodName));
+                    auditLog.setSuccess(success);
+                    auditLog.setTimestamp(LocalDateTime.now());
 
-            auditLog.setIpAddress(ipAddress);
-            auditLog.setUserAgent(userAgent);
-            auditLog.setRequestUrl(requestUrl);
-            auditLog.setRequestMethod(requestMethod);
-            auditLog.setExecutionTimeMs(executionTime);
-            auditLog.setErrorMessage(errorMessage);
+                    auditLog.setIpAddress(ipAddress);
+                    auditLog.setUserAgent(userAgent);
+                    auditLog.setRequestUrl(requestUrl);
+                    auditLog.setRequestMethod(requestMethod);
+                    auditLog.setExecutionTimeMs(executionTime);
+                    auditLog.setErrorMessage(errorMessage);
 
-            User currentUser = securityUtils.getCurrentUser();
-            if (currentUser != null) {
-                auditLog.setUser(currentUser);
-                auditLog.setUsername(currentUser.getUsername());
-            }
+                    try {
+                        User currentUser = securityUtils.getCurrentUser();
+                        if (currentUser != null) {
+                            auditLog.setUser(currentUser);
+                            auditLog.setUsername(currentUser.getUsername());
+                        } else {
+                            auditLog.setUsername("anonymous");
+                        }
+                    } catch (Exception e) {
+                        auditLog.setUsername("anonymous");
+                    }
 
-            systemAdministrationService.createAuditLog(auditLog);
+                    systemAdministrationService.createAuditLog(auditLog);
+                } catch (Exception ex) {
+                    log.error("Failed to log API call async: {}", ex.getMessage());
+                }
+            }).start();
         } catch (Exception ex) {
             log.error("Failed to log API call: {}", ex.getMessage(), ex);
         }
@@ -327,7 +369,7 @@ public class AuditLogAspect {
     }
 
     private String getClientIpAddress(HttpServletRequest request) {
-        if (request == null) return null;
+        if (request == null) return "unknown";
 
         String[] headers = {
                 "X-Forwarded-For",
@@ -351,6 +393,6 @@ public class AuditLogAspect {
             }
         }
 
-        return request.getRemoteAddr();
+        return request.getRemoteAddr() != null ? request.getRemoteAddr() : "unknown";
     }
 }
