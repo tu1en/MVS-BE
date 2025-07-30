@@ -1,9 +1,10 @@
 package com.classroomapp.classroombackend.dto.absencemanagement;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.Data;
-
 import java.time.LocalDate;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+
+import lombok.Data;
 
 @Data
 public class TeacherLeaveInfoDTO {
