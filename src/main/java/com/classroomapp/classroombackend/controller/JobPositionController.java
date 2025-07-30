@@ -36,7 +36,15 @@ public class JobPositionController {
     }
 
     @GetMapping
-    public ResponseEntity<List<JobPositionDto>> getAll() {
+    public ResponseEntity<List<JobPositionDto>> getAll(@RequestParam(required = false) Long recruitmentPlanId) {
+        if (recruitmentPlanId != null) {
+            return ResponseEntity.ok(jobPositionService.getJobPositionsByRecruitmentPlan(recruitmentPlanId));
+        }
         return ResponseEntity.ok(jobPositionService.getAllJobPositions());
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<JobPositionDto>> getAllJobPositions() {
+        return ResponseEntity.ok(jobPositionService.getAllJobPositionsWithoutFilter());
     }
 } 

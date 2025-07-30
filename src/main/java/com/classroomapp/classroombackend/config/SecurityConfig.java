@@ -91,11 +91,20 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/health").permitAll() // Health check endpoint v1
                 .requestMatchers("/api/test").permitAll() // Test endpoint
                 .requestMatchers("/api/v1/greetings/hello").permitAll() // Only allow hello endpoint for health check
+                .requestMatchers("/api/greetings/hello").permitAll() // Allow greetings endpoint
                 .requestMatchers("/api/role-requests/**").permitAll()
                 .requestMatchers("/role-requests/**").permitAll() // Allow both with and without /api prefix
                 .requestMatchers(HttpMethod.GET, "/api/job-positions").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/job-positions/all").permitAll() // Allow all job positions for guest
                 .requestMatchers(HttpMethod.GET, "/job-positions").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/recruitment-plans").permitAll() // Allow viewing recruitment plans
                 .requestMatchers(HttpMethod.POST, "/api/recruitments/apply").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/recruitment-applications/apply").permitAll() // Allow applying with CV upload
+                .requestMatchers(HttpMethod.POST, "/api/recruitment-applications").permitAll() // Allow creating applications
+                .requestMatchers(HttpMethod.GET, "/api/recruitment-applications").permitAll() // Allow viewing applications (for admin/manager)
+                .requestMatchers(HttpMethod.GET, "/api/recruitment-applications/approved").permitAll() // Allow viewing approved applications
+                .requestMatchers(HttpMethod.GET, "/api/interview-schedules").permitAll() // Allow viewing interview schedules
+                .requestMatchers(HttpMethod.GET, "/api/interview-schedules/pending").permitAll() // Allow viewing pending interviews
                 
                 // Blog endpoints
                 .requestMatchers("/api/blogs").permitAll()

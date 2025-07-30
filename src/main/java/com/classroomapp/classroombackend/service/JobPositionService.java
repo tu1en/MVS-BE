@@ -9,4 +9,6 @@ public interface JobPositionService {
     void deleteJobPosition(Long id);
     JobPositionDto getJobPosition(Long id);
     List<JobPositionDto> getAllJobPositions();
+    List<JobPositionDto> getAllJobPositionsWithoutFilter();
+    List<JobPositionDto> getJobPositionsByRecruitmentPlan(Long recruitmentPlanId);
 } 

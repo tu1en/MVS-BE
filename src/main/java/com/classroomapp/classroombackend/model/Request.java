@@ -33,7 +33,7 @@ public class Request {
     @Column(name = "requested_role", nullable = true, length = 50)
     private String requestedRole = "STUDENT"; // "TEACHER" or "STUDENT" - default to STUDENT
     
-    @Column(columnDefinition = "TEXT", length = 4000, nullable = true)
+    @Column(columnDefinition = "NVARCHAR(MAX)", length = 4000, nullable = true)
     private String formResponses; // JSON string containing form responses
 
     @Column(name = "status", nullable = true, length = 50)
@@ -42,7 +42,7 @@ public class Request {
     @Column(name = "result_status", length = 50)
     private String resultStatus; // APPROVED, REJECTED, null
 
-    @Column(columnDefinition = "TEXT", length = 4000, nullable = true)
+    @Column(columnDefinition = "NVARCHAR(MAX)", length = 4000, nullable = true)
     private String rejectReason;
 
     @Column(name = "created_at", nullable = true)

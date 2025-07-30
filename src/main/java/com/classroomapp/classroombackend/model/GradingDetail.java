@@ -43,7 +43,7 @@ public class GradingDetail {
     @Column(name = "points_awarded", nullable = false, precision = 10, scale = 2)
     private BigDecimal pointsAwarded;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String comments;
 
     @NotNull

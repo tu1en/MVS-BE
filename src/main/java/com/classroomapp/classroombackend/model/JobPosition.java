@@ -28,6 +28,10 @@ public class JobPosition {
     @Column(name = "quantity", nullable = false)
     private Integer quantity = 1;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recruitment_plan_id", nullable = false)
+    private RecruitmentPlan recruitmentPlan;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 

@@ -19,6 +19,7 @@ import com.classroomapp.classroombackend.constants.RoleConstants;
 import com.classroomapp.classroombackend.model.Contract;
 import com.classroomapp.classroombackend.model.JobPosition;
 import com.classroomapp.classroombackend.model.RecruitmentApplication;
+import com.classroomapp.classroombackend.model.RecruitmentPlan;
 import com.classroomapp.classroombackend.model.Absence;
 import com.classroomapp.classroombackend.model.Accomplishment;
 import com.classroomapp.classroombackend.model.Announcement;
@@ -44,6 +45,7 @@ import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.ContractRepository;
 import com.classroomapp.classroombackend.repository.JobPositionRepository;
 import com.classroomapp.classroombackend.repository.RecruitmentApplicationRepository;
+import com.classroomapp.classroombackend.repository.RecruitmentPlanRepository;
 import com.classroomapp.classroombackend.repository.absencemanagement.AbsenceRepository;
 import com.classroomapp.classroombackend.repository.AccomplishmentRepository;
 import com.classroomapp.classroombackend.repository.AnnouncementRepository;
@@ -146,6 +148,9 @@ public class DataLoader implements CommandLineRunner {
     private RecruitmentApplicationRepository recruitmentApplicationRepository;
     
     @Autowired
+    private RecruitmentPlanRepository recruitmentPlanRepository;
+    
+    @Autowired
     private ContractRepository contractRepository;
     
     @Autowired
@@ -188,8 +193,14 @@ public class DataLoader implements CommandLineRunner {
             // Seed role requests
             seedRequests();
             
+            // Seed recruitment plans first
+            seedRecruitmentPlans();
+            
             // Seed job positions
             seedJobPositions();
+            
+            // Seed recruitment applications
+            seedRecruitmentApplications();
             
             log.info("============== Starting Lecture Seeding ==============");
             seedLectures(classrooms);
@@ -288,15 +299,28 @@ public class DataLoader implements CommandLineRunner {
         if (recruitmentApplicationRepository.count() < 5) {
             List<JobPosition> positions = jobPositionRepository.findAll();
             if (!positions.isEmpty()) {
+                String[] addresses = {
+                    "123 Đường ABC, Quận 1, TP.HCM",
+                    "456 Đường XYZ, Quận 2, TP.HCM", 
+                    "789 Đường DEF, Quận 3, TP.HCM",
+                    "321 Đường GHI, Quận 4, TP.HCM",
+                    "654 Đường JKL, Quận 5, TP.HCM"
+                };
+                
                 for (int i = 1; i <= 6; i++) {
                     RecruitmentApplication app = new RecruitmentApplication();
                     app.setFullName("Ứng viên test " + i);
                     app.setEmail("testcv" + i + "@gmail.com");
+                    app.setPhoneNumber("0987654321" + i);
+                    app.setAddress(addresses[i % addresses.length]);
                     app.setJobPosition(positions.get(i % positions.size()));
                     app.setStatus("PENDING");
                     app.setCvUrl("/static/sample_materials/sample.pdf");
+                    app.setCreatedAt(LocalDateTime.now().minusDays(i));
                     recruitmentApplicationRepository.save(app);
+                    log.info("✅ Created test application {} for job position: {}", i, positions.get(i % positions.size()).getTitle());
                 }
+                log.info("✅ Created 6 test recruitment applications.");
             }
         }
     }
@@ -793,14 +817,117 @@ public class DataLoader implements CommandLineRunner {
         }
     }
 
+    private void seedRecruitmentPlans() {
+        if (recruitmentPlanRepository.count() == 0) {
+            // Tạo kế hoạch tuyển dụng cho lớp 10
+            RecruitmentPlan plan1 = new RecruitmentPlan();
+            plan1.setTitle("Kế hoạch tuyển dụng giáo viên lớp 10");
+            plan1.setStartDate(LocalDate.now().plusDays(1));
+            plan1.setEndDate(LocalDate.now().plusDays(30));
+            plan1.setTotalQuantity(3);
+            plan1.setStatus(RecruitmentPlan.Status.OPEN);
+            recruitmentPlanRepository.save(plan1);
+            
+            // Tạo kế hoạch tuyển dụng cho lớp 11
+            RecruitmentPlan plan2 = new RecruitmentPlan();
+            plan2.setTitle("Kế hoạch tuyển dụng giáo viên lớp 11");
+            plan2.setStartDate(LocalDate.now().plusDays(5));
+            plan2.setEndDate(LocalDate.now().plusDays(35));
+            plan2.setTotalQuantity(2);
+            plan2.setStatus(RecruitmentPlan.Status.OPEN);
+            recruitmentPlanRepository.save(plan2);
+            
+            // Tạo kế hoạch tuyển dụng cho lớp 12
+            RecruitmentPlan plan3 = new RecruitmentPlan();
+            plan3.setTitle("Kế hoạch tuyển dụng giáo viên lớp 12");
+            plan3.setStartDate(LocalDate.now().plusDays(10));
+            plan3.setEndDate(LocalDate.now().plusDays(40));
+            plan3.setTotalQuantity(4);
+            plan3.setStatus(RecruitmentPlan.Status.OPEN);
+            recruitmentPlanRepository.save(plan3);
+            
+            log.info("✅ Created 3 recruitment plans");
+        } else {
+            log.info("✅ Recruitment plans already seeded.");
+        }
+    }
+
     private void seedJobPositions() {
         if (jobPositionRepository.count() == 0) {
-            jobPositionRepository.save(new JobPosition(null, "Giáo viên lớp 10", "Dạy Toán, Lý, Hoá cho học sinh lớp 10", "12-18 triệu", 3, null, null));
-            jobPositionRepository.save(new JobPosition(null, "Giáo viên lớp 11", "Dạy Toán, Lý, Hoá cho học sinh lớp 11", "13-20 triệu", 2, null, null));
-            jobPositionRepository.save(new JobPosition(null, "Giáo viên lớp 12", "Dạy Toán, Lý, Hoá cho học sinh lớp 12, luyện thi đại học", "15-25 triệu", 4, null, null));
-            log.info("✅ Created 3 job positions");
+            List<RecruitmentPlan> plans = recruitmentPlanRepository.findAll();
+            if (plans.size() >= 3) {
+                // Tạo vị trí tuyển dụng cho lớp 10
+                JobPosition job1 = new JobPosition();
+                job1.setTitle("Giáo viên lớp 10");
+                job1.setDescription("Dạy Toán, Lý, Hoá cho học sinh lớp 10");
+                job1.setSalaryRange("12-18 triệu");
+                job1.setQuantity(plans.get(0).getTotalQuantity());
+                job1.setRecruitmentPlan(plans.get(0));
+                jobPositionRepository.save(job1);
+                
+                // Tạo vị trí tuyển dụng cho lớp 11
+                JobPosition job2 = new JobPosition();
+                job2.setTitle("Giáo viên lớp 11");
+                job2.setDescription("Dạy Toán, Lý, Hoá cho học sinh lớp 11");
+                job2.setSalaryRange("13-20 triệu");
+                job2.setQuantity(plans.get(1).getTotalQuantity());
+                job2.setRecruitmentPlan(plans.get(1));
+                jobPositionRepository.save(job2);
+                
+                // Tạo vị trí tuyển dụng cho lớp 12
+                JobPosition job3 = new JobPosition();
+                job3.setTitle("Giáo viên lớp 12");
+                job3.setDescription("Dạy Toán, Lý, Hoá cho học sinh lớp 12, luyện thi đại học");
+                job3.setSalaryRange("15-25 triệu");
+                job3.setQuantity(plans.get(2).getTotalQuantity());
+                job3.setRecruitmentPlan(plans.get(2));
+                jobPositionRepository.save(job3);
+                
+                log.info("✅ Created 3 job positions linked to recruitment plans");
+            } else {
+                log.error("❌ Not enough recruitment plans found for job positions");
+            }
         } else {
             log.info("✅ Job positions already seeded.");
+        }
+    }
+
+    private void seedRecruitmentApplications() {
+        if (recruitmentApplicationRepository.count() == 0) {
+            List<JobPosition> jobPositions = jobPositionRepository.findAll();
+            if (jobPositions.isEmpty()) {
+                log.warn("No job positions found for recruitment application seeding.");
+                return;
+            }
+
+            String[] addresses = {
+                "123 Đường ABC, Quận 1, TP.HCM",
+                "456 Đường XYZ, Quận 2, TP.HCM", 
+                "789 Đường DEF, Quận 3, TP.HCM",
+                "321 Đường GHI, Quận 4, TP.HCM",
+                "654 Đường JKL, Quận 5, TP.HCM"
+            };
+
+            for (int i = 0; i < 10; i++) { // Seed 10 applications
+                RecruitmentApplication application = new RecruitmentApplication();
+                application.setFullName("Ứng viên " + (i + 1));
+                application.setEmail("applicant" + (i + 1) + "@example.com");
+                application.setPhoneNumber("0987654321" + i);
+                application.setAddress(addresses[i % addresses.length]);
+                application.setCvUrl("/static/sample_cv/cv" + (i + 1) + ".pdf");
+                application.setStatus("PENDING");
+                application.setCreatedAt(LocalDateTime.now().minusDays(i));
+                
+                // Đảm bảo có job position để gán
+                JobPosition jobPosition = jobPositions.get(i % jobPositions.size());
+                application.setJobPosition(jobPosition);
+                
+                recruitmentApplicationRepository.save(application);
+                log.info("✅ Created application {} for job position: {}", i + 1, jobPosition.getTitle());
+            }
+            log.info("✅ Created 10 sample recruitment applications.");
+        } else {
+            log.info("✅ Recruitment applications already seeded.");
         }
     }
 

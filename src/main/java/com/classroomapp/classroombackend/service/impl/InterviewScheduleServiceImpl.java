@@ -71,8 +71,29 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
         interviewRepo.deleteById(id);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasConflict(LocalDateTime startTime, LocalDateTime endTime) {
+        // Kiểm tra xem có lịch phỏng vấn nào trùng thời gian không
+        List<InterviewSchedule> existingSchedules = interviewRepo.findAll();
+        
+        for (InterviewSchedule schedule : existingSchedules) {
+            // Kiểm tra overlap: (start1 < end2) && (end1 > start2)
+            if (startTime.isBefore(schedule.getEndTime()) && endTime.isAfter(schedule.getStartTime())) {
+                return true; // Có conflict
+            }
+        }
+        return false; // Không có conflict
+    }
+
     private InterviewScheduleDto toDto(InterviewSchedule entity) {
-        InterviewScheduleDto dto = modelMapper.map(entity, InterviewScheduleDto.class);
+        InterviewScheduleDto dto = new InterviewScheduleDto();
+        dto.setId(entity.getId());
+        dto.setStartTime(entity.getStartTime());
+        dto.setEndTime(entity.getEndTime());
+        dto.setStatus(entity.getStatus());
+        dto.setResult(entity.getResult());
+        
         if (entity.getApplication() != null) {
             dto.setApplicationId(entity.getApplication().getId());
             dto.setApplicantName(entity.getApplication().getFullName());

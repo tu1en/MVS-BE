@@ -52,8 +52,8 @@ public class ClassSession {
 
     private String topic;
 
-    @Column(columnDefinition = "TEXT")
-    private String description;
+    @Column(columnDefinition = "NVARCHAR(MAX)")
+    private String notes;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "session_type")

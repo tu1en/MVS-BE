@@ -68,7 +68,7 @@ public class StudentProgress {
     @Column(name = "time_spent_minutes")
     private Integer timeSpentMinutes = 0;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String notes;
 
     // JPA relationships

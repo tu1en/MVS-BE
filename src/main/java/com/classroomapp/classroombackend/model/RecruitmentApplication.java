@@ -32,7 +32,7 @@ public class RecruitmentApplication {
     @Column(columnDefinition = "NVARCHAR(MAX)")
     private String address;
 
-    @Column(name = "cv_url", columnDefinition = "TEXT")
+    @Column(name = "cv_url", columnDefinition = "NVARCHAR(MAX)")
     private String cvUrl;
 
     @Column(name = "created_at")
@@ -41,6 +41,6 @@ public class RecruitmentApplication {
     @Column(name = "status", columnDefinition = "NVARCHAR(50)")
     private String status = "PENDING"; // PENDING, APPROVED, REJECTED, INTERVIEW, ...
 
-    @Column(name = "reject_reason", columnDefinition = "TEXT")
+    @Column(name = "reject_reason", columnDefinition = "NVARCHAR(MAX)")
     private String rejectReason;
 } 

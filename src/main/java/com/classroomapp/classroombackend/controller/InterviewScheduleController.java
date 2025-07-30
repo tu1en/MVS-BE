@@ -28,8 +28,31 @@ public class InterviewScheduleController {
         DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
         LocalDateTime start = LocalDateTime.parse(startTime, formatter);
         LocalDateTime end = LocalDateTime.parse(endTime, formatter);
+        
+        // Kiểm tra không cho phép xếp lịch trong quá khứ
+        LocalDateTime now = LocalDateTime.now();
+        if (start.isBefore(now)) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        // Kiểm tra trùng lịch
+        if (interviewService.hasConflict(start, end)) {
+            return ResponseEntity.badRequest().build();
+        }
+        
         InterviewScheduleDto dto = interviewService.create(applicationId, start, end);
         return ResponseEntity.ok(dto);
+    }
+
+    @PostMapping("/check-conflict")
+    public ResponseEntity<Boolean> checkConflict(@RequestParam String startTime,
+                                                @RequestParam String endTime) {
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+        LocalDateTime start = LocalDateTime.parse(startTime, formatter);
+        LocalDateTime end = LocalDateTime.parse(endTime, formatter);
+        
+        boolean hasConflict = interviewService.hasConflict(start, end);
+        return ResponseEntity.ok(hasConflict);
     }
 
     @GetMapping
@@ -41,8 +64,18 @@ public class InterviewScheduleController {
     public ResponseEntity<List<InterviewScheduleDto>> getPending() {
         List<InterviewScheduleDto> all = interviewService.getAll();
         LocalDateTime now = LocalDateTime.now();
+        
+        // Tự động chuyển trạng thái các lịch phỏng vấn đã quá giờ
+        all.forEach(interview -> {
+            if (interview.getEndTime().isBefore(now) && 
+                ("SCHEDULED".equals(interview.getStatus()) || interview.getStatus() == null)) {
+                interviewService.updateStatus(interview.getId(), "PENDING", null);
+            }
+        });
+        
+        // Lọc các lịch phỏng vấn chờ (SCHEDULED hoặc PENDING)
         List<InterviewScheduleDto> pending = all.stream()
-            .filter(i -> i.getEndTime().isBefore(now) && (i.getStatus() == null || i.getStatus().equals("PENDING") || i.getStatus().equals("SCHEDULED")))
+            .filter(i -> "PENDING".equals(i.getStatus()) || "SCHEDULED".equals(i.getStatus()))
             .toList();
         return ResponseEntity.ok(pending);
     }
@@ -63,6 +96,12 @@ public class InterviewScheduleController {
         return ResponseEntity.ok().build();
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> delete(@PathVariable Long id) {
+        interviewService.delete(id);
+        return ResponseEntity.ok().build();
+    }
+
     @PutMapping("/{id}/result")
     public ResponseEntity<?> setResult(@PathVariable Long id, @RequestBody InterviewResultDto body) {
         interviewService.updateStatus(id, body.getStatus(), body.getResult());
@@ -77,12 +116,6 @@ public class InterviewScheduleController {
             emailService.sendEmail(interview.getApplicantEmail(), "Kết quả phỏng vấn", "Rất tiếc, bạn đã không vượt qua phỏng vấn. Lý do: " + (body.getResult() != null ? body.getResult() : "Không có"));
         }
         return ResponseEntity.ok().build();
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Long id) {
-        interviewService.delete(id);
-        return ResponseEntity.noContent().build();
     }
 }
 

@@ -50,7 +50,7 @@ public class Contract {
     @Column(name = "who_approved")
     private String whoApproved;
 
-    @Column(name = "settlement_info", columnDefinition = "TEXT")
+    @Column(name = "settlement_info", columnDefinition = "NVARCHAR(MAX)")
     private String settlementInfo;
 
     @Column(name = "created_at", nullable = false)
@@ -62,7 +62,7 @@ public class Contract {
     @Column(name = "created_by")
     private String createdBy;
 
-    @Column(name = "notes", columnDefinition = "TEXT")
+    @Column(name = "notes", columnDefinition = "NVARCHAR(MAX)")
     private String notes;
 
     @Column(name = "attachment_path")

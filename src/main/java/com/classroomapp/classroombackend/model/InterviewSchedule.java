@@ -29,6 +29,6 @@ public class InterviewSchedule {
     @Column(name = "status", columnDefinition = "NVARCHAR(50)")
     private String status = "SCHEDULED"; // SCHEDULED, DONE, PENDING, ACCEPTED, REJECTED
 
-    @Column(name = "result", columnDefinition = "TEXT")
+    @Column(name = "result", columnDefinition = "NVARCHAR(MAX)")
     private String result;
 } 
