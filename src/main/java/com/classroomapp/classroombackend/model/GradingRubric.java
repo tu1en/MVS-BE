@@ -40,7 +40,7 @@ public class GradingRubric {
     @Column(name = "criteria_name", nullable = false)
     private String criteriaName;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String description;
 
     @NotNull

@@ -30,7 +30,7 @@ public class Accomplishment {
     @Column(length = 255)
     private String title;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String description;
 
     @Column(name = "issue_date")

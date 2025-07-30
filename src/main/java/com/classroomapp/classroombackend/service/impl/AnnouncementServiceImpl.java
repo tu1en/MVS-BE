@@ -79,7 +79,7 @@ public class AnnouncementServiceImpl implements AnnouncementService {
             Notification notification = new Notification();
             notification.setRecipientId(user.getId());
             notification.setSender(sender != null ? sender.getFullName() : "System");
-            notification.setMessage(announcement.getTitle());
+            notification.setContent(announcement.getTitle());
             notification.setType("ANNOUNCEMENT");
             notification.setIsRead(false);
             notificationRepository.save(notification);

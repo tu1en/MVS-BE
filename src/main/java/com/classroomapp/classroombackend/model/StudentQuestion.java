@@ -38,7 +38,7 @@ public class StudentQuestion {
     @Column(nullable = false, length = 255)
     private String subject;
     
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(columnDefinition = "NVARCHAR(MAX)", nullable = false)
     private String content;
     
     @Column(length = 50)
@@ -47,7 +47,7 @@ public class StudentQuestion {
     @Column(length = 50)
     private String status = "PENDING"; // PENDING, ANSWERED, CLOSED
     
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String answer;
     
     @Column

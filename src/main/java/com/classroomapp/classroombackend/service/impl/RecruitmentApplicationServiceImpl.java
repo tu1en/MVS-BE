@@ -55,6 +55,15 @@ public class RecruitmentApplicationServiceImpl implements RecruitmentApplication
 
     @Override
     @Transactional(readOnly = true)
+    public List<RecruitmentApplicationDto> getApprovedApplications() {
+        return recruitmentRepo.findAll().stream()
+                .filter(app -> "APPROVED".equals(app.getStatus()))
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<RecruitmentApplicationDto> getApplicationsByJob(Long jobPositionId) {
         return recruitmentRepo.findAll().stream()
                 .filter(a -> a.getJobPosition() != null && a.getJobPosition().getId().equals(jobPositionId))
@@ -77,6 +86,15 @@ public class RecruitmentApplicationServiceImpl implements RecruitmentApplication
         app.setStatus(status);
         app.setRejectReason(rejectReason);
         recruitmentRepo.save(app);
+    }
+
+    @Override
+    @Transactional
+    public void deleteApplication(Long id) {
+        if (!recruitmentRepo.existsById(id)) {
+            throw new RuntimeException("Application not found");
+        }
+        recruitmentRepo.deleteById(id);
     }
 
     private RecruitmentApplicationDto toDto(RecruitmentApplication entity) {

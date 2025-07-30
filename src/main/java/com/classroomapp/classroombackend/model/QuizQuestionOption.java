@@ -23,7 +23,7 @@ public class QuizQuestionOption {
     private Long questionId;
 
     @NotBlank
-    @Column(name = "option_text", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "option_text", nullable = false, columnDefinition = "NVARCHAR(MAX)")
     private String optionText;
 
     @Column(name = "is_correct")

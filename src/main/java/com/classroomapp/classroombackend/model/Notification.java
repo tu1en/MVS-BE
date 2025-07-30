@@ -23,8 +23,8 @@ public class Notification {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(nullable = false, columnDefinition = "TEXT")
-    private String message;
+    @Column(nullable = false, columnDefinition = "NVARCHAR(MAX)")
+    private String content;
     
     @Column(nullable = false)
     private LocalDateTime createdAt;
@@ -52,7 +52,7 @@ public class Notification {
     
     // Explicit getters and setters to resolve compilation issues
     public Long getId() { return id; }
-    public String getMessage() { return message; }
+    public String getMessage() { return content; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public Boolean getIsRead() { return isRead; }
     public String getSender() { return sender; }

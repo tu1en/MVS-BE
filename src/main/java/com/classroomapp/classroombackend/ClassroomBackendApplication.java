@@ -12,12 +12,14 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import com.classroomapp.classroombackend.config.DataLoader;
 
 @SpringBootApplication
 @EnableCaching
+@EnableScheduling
 @Configuration
 @ComponentScan(basePackages = "com.classroomapp.classroombackend")
 public class ClassroomBackendApplication implements WebMvcConfigurer {

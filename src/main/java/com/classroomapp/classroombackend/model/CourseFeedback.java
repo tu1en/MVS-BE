@@ -47,7 +47,7 @@ public class CourseFeedback {
     @Column(nullable = false)
     private String title;
     
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(columnDefinition = "NVARCHAR(MAX)", nullable = false)
     private String content;
     
     @Column(nullable = false)
@@ -78,7 +78,7 @@ public class CourseFeedback {
     @JoinColumn(name = "reviewed_by")
     private User reviewedBy;
     
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String response;
     
     @Column(nullable = false)

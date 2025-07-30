@@ -11,4 +11,5 @@ public interface InterviewScheduleService {
     List<InterviewScheduleDto> getAll();
     void updateStatus(Long id, String status, String result);
     void delete(Long id);
+    boolean hasConflict(LocalDateTime startTime, LocalDateTime endTime);
 } 
