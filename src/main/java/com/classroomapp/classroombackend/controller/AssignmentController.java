@@ -47,6 +47,7 @@ import com.classroomapp.classroombackend.repository.classroommanagement.Classroo
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.AssignmentService;
 import com.classroomapp.classroombackend.service.FileStorageService;
+import com.classroomapp.classroombackend.constants.RoleConstants;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -357,7 +358,7 @@ public class AssignmentController {
                 log.info("Created {} mock assignments", assignmentsCreated.size());
 
                 // Create some example submissions for these assignments
-                List<User> students = userRepository.findByRoleId(1); // Assuming role_id 1 is student
+                List<User> students = userRepository.findByRoleId(RoleConstants.STUDENT);
                 if (!students.isEmpty()) {
                     log.info("Found {} students for creating submissions", students.size());
 
@@ -428,7 +429,7 @@ public class AssignmentController {
             } else {
                 // Find the first teacher to act as the creator for all mock data
                 User teacher = userRepository.findAll().stream()
-                        .filter(u -> u.getRoleId() == 2 || u.getRoleId() == 3)
+                        .filter(u -> u.getRoleId() == RoleConstants.TEACHER || u.getRoleId() == RoleConstants.MANAGER)
                         .findFirst()
                         .orElse(null);
 

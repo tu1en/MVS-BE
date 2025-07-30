@@ -14,12 +14,7 @@ import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import com.classroomapp.classroombackend.config.seed.ClassroomEnrollmentSeeder;
-import com.classroomapp.classroombackend.config.seed.ClassroomSeeder;
-import com.classroomapp.classroombackend.config.seed.LectureSeeder;
-import com.classroomapp.classroombackend.config.seed.RoleSeeder;
-import com.classroomapp.classroombackend.config.seed.UserSeeder;
-import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
+import com.classroomapp.classroombackend.config.DataLoader;
 
 @SpringBootApplication
 @EnableCaching
@@ -37,20 +32,6 @@ public class ClassroomBackendApplication implements WebMvcConfigurer {
         converters.add(new StringHttpMessageConverter(StandardCharsets.UTF_8));
     }
 
-    @Bean
-    public CommandLineRunner commandLineRunner(RoleSeeder roleSeeder, UserSeeder userSeeder, ClassroomSeeder classroomSeeder, ClassroomEnrollmentSeeder enrollmentSeeder, LectureSeeder lectureSeeder) {
-        return args -> {
-            System.out.println("--- Seeding Database ---");
-            roleSeeder.seed();
-            userSeeder.seed();
-            List<Classroom> seededClassrooms = classroomSeeder.seed();
-
-            // Enroll students. This seeder will find users and classrooms on its own.
-            enrollmentSeeder.seed();
-
-            // Now create lectures for those classrooms
-            lectureSeeder.seed(seededClassrooms);
-            System.out.println("--- Seeding Complete ---");
-        };
-    }
+    // DataLoader đã được đánh dấu @Component và sẽ tự động chạy khi ứng dụng khởi động
+    // Không cần CommandLineRunner riêng vì DataLoader implements CommandLineRunner
 }

@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import com.classroomapp.classroombackend.model.Absence;
+import com.classroomapp.classroombackend.constants.RoleConstants;
 
 @RestController
 @RequestMapping("/api/manager/absences")
@@ -39,7 +40,7 @@ public class ManagerAbsenceController {
         try {
             long absenceCount = absenceRepository.count();
             long userCount = userRepository.count();
-            long teacherCount = userRepository.findByRoleId(2).size(); // TEACHER role
+            long teacherCount = userRepository.findByRoleId(RoleConstants.TEACHER).size();
             
             debugInfo.put("totalAbsences", absenceCount);
             debugInfo.put("totalUsers", userCount);

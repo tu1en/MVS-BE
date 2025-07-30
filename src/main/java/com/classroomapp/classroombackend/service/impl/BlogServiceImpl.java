@@ -19,6 +19,7 @@ import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.BlogRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.BlogService;
+import com.classroomapp.classroombackend.constants.RoleConstants;
 
 @Service
 public class BlogServiceImpl implements BlogService {
@@ -265,7 +266,7 @@ public class BlogServiceImpl implements BlogService {
     // Helper method to check if a user is a manager
     private boolean isManager(User user) {
         // Assuming role_id = 1 is for manager role
-        return user.getRoleId() != null && user.getRoleId() == 1;
+        return user.getRoleId() != null && user.getRoleId() == RoleConstants.MANAGER;
     }
     
     // Helper method to convert Blog entity to BlogDto
