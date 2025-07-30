@@ -31,6 +31,7 @@ import com.classroomapp.classroombackend.service.AttendanceService;
 import com.classroomapp.classroombackend.service.ClassroomService;
 import com.classroomapp.classroombackend.service.StudentMessageService;
 import com.classroomapp.classroombackend.service.UserService;
+import com.classroomapp.classroombackend.constants.RoleConstants;
 
 import jakarta.validation.Valid;
 
@@ -99,7 +100,7 @@ public class FrontendApiBridgeController {
     public ResponseEntity<List<com.classroomapp.classroombackend.dto.UserDto>> getAllTeachers() {
         try {
             // Get teachers directly from repository since service method is broken
-            List<User> teachers = userRepository.findByRoleId(2); // Role 2 = TEACHER
+            List<User> teachers = userRepository.findByRoleId(RoleConstants.TEACHER);
             List<com.classroomapp.classroombackend.dto.UserDto> teacherDtos = teachers.stream()
                 .map(user -> {
                     com.classroomapp.classroombackend.dto.UserDto dto = new com.classroomapp.classroombackend.dto.UserDto();

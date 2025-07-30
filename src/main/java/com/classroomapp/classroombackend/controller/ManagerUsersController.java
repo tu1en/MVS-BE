@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.classroomapp.classroombackend.dto.UserDto;
 import com.classroomapp.classroombackend.service.UserService;
+import com.classroomapp.classroombackend.constants.RoleConstants;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -66,10 +67,10 @@ public class ManagerUsersController {
         // Get counts by role
         java.util.List<UserDto> allUsers = userService.FindAllUsers();
         long totalUsers = allUsers.size();
-        long students = allUsers.stream().filter(u -> u.getRoleId() == 1).count();
-        long teachers = allUsers.stream().filter(u -> u.getRoleId() == 2).count();
-        long managers = allUsers.stream().filter(u -> u.getRoleId() == 3).count();
-        long admins = allUsers.stream().filter(u -> u.getRoleId() == 0).count();
+        long students = allUsers.stream().filter(u -> u.getRoleId() == RoleConstants.STUDENT).count();
+        long teachers = allUsers.stream().filter(u -> u.getRoleId() == RoleConstants.TEACHER).count();
+        long managers = allUsers.stream().filter(u -> u.getRoleId() == RoleConstants.MANAGER).count();
+        long admins = allUsers.stream().filter(u -> u.getRoleId() == RoleConstants.ADMIN).count();
         
         stats.put("totalUsers", totalUsers);
         stats.put("students", students);
