@@ -983,15 +983,80 @@ public class DataLoader implements CommandLineRunner {
     private void seedBlogs() {
         if (blogRepository.count() == 0) {
             List<User> users = userRepository.findAll();
+            
+            // Tạo danh sách tin tức giáo dục thực tế
+            String[][] blogData = {
+                {
+                    "Bộ GD&ĐT công bố lịch thi tốt nghiệp THPT 2024",
+                    "bo-gd-dt-cong-bo-lich-thi-tot-nghiep-thpt-2024",
+                    "Bộ Giáo dục và Đào tạo vừa công bố lịch thi tốt nghiệp THPT năm 2024. Kỳ thi sẽ diễn ra từ ngày 27-30/6/2024 với nhiều điểm mới trong quy chế thi.",
+                    "https://picsum.photos/seed/education1/400/200",
+                    "giáo dục, thi cử, THPT",
+                    "<p>Bộ Giáo dục và Đào tạo (GD&ĐT) vừa chính thức công bố lịch thi tốt nghiệp THPT năm 2024. Theo đó, kỳ thi sẽ diễn ra từ ngày 27-30/6/2024.</p><p>Năm nay, kỳ thi có một số điểm mới đáng chú ý:</p><ul><li>Thời gian thi được rút ngắn từ 4 ngày xuống 3 ngày</li><li>Thêm môn thi tự chọn cho học sinh</li><li>Áp dụng công nghệ AI trong chấm thi</li><li>Tăng cường giám sát bằng camera</li></ul><p>Bộ GD&ĐT cũng khuyến cáo thí sinh cần chuẩn bị kỹ lưỡng và tuân thủ nghiêm túc quy chế thi để đạt kết quả tốt nhất.</p>"
+                },
+                {
+                    "Xu hướng học trực tuyến tăng mạnh sau đại dịch",
+                    "xu-huong-hoc-truc-tuyen-tang-manh-sau-dai-dich",
+                    "Theo báo cáo mới nhất, số lượng học sinh, sinh viên tham gia học trực tuyến đã tăng 300% so với trước đại dịch COVID-19.",
+                    "https://picsum.photos/seed/education2/400/200",
+                    "học trực tuyến, công nghệ giáo dục, đại dịch",
+                    "<p>Báo cáo mới nhất từ Bộ GD&ĐT cho thấy, xu hướng học trực tuyến đang phát triển mạnh mẽ tại Việt Nam. Số lượng học sinh, sinh viên tham gia các khóa học trực tuyến đã tăng 300% so với thời điểm trước đại dịch COVID-19.</p><p>Các nền tảng học trực tuyến như Minh Việt Education đang ngày càng được ưa chuộng nhờ những ưu điểm vượt trội:</p><ul><li>Tiết kiệm thời gian di chuyển</li><li>Linh hoạt trong lịch học</li><li>Tương tác trực tiếp với giáo viên</li><li>Hệ thống quản lý học tập hiện đại</li></ul><p>Chuyên gia giáo dục nhận định, đây là xu hướng tất yếu trong thời đại số và sẽ tiếp tục phát triển trong tương lai.</p>"
+                },
+                {
+                    "Công nghệ AI trong giáo dục: Tương lai của việc học",
+                    "cong-nghe-ai-trong-giao-duc-tuong-lai-cua-viec-hoc",
+                    "Trí tuệ nhân tạo (AI) đang cách mạng hóa ngành giáo dục với những ứng dụng thông minh hỗ trợ việc dạy và học hiệu quả hơn.",
+                    "https://picsum.photos/seed/education3/400/200",
+                    "AI, công nghệ giáo dục, trí tuệ nhân tạo",
+                    "<p>Trí tuệ nhân tạo (AI) đang mở ra những cơ hội mới trong lĩnh vực giáo dục. Từ việc cá nhân hóa học tập đến tự động hóa quy trình đánh giá, AI đang thay đổi cách chúng ta tiếp cận việc dạy và học.</p><p>Một số ứng dụng AI nổi bật trong giáo dục:</p><ul><li>Hệ thống chấm bài tự động</li><li>Phân tích hành vi học tập</li><li>Gia sư AI cá nhân hóa</li><li>Dự đoán kết quả học tập</li><li>Quản lý lớp học thông minh</li></ul><p>Theo các chuyên gia, việc tích hợp AI vào giáo dục sẽ giúp nâng cao chất lượng đào tạo và tạo ra những trải nghiệm học tập tốt hơn cho học sinh.</p>"
+                },
+                {
+                    "Chương trình đào tạo kỹ năng số cho học sinh THPT",
+                    "chuong-trinh-dao-tao-ky-nang-so-cho-hoc-sinh-thpt",
+                    "Bộ GD&ĐT triển khai chương trình đào tạo kỹ năng số toàn diện cho học sinh THPT, chuẩn bị cho thời đại công nghệ số.",
+                    "https://picsum.photos/seed/education4/400/200",
+                    "kỹ năng số, công nghệ thông tin, THPT",
+                    "<p>Bộ GD&ĐT vừa triển khai chương trình đào tạo kỹ năng số toàn diện cho học sinh THPT trên toàn quốc. Chương trình nhằm trang bị cho học sinh những kỹ năng cần thiết trong thời đại số.</p><p>Chương trình bao gồm các nội dung chính:</p><ul><li>Lập trình cơ bản</li><li>An toàn thông tin mạng</li><li>Sử dụng công nghệ thông tin hiệu quả</li><li>Phát triển tư duy logic</li><li>Kỹ năng làm việc nhóm trực tuyến</li></ul><p>Chương trình được thiết kế linh hoạt, phù hợp với từng cấp độ và sẽ được triển khai từ năm học 2024-2025.</p>"
+                },
+                {
+                    "Hội thảo quốc tế về đổi mới giáo dục 2024",
+                    "hoi-thao-quoc-te-ve-doi-moi-giao-duc-2024",
+                    "Hội thảo quốc tế về đổi mới giáo dục sẽ diễn ra tại Hà Nội vào tháng 8/2024 với sự tham gia của các chuyên gia giáo dục hàng đầu thế giới.",
+                    "https://picsum.photos/seed/education5/400/200",
+                    "hội thảo, đổi mới giáo dục, quốc tế",
+                    "<p>Hội thảo quốc tế về đổi mới giáo dục 2024 sẽ được tổ chức tại Hà Nội từ ngày 15-17/8/2024. Sự kiện này quy tụ các chuyên gia giáo dục hàng đầu từ hơn 50 quốc gia trên thế giới.</p><p>Các chủ đề chính của hội thảo:</p><ul><li>Xu hướng giáo dục trong thời đại số</li><li>Ứng dụng công nghệ trong dạy học</li><li>Phát triển kỹ năng thế kỷ 21</li><li>Giáo dục bền vững</li><li>Hợp tác quốc tế trong giáo dục</li></ul><p>Hội thảo sẽ là cơ hội để Việt Nam học hỏi kinh nghiệm từ các nước phát triển và chia sẻ những thành tựu giáo dục của mình.</p>"
+                },
+                {
+                    "Thành lập mạng lưới trường học thông minh tại Việt Nam",
+                    "thanh-lap-mang-luoi-truong-hoc-thong-minh-tai-viet-nam",
+                    "Dự án xây dựng mạng lưới trường học thông minh được khởi động với mục tiêu hiện đại hóa 1000 trường học trong 5 năm tới.",
+                    "https://picsum.photos/seed/education6/400/200",
+                    "trường học thông minh, hiện đại hóa, công nghệ",
+                    "<p>Dự án xây dựng mạng lưới trường học thông minh tại Việt Nam vừa được khởi động với sự hỗ trợ của Bộ GD&ĐT và các đối tác công nghệ hàng đầu. Dự án có mục tiêu hiện đại hóa 1000 trường học trong 5 năm tới.</p><p>Các tiêu chí của trường học thông minh:</p><ul><li>Hệ thống quản lý thông tin tích hợp</li><li>Lớp học thông minh với thiết bị hiện đại</li><li>Kết nối internet tốc độ cao</li><li>Ứng dụng công nghệ trong dạy học</li><li>Hệ thống an ninh thông minh</li></ul><p>Dự án sẽ góp phần nâng cao chất lượng giáo dục và chuẩn bị cho học sinh những kỹ năng cần thiết trong tương lai.</p>"
+                }
+            };
+            
+            int i = 0;
             for (User user : users) {
-                Blog blog = new Blog();
-                blog.setAuthor(user);
-                blog.setTitle("Blog Post by " + user.getFullName());
-                // blog.setContent("This is a sample blog post content"); // Nếu không có content thì bỏ
-                // Không set createdAt, updatedAt nếu không có
-                blogRepository.save(blog);
+                if (i < blogData.length) {
+                    Blog blog = new Blog();
+                    blog.setAuthor(user);
+                    blog.setTitle(blogData[i][0]);
+                    blog.setSlug(blogData[i][1]);
+                    blog.setDescription(blogData[i][2]);
+                    blog.setThumbnailUrl(blogData[i][3]);
+                    blog.setIsPublished(true);
+                    blog.setStatus("published");
+                    blog.setPublishedDate(LocalDateTime.now().minusDays(i + 1));
+                    blog.setLastEditedDate(LocalDateTime.now().minusDays(i + 1));
+                    blog.setViewCount(50 + (i * 25));
+                    blog.setTags(blogData[i][4]);
+                    blog.setContent(blogData[i][5]);
+                    blogRepository.save(blog);
+                    i++;
+                }
             }
-            log.info("✅ Created blogs for {} users", users.size());
+            log.info("✅ Created {} published blogs with real education news", i);
         } else {
             log.info("✅ Blogs already seeded.");
         }
