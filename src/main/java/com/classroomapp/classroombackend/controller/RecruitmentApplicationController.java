@@ -64,6 +64,16 @@ public class RecruitmentApplicationController {
         return ResponseEntity.ok(recruitmentService.getApplication(id));
     }
 
+    @GetMapping("/{id}/cv")
+    public ResponseEntity<CvInfoResponse> getCvInfo(@PathVariable Long id) {
+        RecruitmentApplicationDto application = recruitmentService.getApplication(id);
+        CvInfoResponse response = new CvInfoResponse();
+        response.setCvUrl(application.getCvUrl());
+        response.setFileName(application.getCvUrl() != null ? 
+            application.getCvUrl().substring(application.getCvUrl().lastIndexOf("/") + 1) : null);
+        return ResponseEntity.ok(response);
+    }
+
     @PutMapping("/{id}/status")
     public ResponseEntity<?> updateStatus(@PathVariable Long id, @RequestBody StatusUpdateRequest request) {
         recruitmentService.updateStatus(id, request.getStatus(), request.getReason());
@@ -139,4 +149,15 @@ class CreateApplicationRequest {
     
     public String getAddress() { return address; }
     public void setAddress(String address) { this.address = address; }
+}
+
+class CvInfoResponse {
+    private String cvUrl;
+    private String fileName;
+    
+    public String getCvUrl() { return cvUrl; }
+    public void setCvUrl(String cvUrl) { this.cvUrl = cvUrl; }
+    
+    public String getFileName() { return fileName; }
+    public void setFileName(String fileName) { this.fileName = fileName; }
 } 
