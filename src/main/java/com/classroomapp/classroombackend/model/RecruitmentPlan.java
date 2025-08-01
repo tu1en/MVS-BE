@@ -11,7 +11,7 @@ public class RecruitmentPlan {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(500)")
     private String title;
 
     @Column(nullable = false)
