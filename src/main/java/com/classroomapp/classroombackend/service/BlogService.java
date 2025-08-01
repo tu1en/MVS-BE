@@ -7,7 +7,7 @@ import com.classroomapp.classroombackend.dto.CreateBlogDto;
 
 public interface BlogService {
     
-    BlogDto createBlog(CreateBlogDto createBlogDto, Long authorId);
+    BlogDto createBlog(CreateBlogDto createBlogDto);
     
     BlogDto getBlogById(Long id);
 
@@ -17,15 +17,15 @@ public interface BlogService {
     
     List<BlogDto> getPublishedBlogs();
     
-    List<BlogDto> getBlogsByAuthor(Long authorId);
+
     
-    BlogDto updateBlog(Long id, CreateBlogDto updateBlogDto, Long editorId);
+    BlogDto updateBlog(Long id, CreateBlogDto updateBlogDto);
     
     void deleteBlog(Long id);
     
-    BlogDto publishBlog(Long id, Long publisherId);
+    BlogDto publishBlog(Long id);
     
-    BlogDto unpublishBlog(Long id, Long unpublisherId);
+    BlogDto unpublishBlog(Long id);
     
     List<BlogDto> searchBlogs(String keyword);
     

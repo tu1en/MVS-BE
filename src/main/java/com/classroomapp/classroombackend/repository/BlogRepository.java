@@ -15,7 +15,7 @@ public interface BlogRepository extends JpaRepository<Blog, Long> {
     
     Optional<Blog> findBySlug(String slug);
 
-    List<Blog> findByAuthorId(Long authorId);
+
     
     List<Blog> findByIsPublishedTrue();
     

@@ -1037,24 +1037,20 @@ public class DataLoader implements CommandLineRunner {
             };
             
             int i = 0;
-            for (User user : users) {
-                if (i < blogData.length) {
-                    Blog blog = new Blog();
-                    blog.setAuthor(user);
-                    blog.setTitle(blogData[i][0]);
-                    blog.setSlug(blogData[i][1]);
-                    blog.setDescription(blogData[i][2]);
-                    blog.setThumbnailUrl(blogData[i][3]);
-                    blog.setIsPublished(true);
-                    blog.setStatus("published");
-                    blog.setPublishedDate(LocalDateTime.now().minusDays(i + 1));
-                    blog.setLastEditedDate(LocalDateTime.now().minusDays(i + 1));
-                    blog.setViewCount(50 + (i * 25));
-                    blog.setTags(blogData[i][4]);
-                    blog.setContent(blogData[i][5]);
-                    blogRepository.save(blog);
-                    i++;
-                }
+            for (String[] data : blogData) {
+                Blog blog = new Blog();
+                blog.setTitle(data[0]);
+                blog.setSlug(data[1]);
+                blog.setDescription(data[2]);
+                blog.setThumbnailUrl(data[3]);
+                blog.setIsPublished(true);
+                blog.setStatus("published");
+                blog.setPublishedDate(LocalDateTime.now().minusDays(i + 1));
+                blog.setLastEditedDate(LocalDateTime.now().minusDays(i + 1));
+                blog.setTags(data[4]);
+                blog.setContent(data[5]);
+                blogRepository.save(blog);
+                i++;
             }
             log.info("✅ Created {} published blogs with real education news", i);
         } else {

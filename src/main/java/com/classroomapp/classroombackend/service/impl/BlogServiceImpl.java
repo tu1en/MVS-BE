@@ -15,30 +15,22 @@ import org.springframework.transaction.annotation.Transactional;
 import com.classroomapp.classroombackend.dto.BlogDto;
 import com.classroomapp.classroombackend.dto.CreateBlogDto;
 import com.classroomapp.classroombackend.model.Blog;
-import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.BlogRepository;
-import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.BlogService;
-import com.classroomapp.classroombackend.constants.RoleConstants;
 
 @Service
 public class BlogServiceImpl implements BlogService {
 
     private final BlogRepository blogRepository;
-    private final UserRepository userRepository;
 
     @Autowired
-    public BlogServiceImpl(BlogRepository blogRepository, UserRepository userRepository) {
+    public BlogServiceImpl(BlogRepository blogRepository) {
         this.blogRepository = blogRepository;
-        this.userRepository = userRepository;
     }
 
     @Override
     @Transactional
-    public BlogDto createBlog(CreateBlogDto createBlogDto, Long authorId) {
-        User author = userRepository.findById(authorId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
+    public BlogDto createBlog(CreateBlogDto createBlogDto) {
         Blog blog = new Blog();
         blog.setTitle(createBlogDto.getTitle());
         blog.setSlug(generateSlug(createBlogDto.getTitle()));
@@ -47,13 +39,11 @@ public class BlogServiceImpl implements BlogService {
         blog.setVideoUrl(createBlogDto.getVideoUrl());
         blog.setTags(createBlogDto.getTags());
         blog.setThumbnailUrl(createBlogDto.getThumbnailUrl());
-        blog.setAuthor(author);
         blog.setIsPublished(createBlogDto.getIsPublished());
         blog.setStatus(createBlogDto.getIsPublished() ? "published" : "draft");
         
         LocalDateTime now = LocalDateTime.now();
         blog.setLastEditedDate(now);
-        blog.setLastEditedBy(author);
         
         if (createBlogDto.getIsPublished()) {
             blog.setPublishedDate(now);
@@ -93,27 +83,13 @@ public class BlogServiceImpl implements BlogService {
                 .collect(Collectors.toList());
     }
 
-    @Override
-    public List<BlogDto> getBlogsByAuthor(Long authorId) {
-        List<Blog> blogs = blogRepository.findByAuthorId(authorId);
-        return blogs.stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
-    }
+
 
     @Override
     @Transactional
-    public BlogDto updateBlog(Long id, CreateBlogDto updateBlogDto, Long editorId) {
+    public BlogDto updateBlog(Long id, CreateBlogDto updateBlogDto) {
         Blog blog = blogRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Blog not found"));
-        
-        User editor = userRepository.findById(editorId)
-                .orElseThrow(() -> new RuntimeException("Editor user not found"));
-        
-        // Only allow managers or the original author to edit
-        if (!isManager(editor) && !blog.getAuthor().getId().equals(editorId)) {
-            throw new RuntimeException("Not authorized to edit this blog");
-        }
         
         // Regenerate slug if title is changed
         if (!blog.getTitle().equals(updateBlogDto.getTitle())) {
@@ -138,7 +114,6 @@ public class BlogServiceImpl implements BlogService {
         }
         
         blog.setLastEditedDate(LocalDateTime.now());
-        blog.setLastEditedBy(editor);
         
         Blog updatedBlog = blogRepository.save(blog);
         return convertToDto(updatedBlog);
@@ -155,24 +130,15 @@ public class BlogServiceImpl implements BlogService {
 
     @Override
     @Transactional
-    public BlogDto publishBlog(Long id, Long publisherId) {
+    public BlogDto publishBlog(Long id) {
         Blog blog = blogRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Blog not found"));
-        
-        User publisher = userRepository.findById(publisherId)
-                .orElseThrow(() -> new RuntimeException("Publisher user not found"));
-        
-        // Only managers or the original author can publish
-        if (!isManager(publisher) && !blog.getAuthor().getId().equals(publisherId)) {
-            throw new RuntimeException("Not authorized to publish this blog");
-        }
         
         if (!blog.getIsPublished()) {
             blog.setIsPublished(true);
             blog.setStatus("published");
             blog.setPublishedDate(LocalDateTime.now());
             blog.setLastEditedDate(LocalDateTime.now());
-            blog.setLastEditedBy(publisher);
             
             Blog updatedBlog = blogRepository.save(blog);
             return convertToDto(updatedBlog);
@@ -183,23 +149,14 @@ public class BlogServiceImpl implements BlogService {
 
     @Override
     @Transactional
-    public BlogDto unpublishBlog(Long id, Long unpublisherId) {
+    public BlogDto unpublishBlog(Long id) {
         Blog blog = blogRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Blog not found"));
-        
-        User unpublisher = userRepository.findById(unpublisherId)
-                .orElseThrow(() -> new RuntimeException("Unpublisher user not found"));
-        
-        // Only managers or the original author can unpublish
-        if (!isManager(unpublisher) && !blog.getAuthor().getId().equals(unpublisherId)) {
-            throw new RuntimeException("Not authorized to unpublish this blog");
-        }
         
         if (blog.getIsPublished()) {
             blog.setIsPublished(false);
             blog.setStatus("draft");
             blog.setLastEditedDate(LocalDateTime.now());
-            blog.setLastEditedBy(unpublisher);
             
             Blog updatedBlog = blogRepository.save(blog);
             return convertToDto(updatedBlog);
@@ -263,11 +220,7 @@ public class BlogServiceImpl implements BlogService {
         return uniqueSlug;
     }
     
-    // Helper method to check if a user is a manager
-    private boolean isManager(User user) {
-        // Assuming role_id = 1 is for manager role
-        return user.getRoleId() != null && user.getRoleId() == RoleConstants.MANAGER;
-    }
+
     
     // Helper method to convert Blog entity to BlogDto
     private BlogDto convertToDto(Blog blog) {
@@ -281,21 +234,10 @@ public class BlogServiceImpl implements BlogService {
         dto.setPublishedDate(blog.getPublishedDate());
         dto.setLastEditedDate(blog.getLastEditedDate());
         
-        // Set author information
-        dto.setAuthorId(blog.getAuthor().getId());
-        dto.setAuthorName(blog.getAuthor().getFullName());
-        
-        // Set last editor information if available
-        if (blog.getLastEditedBy() != null) {
-            dto.setLastEditedById(blog.getLastEditedBy().getId());
-            dto.setLastEditedByName(blog.getLastEditedBy().getFullName());
-        }
-        
         dto.setIsPublished(blog.getIsPublished());
         dto.setStatus(blog.getStatus());
         dto.setTags(blog.getTags());
         dto.setThumbnailUrl(blog.getThumbnailUrl());
-        dto.setViewCount(blog.getViewCount());
         
         return dto;
     }
