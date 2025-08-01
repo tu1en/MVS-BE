@@ -26,20 +26,54 @@ public class RecruitmentApplicationServiceImpl implements RecruitmentApplication
     @Override
     @Transactional
     public RecruitmentApplicationDto apply(Long jobPositionId, String fullName, String email, String phoneNumber, String address, MultipartFile cvFile) {
+        // Validation
+        if (jobPositionId == null) {
+            throw new RuntimeException("Job position ID is required");
+        }
+        if (fullName == null || fullName.trim().isEmpty()) {
+            throw new RuntimeException("Full name is required");
+        }
+        if (email == null || email.trim().isEmpty()) {
+            throw new RuntimeException("Email is required");
+        }
+        if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
+            throw new RuntimeException("Phone number is required");
+        }
+        if (address == null || address.trim().isEmpty()) {
+            throw new RuntimeException("Address is required");
+        }
+        
+        // Validate CV file is required
+        if (cvFile == null || cvFile.isEmpty()) {
+            throw new RuntimeException("CV file is required");
+        }
+        
+        // Validate file size
+        if (cvFile.getSize() > 10 * 1024 * 1024) { // 10MB limit
+            throw new RuntimeException("CV file size must be less than 10MB");
+        }
+        
+        // Validate file format
+        String fileName = cvFile.getOriginalFilename();
+        if (fileName != null && !fileName.toLowerCase().matches(".*\\.(pdf|doc|docx)$")) {
+            throw new RuntimeException("CV file must be PDF, DOC, or DOCX format");
+        }
+        
         JobPosition job = jobPositionRepo.findById(jobPositionId)
                 .orElseThrow(() -> new RuntimeException("Job position not found"));
-        String cvUrl = null;
-        if (cvFile != null && !cvFile.isEmpty()) {
-            cvUrl = fileStorageService.save(cvFile, "cv-files").getFileUrl();
-        }
+        
+        // Save CV file to Firebase Storage
+        String cvUrl = fileStorageService.save(cvFile, "recruit-cv").getFileUrl();
+        
         RecruitmentApplication entity = new RecruitmentApplication();
         entity.setJobPosition(job);
-        entity.setFullName(fullName);
-        entity.setEmail(email);
-        entity.setPhoneNumber(phoneNumber);
-        entity.setAddress(address);
+        entity.setFullName(fullName.trim());
+        entity.setEmail(email.trim());
+        entity.setPhoneNumber(phoneNumber.trim());
+        entity.setAddress(address.trim());
         entity.setCvUrl(cvUrl);
         entity.setStatus("PENDING");
+        
         RecruitmentApplication saved = recruitmentRepo.save(entity);
         RecruitmentApplicationDto dto = modelMapper.map(saved, RecruitmentApplicationDto.class);
         dto.setJobPositionId(job.getId());

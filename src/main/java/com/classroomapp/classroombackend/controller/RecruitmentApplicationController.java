@@ -29,10 +29,29 @@ public class RecruitmentApplicationController {
             @RequestParam String email,
             @RequestParam String phoneNumber,
             @RequestParam String address,
-            @RequestParam("cv") MultipartFile cvFile
+            @RequestParam(value = "cv", required = true) MultipartFile cvFile
     ) {
-        RecruitmentApplicationDto dto = recruitmentService.apply(jobPositionId, fullName, email, phoneNumber, address, cvFile);
-        return ResponseEntity.ok(dto);
+        log.info("=== RECEIVED APPLICATION REQUEST ===");
+        log.info("JobPositionId: {}", jobPositionId);
+        log.info("FullName: {}", fullName);
+        log.info("Email: {}", email);
+        log.info("Phone: {}", phoneNumber);
+        log.info("Address: {}", address);
+        log.info("CV File: {}", cvFile != null ? cvFile.getOriginalFilename() : "null");
+        log.info("CV File Size: {}", cvFile != null ? cvFile.getSize() : "null");
+        log.info("CV File Type: {}", cvFile != null ? cvFile.getContentType() : "null");
+        
+        try {
+            RecruitmentApplicationDto dto = recruitmentService.apply(jobPositionId, fullName, email, phoneNumber, address, cvFile);
+            log.info("=== APPLICATION CREATED SUCCESSFULLY ===");
+            log.info("Application ID: {}", dto.getId());
+            log.info("CV URL: {}", dto.getCvUrl());
+            return ResponseEntity.ok(dto);
+        } catch (Exception e) {
+            log.error("=== APPLICATION CREATION FAILED ===");
+            log.error("Error: {}", e.getMessage());
+            throw e;
+        }
     }
 
     @PostMapping

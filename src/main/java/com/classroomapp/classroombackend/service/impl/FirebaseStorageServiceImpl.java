@@ -1,6 +1,7 @@
 package com.classroomapp.classroombackend.service.impl;
 
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -50,12 +51,15 @@ public class FirebaseStorageServiceImpl implements FileStorageService {
                     .build();
             logger.info("Uploading file to Firebase Storage...");
             Blob blob = storage.create(blobInfo, file.getBytes());
+            
+            // Make the blob publicly accessible
+            blob.createAcl(com.google.cloud.storage.Acl.of(com.google.cloud.storage.Acl.User.ofAllUsers(), com.google.cloud.storage.Acl.Role.READER));
 
             if (blob == null || !blob.exists()) {
                 throw new Exception("Failed to upload file to Firebase Storage - blob creation failed");
             }
 
-            String downloadUrl = String.format("https://storage.googleapis.com/%s/%s", bucketName, fullPath);
+            String downloadUrl = String.format("https://firebasestorage.googleapis.com/v0/b/%s/o/%s?alt=media", bucketName, URLEncoder.encode(fullPath, "UTF-8"));
             logger.info("Upload successful. Download URL: {}", downloadUrl);
             return new FileUploadResponse(fileName, downloadUrl, file.getContentType(), file.getSize());
         } catch (IOException e) {
