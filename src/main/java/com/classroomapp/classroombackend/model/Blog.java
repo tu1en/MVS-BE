@@ -2,7 +2,7 @@ package com.classroomapp.classroombackend.model;
 
 import java.time.LocalDateTime;
 
-import com.classroomapp.classroombackend.model.usermanagement.User;
+
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -52,13 +52,7 @@ public class Blog {
     @Column(name = "last_edited_date")
     private LocalDateTime lastEditedDate;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "author_id", nullable = true)
-    private User author;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "last_edited_by", nullable = true)
-    private User lastEditedBy;
 
     @Column(name = "is_published", columnDefinition = "bit default 0")
     private Boolean isPublished = false;
@@ -71,8 +65,7 @@ public class Blog {
     @Column(name = "thumbnail_url", length = 500)
     private String thumbnailUrl;
     
-    @Column(name = "view_count")
-    private Integer viewCount = 0;    @Lob
+    @Lob
     @Column(columnDefinition = "NTEXT")
     private String content;
 
@@ -141,21 +134,7 @@ public class Blog {
         this.lastEditedDate = lastEditedDate;
     }
 
-    public User getAuthor() {
-        return author;
-    }
 
-    public void setAuthor(User author) {
-        this.author = author;
-    }
-
-    public User getLastEditedBy() {
-        return lastEditedBy;
-    }
-
-    public void setLastEditedBy(User lastEditedBy) {
-        this.lastEditedBy = lastEditedBy;
-    }
 
     public Boolean getIsPublished() {
         return isPublished;
@@ -189,13 +168,7 @@ public class Blog {
         this.thumbnailUrl = thumbnailUrl;
     }
 
-    public Integer getViewCount() {
-        return viewCount;
-    }
 
-    public void setViewCount(Integer viewCount) {
-        this.viewCount = viewCount;
-    }
 
     public String getContent() {
         return content;

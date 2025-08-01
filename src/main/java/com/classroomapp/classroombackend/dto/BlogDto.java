@@ -2,6 +2,8 @@ package com.classroomapp.classroombackend.dto;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -22,17 +24,11 @@ public class BlogDto {
     
     private String videoUrl;
     
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime publishedDate;
     
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime lastEditedDate;
-    
-    private Long authorId;
-    
-    private String authorName;
-    
-    private Long lastEditedById;
-    
-    private String lastEditedByName;
     
     private Boolean isPublished;
     
@@ -41,17 +37,13 @@ public class BlogDto {
     private String tags;
     
     private String thumbnailUrl;
-    
-    private Integer viewCount;
 
     // Constructors
     public BlogDto() {}
 
     public BlogDto(Long id, String title, String description, String imageUrl, String videoUrl,
-                  LocalDateTime publishedDate, LocalDateTime lastEditedDate, Long authorId,
-                  String authorName, Long lastEditedById, String lastEditedByName,
-                  Boolean isPublished, String status, String tags, String thumbnailUrl,
-                  Integer viewCount) {
+                  LocalDateTime publishedDate, LocalDateTime lastEditedDate,
+                  Boolean isPublished, String status, String tags, String thumbnailUrl) {
         this.id = id;
         this.title = title;
         this.description = description;
@@ -59,15 +51,10 @@ public class BlogDto {
         this.videoUrl = videoUrl;
         this.publishedDate = publishedDate;
         this.lastEditedDate = lastEditedDate;
-        this.authorId = authorId;
-        this.authorName = authorName;
-        this.lastEditedById = lastEditedById;
-        this.lastEditedByName = lastEditedByName;
         this.isPublished = isPublished;
         this.status = status;
         this.tags = tags;
         this.thumbnailUrl = thumbnailUrl;
-        this.viewCount = viewCount;
     }
     
     // Getters and Setters
@@ -135,37 +122,7 @@ public class BlogDto {
         this.lastEditedDate = lastEditedDate;
     }
 
-    public Long getAuthorId() {
-        return authorId;
-    }
 
-    public void setAuthorId(Long authorId) {
-        this.authorId = authorId;
-    }
-
-    public String getAuthorName() {
-        return authorName;
-    }
-
-    public void setAuthorName(String authorName) {
-        this.authorName = authorName;
-    }
-
-    public Long getLastEditedById() {
-        return lastEditedById;
-    }
-
-    public void setLastEditedById(Long lastEditedById) {
-        this.lastEditedById = lastEditedById;
-    }
-
-    public String getLastEditedByName() {
-        return lastEditedByName;
-    }
-
-    public void setLastEditedByName(String lastEditedByName) {
-        this.lastEditedByName = lastEditedByName;
-    }
 
     public Boolean getIsPublished() {
         return isPublished;
@@ -199,11 +156,5 @@ public class BlogDto {
         this.thumbnailUrl = thumbnailUrl;
     }
 
-    public Integer getViewCount() {
-        return viewCount;
-    }
 
-    public void setViewCount(Integer viewCount) {
-        this.viewCount = viewCount;
-    }
 } 

@@ -16,8 +16,7 @@ public class BlogPermissionEvaluator {
     }
 
     public boolean isAuthor(Authentication authentication, Long blogId) {
-        String userEmail = authentication.getName();
-        Blog blog = blogRepository.findById(blogId).orElse(null);
-        return blog != null && blog.getAuthor().getEmail().equals(userEmail);
+        // Since we removed author field, only admins can manage blogs
+        return false;
     }
 } 
