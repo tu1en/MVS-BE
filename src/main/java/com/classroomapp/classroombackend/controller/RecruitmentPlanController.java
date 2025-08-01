@@ -1,5 +1,6 @@
 package com.classroomapp.classroombackend.controller;
 
+import com.classroomapp.classroombackend.dto.StatusUpdateRequest;
 import com.classroomapp.classroombackend.model.RecruitmentPlan;
 import com.classroomapp.classroombackend.service.RecruitmentPlanService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,9 +69,9 @@ public class RecruitmentPlanController {
     }
     
     @PutMapping("/{id}/status")
-    public ResponseEntity<RecruitmentPlan> changeStatus(@PathVariable Long id, @RequestParam String status) {
+    public ResponseEntity<RecruitmentPlan> changeStatus(@PathVariable Long id, @RequestBody StatusUpdateRequest request) {
         try {
-            RecruitmentPlan.Status planStatus = RecruitmentPlan.Status.valueOf(status.toUpperCase());
+            RecruitmentPlan.Status planStatus = RecruitmentPlan.Status.valueOf(request.getStatus().toUpperCase());
             RecruitmentPlan updatedPlan = recruitmentPlanService.changeStatus(id, planStatus);
             return ResponseEntity.ok(updatedPlan);
         } catch (IllegalArgumentException e) {
