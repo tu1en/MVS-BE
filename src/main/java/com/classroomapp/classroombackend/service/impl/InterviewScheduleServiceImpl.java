@@ -98,8 +98,11 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
             dto.setApplicationId(entity.getApplication().getId());
             dto.setApplicantName(entity.getApplication().getFullName());
             dto.setApplicantEmail(entity.getApplication().getEmail());
+            dto.setApplicantPhone(entity.getApplication().getPhoneNumber());
+            
             if (entity.getApplication().getJobPosition() != null) {
                 dto.setJobTitle(entity.getApplication().getJobPosition().getTitle());
+                dto.setSalaryRange(entity.getApplication().getJobPosition().getSalaryRange());
             }
         }
         return dto;

@@ -10,7 +10,9 @@ public class InterviewScheduleDto {
     private Long applicationId;
     private String applicantName;
     private String applicantEmail;
+    private String applicantPhone;
     private String jobTitle;
+    private String salaryRange;
     
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime startTime;

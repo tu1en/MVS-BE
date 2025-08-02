@@ -1,233 +1,179 @@
 package com.classroomapp.classroombackend.controller;
 
 import com.classroomapp.classroombackend.dto.ContractDto;
+import com.classroomapp.classroombackend.dto.ContractStatsDto;
 import com.classroomapp.classroombackend.service.ContractService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.format.annotation.DateTimeFormat;
+import com.classroomapp.classroombackend.service.ContractStatusSchedulerService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/contracts")
+@RequiredArgsConstructor
+@Slf4j
 @CrossOrigin(origins = "*")
 public class ContractController {
 
-    @Autowired
-    private ContractService contractService;
+    private final ContractService contractService;
+    private final ContractStatusSchedulerService contractStatusSchedulerService;
 
-    // Create a new contract
-    @PostMapping
-    @PreAuthorize("hasRole('ACCOUNTANT')")
-    public ResponseEntity<?> createContract(@RequestBody ContractDto contractDto, Authentication authentication) {
+    // Lấy tất cả hợp đồng
+    @GetMapping
+    public ResponseEntity<List<ContractDto>> getAllContracts() {
+        log.info("GET /api/contracts - Fetching all contracts");
         try {
-            String createdBy = authentication.getName();
-            ContractDto createdContract = contractService.createContract(contractDto, createdBy);
-            return ResponseEntity.ok(createdContract);
+            List<ContractDto> contracts = contractService.getAllContracts();
+            return ResponseEntity.ok(contracts);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            log.error("Error fetching all contracts: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // Get contract by ID
+    // Lấy hợp đồng theo loại (TEACHER hoặc STAFF)
+    @GetMapping("/type/{contractType}")
+    public ResponseEntity<List<ContractDto>> getContractsByType(@PathVariable String contractType) {
+        log.info("GET /api/contracts/type/{} - Fetching contracts by type", contractType);
+        try {
+            List<ContractDto> contracts = contractService.getContractsByType(contractType.toUpperCase());
+            return ResponseEntity.ok(contracts);
+        } catch (Exception e) {
+            log.error("Error fetching contracts by type {}: ", contractType, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Lấy hợp đồng theo ID
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ACCOUNTANT') or hasRole('MANAGER') or hasRole('ADMIN')")
-    public ResponseEntity<?> getContractById(@PathVariable Long id) {
+    public ResponseEntity<ContractDto> getContractById(@PathVariable Long id) {
+        log.info("GET /api/contracts/{} - Fetching contract by id", id);
         try {
             ContractDto contract = contractService.getContractById(id);
             return ResponseEntity.ok(contract);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            log.error("Error fetching contract by id {}: ", id, e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
 
-    // Get contracts by user ID
+    // Tạo hợp đồng mới
+    @PostMapping
+    public ResponseEntity<ContractDto> createContract(@RequestBody ContractDto contractDto) {
+        log.info("POST /api/contracts - Creating new contract for user: {}", contractDto.getFullName());
+        try {
+            ContractDto createdContract = contractService.createContract(contractDto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdContract);
+        } catch (Exception e) {
+            log.error("Error creating contract: ", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
+    // Cập nhật hợp đồng
+    @PutMapping("/{id}")
+    public ResponseEntity<ContractDto> updateContract(@PathVariable Long id, @RequestBody ContractDto contractDto) {
+        log.info("PUT /api/contracts/{} - Updating contract", id);
+        try {
+            ContractDto updatedContract = contractService.updateContract(id, contractDto);
+            return ResponseEntity.ok(updatedContract);
+        } catch (Exception e) {
+            log.error("Error updating contract {}: ", id, e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
+    // Xóa hợp đồng
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteContract(@PathVariable Long id) {
+        log.info("DELETE /api/contracts/{} - Deleting contract", id);
+        try {
+            contractService.deleteContract(id);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            log.error("Error deleting contract {}: ", id, e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
+    // Lấy hợp đồng theo user ID
     @GetMapping("/user/{userId}")
-    @PreAuthorize("hasRole('ACCOUNTANT') or hasRole('MANAGER') or hasRole('ADMIN')")
-    public ResponseEntity<?> getContractsByUserId(@PathVariable Long userId) {
+    public ResponseEntity<List<ContractDto>> getContractsByUserId(@PathVariable Long userId) {
+        log.info("GET /api/contracts/user/{} - Fetching contracts by user id", userId);
         try {
             List<ContractDto> contracts = contractService.getContractsByUserId(userId);
             return ResponseEntity.ok(contracts);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            log.error("Error fetching contracts by user id {}: ", userId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // Get active contract by user ID
-    @GetMapping("/user/{userId}/active")
-    @PreAuthorize("hasRole('ACCOUNTANT') or hasRole('MANAGER') or hasRole('ADMIN')")
-    public ResponseEntity<?> getActiveContractByUserId(@PathVariable Long userId) {
+    // Lấy danh sách ứng viên đã đỗ phỏng vấn (sẵn sàng tạo hợp đồng)
+    @GetMapping("/candidates/ready")
+    public ResponseEntity<List<ContractDto>> getCandidatesReadyForContract() {
+        log.info("GET /api/contracts/candidates/ready - Fetching candidates ready for contract");
         try {
-            ContractDto contract = contractService.getActiveContractByUserId(userId);
-            return ResponseEntity.ok(contract);
+            List<ContractDto> candidates = contractService.getCandidatesReadyForContract();
+            return ResponseEntity.ok(candidates);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            log.error("Error fetching candidates ready for contract: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // Get all contracts with pagination
-    @GetMapping
-    @PreAuthorize("hasRole('ACCOUNTANT') or hasRole('MANAGER') or hasRole('ADMIN')")
-    public ResponseEntity<?> getAllContracts(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDir) {
+    // Lấy thống kê hợp đồng
+    @GetMapping("/stats")
+    public ResponseEntity<ContractStatsDto> getContractStats() {
+        log.info("GET /api/contracts/stats - Fetching contract statistics");
         try {
-            Sort sort = sortDir.equalsIgnoreCase("desc") ? 
-                       Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
-            Pageable pageable = PageRequest.of(page, size, sort);
-            Page<ContractDto> contracts = contractService.getAllContracts(pageable);
-            return ResponseEntity.ok(contracts);
+            ContractStatsDto stats = contractService.getContractStats();
+            return ResponseEntity.ok(stats);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            log.error("Error fetching contract statistics: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // Get contracts by status
-    @GetMapping("/status/{status}")
-    @PreAuthorize("hasRole('ACCOUNTANT') or hasRole('MANAGER') or hasRole('ADMIN')")
-    public ResponseEntity<?> getContractsByStatus(
-            @PathVariable String status,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDir) {
+    // Cập nhật trạng thái hợp đồng thủ công (để test)
+    @PostMapping("/update-status")
+    public ResponseEntity<String> updateContractStatuses() {
+        log.info("POST /api/contracts/update-status - Manual contract status update");
         try {
-            Sort sort = sortDir.equalsIgnoreCase("desc") ? 
-                       Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
-            Pageable pageable = PageRequest.of(page, size, sort);
-            Page<ContractDto> contracts = contractService.getContractsByStatus(status, pageable);
-            return ResponseEntity.ok(contracts);
+            contractStatusSchedulerService.updateContractStatuses();
+            return ResponseEntity.ok("Contract statuses updated successfully");
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            log.error("Error updating contract statuses: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error updating contract statuses: " + e.getMessage());
         }
     }
 
-    // Search contracts with filters
-    @GetMapping("/search")
-    @PreAuthorize("hasRole('ACCOUNTANT') or hasRole('MANAGER') or hasRole('ADMIN')")
-    public ResponseEntity<?> searchContracts(
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String contractType,
-            @RequestParam(required = false) String department,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDir) {
+    @PostMapping("/create-test-data")
+    public ResponseEntity<String> createTestData() {
         try {
-            Sort sort = sortDir.equalsIgnoreCase("desc") ? 
-                       Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
-            Pageable pageable = PageRequest.of(page, size, sort);
-            Page<ContractDto> contracts = contractService.searchContracts(
-                    status, contractType, department, startDate, endDate, pageable);
-            return ResponseEntity.ok(contracts);
+            contractService.createTestContracts();
+            return ResponseEntity.ok("Test contracts created successfully");
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            log.error("Error creating test contracts: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error creating test contracts: " + e.getMessage());
         }
     }
 
-    // Update contract
-    @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ACCOUNTANT')")
-    public ResponseEntity<?> updateContract(@PathVariable Long id, @RequestBody ContractDto contractDto, 
-                                          Authentication authentication) {
+    @GetMapping("/create-test-data-public")
+    public ResponseEntity<String> createTestDataPublic() {
         try {
-            String updatedBy = authentication.getName();
-            ContractDto updatedContract = contractService.updateContract(id, contractDto, updatedBy);
-            return ResponseEntity.ok(updatedContract);
+            contractService.createTestContracts();
+            return ResponseEntity.ok("✅ 5 Test contracts created successfully! Refresh your frontend.");
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    // Terminate contract
-    @PutMapping("/{id}/terminate")
-    @PreAuthorize("hasRole('ACCOUNTANT')")
-    public ResponseEntity<?> terminateContract(@PathVariable Long id, 
-                                             @RequestBody Map<String, Object> request,
-                                             Authentication authentication) {
-        try {
-            String terminationReason = (String) request.get("terminationReason");
-            String terminationDate = (String) request.get("terminationDate");
-            String whoApproved = (String) request.get("whoApproved");
-            String settlementInfo = (String) request.get("settlementInfo");
-            String terminatedBy = authentication.getName();
-            
-            ContractDto terminatedContract = contractService.terminateContract(
-                id, terminationReason, terminationDate, whoApproved, settlementInfo, terminatedBy);
-            return ResponseEntity.ok(terminatedContract);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    // Terminate contract by user ID
-    @PutMapping("/user/{userId}/terminate")
-    @PreAuthorize("hasRole('ACCOUNTANT')")
-    public ResponseEntity<?> terminateContractByUserId(@PathVariable Long userId, 
-                                                     @RequestBody Map<String, String> request,
-                                                     Authentication authentication) {
-        try {
-            String terminationReason = request.get("terminationReason");
-            String terminationDate = request.get("terminationDate");
-            String whoApproved = request.get("whoApproved");
-            String settlementInfo = request.get("settlementInfo");
-            String terminatedBy = authentication.getName();
-            
-            ContractDto terminatedContract = contractService.terminateContractByUserId(
-                userId, terminationReason, terminationDate, whoApproved, settlementInfo, terminatedBy);
-            return ResponseEntity.ok(terminatedContract);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    // Delete contract
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ACCOUNTANT') or hasRole('ADMIN')")
-    public ResponseEntity<?> deleteContract(@PathVariable Long id) {
-        try {
-            contractService.deleteContract(id);
-            return ResponseEntity.ok(Map.of("message", "Contract deleted successfully"));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    // Get contracts expiring soon
-    @GetMapping("/expiring-soon")
-    @PreAuthorize("hasRole('ACCOUNTANT') or hasRole('MANAGER') or hasRole('ADMIN')")
-    public ResponseEntity<?> getContractsExpiringSoon(@RequestParam(defaultValue = "30") int days) {
-        try {
-            List<ContractDto> contracts = contractService.getContractsExpiringSoon(days);
-            return ResponseEntity.ok(contracts);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    // Get contract statistics
-    @GetMapping("/statistics")
-    @PreAuthorize("hasRole('ACCOUNTANT') or hasRole('MANAGER') or hasRole('ADMIN')")
-    public ResponseEntity<?> getContractStatistics() {
-        try {
-            ContractService.ContractStatistics statistics = contractService.getContractStatistics();
-            return ResponseEntity.ok(statistics);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            log.error("Error creating test contracts: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("❌ Error: " + e.getMessage());
         }
     }
 }
