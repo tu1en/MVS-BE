@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.classroomapp.classroombackend.constants.RoleConstants;
-import com.classroomapp.classroombackend.model.Contract;
+
 import com.classroomapp.classroombackend.model.JobPosition;
 import com.classroomapp.classroombackend.model.RecruitmentApplication;
 import com.classroomapp.classroombackend.model.RecruitmentPlan;
@@ -42,7 +42,7 @@ import com.classroomapp.classroombackend.model.StudentMessage;
 import com.classroomapp.classroombackend.model.Request;
 import com.classroomapp.classroombackend.model.usermanagement.Role;
 import com.classroomapp.classroombackend.model.usermanagement.User;
-import com.classroomapp.classroombackend.repository.ContractRepository;
+
 import com.classroomapp.classroombackend.repository.JobPositionRepository;
 import com.classroomapp.classroombackend.repository.RecruitmentApplicationRepository;
 import com.classroomapp.classroombackend.repository.RecruitmentPlanRepository;
@@ -150,8 +150,8 @@ public class DataLoader implements CommandLineRunner {
     @Autowired
     private RecruitmentPlanRepository recruitmentPlanRepository;
     
-    @Autowired
-    private ContractRepository contractRepository;
+  
+
     
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -593,21 +593,6 @@ public class DataLoader implements CommandLineRunner {
                 accountant.setHireDate(LocalDate.of(2025, 7, 1));
                 userRepository.save(accountant);
 
-                // Thêm seed contract chính thức cho acc
-                Contract accContract = new Contract();
-                accContract.setUserId(accountant.getId());
-                accContract.setFullName(accountant.getFullName());
-                accContract.setContractType("OFFICIAL");
-                accContract.setPosition("Accountant");
-                accContract.setDepartment(accountant.getDepartment());
-                accContract.setSalary(15000000.0);
-                accContract.setWorkingHours("Full-time");
-                accContract.setStartDate(LocalDate.of(2025, 7, 1));
-                accContract.setEndDate(null);
-                accContract.setStatus("ACTIVE");
-                accContract.setCreatedBy("seeder");
-                accContract.setCreatedAt(LocalDateTime.now());
-                contractRepository.save(accContract);
                 log.info("✅ Created accountant user with ID: " + accountant.getId());
 
                 log.info("✅ Created users with standardized, explicit IDs.");
