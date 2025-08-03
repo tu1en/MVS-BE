@@ -98,7 +98,6 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/job-positions/all").permitAll() // Allow all job positions for guest
                 .requestMatchers(HttpMethod.GET, "/job-positions").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/recruitment-plans").permitAll() // Allow viewing recruitment plans
-                .requestMatchers(HttpMethod.POST, "/api/recruitments/apply").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/recruitment-applications/apply").permitAll() // Allow applying with CV upload
                 .requestMatchers(HttpMethod.POST, "/api/recruitment-applications").permitAll() // Allow creating applications
                 .requestMatchers(HttpMethod.GET, "/api/recruitment-applications").permitAll() // Allow viewing applications (for admin/manager)
