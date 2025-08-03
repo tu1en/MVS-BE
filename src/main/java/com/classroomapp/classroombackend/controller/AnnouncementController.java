@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.classroomapp.classroombackend.dto.AnnouncementDto;
@@ -82,6 +83,70 @@ public class AnnouncementController {
         log.info("Request to get announcements for student");
         List<AnnouncementDto> announcements = announcementServiceImpl.getAnnouncementsForStudent();
         return ResponseEntity.ok(announcements);
+    }
+
+    @GetMapping("/teacher")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<List<AnnouncementDto>> getAnnouncementsForTeacher() {
+        log.info("Request to get announcements for teacher");
+        List<AnnouncementDto> announcements = announcementServiceImpl.getAnnouncementsForTeacher();
+        return ResponseEntity.ok(announcements);
+    }
+
+    @GetMapping("/teacher/unread-count")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<Integer> getUnreadAnnouncementCountForTeacher() {
+        log.info("Request to get unread announcement count for teacher");
+        int count = announcementServiceImpl.getUnreadAnnouncementCountForTeacher();
+        return ResponseEntity.ok(count);
+    }
+
+    @GetMapping("/student/unread-count")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<Integer> getUnreadAnnouncementCountForStudent() {
+        log.info("Request to get unread announcement count for student");
+        int count = announcementServiceImpl.getUnreadAnnouncementCountForStudent();
+        return ResponseEntity.ok(count);
+    }
+
+    @PostMapping("/{id}/mark-read")
+    @PreAuthorize("hasRole('TEACHER') or hasRole('STUDENT')")
+    public ResponseEntity<Void> markAnnouncementAsRead(@PathVariable Long id) {
+        log.info("Request to mark announcement {} as read", id);
+        announcementServiceImpl.markAnnouncementAsRead(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/teacher/recent-unread")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<List<AnnouncementDto>> getRecentUnreadAnnouncementsForTeacher(@RequestParam(defaultValue = "5") int limit) {
+        log.info("Request to get recent unread announcements for teacher, limit: {}", limit);
+        List<AnnouncementDto> announcements = announcementServiceImpl.getRecentUnreadAnnouncementsForTeacher(limit);
+        return ResponseEntity.ok(announcements);
+    }
+
+    @GetMapping("/student/recent-unread")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<List<AnnouncementDto>> getRecentUnreadAnnouncementsForStudent(@RequestParam(defaultValue = "5") int limit) {
+        log.info("Request to get recent unread announcements for student, limit: {}", limit);
+        List<AnnouncementDto> announcements = announcementServiceImpl.getRecentUnreadAnnouncementsForStudent(limit);
+        return ResponseEntity.ok(announcements);
+    }
+
+    @PostMapping("/teacher/mark-all-read")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<Void> markAllAnnouncementsAsReadForTeacher() {
+        log.info("Request to mark all announcements as read for teacher");
+        announcementServiceImpl.markAllAnnouncementsAsReadForTeacher();
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/student/mark-all-read")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<Void> markAllAnnouncementsAsReadForStudent() {
+        log.info("Request to mark all announcements as read for student");
+        announcementServiceImpl.markAllAnnouncementsAsReadForStudent();
+        return ResponseEntity.ok().build();
     }
 
     // The old endpoints below are now either refactored or can be removed.
