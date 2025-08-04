@@ -1,6 +1,8 @@
 package com.classroomapp.classroombackend.repository.usermanagement;
 
-import com.classroomapp.classroombackend.model.usermanagement.User;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -8,8 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Optional;
+import com.classroomapp.classroombackend.model.usermanagement.User;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -113,4 +114,18 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return List<User>
      */
     List<User> findByRoleIdIn(List<Integer> roleIds);
+
+    /**
+     * Find active accountants (roleId = 5)
+     * @return List<User>
+     */
+    @Query("SELECT u FROM User u WHERE u.roleId = 5 AND u.status = 'active'")
+    List<User> findActiveAccountants();
+
+    /**
+     * Find users by email in list
+     * @param emails list of emails to search
+     * @return List of users matching the emails
+     */
+    List<User> findByEmailIn(List<String> emails);
 }

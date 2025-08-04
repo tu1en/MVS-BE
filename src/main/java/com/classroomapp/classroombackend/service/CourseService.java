@@ -6,4 +6,6 @@ import com.classroomapp.classroombackend.dto.classroommanagement.CourseDetailsDt
 
 public interface CourseService {
     List<CourseDetailsDto> getAllCourses();
+    CourseDetailsDto createCourseWithStudents(CourseDetailsDto dto, List<Long> studentIds);
+
 } 

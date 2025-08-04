@@ -3,6 +3,7 @@ package com.classroomapp.classroombackend.controller;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -79,6 +80,22 @@ private final AttendanceService attendanceService;
         return ResponseEntity.ok(announcementService.getAnnouncementById(announcementId));
     }
 
+@GetMapping("/accountant/unread-count")
+@PreAuthorize("hasRole('ACCOUNTANT') or hasRole('ADMIN')")
+public ResponseEntity<Integer> getAccountantUnreadCount() {
+    log.info("Request to get accountant unread announcements count");
+    List<AnnouncementDto> announcements = announcementServiceImpl.getAnnouncementsForAccountant();
+    return ResponseEntity.ok(announcements.size());
+}
+
+@GetMapping("/accountant/recent-unread")
+@PreAuthorize("hasRole('ACCOUNTANT') or hasRole('ADMIN')")
+public ResponseEntity<List<AnnouncementDto>> getAccountantRecentUnread(
+        @RequestParam(defaultValue = "5") int limit) {
+    log.info("Request to get accountant recent unread announcements, limit: {}", limit);
+    List<AnnouncementDto> announcements = announcementServiceImpl.getAnnouncementsForAccountant();
+    return ResponseEntity.ok(announcements.stream().limit(limit).collect(Collectors.toList()));
+}
 
     @GetMapping
     public ResponseEntity<List<AnnouncementDto>> getAllAnnouncements() {
@@ -93,6 +110,25 @@ private final AttendanceService attendanceService;
         log.info("Request to get announcements for student");
         List<AnnouncementDto> announcements = announcementServiceImpl.getAnnouncementsForStudent();
         return ResponseEntity.ok(announcements);
+    }
+
+    @GetMapping("/student/unread-count")
+    @PreAuthorize("hasRole('STUDENT') or hasRole('ADMIN')")
+    public ResponseEntity<Integer> getStudentUnreadCount() {
+        log.info("Request to get student unread announcements count");
+        List<AnnouncementDto> announcements = announcementServiceImpl.getAnnouncementsForStudent();
+        return ResponseEntity.ok(announcements.size());
+    }
+
+    @GetMapping("/student/recent-unread")
+    @PreAuthorize("hasRole('STUDENT') or hasRole('ADMIN')")
+    public ResponseEntity<List<AnnouncementDto>> getStudentRecentUnread(
+            @RequestParam(defaultValue = "5") int limit) {
+        log.info("Request to get student recent unread announcements, limit: {}", limit);
+        List<AnnouncementDto> announcements = announcementServiceImpl.getAnnouncementsForStudent();
+        return ResponseEntity.ok(announcements.stream()
+                .limit(limit)
+                .collect(Collectors.toList()));
     }
 
   // Thêm vào FrontendApiBridgeController

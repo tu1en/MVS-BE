@@ -98,4 +98,24 @@ public interface AnnouncementService {
      * Archive expired announcements
      */
     void archiveExpiredAnnouncements();
+    
+    /**
+     * Get announcements for teachers
+     */
+    List<AnnouncementDto> getAnnouncementsForTeacher();
+    
+    // Notification-related methods
+    int getUnreadAnnouncementCountForTeacher();
+    int getUnreadAnnouncementCountForStudent();
+    void markAnnouncementAsRead(Long announcementId);
+    List<AnnouncementDto> getRecentUnreadAnnouncementsForTeacher(int limit);
+    List<AnnouncementDto> getRecentUnreadAnnouncementsForStudent(int limit);
+    void markAllAnnouncementsAsReadForTeacher();
+    void markAllAnnouncementsAsReadForStudent();
+    
+    // Accountant-specific methods
+    List<AnnouncementDto> getAnnouncementsForAccountant();
+    int getUnreadAnnouncementCountForAccountant();
+    List<AnnouncementDto> getRecentUnreadAnnouncementsForAccountant(int limit);
+    void markAllAnnouncementsAsReadForAccountant();
 }

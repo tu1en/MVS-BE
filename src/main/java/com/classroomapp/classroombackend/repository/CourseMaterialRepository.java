@@ -1,12 +1,13 @@
 package com.classroomapp.classroombackend.repository;
 
-import com.classroomapp.classroombackend.model.CourseMaterial;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import com.classroomapp.classroombackend.model.CourseMaterial;
 
 @Repository
 public interface CourseMaterialRepository extends JpaRepository<CourseMaterial, Long> {
@@ -39,7 +40,7 @@ public interface CourseMaterialRepository extends JpaRepository<CourseMaterial, 
            "AND (LOWER(cm.title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
            "OR LOWER(cm.description) LIKE LOWER(CONCAT('%', :searchTerm, '%'))) " +
            "ORDER BY cm.uploadDate DESC")
-    List<CourseMaterial> searchMaterials(@Param("classroomId") Long classroomId, 
+    List<CourseMaterial> searchMaterials(@Param("classroomId") Long classroomId,
                                        @Param("searchTerm") String searchTerm);
     
     /**

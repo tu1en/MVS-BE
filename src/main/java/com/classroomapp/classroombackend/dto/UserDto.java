@@ -3,6 +3,8 @@ package com.classroomapp.classroombackend.dto;
 import java.time.LocalDateTime;
 import java.util.Set;
 
+import com.classroomapp.classroombackend.model.usermanagement.User;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -68,6 +70,20 @@ public class UserDto {
         this.enabled = enabled;
         this.roles = roles;
     }
+// Constructor từ entity User
+public UserDto(User user) {
+    this.id = user.getId();
+    this.username = user.getUsername();
+    this.email = user.getEmail();
+    this.fullName = user.getFullName();
+    this.name = user.getFullName(); // fallback cho name
+    this.roleId = user.getRoleId();
+    this.createdAt = user.getCreatedAt();
+    this.status = user.getStatus();
+    this.enabled = true; // bạn có thể map từ status nếu cần: status.equals("active")
+    // Nếu cần map role dạng Set<String> thì bổ sung:
+    this.roles = Set.of(user.getRole()); // ví dụ: ["TEACHER"]
+}
 
     // Helper method to get name (prioritizes fullName, falls back to name)
     public String getDisplayName() {

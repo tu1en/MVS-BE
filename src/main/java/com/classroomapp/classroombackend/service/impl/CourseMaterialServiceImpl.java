@@ -32,7 +32,6 @@ public class CourseMaterialServiceImpl implements CourseMaterialService {
     @Override
     public CourseMaterialDto uploadMaterial(UploadMaterialDto uploadDto, MultipartFile file, Long uploadedBy) {
         try {
-            // Store file using FileStorageService
             FileUploadResponse fileUploadResponse = fileStorageService.save(file);
 
             CourseMaterial material = new CourseMaterial();
@@ -102,12 +101,9 @@ public class CourseMaterialServiceImpl implements CourseMaterialService {
                 .orElseThrow(() -> new RuntimeException("Material not found with id: " + materialId));
 
         try {
-            // Delete physical file
             if (material.getFilePath() != null) {
-                // We only have the URL, the file name is what the service uses to delete
                 fileStorageService.delete(material.getFileName());
             }
-
             courseMaterialRepository.delete(material);
             log.info("Material deleted successfully: {}", materialId);
         } catch (Exception e) {
@@ -123,18 +119,16 @@ public class CourseMaterialServiceImpl implements CourseMaterialService {
                 .orElseThrow(() -> new RuntimeException("Material not found with id: " + materialId));
 
         try {
-            // This method now returns a URL, not raw bytes.
-            // A real implementation would fetch the bytes from the URL.
-            // For now, we adapt to the new service structure, acknowledging this might need more work.
+            // TODO: Implement actual file download logic
+            // For now, increment download count and return empty byte array
             log.warn("Downloading from URL is not implemented. Returning empty byte array for materialId: {}", materialId);
-            // Increment download count
             material.setDownloadCount(material.getDownloadCount() + 1);
             courseMaterialRepository.save(material);
-
-            // Read and return file content
+            
+            // When implementing actual download, you might do something like:
             // Path filePath = Paths.get(material.getFilePath());
             // return Files.readAllBytes(filePath);
-            return new byte[0]; // Placeholder
+            return new byte[0];
         } catch (Exception e) {
             log.error("Error downloading material: {}", e.getMessage());
             throw new RuntimeException("Failed to download material", e);
