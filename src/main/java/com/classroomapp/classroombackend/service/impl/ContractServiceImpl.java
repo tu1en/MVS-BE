@@ -233,11 +233,11 @@ public class ContractServiceImpl implements ContractService {
         
         Long totalContracts = contractRepository.count();
         Long teacherContracts = contractRepository.countByContractType("TEACHER");
-        Long staffContracts = contractRepository.countByContractType("STAFF");
+        Long accountantContracts = contractRepository.countByContractType("ACCOUNTANT");
         Long activeContracts = contractRepository.countByStatus("ACTIVE");
         Long expiredContracts = contractRepository.countByStatus("EXPIRED");
         
-        return new ContractStatsDto(totalContracts, teacherContracts, staffContracts, 
+        return new ContractStatsDto(totalContracts, teacherContracts, accountantContracts, 
                                   activeContracts, expiredContracts);
     }
 
@@ -298,7 +298,7 @@ public class ContractServiceImpl implements ContractService {
         contract2.setFullName("Trần Thị Bình");
         contract2.setEmail("tran.thi.binh@example.com");
         contract2.setPhoneNumber("0976543210");
-        contract2.setContractType("STAFF");
+        contract2.setContractType("ACCOUNTANT");
         contract2.setPosition("Nhân viên Kế toán");
         contract2.setDepartment("Phòng Tài chính");
         contract2.setSalary(12000000.0);
@@ -330,7 +330,7 @@ public class ContractServiceImpl implements ContractService {
         contract4.setFullName("Phạm Thị Dung");
         contract4.setEmail("pham.thi.dung@example.com");
         contract4.setPhoneNumber("0954321098");
-        contract4.setContractType("STAFF");
+        contract4.setContractType("ACCOUNTANT");
         contract4.setPosition("Nhân viên Hành chính");
         contract4.setDepartment("Phòng Hành chính");
         contract4.setSalary(11000000.0);
