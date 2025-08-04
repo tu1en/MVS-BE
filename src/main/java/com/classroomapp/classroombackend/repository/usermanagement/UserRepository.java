@@ -86,6 +86,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findActiveStudents();
 
     /**
+     * Find active accountants
+     * @return List of active accountants
+     */
+    @Query("SELECT u FROM User u WHERE u.roleId = 5 AND u.status = 'active'")
+    List<User> findActiveAccountants();
+
+    /**
      * Search users by name containing keyword
      * @param keyword the search keyword
      * @return List of users whose full name contains the keyword
@@ -106,11 +113,4 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return List<User>
      */
     List<User> findByRoleIdIn(List<Integer> roleIds);
-
-    /**
-     * Find active accountants (roleId = 5)
-     * @return List<User>
-     */
-    @Query("SELECT u FROM User u WHERE u.roleId = 5 AND u.status = 'active'")
-    List<User> findActiveAccountants();
 }
