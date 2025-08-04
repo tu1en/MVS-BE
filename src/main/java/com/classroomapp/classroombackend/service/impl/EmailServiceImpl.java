@@ -67,7 +67,12 @@ public class EmailServiceImpl implements EmailService {
     }    @Override
     public void sendAccountInfoEmail(String to, String fullName, String role, String username, String password) {
         String subject = "Thông tin tài khoản MVS Classroom của bạn";
-        String body = generateAccountInfoEmailBody(fullName, role, username, password);
+        Context context = new Context();
+        context.setVariable("fullName", fullName);
+        context.setVariable("role", role);
+        context.setVariable("username", username);
+        context.setVariable("password", password);
+        String body = templateEngine.process("email/request-approved", context);
         sendEmail(to, subject, body);
     }
 
@@ -83,9 +88,13 @@ public class EmailServiceImpl implements EmailService {
 
     @Override
     public void sendApprovalEmail(String to, String fullName, String roleName, String temporaryPassword) {
-        String subject = "Tài khoản MVS Classroom của bạn đã được phê duyệt";
-        // We can reuse the account info email body generation logic
-        String body = generateAccountInfoEmailBody(fullName, roleName, to, temporaryPassword);
+        String subject = "Yêu cầu tạo tài khoản học sinh đã được phê duyệt";
+        Context context = new Context();
+        context.setVariable("fullName", fullName);
+        context.setVariable("role", roleName);
+        context.setVariable("username", to);
+        context.setVariable("password", temporaryPassword);
+        String body = templateEngine.process("email/request-approved", context);
         sendEmail(to, subject, body);
     }
 
@@ -110,28 +119,5 @@ public class EmailServiceImpl implements EmailService {
         sendEmail(to, subject, body);
     }
 
-    private String generateAccountInfoEmailBody(String fullName, String role, String username, String password) {
-        StringBuilder bodyBuilder = new StringBuilder();
-        bodyBuilder.append("<!DOCTYPE html><html><head><style>");
-        bodyBuilder.append("body {font-family: Arial, sans-serif; line-height: 1.6; color: #333;}");
-        bodyBuilder.append(".header {background-color: #52c41a; color: white; padding: 20px; text-align: center;}");
-        bodyBuilder.append(".credentials {background-color: #f9f9f9; border: 1px solid #ddd; padding: 15px; margin: 15px 0; border-radius: 5px;}");
-        bodyBuilder.append("</style></head><body>");
-        bodyBuilder.append("<div class='header'><h1>Tài khoản MVS Classroom của bạn</h1></div>");
-        bodyBuilder.append("<div style='padding: 20px;'>");
-        bodyBuilder.append("<p>Kính gửi ").append(fullName).append(",</p>");
-        bodyBuilder.append("<p>Tài khoản của bạn đã được tạo thành công trong hệ thống với vai trò <strong>").append(role).append("</strong>.</p>");
-        bodyBuilder.append("<p>Đây là thông tin đăng nhập của bạn:</p>");
-        bodyBuilder.append("<div class='credentials'>");
-        bodyBuilder.append("<p><strong>Tên đăng nhập:</strong> ").append(username).append("</p>");
-        bodyBuilder.append("<p><strong>Mật khẩu tạm thời:</strong> ").append(password).append("</p>");
-        bodyBuilder.append("</div>");
-        bodyBuilder.append("<p>Vui lòng sử dụng thông tin này để đăng nhập. Vì lý do bảo mật, chúng tôi khuyên bạn nên đổi mật khẩu sau lần đăng nhập đầu tiên.</p>");
-        bodyBuilder.append("<p>Nếu bạn có bất kỳ câu hỏi hoặc cần hỗ trợ, vui lòng liên hệ với đội ngũ hỗ trợ của chúng tôi.</p>");
-        bodyBuilder.append("<p>Trân trọng,<br>Đội ngũ MVS Classroom</p>");
-        bodyBuilder.append("</div><div style='margin-top: 20px; text-align: center; font-size: 12px; color: #666;'>");
-        bodyBuilder.append("<p>&copy; MVS Classroom. Đã đăng ký bản quyền.</p></div></body></html>");
-        
-        return bodyBuilder.toString();
-    }
+
 } 
