@@ -61,7 +61,7 @@ public class ShiftAssignmentController {
     @GetMapping("/search")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER') or hasRole('TEACHER') or hasRole('ACCOUNTANT')")
     public ResponseEntity<ApiResponse<Page<ShiftAssignmentDto>>> searchAssignments(
-            @RequestParam(required = false) Long employeeId,
+            @RequestParam(required = false) Long assignedUserId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(required = false) ShiftAssignment.AssignmentStatus status,
@@ -71,7 +71,7 @@ public class ShiftAssignmentController {
             @RequestParam(defaultValue = "10") @Min(1) int size) {
 
         Pageable pageable = PageRequest.of(page, size);
-        Page<ShiftAssignment> assignments = shiftAssignmentService.searchAssignments(employeeId, startDate, endDate, status, attendanceStatus, search, pageable);
+        Page<ShiftAssignment> assignments = shiftAssignmentService.searchAssignments(assignedUserId, startDate, endDate, status, attendanceStatus, search, pageable);
 
         Page<ShiftAssignmentDto> assignmentDtos = assignments.map(a -> modelMapper.map(a, ShiftAssignmentDto.class));
         return ResponseEntity.ok(ApiResponse.success("Tìm kiếm assignments thành công", assignmentDtos));
@@ -148,8 +148,8 @@ public class ShiftAssignmentController {
             return ResponseEntity.badRequest().body(ApiResponse.error("Không tìm thấy thông tin người dùng"));
         }
 
-        Long employeeId = userDto.getId();
-        List<ShiftAssignment> assignments = shiftAssignmentService.findCurrentWeekAssignments(employeeId);
+        Long assignedUserId = userDto.getId();
+        List<ShiftAssignment> assignments = shiftAssignmentService.findCurrentWeekAssignments(assignedUserId);
         List<ShiftAssignmentDto> assignmentDtos = assignments.stream().map(a -> modelMapper.map(a, ShiftAssignmentDto.class)).collect(Collectors.toList());
         return ResponseEntity.ok(ApiResponse.success("Lấy assignments tuần hiện tại thành công", assignmentDtos));
     }

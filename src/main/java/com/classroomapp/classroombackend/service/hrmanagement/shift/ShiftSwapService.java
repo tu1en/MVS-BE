@@ -43,12 +43,12 @@ public interface ShiftSwapService {
     /**
      * TÃ¬m requests theo target employee
      */
-    List<ShiftSwapRequest> findByTargetEmployee(Long targetEmployeeId);
+    List<ShiftSwapRequest> findByTargetEmployee(Long targetUserId);
 
     /**
      * TÃ¬m requests Ä‘ang chá» pháº£n há»“i tá»« target
      */
-    List<ShiftSwapRequest> findPendingRequestsForTarget(Long targetEmployeeId);
+    List<ShiftSwapRequest> findPendingRequestsForTarget(Long targetUserId);
 
     /**
      * TÃ¬m requests Ä‘ang chá» phÃª duyá»‡t tá»« manager
@@ -63,7 +63,7 @@ public interface ShiftSwapService {
     /**
      * Search requests vá»›i filters
      */
-    Page<ShiftSwapRequest> searchRequests(Long requesterId, Long targetEmployeeId,
+    Page<ShiftSwapRequest> searchRequests(Long requesterId, Long targetUserId,
                                          ShiftSwapRequest.SwapStatus status,
                                          ShiftSwapRequest.Priority priority,
                                          Boolean isEmergency, String search,
@@ -230,7 +230,7 @@ public interface ShiftSwapService {
      */
     class SwapSuggestion {
         private Long assignmentId;
-        private String employeeName;
+        private String assignedUserName;
         private String shiftTemplateName;
         private java.time.LocalDate assignmentDate;
         private java.time.LocalTime startTime;
@@ -241,11 +241,11 @@ public interface ShiftSwapService {
         // Constructors, getters, setters
         public SwapSuggestion() {}
 
-        public SwapSuggestion(Long assignmentId, String employeeName, String shiftTemplateName,
+        public SwapSuggestion(Long assignmentId, String assignedUserName, String shiftTemplateName,
                              java.time.LocalDate assignmentDate, java.time.LocalTime startTime,
                              java.time.LocalTime endTime, double compatibilityScore, String reason) {
             this.assignmentId = assignmentId;
-            this.employeeName = employeeName;
+            this.assignedUserName = assignedUserName;
             this.shiftTemplateName = shiftTemplateName;
             this.assignmentDate = assignmentDate;
             this.startTime = startTime;
@@ -258,8 +258,8 @@ public interface ShiftSwapService {
         public Long getAssignmentId() { return assignmentId; }
         public void setAssignmentId(Long assignmentId) { this.assignmentId = assignmentId; }
 
-        public String getEmployeeName() { return employeeName; }
-        public void setEmployeeName(String employeeName) { this.employeeName = employeeName; }
+        public String getAssignedUserName() { return assignedUserName; }
+        public void setAssignedUserName(String assignedUserName) { this.assignedUserName = assignedUserName; }
 
         public String getShiftTemplateName() { return shiftTemplateName; }
         public void setShiftTemplateName(String shiftTemplateName) { this.shiftTemplateName = shiftTemplateName; }

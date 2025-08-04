@@ -414,4 +414,91 @@ public class SecurityUtils {
      */
     public boolean canManageSalaryStructures() {
         return isAdmin() || (isManager() && hasRole("HR_MANAGER"));
-    }}
+    }
+    
+    // ===== ROLE GROUPING METHODS FOR FIXING EMPLOYEE/STAFF REFERENCES =====
+    
+    /**
+     * Check if current user is staff (non-student)
+     * Staff includes: TEACHER, MANAGER, ADMIN, ACCOUNTANT
+     * This replaces the invalid 'EMPLOYEE' role checks
+     */
+    public boolean isStaff() {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated()) {
+                return false;
+            }
+            
+            return auth.getAuthorities().stream()
+                .map(authority -> authority.getAuthority())
+                .anyMatch(role -> role.equals("ROLE_TEACHER") || 
+                               role.equals("ROLE_MANAGER") || 
+                               role.equals("ROLE_ADMIN") || 
+                               role.equals("ROLE_ACCOUNTANT"));
+        } catch (Exception e) {
+            log.warn("Error checking staff role: {}", e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Check if current user is employee (same as staff for this system)
+     * Employee includes: TEACHER, MANAGER, ADMIN, ACCOUNTANT
+     * This replaces the invalid 'EMPLOYEE' role checks
+     */
+    public boolean isEmployee() {
+        return isStaff(); // In this system, employee = staff
+    }
+    
+    /**
+     * Check if current user is administrative staff
+     * Admin staff includes: MANAGER, ADMIN, ACCOUNTANT
+     */
+    public boolean isAdminStaff() {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated()) {
+                return false;
+            }
+            
+            return auth.getAuthorities().stream()
+                .map(authority -> authority.getAuthority())
+                .anyMatch(role -> role.equals("ROLE_MANAGER") || 
+                               role.equals("ROLE_ADMIN") || 
+                               role.equals("ROLE_ACCOUNTANT"));
+        } catch (Exception e) {
+            log.warn("Error checking admin staff role: {}", e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Check if current user is teaching staff
+     */
+    public boolean isTeachingStaff() {
+        return isTeacher();
+    }
+    
+    /**
+     * Get user role as clean string (without ROLE_ prefix)
+     */
+    public String getUserRoleClean() {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated()) {
+                return null;
+            }
+            
+            return auth.getAuthorities().stream()
+                .map(authority -> authority.getAuthority())
+                .filter(role -> role.startsWith("ROLE_"))
+                .map(role -> role.substring(5)) // Remove "ROLE_" prefix
+                .findFirst()
+                .orElse(null);
+        } catch (Exception e) {
+            log.warn("Error getting user role: {}", e.getMessage());
+            return null;
+        }
+    }
+}

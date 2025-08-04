@@ -16,14 +16,10 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
-/**
- * Entity cho Shift Assignment - PhÃ¢n cÃ´ng ca lÃ m viá»‡c
- * Quáº£n lÃ½ viá»‡c phÃ¢n cÃ´ng ca lÃ m viá»‡c cho nhÃ¢n viÃªn
- */
 @Entity
 @Table(name = "shift_assignments", 
        indexes = {
-           @Index(name = "IX_shift_assignments_employee_date", columnList = "employee_id, assignment_date"),
+           @Index(name = "IX_shift_assignments_assigned_user_date", columnList = "assigned_user_id, assignment_date"),
            @Index(name = "IX_shift_assignments_date", columnList = "assignment_date"),
            @Index(name = "IX_shift_assignments_status", columnList = "status"),
            @Index(name = "IX_shift_assignments_attendance", columnList = "attendance_status"),
@@ -31,7 +27,7 @@ import java.util.List;
        },
        uniqueConstraints = {
            @UniqueConstraint(name = "IX_shift_assignments_unique", 
-                           columnNames = {"employee_id", "assignment_date", "planned_start_time"})
+                           columnNames = {"assigned_user_id", "assignment_date", "planned_start_time"})
        })
 @Data
 @NoArgsConstructor
@@ -43,16 +39,16 @@ public class ShiftAssignment {
     private Long id;
 
     @Column(name = "assignment_date", nullable = false)
-    @NotNull(message = "NgÃ y phÃ¢n cÃ´ng khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
+    @NotNull(message = "Ngày phân công không được để trống")
     private LocalDate assignmentDate;
 
     @Column(name = "planned_start_time", nullable = false)
-    @NotNull(message = "Thá»i gian báº¯t Ä‘áº§u dá»± kiáº¿n khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
+    @NotNull(message = "Thời gian bắt đầu dự kiến không được để trống")
     @JsonFormat(pattern = "HH:mm:ss")
     private LocalTime plannedStartTime;
 
     @Column(name = "planned_end_time", nullable = false)
-    @NotNull(message = "Thá»i gian káº¿t thÃºc dá»± kiáº¿n khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
+    @NotNull(message = "Thời gian kết thúc dự kiến không được để trống")
     @JsonFormat(pattern = "HH:mm:ss")
     private LocalTime plannedEndTime;
 
@@ -81,20 +77,20 @@ public class ShiftAssignment {
     private AttendanceStatus attendanceStatus = AttendanceStatus.PENDING;
 
     @Column(name = "planned_hours", nullable = false, precision = 4, scale = 2)
-    @NotNull(message = "Sá»‘ giá» dá»± kiáº¿n khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
-    @DecimalMin(value = "0.25", message = "Sá»‘ giá» dá»± kiáº¿n pháº£i Ã­t nháº¥t 15 phÃºt")
+    @NotNull(message = "Số giờ dự kiến không được để trống")
+    @DecimalMin(value = "0.25", message = "Số giờ dự kiến phải ít nhất 15 phút")
     private BigDecimal plannedHours;
 
     @Column(name = "actual_hours", precision = 4, scale = 2)
-    @DecimalMin(value = "0.00", message = "Sá»‘ giá» thá»±c táº¿ khÃ´ng Ä‘Æ°á»£c Ã¢m")
+    @DecimalMin(value = "0.00", message = "Số giờ thực tế không được âm")
     private BigDecimal actualHours;
 
     @Column(name = "overtime_hours", precision = 4, scale = 2)
-    @DecimalMin(value = "0.00", message = "Sá»‘ giá» tÄƒng ca khÃ´ng Ä‘Æ°á»£c Ã¢m")
+    @DecimalMin(value = "0.00", message = "Số giờ tăng ca không được âm")
     private BigDecimal overtimeHours = BigDecimal.ZERO;
 
     @Column(name = "notes", columnDefinition = "NVARCHAR(MAX)")
-    @Size(max = 1000, message = "Ghi chÃº khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 1000 kÃ½ tá»±")
+    @Size(max = 1000, message = "Ghi chú không được vượt quá 1000 ký tự")
     private String notes;
 
     @Column(name = "check_in_time")
@@ -109,10 +105,10 @@ public class ShiftAssignment {
     @Column(name = "location_check_out", columnDefinition = "NVARCHAR(MAX)")
     private String locationCheckOut; // JSON for GPS coordinates
 
-    // Relationships
+    // Relationships - RENAMED FOR CLARITY
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "employee_id", nullable = false, foreignKey = @ForeignKey(name = "FK_shift_assignments_employee"))
-    private User employee;
+    @JoinColumn(name = "assigned_user_id", nullable = false, foreignKey = @ForeignKey(name = "FK_shift_assignments_assigned_user"))
+    private User assignedUser; // CHANGED from 'employee' to 'assignedUser'
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "shift_template_id", nullable = false, foreignKey = @ForeignKey(name = "FK_shift_assignments_template"))
@@ -143,11 +139,11 @@ public class ShiftAssignment {
 
     // Enums
     public enum AssignmentStatus {
-        SCHEDULED("ÄÃ£ lÃªn lá»‹ch"),
-        IN_PROGRESS("Äang thá»±c hiá»‡n"),
-        COMPLETED("HoÃ n thÃ nh"),
-        CANCELLED("ÄÃ£ há»§y"),
-        NO_SHOW("KhÃ´ng cÃ³ máº·t");
+        SCHEDULED("Đã lên lịch"),
+        IN_PROGRESS("Đang thực hiện"),
+        COMPLETED("Hoàn thành"),
+        CANCELLED("Đã hủy"),
+        NO_SHOW("Không có mặt");
 
         private final String displayName;
 
@@ -159,11 +155,11 @@ public class ShiftAssignment {
     }
 
     public enum AttendanceStatus {
-        PENDING("Chá» xÃ¡c nháº­n"),
-        PRESENT("CÃ³ máº·t"),
-        ABSENT("Váº¯ng máº·t"),
-        LATE("Äi muá»™n"),
-        EARLY_LEAVE("Vá» sá»›m");
+        PENDING("Chờ xác nhận"),
+        PRESENT("Có mặt"),
+        ABSENT("Vắng mặt"),
+        LATE("Đi muộn"),
+        EARLY_LEAVE("Về sớm");
 
         private final String displayName;
 
@@ -176,7 +172,7 @@ public class ShiftAssignment {
 
     // Business methods
     /**
-     * Kiá»ƒm tra xem phÃ¢n cÃ´ng cÃ³ há»£p lá»‡ khÃ´ng
+     * Kiểm tra xem phân công có hợp lệ không
      */
     public boolean isValidAssignment() {
         return plannedStartTime != null && 
@@ -186,7 +182,7 @@ public class ShiftAssignment {
     }
 
     /**
-     * TÃ­nh toÃ¡n sá»‘ giá» thá»±c táº¿ lÃ m viá»‡c
+     * Tính toán số giờ thực tế làm việc
      */
     public BigDecimal calculateActualHours() {
         if (actualStartTime == null || actualEndTime == null) {
@@ -195,7 +191,7 @@ public class ShiftAssignment {
         
         long minutes = java.time.Duration.between(actualStartTime, actualEndTime).toMinutes();
         
-        // Trá»« thá»i gian nghá»‰ náº¿u cÃ³
+        // Trừ thời gian nghỉ nếu có
         if (breakStartTime != null && breakEndTime != null) {
             long breakMinutes = java.time.Duration.between(breakStartTime, breakEndTime).toMinutes();
             minutes -= breakMinutes;
@@ -205,7 +201,7 @@ public class ShiftAssignment {
     }
 
     /**
-     * TÃ­nh toÃ¡n sá»‘ giá» tÄƒng ca
+     * Tính toán số giờ tăng ca
      */
     public BigDecimal calculateOvertimeHours() {
         BigDecimal actual = calculateActualHours();
@@ -216,11 +212,11 @@ public class ShiftAssignment {
     }
 
     /**
-     * Check-in cho ca lÃ m viá»‡c
+     * Check-in cho ca làm việc
      */
     public void checkIn(String location) {
         if (status != AssignmentStatus.SCHEDULED) {
-            throw new IllegalStateException("Chá»‰ cÃ³ thá»ƒ check-in cho ca Ä‘Ã£ lÃªn lá»‹ch");
+            throw new IllegalStateException("Chỉ có thể check-in cho ca đã lên lịch");
         }
         
         this.checkInTime = LocalDateTime.now();
@@ -238,11 +234,11 @@ public class ShiftAssignment {
     }
 
     /**
-     * Check-out cho ca lÃ m viá»‡c
+     * Check-out cho ca làm việc
      */
     public void checkOut(String location) {
         if (status != AssignmentStatus.IN_PROGRESS) {
-            throw new IllegalStateException("Chá»‰ cÃ³ thá»ƒ check-out cho ca Ä‘ang thá»±c hiá»‡n");
+            throw new IllegalStateException("Chỉ có thể check-out cho ca đang thực hiện");
         }
         
         this.checkOutTime = LocalDateTime.now();
@@ -262,20 +258,20 @@ public class ShiftAssignment {
     }
 
     /**
-     * Há»§y ca lÃ m viá»‡c
+     * Hủy ca làm việc
      */
     public void cancel(String reason) {
         if (status == AssignmentStatus.COMPLETED) {
-            throw new IllegalStateException("KhÃ´ng thá»ƒ há»§y ca Ä‘Ã£ hoÃ n thÃ nh");
+            throw new IllegalStateException("Không thể hủy ca đã hoàn thành");
         }
         
         this.status = AssignmentStatus.CANCELLED;
         this.attendanceStatus = AttendanceStatus.ABSENT;
-        this.notes = (notes != null ? notes + "\n" : "") + "Há»§y: " + reason;
+        this.notes = (notes != null ? notes + "\n" : "") + "Hủy: " + reason;
     }
 
     /**
-     * Kiá»ƒm tra xem cÃ³ xung Ä‘á»™t thá»i gian vá»›i assignment khÃ¡c khÃ´ng
+     * Kiểm tra xem có xung đột thời gian với assignment khác không
      */
     public boolean hasTimeConflict(ShiftAssignment other) {
         if (other == null || !assignmentDate.equals(other.assignmentDate)) {
@@ -287,14 +283,14 @@ public class ShiftAssignment {
     }
 
     /**
-     * Láº¥y thÃ´ng tin hiá»ƒn thá»‹ thá»i gian
+     * Lấy thông tin hiển thị thời gian
      */
     public String getTimeRangeDisplay() {
         return String.format("%s - %s", plannedStartTime.toString(), plannedEndTime.toString());
     }
 
     /**
-     * Láº¥y mÃ u hiá»ƒn thá»‹ theo tráº¡ng thÃ¡i
+     * Lấy màu hiển thị theo trạng thái
      */
     public String getStatusColor() {
         switch (status) {
@@ -311,7 +307,7 @@ public class ShiftAssignment {
     @PreUpdate
     private void validateEntity() {
         if (!isValidAssignment()) {
-            throw new IllegalStateException("ThÃ´ng tin phÃ¢n cÃ´ng ca khÃ´ng há»£p lá»‡");
+            throw new IllegalStateException("Thông tin phân công ca không hợp lệ");
         }
         
         // Auto-calculate planned hours if not set

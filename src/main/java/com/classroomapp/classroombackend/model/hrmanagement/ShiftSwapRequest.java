@@ -42,7 +42,7 @@ public class ShiftSwapRequest {
     private User requester; // NgÆ°á»i yÃªu cáº§u
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "target_employee_id", nullable = false)
+    @JoinColumn(name = "target_user_id", nullable = false)
     private User targetEmployee; // NgÆ°á»i Ä‘Æ°á»£c yÃªu cáº§u Ä‘á»•i ca
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -60,7 +60,7 @@ public class ShiftSwapController {
             
             ShiftSwapRequest request = new ShiftSwapRequest();
             request.setRequester(requester);
-            request.setTargetEmployee(userService.findById(dto.getTargetEmployeeId()));
+            request.setTargetEmployee(userService.findById(dto.getTargetUserId()));
             request.setReason(dto.getReason());
             request.setPriority(ShiftSwapRequest.Priority.valueOf(dto.getPriority()));
             request.setIsEmergency(dto.getIsEmergency());
@@ -110,7 +110,7 @@ public class ShiftSwapController {
     @GetMapping("/search")
     public ResponseEntity<Page<ShiftSwapRequest>> searchRequests(
             @RequestParam(required = false) Long requesterId,
-            @RequestParam(required = false) Long targetEmployeeId,
+            @RequestParam(required = false) Long targetUserId,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String priority,
             @RequestParam(required = false) Boolean isEmergency,
@@ -123,7 +123,7 @@ public class ShiftSwapController {
             ShiftSwapRequest.Priority.valueOf(priority) : null;
             
         Page<ShiftSwapRequest> requests = shiftSwapService.searchRequests(
-            requesterId, targetEmployeeId, swapStatus, swapPriority, 
+            requesterId, targetUserId, swapStatus, swapPriority, 
             isEmergency, search, pageable);
         
         return ResponseEntity.ok(requests);

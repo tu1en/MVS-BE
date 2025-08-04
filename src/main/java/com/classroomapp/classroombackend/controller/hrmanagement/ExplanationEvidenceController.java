@@ -42,7 +42,7 @@ public class ExplanationEvidenceController {
      * POST /api/hr/evidence/upload
      */
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER') or hasRole('ADMIN')")
+    @PreAuthorize("@securityUtils.isStaff()")
     public ResponseEntity<ExplanationEvidenceDto> uploadEvidence(
             @RequestParam Long explanationId,
             @RequestParam MultipartFile file,
@@ -82,7 +82,7 @@ public class ExplanationEvidenceController {
      * GET /api/hr/evidence/{id}
      */
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER') or hasRole('ADMIN')")
+    @PreAuthorize("@securityUtils.isStaff()")
     public ResponseEntity<ExplanationEvidenceDto> getEvidenceById(@PathVariable Long id) {
         log.info("Getting evidence by ID: {}", id);
         
@@ -107,7 +107,7 @@ public class ExplanationEvidenceController {
      * GET /api/hr/evidence/explanation/{explanationId}
      */
     @GetMapping("/explanation/{explanationId}")
-    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER') or hasRole('ADMIN')")
+    @PreAuthorize("@securityUtils.isStaff()")
     public ResponseEntity<List<ExplanationEvidenceDto>> getEvidenceByExplanation(@PathVariable Long explanationId) {
         log.info("Getting evidence files for explanation: {}", explanationId);
         
@@ -195,7 +195,7 @@ public class ExplanationEvidenceController {
      * DELETE /api/hr/evidence/{id}
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER') or hasRole('ADMIN')")
+    @PreAuthorize("@securityUtils.isStaff()")
     public ResponseEntity<Void> deleteEvidence(@PathVariable Long id) {
         log.info("Deleting evidence: {}", id);
         
@@ -220,7 +220,7 @@ public class ExplanationEvidenceController {
      * GET /api/hr/evidence/{id}/download-url
      */
     @GetMapping("/{id}/download-url")
-    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER') or hasRole('ADMIN')")
+    @PreAuthorize("@securityUtils.isStaff()")
     public ResponseEntity<String> generateDownloadUrl(@PathVariable Long id) {
         log.info("Generating download URL for evidence: {}", id);
         
@@ -258,7 +258,7 @@ public class ExplanationEvidenceController {
      * GET /api/hr/evidence/explanation/{explanationId}/total-size
      */
     @GetMapping("/explanation/{explanationId}/total-size")
-    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER') or hasRole('ADMIN')")
+    @PreAuthorize("@securityUtils.isStaff()")
     public ResponseEntity<Long> getTotalFileSizeByExplanation(@PathVariable Long explanationId) {
         log.info("Getting total file size for explanation: {}", explanationId);
         
@@ -321,7 +321,7 @@ public class ExplanationEvidenceController {
      * POST /api/hr/evidence/validate
      */
     @PostMapping(value = "/validate", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER') or hasRole('ADMIN')")
+    @PreAuthorize("@securityUtils.isStaff()")
     public ResponseEntity<Object> validateFile(@RequestParam MultipartFile file) {
         log.info("Validating file: {}", file.getOriginalFilename());
         

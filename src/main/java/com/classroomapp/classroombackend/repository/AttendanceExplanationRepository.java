@@ -26,6 +26,8 @@ public interface AttendanceExplanationRepository extends JpaRepository<Attendanc
             @Param("department") String department,
             Pageable pageable);
 
+
+
     @Query("SELECT ae.reason, COUNT(ae) FROM AttendanceExplanation ae WHERE " +
            "(:startDate IS NULL OR ae.absenceDate >= :startDate) AND " +
            "(:endDate IS NULL OR ae.absenceDate <= :endDate) " +

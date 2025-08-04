@@ -12,7 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
-import org.springframework.context.annotation.Profile;
+
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,9 +21,9 @@ import com.classroomapp.classroombackend.dto.FileUploadResponse;
 import com.classroomapp.classroombackend.exception.FileStorageException;
 import com.classroomapp.classroombackend.service.FileStorageService;
 
-@Service
-@Primary
-@Profile("local")
+// @Service
+// @Primary
+// Disabled to avoid conflict with DummyFileStorageServiceImpl
 public class LocalFileStorageServiceImpl implements FileStorageService {
 
     private static final Logger logger = LoggerFactory.getLogger(LocalFileStorageServiceImpl.class);
@@ -40,6 +40,7 @@ public class LocalFileStorageServiceImpl implements FileStorageService {
             // Get original filename
             String originalFilename = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
             logger.info("Received file to upload to folder {}: {}", folder, originalFilename);
+            logger.info("Upload directory configured as: {}", uploadDir);
 
             // Basic validation
             if (originalFilename.contains("..")) {
@@ -48,14 +49,27 @@ public class LocalFileStorageServiceImpl implements FileStorageService {
 
             // Generate a unique filename
             String uniqueFileName = UUID.randomUUID() + "_" + originalFilename;
+            logger.info("Generated unique filename: {}", uniqueFileName);
 
-            // Create directory structure
-            Path folderPath = Paths.get(uploadDir).resolve(folder);
-            Files.createDirectories(folderPath);
+            // Create directory structure with better error handling
+            Path uploadPath = Paths.get(uploadDir);
+            if (!Files.exists(uploadPath)) {
+                logger.info("Creating upload directory: {}", uploadPath.toAbsolutePath());
+                Files.createDirectories(uploadPath);
+            }
+            
+            Path folderPath = uploadPath.resolve(folder);
+            if (!Files.exists(folderPath)) {
+                logger.info("Creating folder directory: {}", folderPath.toAbsolutePath());
+                Files.createDirectories(folderPath);
+            }
 
             // Save the file
             Path filePath = folderPath.resolve(uniqueFileName);
+            logger.info("Saving file to: {}", filePath.toAbsolutePath());
+            
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+            logger.info("File copied successfully to filesystem");
 
             // Construct download URL
             String downloadUrl = "http://localhost:" + serverPort + "/api/files/download/" + folder + "/" + uniqueFileName;
@@ -71,8 +85,11 @@ public class LocalFileStorageServiceImpl implements FileStorageService {
                     file.getSize()
             );
         } catch (IOException e) {
-            logger.error("Error saving file to local storage", e);
-            throw new FileStorageException("Could not save file " + file.getOriginalFilename() + ". Please try again!", e);
+            logger.error("IOException while saving file to local storage: {}", e.getMessage(), e);
+            throw new FileStorageException("Could not save file " + file.getOriginalFilename() + ". Error: " + e.getMessage(), e);
+        } catch (Exception e) {
+            logger.error("Unexpected error while saving file: {}", e.getMessage(), e);
+            throw new FileStorageException("Unexpected error occurred while saving file " + file.getOriginalFilename() + ". Error: " + e.getMessage(), e);
         }
     }
 

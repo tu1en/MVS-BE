@@ -38,6 +38,7 @@ import com.classroomapp.classroombackend.repository.hrmanagement.PayrollRecordRe
 import com.classroomapp.classroombackend.repository.hrmanagement.StaffAttendanceLogRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.hrmanagement.PayrollService;
+import com.classroomapp.classroombackend.constants.RoleConstants;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -88,9 +89,9 @@ public class PayrollServiceImpl implements PayrollService {
         log.info("Generating bulk payroll from {} to {}", startDate, endDate);
         
         List<User> allStaff = userRepository.findAll().stream()
-            .filter(user -> user.getRole() != null && 
-                   (user.getRole().equals("TEACHER") || user.getRole().equals("ACCOUNTANT") || 
-                    user.getRole().equals("MANAGER") || user.getRole().equals("ADMIN")))
+            .filter(user -> user.getRoleId() != null && 
+                    user.getRoleId() != RoleConstants.STUDENT && 
+                    user.getRoleId() != RoleConstants.ADMIN)
             .collect(Collectors.toList());
         
         return allStaff.stream()
@@ -530,7 +531,7 @@ public class PayrollServiceImpl implements PayrollService {
     
     private BigDecimal getStaffHourlyRate(User staff) {
         // Simplified - in real implementation, this would come from staff profile or contract
-        if ("TEACHER".equals(staff.getRole())) {
+        if (staff.getRoleId() != null && staff.getRoleId() == RoleConstants.TEACHER) {
             return new BigDecimal("100000"); // 100k VND per hour for teachers
         }
         return new BigDecimal("50000"); // 50k VND per hour for other roles

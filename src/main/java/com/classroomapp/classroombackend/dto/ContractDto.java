@@ -16,7 +16,7 @@ public class ContractDto {
     private String fullName;
     private String email;
     private String phoneNumber;
-    private String contractType; // "TEACHER", "STAFF"
+    private String contractType; // "TEACHER", "ACCOUNTANT"
     private String position;
     private String department;
     private Double salary;

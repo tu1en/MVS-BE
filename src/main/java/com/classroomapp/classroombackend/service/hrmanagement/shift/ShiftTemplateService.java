@@ -107,7 +107,7 @@ public interface ShiftTemplateService {
     /**
      * TÃ¬m templates available cho employee vÃ  ngÃ y cá»¥ thá»ƒ
      */
-    List<ShiftTemplate> findAvailableTemplatesForEmployeeAndDate(Long employeeId, java.time.LocalDate date);
+    List<ShiftTemplate> findAvailableTemplatesForEmployeeAndDate(Long assignedUserId, java.time.LocalDate date);
 
     /**
      * Bulk update templates

@@ -48,12 +48,12 @@ public interface ShiftAssignmentService {
     /**
      * TÃ¬m assignments theo employee vÃ  ngÃ y
      */
-    List<ShiftAssignment> findByEmployeeAndDate(Long employeeId, LocalDate date);
+    List<ShiftAssignment> findByEmployeeAndDate(Long assignedUserId, LocalDate date);
 
     /**
      * TÃ¬m assignments theo employee trong khoáº£ng thá»i gian
      */
-    List<ShiftAssignment> findByEmployeeAndDateRange(Long employeeId, LocalDate startDate, LocalDate endDate);
+    List<ShiftAssignment> findByEmployeeAndDateRange(Long assignedUserId, LocalDate startDate, LocalDate endDate);
 
     /**
      * TÃ¬m assignments theo ngÃ y
@@ -63,17 +63,17 @@ public interface ShiftAssignmentService {
     /**
      * TÃ¬m assignments theo tuáº§n
      */
-    List<ShiftAssignment> findByWeek(LocalDate weekStart, Long employeeId);
+    List<ShiftAssignment> findByWeek(LocalDate weekStart, Long assignedUserId);
 
     /**
      * TÃ¬m assignments theo thÃ¡ng
      */
-    List<ShiftAssignment> findByMonth(int year, int month, Long employeeId);
+    List<ShiftAssignment> findByMonth(int year, int month, Long assignedUserId);
 
     /**
      * Search assignments vá»›i filters
      */
-    Page<ShiftAssignment> searchAssignments(Long employeeId, LocalDate startDate, LocalDate endDate,
+    Page<ShiftAssignment> searchAssignments(Long assignedUserId, LocalDate startDate, LocalDate endDate,
                                            ShiftAssignment.AssignmentStatus status,
                                            ShiftAssignment.AttendanceStatus attendanceStatus,
                                            String search, Pageable pageable);
@@ -111,7 +111,7 @@ public interface ShiftAssignmentService {
     /**
      * TÃ­nh tá»•ng giá» lÃ m viá»‡c cá»§a employee
      */
-    WorkingHoursSummary calculateWorkingHours(Long employeeId, LocalDate startDate, LocalDate endDate);
+    WorkingHoursSummary calculateWorkingHours(Long assignedUserId, LocalDate startDate, LocalDate endDate);
 
     /**
      * Láº¥y assignments cÃ³ overtime
@@ -126,18 +126,18 @@ public interface ShiftAssignmentService {
     /**
      * TÃ¬m assignments cÃ³ thá»ƒ swap
      */
-    List<ShiftAssignment> findSwappableAssignments(Long employeeId, LocalDate date, Long shiftTemplateId);
+    List<ShiftAssignment> findSwappableAssignments(Long assignedUserId, LocalDate date, Long shiftTemplateId);
 
     /**
      * Auto-assign shifts cho employees dá»±a trÃªn availability
      */
-    List<ShiftAssignment> autoAssignShifts(List<Long> employeeIds, LocalDate startDate, LocalDate endDate);
+    List<ShiftAssignment> autoAssignShifts(List<Long> assignedUserIds, LocalDate startDate, LocalDate endDate);
 
     /**
      * Copy assignments tá»« tuáº§n/thÃ¡ng khÃ¡c
      */
     List<ShiftAssignment> copyAssignments(LocalDate sourceStart, LocalDate sourceEnd, 
-                                         LocalDate targetStart, List<Long> employeeIds);
+                                         LocalDate targetStart, List<Long> assignedUserIds);
 
     /**
      * Láº¥y thá»‘ng kÃª assignments
@@ -162,7 +162,7 @@ public interface ShiftAssignmentService {
     /**
      * TÃ¬m assignments cá»§a employee trong tuáº§n hiá»‡n táº¡i
      */
-    List<ShiftAssignment> findCurrentWeekAssignments(Long employeeId);
+    List<ShiftAssignment> findCurrentWeekAssignments(Long assignedUserId);
 
     /**
      * DTO cho working hours summary

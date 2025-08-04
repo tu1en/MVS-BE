@@ -227,7 +227,7 @@ public class FirebaseShiftService {
             employeeShiftData.put("templateColor", assignment.getShiftTemplate().getColorCode());
             
             DatabaseReference employeeShiftRef = firebaseDatabase.getReference(EMPLOYEE_SHIFTS_PATH)
-                .child(assignment.getEmployee().getId().toString())
+                .child(assignment.getAssignedUser().getId().toString())
                 .child(assignment.getAssignmentDate().toString())
                 .child(assignment.getId().toString());
             
@@ -244,8 +244,8 @@ public class FirebaseShiftService {
     private Map<String, Object> convertAssignmentToFirebaseData(ShiftAssignment assignment) {
         Map<String, Object> data = new HashMap<>();
         data.put("id", assignment.getId());
-        data.put("employeeId", assignment.getEmployee().getId());
-        data.put("employeeName", assignment.getEmployee().getFullName());
+        data.put("assignedUserId", assignment.getAssignedUser().getId());
+        data.put("assignedUserName", assignment.getAssignedUser().getFullName());
         data.put("shiftTemplateId", assignment.getShiftTemplate().getId());
         data.put("templateName", assignment.getShiftTemplate().getTemplateName());
         data.put("templateColor", assignment.getShiftTemplate().getColorCode());
@@ -314,8 +314,8 @@ public class FirebaseShiftService {
         data.put("id", swapRequest.getId());
         data.put("requesterId", swapRequest.getRequester().getId());
         data.put("requesterName", swapRequest.getRequester().getFullName());
-        data.put("targetEmployeeId", swapRequest.getTargetEmployee().getId());
-        data.put("targetEmployeeName", swapRequest.getTargetEmployee().getFullName());
+        data.put("targetUserId", swapRequest.getTargetEmployee().getId());
+        data.put("targetUserName", swapRequest.getTargetEmployee().getFullName());
         data.put("requesterAssignmentId", swapRequest.getRequesterAssignment().getId());
         data.put("targetAssignmentId", swapRequest.getTargetAssignment().getId());
         data.put("requestReason", swapRequest.getRequestReason());
@@ -408,7 +408,7 @@ public class FirebaseShiftService {
                 employeeShiftData.put("templateName", assignment.getShiftTemplate().getTemplateName());
                 employeeShiftData.put("templateColor", assignment.getShiftTemplate().getColorCode());
                 
-                updates.put(EMPLOYEE_SHIFTS_PATH + "/" + assignment.getEmployee().getId() + "/" + 
+                updates.put(EMPLOYEE_SHIFTS_PATH + "/" + assignment.getAssignedUser().getId() + "/" + 
                            assignment.getAssignmentDate().toString() + "/" + assignment.getId(), employeeShiftData);
             }
             

@@ -45,6 +45,8 @@ public class AttendanceExplanationController {
         return new ResponseEntity<>(reports, HttpStatus.OK);
     }
 
+
+
     @PutMapping("/{id}/approve")
     @PreAuthorize("hasAnyRole('MANAGER', 'ACCOUNTANT')")
     public ResponseEntity<AttendanceExplanation> approveExplanation(@PathVariable Long id, @RequestParam String approverId) {
@@ -90,5 +92,12 @@ public class AttendanceExplanationController {
         headers.setContentDispositionFormData("attachment", "attendance_explanations.xlsx");
         headers.setContentLength(excelData.length);
         return new ResponseEntity<>(excelData, headers, HttpStatus.OK);
+    }
+
+    @DeleteMapping("/clear-all")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> clearAllExplanations() {
+        service.clearAllExplanations();
+        return new ResponseEntity<>("All explanation data cleared successfully", HttpStatus.OK);
     }
 }

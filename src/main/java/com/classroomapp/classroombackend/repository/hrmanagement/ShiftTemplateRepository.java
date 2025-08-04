@@ -158,9 +158,9 @@ public interface ShiftTemplateRepository extends JpaRepository<ShiftTemplate, Lo
            "st.isActive = true AND " +
            "NOT EXISTS (SELECT 1 FROM ShiftAssignment sa WHERE " +
            "sa.shiftTemplate = st AND sa.assignmentDate = :date AND " +
-           "sa.employee.id = :employeeId AND sa.status != 'CANCELLED') " +
+           "sa.assignedUser.id = :assignedUserId AND sa.status != 'CANCELLED') " +
            "ORDER BY st.sortOrder ASC")
-    List<ShiftTemplate> findAvailableTemplatesForEmployeeAndDate(@Param("employeeId") Long employeeId,
+    List<ShiftTemplate> findAvailableTemplatesForEmployeeAndDate(@Param("assignedUserId") Long assignedUserId,
                                                                 @Param("date") java.time.LocalDate date);
 
     /**

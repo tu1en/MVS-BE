@@ -18,13 +18,13 @@ public class ShiftAssignmentDto {
 
     private Long id;
 
-    private Long employeeId;
+    private Long assignedUserId;
 
-    private String employeeName;
+    private String assignedUserName;
 
-    private String employeeEmail;
+    private String assignedUserEmail;
 
-    private String employeeDepartment;
+    private String assignedUserDepartment;
 
     private Long shiftId;
 

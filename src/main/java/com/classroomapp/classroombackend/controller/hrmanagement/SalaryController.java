@@ -112,7 +112,7 @@ public class SalaryController {
      * GET /api/hr/salary/payroll/{payrollId}
      */
     @GetMapping("/payroll/{payrollId}")
-    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER') or hasRole('ADMIN')")
+    @PreAuthorize("@securityUtils.isStaff()")
     public ResponseEntity<Payroll> getPayrollById(@PathVariable Long payrollId) {
         
         log.info("Getting payroll: {}", payrollId);
@@ -141,7 +141,7 @@ public class SalaryController {
      * GET /api/hr/salary/payroll/user/{userId}
      */
     @GetMapping("/payroll/user/{userId}")
-    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER') or hasRole('ADMIN')")
+    @PreAuthorize("@securityUtils.isStaff()")
     public ResponseEntity<Payroll> getPayrollForUserAndPeriod(
             @PathVariable Long userId,
             @RequestParam Integer year,
@@ -178,7 +178,7 @@ public class SalaryController {
      * GET /api/hr/salary/my-payrolls
      */
     @GetMapping("/my-payrolls")
-    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER') or hasRole('ADMIN')")
+    @PreAuthorize("@securityUtils.isStaff()")
     public ResponseEntity<Page<Payroll>> getMyPayrolls(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,

@@ -18,8 +18,8 @@ public class ShiftSwapRequestDto {
     private Long id;
     private Long requesterId;
     private String requesterName;
-    private Long targetEmployeeId;
-    private String targetEmployeeName;
+    private Long targetUserId;
+    private String targetUserName;
     private Long assignmentId;
     private String assignmentDetails;
     private String reason;
