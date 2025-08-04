@@ -110,7 +110,7 @@ public class AnnouncementController {
     }
 
     @PostMapping("/{id}/mark-read")
-    @PreAuthorize("hasRole('TEACHER') or hasRole('STUDENT')")
+    @PreAuthorize("hasRole('TEACHER') or hasRole('STUDENT') or hasRole('ACCOUNTANT')")
     public ResponseEntity<Void> markAnnouncementAsRead(@PathVariable Long id) {
         log.info("Request to mark announcement {} as read", id);
         announcementServiceImpl.markAnnouncementAsRead(id);
@@ -146,6 +146,39 @@ public class AnnouncementController {
     public ResponseEntity<Void> markAllAnnouncementsAsReadForStudent() {
         log.info("Request to mark all announcements as read for student");
         announcementServiceImpl.markAllAnnouncementsAsReadForStudent();
+        return ResponseEntity.ok().build();
+    }
+
+    // Accountant endpoints - similar to Teacher endpoints
+    @GetMapping("/accountant")
+    @PreAuthorize("hasRole('ACCOUNTANT')")
+    public ResponseEntity<List<AnnouncementDto>> getAnnouncementsForAccountant() {
+        log.info("Request to get announcements for accountant");
+        List<AnnouncementDto> announcements = announcementServiceImpl.getAnnouncementsForAccountant();
+        return ResponseEntity.ok(announcements);
+    }
+
+    @GetMapping("/accountant/unread-count")
+    @PreAuthorize("hasRole('ACCOUNTANT')")
+    public ResponseEntity<Integer> getUnreadAnnouncementCountForAccountant() {
+        log.info("Request to get unread announcement count for accountant");
+        int count = announcementServiceImpl.getUnreadAnnouncementCountForAccountant();
+        return ResponseEntity.ok(count);
+    }
+
+    @GetMapping("/accountant/recent-unread")
+    @PreAuthorize("hasRole('ACCOUNTANT')")
+    public ResponseEntity<List<AnnouncementDto>> getRecentUnreadAnnouncementsForAccountant(@RequestParam(defaultValue = "5") int limit) {
+        log.info("Request to get recent unread announcements for accountant, limit: {}", limit);
+        List<AnnouncementDto> announcements = announcementServiceImpl.getRecentUnreadAnnouncementsForAccountant(limit);
+        return ResponseEntity.ok(announcements);
+    }
+
+    @PostMapping("/accountant/mark-all-read")
+    @PreAuthorize("hasRole('ACCOUNTANT')")
+    public ResponseEntity<Void> markAllAnnouncementsAsReadForAccountant() {
+        log.info("Request to mark all announcements as read for accountant");
+        announcementServiceImpl.markAllAnnouncementsAsReadForAccountant();
         return ResponseEntity.ok().build();
     }
 

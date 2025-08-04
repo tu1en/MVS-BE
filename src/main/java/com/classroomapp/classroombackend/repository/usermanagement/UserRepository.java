@@ -106,4 +106,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return List<User>
      */
     List<User> findByRoleIdIn(List<Integer> roleIds);
+
+    /**
+     * Find active accountants (roleId = 5)
+     * @return List<User>
+     */
+    @Query("SELECT u FROM User u WHERE u.roleId = 5 AND u.status = 'active'")
+    List<User> findActiveAccountants();
 }

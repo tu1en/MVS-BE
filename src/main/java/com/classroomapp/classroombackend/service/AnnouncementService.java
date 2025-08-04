@@ -112,4 +112,10 @@ public interface AnnouncementService {
     List<AnnouncementDto> getRecentUnreadAnnouncementsForStudent(int limit);
     void markAllAnnouncementsAsReadForTeacher();
     void markAllAnnouncementsAsReadForStudent();
+    
+    // Accountant-specific methods
+    List<AnnouncementDto> getAnnouncementsForAccountant();
+    int getUnreadAnnouncementCountForAccountant();
+    List<AnnouncementDto> getRecentUnreadAnnouncementsForAccountant(int limit);
+    void markAllAnnouncementsAsReadForAccountant();
 }
