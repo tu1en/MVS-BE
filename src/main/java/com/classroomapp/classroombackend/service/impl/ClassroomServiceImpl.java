@@ -1,10 +1,13 @@
 package com.classroomapp.classroombackend.service.impl;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -12,6 +15,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import com.classroomapp.classroombackend.dto.LectureDto;
+import com.classroomapp.classroombackend.dto.UserDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDetailsDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.CourseDetailsDto;
@@ -20,11 +24,13 @@ import com.classroomapp.classroombackend.dto.classroommanagement.UpdateClassroom
 import com.classroomapp.classroombackend.dto.usermanagement.UserDetailsDto;
 import com.classroomapp.classroombackend.exception.BusinessLogicException;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
+import com.classroomapp.classroombackend.model.Lecture;
 import com.classroomapp.classroombackend.model.StudentProgress;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.classroommanagement.ClassroomEnrollment;
 import com.classroomapp.classroombackend.model.classroommanagement.ClassroomEnrollmentId;
 import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.LectureRepository;
 import com.classroomapp.classroombackend.repository.StudentProgressRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomEnrollmentRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
@@ -37,9 +43,6 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -51,12 +54,46 @@ public class ClassroomServiceImpl implements ClassroomService {
     private final UserRepository userRepository;
     private final ClassroomEnrollmentRepository classroomEnrollmentRepository;
     private final StudentProgressRepository studentProgressRepository;
+    private final LectureRepository lectureRepository;
     private final ModelMapper modelMapper;
+
+    /**
+     * Helper method to properly map Classroom to ClassroomDto with all required fields
+     */
+    private ClassroomDto mapClassroomToDto(Classroom classroom) {
+        ClassroomDto dto = modelMapper.map(classroom, ClassroomDto.class);
+        
+        // Manually populate student data using proper database query
+        // The enrollments relationship is LAZY, so we need to fetch students separately
+        List<User> students = getStudentsInClassroom(classroom.getId());
+        log.info("Classroom {} (ID: {}) has {} students from database query", 
+                classroom.getName(), classroom.getId(), students != null ? students.size() : 0);
+        
+        if (students != null && !students.isEmpty()) {
+            dto.setStudentIds(students.stream()
+                .map(User::getId)
+                .collect(Collectors.toSet()));
+            dto.setStudentCount(students.size());
+        } else {
+            dto.setStudentIds(new HashSet<>());
+            dto.setStudentCount(0);
+        }
+        
+        // Set teacher information
+        if (classroom.getTeacher() != null) {
+            dto.setTeacherId(classroom.getTeacher().getId());
+            dto.setTeacherName(classroom.getTeacher().getFullName());
+        }
+        
+        log.debug("Mapped classroom {} with {} students", classroom.getName(), dto.getStudentCount());
+        
+        return dto;
+    }
 
     @Override
     public List<ClassroomDto> getAllClassrooms() {
         return classroomRepository.findAll().stream()
-                .map(classroom -> modelMapper.map(classroom, ClassroomDto.class))
+                .map(this::mapClassroomToDto)
                 .collect(Collectors.toList());
     }
 
@@ -64,7 +101,7 @@ public class ClassroomServiceImpl implements ClassroomService {
     public ClassroomDto getClassroomById(Long id) {
         Classroom classroom = classroomRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Classroom not found with id: " + id));
-        return modelMapper.map(classroom, ClassroomDto.class);
+        return mapClassroomToDto(classroom);
     }
 
     @Override
@@ -200,7 +237,7 @@ public class ClassroomServiceImpl implements ClassroomService {
     @Override
     public List<ClassroomDto> SearchClassroomsByName(String name) {
         return classroomRepository.findByNameContainingIgnoreCase(name).stream()
-                .map(classroom -> modelMapper.map(classroom, ClassroomDto.class))
+                .map(this::mapClassroomToDto)
                 .collect(Collectors.toList());
     }
 
@@ -212,9 +249,33 @@ public class ClassroomServiceImpl implements ClassroomService {
 
     @Override
     public CourseDetailsDto GetCourseDetails(Long classroomId) {
-        Classroom classroom = classroomRepository.findById(classroomId)
-                .orElseThrow(() -> new EntityNotFoundException("Classroom not found with id: " + classroomId));
-        return modelMapper.map(classroom, CourseDetailsDto.class);
+        try {
+            log.info("Getting course details for classroom ID: {}", classroomId);
+            
+            Classroom classroom = classroomRepository.findById(classroomId)
+                    .orElseThrow(() -> new EntityNotFoundException("Classroom not found with id: " + classroomId));
+            
+            log.info("Found classroom: {}", classroom.getName());
+            
+            // Use simple ModelMapper first to see if basic mapping works
+            CourseDetailsDto dto = modelMapper.map(classroom, CourseDetailsDto.class);
+            
+            // Manual count for students
+            List<User> students = getStudentsInClassroom(classroomId);
+            dto.setTotalStudents(students.size());
+            log.info("Student count: {}", students.size());
+            
+            // Manual count for lectures  
+            List<Lecture> lectures = lectureRepository.findByClassroomId(classroomId);
+            dto.setTotalLectures(lectures.size());
+            log.info("Lecture count: {}", lectures.size());
+            
+            return dto;
+            
+        } catch (Exception e) {
+            log.error("Error in GetCourseDetails for classroom {}: {}", classroomId, e.getMessage(), e);
+            throw e;
+        }
     }
 
     @Override
@@ -251,7 +312,7 @@ public class ClassroomServiceImpl implements ClassroomService {
             log.info("GetClassroomsByCurrentTeacher: Found teacher: {} (ID: {})", teacher.getFullName(), teacher.getId());
             
             List<ClassroomDto> classrooms = classroomRepository.findByTeacher(teacher).stream()
-                .map(classroom -> modelMapper.map(classroom, ClassroomDto.class))
+                .map(this::mapClassroomToDto)
                 .collect(Collectors.toList());
                 
             log.info("GetClassroomsByCurrentTeacher: Found {} classrooms for teacher", classrooms.size());

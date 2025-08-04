@@ -101,4 +101,11 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
            "WHERE a.student.id = :studentId AND s.classroom.id = :classroomId " +
            "ORDER BY s.sessionDate DESC")
     List<Attendance> findByStudentIdAndSession_ClassroomIdOrderBySession_SessionDateDesc(@Param("studentId") Long studentId, @Param("classroomId") Long classroomId);
+
+    
+    @Query("SELECT a FROM Attendance a " +
+           "JOIN a.session s " +
+           "WHERE s.classroom.teacher.id = :teacherId " +
+           "ORDER BY s.sessionDate DESC")
+    List<Attendance> findBySession_Classroom_TeacherId(@Param("teacherId") Long teacherId);
 }

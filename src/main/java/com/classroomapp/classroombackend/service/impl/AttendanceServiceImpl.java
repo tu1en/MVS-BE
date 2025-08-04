@@ -87,6 +87,8 @@ public class AttendanceServiceImpl implements AttendanceService {
                     newSession.setExpiresAt(LocalDateTime.now().plusHours(1)); // Example: session expires in 1 hour
                     newSession.setIsOpen(true);
                     newSession.setSessionDate(LocalDate.now()); // Set session date to today
+                    // Set teacher clock-in time when attendance is submitted - this enables teaching history tracking
+                    newSession.setTeacherClockInTime(LocalDateTime.now());
                     return attendanceSessionRepository.save(newSession);
                 });
 
@@ -97,6 +99,12 @@ public class AttendanceServiceImpl implements AttendanceService {
              // For this task, we will just throw an error or handle accordingly
             session.setIsOpen(true); // Reopen for submission
             session.setExpiresAt(LocalDateTime.now().plusHours(1)); // Extend expiration
+            attendanceSessionRepository.save(session);
+        }
+
+        // Set teacher clock-in time if not already set - this enables teaching history tracking
+        if (session.getTeacherClockInTime() == null) {
+            session.setTeacherClockInTime(LocalDateTime.now());
             attendanceSessionRepository.save(session);
         }
 
@@ -139,19 +147,98 @@ public class AttendanceServiceImpl implements AttendanceService {
     }
 
     @Override
-    public AttendanceSessionDto getActiveSession(Long classroomId) {
-        throw new UnsupportedOperationException("Not implemented yet");
+public AttendanceSessionDto getActiveSession(Long classroomId) {
+    Optional<AttendanceSession> sessionOpt = attendanceSessionRepository
+            .findByClassroomIdAndIsOpenTrue(classroomId);
+    
+    if (sessionOpt.isEmpty()) {
+        return null;
     }
+    
+    AttendanceSession session = sessionOpt.get();
+    return mapToSessionDto(session);
+}
 
     @Override
-    public void markAttendance(StudentAttendanceDto dto, UserDetails userDetails) {
-        throw new UnsupportedOperationException("Not implemented yet");
+@Transactional
+public void markAttendance(StudentAttendanceDto dto, UserDetails userDetails) {
+    // Get the current user from security context
+    User student = userRepository.findByEmail(userDetails.getUsername())
+            .orElseThrow(() -> new BusinessLogicException("User not found"));
+    
+    // Find the attendance session
+    AttendanceSession session = attendanceSessionRepository.findById(dto.getSessionId())
+            .orElseThrow(() -> new BusinessLogicException("Attendance session not found"));
+    
+    // Check if session is open
+    if (!session.getIsOpen()) {
+        throw new BusinessLogicException("Attendance session is closed");
     }
+    
+    // Check if session has expired
+    if (session.getExpiresAt() != null && LocalDateTime.now().isAfter(session.getExpiresAt())) {
+        throw new BusinessLogicException("Attendance session has expired");
+    }
+    
+    // Check if student is enrolled in the classroom
+    if (!classroomSecurityService.isMember(session.getClassroom().getId(), userDetails)) {
+        throw new BusinessLogicException("You are not enrolled in this classroom");
+    }
+    
+    // Check if attendance already recorded
+    if (attendanceRepository.existsByStudentAndSession(student, session)) {
+        throw new BusinessLogicException("Attendance already recorded for this session");
+    }
+    
+    // Create attendance record
+    Attendance attendance = Attendance.builder()
+            .session(session)
+            .student(student)
+            .status(AttendanceStatus.PRESENT)
+            .build();
+    
+    attendanceRepository.save(attendance);
+}
 
     @Override
-    public List<AttendanceResultDto> getSessionResults(Long sessionId) {
-        throw new UnsupportedOperationException("Not implemented yet");
+public List<AttendanceResultDto> getSessionResults(Long sessionId) {
+    // Find the attendance session
+    AttendanceSession session = attendanceSessionRepository.findById(sessionId)
+            .orElseThrow(() -> new BusinessLogicException("Attendance session not found"));
+    
+    // Security check: only teacher can view session results
+    User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    if (!classroomSecurityService.isTeacherOfClassroom(currentUser, session.getClassroom().getId())) {
+        throw new BusinessLogicException("Only the teacher can view session results");
     }
+    
+    // Get all students enrolled in the classroom
+    List<User> studentsInClass = enrollmentRepository.findById_ClassroomId(session.getClassroom().getId())
+            .stream()
+            .map(enrollment -> enrollment.getUser())
+            .collect(Collectors.toList());
+    
+    // Get attendance records for this session
+    List<Attendance> attendanceRecords = attendanceRepository.findBySession(session);
+    Map<Long, AttendanceStatus> attendanceMap = attendanceRecords.stream()
+            .collect(Collectors.toMap(
+                attendance -> attendance.getStudent().getId(),
+                Attendance::getStatus
+            ));
+    
+    // Create result DTOs for all students
+    return studentsInClass.stream()
+            .map(student -> {
+                AttendanceStatus status = attendanceMap.getOrDefault(student.getId(), AttendanceStatus.ABSENT);
+                return new AttendanceResultDto(
+                    1L, // totalSessions - this is for a single session
+                    status == AttendanceStatus.PRESENT || status == AttendanceStatus.LATE ? 1L : 0L, // attendedSessions
+                    status == AttendanceStatus.PRESENT || status == AttendanceStatus.LATE ? 100.0 : 0.0, // attendancePercentage
+                    Collections.emptyList() // detailedRecords - not needed for session results
+                );
+            })
+            .collect(Collectors.toList());
+}
 
     @Override
     public List<AttendanceRecordDto> getAttendanceForLecture(Long lectureId, Long classroomId) {
@@ -205,10 +292,17 @@ public class AttendanceServiceImpl implements AttendanceService {
     
     @Override
     public List<TeachingHistoryDto> getTeachingHistory(Long teacherId) {
+        System.out.println("Getting teaching history for teacher ID: " + teacherId);
+        
         List<AttendanceSession> sessions = attendanceSessionRepository.findTeachingHistoryByTeacherId(teacherId);
+        System.out.println("Found " + sessions.size() + " attendance sessions with teacherClockInTime set");
         
         return sessions.stream().map(session -> {
             Lecture lecture = session.getLecture();
+            System.out.println("Processing session ID: " + session.getId() + 
+                             ", Lecture: " + lecture.getTitle() + 
+                             ", Clock-in time: " + session.getTeacherClockInTime());
+                             
             TeachingHistoryDto dto = new TeachingHistoryDto();
             dto.setLectureId(lecture.getId());
             dto.setLectureTitle(lecture.getTitle());
@@ -340,6 +434,35 @@ public class AttendanceServiceImpl implements AttendanceService {
             dto.setClassroomId(attendance.getSession().getClassroom().getId());
             dto.setClassroomName(attendance.getSession().getClassroom().getName());
         }
+        return dto;
+    }
+
+    
+    private AttendanceSessionDto mapToSessionDto(AttendanceSession session) {
+        AttendanceSessionDto dto = new AttendanceSessionDto();
+        dto.setId(session.getId());
+        dto.setClassroomId(session.getClassroom().getId());
+        dto.setClassroomName(session.getClassroom().getName());
+        dto.setStartTime(session.getCreatedAt());
+        dto.setEndTime(session.getExpiresAt());
+        dto.setStatus(session.getIsOpen() ? "ACTIVE" : "CLOSED");
+        dto.setActive(session.isActive());
+        dto.setAutoMarkTeacherAttendance(session.isAutoMarkTeacherAttendance());
+        dto.setCreatedAt(session.getCreatedAt());
+        
+        // Set teacher info if available
+        if (session.getClassroom().getTeacher() != null) {
+            dto.setTeacherId(session.getClassroom().getTeacher().getId());
+            dto.setTeacherName(session.getClassroom().getTeacher().getFullName());
+        }
+        
+        // Set title based on lecture or default
+        if (session.getLecture() != null) {
+            dto.setTitle(session.getLecture().getTitle());
+        } else {
+            dto.setTitle("Attendance Session");
+        }
+        
         return dto;
     }
 }

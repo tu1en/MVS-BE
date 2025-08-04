@@ -88,4 +88,24 @@ public class Submission {
         attachments.remove(attachment);
         attachment.setSubmission(null);
     }
+    
+    // Helper method for mapping to DTO
+    public String getFileSubmissionUrl() {
+        if (attachments != null && !attachments.isEmpty()) {
+            return attachments.get(0).getFileUrl(); // Return first attachment URL
+        }
+        return null;
+    }
+    
+    // Calculated fields for DTO mapping
+    public Boolean getIsLate() {
+        if (submittedAt != null && assignment != null && assignment.getDueDate() != null) {
+            return submittedAt.isAfter(assignment.getDueDate());
+        }
+        return false;
+    }
+    
+    public Boolean getIsGraded() {
+        return score != null;
+    }
 }

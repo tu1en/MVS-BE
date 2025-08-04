@@ -1,5 +1,7 @@
 package com.classroomapp.classroombackend.service.impl;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,6 +31,8 @@ public class ExamServiceImpl implements ExamService {
     private final ClassroomSecurityService classroomSecurityService;
     private final ModelMapper modelMapper;
 
+    private static final ZoneId ZONE_ID = ZoneId.of("Asia/Ho_Chi_Minh");
+
     @Override
     @Transactional
     public ExamDto createExam(CreateExamDto createExamDto) {
@@ -38,8 +42,8 @@ public class ExamServiceImpl implements ExamService {
         Exam exam = new Exam();
         exam.setTitle(createExamDto.getTitle());
         exam.setClassroom(classroom);
-        exam.setStartTime(createExamDto.getStartTime());
-        exam.setEndTime(createExamDto.getEndTime());
+        exam.setStartTime(toOffsetDateTime(createExamDto.getStartTime()));
+        exam.setEndTime(toOffsetDateTime(createExamDto.getEndTime()));
         exam.setDurationInMinutes(createExamDto.getDurationInMinutes());
 
         Exam savedExam = examRepository.save(exam);
@@ -80,14 +84,14 @@ public class ExamServiceImpl implements ExamService {
         if (!classroomSecurityService.isTeacher(exam.getClassroom().getId())) {
             throw new AccessDeniedException("You are not the teacher of this classroom.");
         }
-        
+
         Classroom classroom = classroomRepository.findById(createExamDto.getClassroomId())
                 .orElseThrow(() -> new ResourceNotFoundException("Classroom", "id", createExamDto.getClassroomId()));
 
         exam.setTitle(createExamDto.getTitle());
         exam.setClassroom(classroom);
-        exam.setStartTime(createExamDto.getStartTime());
-        exam.setEndTime(createExamDto.getEndTime());
+        exam.setStartTime(toOffsetDateTime(createExamDto.getStartTime()));
+        exam.setEndTime(toOffsetDateTime(createExamDto.getEndTime()));
         exam.setDurationInMinutes(createExamDto.getDurationInMinutes());
 
         Exam updatedExam = examRepository.save(exam);
@@ -103,7 +107,7 @@ public class ExamServiceImpl implements ExamService {
         if (!classroomSecurityService.isTeacher(exam.getClassroom().getId())) {
             throw new AccessDeniedException("You are not the teacher of this classroom.");
         }
-        
+
         examRepository.deleteById(examId);
     }
 
@@ -115,4 +119,8 @@ public class ExamServiceImpl implements ExamService {
         }
         return examDto;
     }
-} 
+
+    private OffsetDateTime toOffsetDateTime(java.time.Instant instant) {
+        return instant == null ? null : instant.atZone(ZONE_ID).toOffsetDateTime();
+    }
+}

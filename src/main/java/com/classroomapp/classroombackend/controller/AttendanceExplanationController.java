@@ -32,7 +32,7 @@ public class AttendanceExplanationController {
     }
 
     @GetMapping("/report")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ACCOUNTANT')")
     public ResponseEntity<Page<AttendanceExplanation>> getReports(
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate,
@@ -46,21 +46,21 @@ public class AttendanceExplanationController {
     }
 
     @PutMapping("/{id}/approve")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ACCOUNTANT')")
     public ResponseEntity<AttendanceExplanation> approveExplanation(@PathVariable Long id, @RequestParam String approverId) {
         AttendanceExplanation updatedExplanation = service.approveExplanation(id, approverId);
         return new ResponseEntity<>(updatedExplanation, HttpStatus.OK);
     }
 
     @PutMapping("/{id}/reject")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ACCOUNTANT')")
     public ResponseEntity<AttendanceExplanation> rejectExplanation(@PathVariable Long id, @RequestParam String approverId) {
         AttendanceExplanation updatedExplanation = service.rejectExplanation(id, approverId);
         return new ResponseEntity<>(updatedExplanation, HttpStatus.OK);
     }
 
     @GetMapping("/statistics/reason")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ACCOUNTANT')")
     public ResponseEntity<Map<String, Long>> getReasonStatistics(
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate) {
@@ -69,7 +69,7 @@ public class AttendanceExplanationController {
     }
 
     @GetMapping("/statistics/status")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ACCOUNTANT')")
     public ResponseEntity<Map<String, Long>> getStatusStatistics(
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate) {
@@ -78,7 +78,7 @@ public class AttendanceExplanationController {
     }
 
     @GetMapping("/export/excel")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ACCOUNTANT')")
     public ResponseEntity<byte[]> exportExcel(
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate,

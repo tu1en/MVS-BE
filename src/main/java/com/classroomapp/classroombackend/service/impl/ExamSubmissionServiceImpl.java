@@ -44,7 +44,8 @@ public class ExamSubmissionServiceImpl implements ExamSubmissionService {
             throw new BusinessLogicException("You are not enrolled in this classroom.");
         }
 
-        if (Instant.now().isBefore(exam.getStartTime()) || Instant.now().isAfter(exam.getEndTime())) {
+        Instant now = Instant.now();
+        if (now.isBefore(exam.getStartTime().toInstant()) || now.isAfter(exam.getEndTime().toInstant())) {
             throw new BusinessLogicException("Exam is not active");
         }
 
@@ -52,7 +53,7 @@ public class ExamSubmissionServiceImpl implements ExamSubmissionService {
             throw new BusinessLogicException("You have already started this exam");
         });
 
-        ExamSubmission submission = new ExamSubmission(exam, currentUser, Instant.now());
+        ExamSubmission submission = new ExamSubmission(exam, currentUser, now);
         ExamSubmission savedSubmission = examSubmissionRepository.save(submission);
         return convertToDto(savedSubmission);
     }
@@ -114,7 +115,7 @@ public class ExamSubmissionServiceImpl implements ExamSubmissionService {
         if(!classroomSecurityService.isTeacher(submission.getExam().getClassroom().getId())){
             throw new BusinessLogicException("You are not authorized to grade this submission.");
         }
-        
+
         if (submission.getSubmittedAt() == null) {
             throw new BusinessLogicException("Cannot grade an exam that has not been submitted");
         }
@@ -135,4 +136,4 @@ public class ExamSubmissionServiceImpl implements ExamSubmissionService {
     private ExamSubmissionDto convertToDto(ExamSubmission submission) {
         return modelMapper.map(submission, ExamSubmissionDto.class);
     }
-} 
+}

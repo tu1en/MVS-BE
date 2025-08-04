@@ -16,4 +16,9 @@ public class LectureMaterialDto {
     private String filePath;
     private Long lectureId;
     private long fileSize;
+    
+    // Additional fields for frontend compatibility
+    private String fileUrl;      // Alias for downloadUrl from frontend
+    private String fileType;     // Alias for contentType from frontend
+    private Boolean localFile;   // Flag for local files
 }

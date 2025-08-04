@@ -162,12 +162,46 @@ public class LectureController {
 
             System.out.println("✅ [LectureController] Lecture created successfully with ID: " + savedLecture.getId());
 
+            // Process and save materials if provided
+            List<LectureMaterialDto> materialDtos = new ArrayList<>();
+            if (lectureDto.getMaterials() != null && !lectureDto.getMaterials().isEmpty()) {
+                System.out.println("📎 [LectureController] Processing " + lectureDto.getMaterials().size() + " materials...");
+                
+                for (LectureMaterialDto materialDto : lectureDto.getMaterials()) {
+                    LectureMaterial material = new LectureMaterial();
+                    material.setLecture(savedLecture);
+                    material.setFileName(materialDto.getFileName());
+                    material.setFilePath(materialDto.getFilePath() != null ? materialDto.getFilePath() : materialDto.getFileUrl());
+                    material.setFileSize(materialDto.getFileSize());
+                    material.setContentType(materialDto.getContentType() != null ? materialDto.getContentType() : materialDto.getFileType());
+                    material.setDownloadUrl(materialDto.getDownloadUrl() != null ? materialDto.getDownloadUrl() : materialDto.getFileUrl());
+                    material.setCreatedAt(LocalDateTime.now());
+                    
+                    LectureMaterial savedMaterial = lectureMaterialRepository.save(material);
+                    
+                    // Create DTO for response
+                    LectureMaterialDto savedMaterialDto = new LectureMaterialDto();
+                    savedMaterialDto.setId(savedMaterial.getId());
+                    savedMaterialDto.setFileName(savedMaterial.getFileName());
+                    savedMaterialDto.setFilePath(savedMaterial.getFilePath());
+                    savedMaterialDto.setFileSize(savedMaterial.getFileSize());
+                    savedMaterialDto.setContentType(savedMaterial.getContentType());
+                    savedMaterialDto.setDownloadUrl(savedMaterial.getDownloadUrl());
+                    savedMaterialDto.setLectureId(savedLecture.getId());
+                    
+                    materialDtos.add(savedMaterialDto);
+                }
+                
+                System.out.println("✅ [LectureController] Saved " + materialDtos.size() + " materials successfully");
+            }
+
             LectureDto responseDto = new LectureDto();
             responseDto.setId(savedLecture.getId());
             responseDto.setTitle(savedLecture.getTitle());
             responseDto.setContent(savedLecture.getContent());
             responseDto.setLectureDate(savedLecture.getLectureDate());
             responseDto.setClassroomId(classroomId);
+            responseDto.setMaterials(materialDtos);
 
             return new ResponseEntity<>(responseDto, HttpStatus.CREATED);
         } else {

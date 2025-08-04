@@ -1,7 +1,10 @@
 package com.classroomapp.classroombackend.controller;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
@@ -90,18 +93,23 @@ public class ClassroomController {
     }
     
     @GetMapping("/current-teacher")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<ClassroomDto>> GetClassroomsByCurrentTeacher() {
-        log.info("🔍 ClassroomController.GetClassroomsByCurrentTeacher called");
-        try {
-            List<ClassroomDto> classrooms = classroomService.GetClassroomsByCurrentTeacher();
-            log.info("✅ Successfully retrieved {} classrooms for current teacher", classrooms.size());
-            return ResponseEntity.ok(classrooms);
-        } catch (Exception e) {
-            log.error("❌ Error retrieving classrooms for current teacher: {}", e.getMessage(), e);
-            throw e;
-        }
+@PreAuthorize("isAuthenticated()")
+public ResponseEntity<Map<String, Object>> GetClassroomsByCurrentTeacher() {
+    log.info("🔍 ClassroomController.GetClassroomsByCurrentTeacher called");
+    try {
+        List<ClassroomDto> classrooms = classroomService.GetClassroomsByCurrentTeacher();
+        log.info("✅ Successfully retrieved {} classrooms for current teacher", classrooms.size());
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("data", classrooms);
+        return ResponseEntity.ok(response);
+    } catch (Exception e) {
+        log.error("❌ Error retrieving classrooms for current teacher: {}", e.getMessage(), e);
+        Map<String, Object> response = new HashMap<>();
+        response.put("data", new ArrayList<>());
+        return ResponseEntity.ok(response);
     }
+}
     
     @GetMapping("/current-student")
     @PreAuthorize("isAuthenticated()")

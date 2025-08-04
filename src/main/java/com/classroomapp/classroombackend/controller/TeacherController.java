@@ -277,4 +277,36 @@ public class TeacherController {
         AbsenceDTO absence = absenceService.getAbsenceById(absenceId, currentUser.getId());
         return ResponseEntity.ok(absence);
     }
+
+    /**
+     * Get teacher's official contract status
+     * Frontend calls: /api/teacher/official-contract-status
+     */
+    @GetMapping("/official-contract-status")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<Map<String, Object>> getOfficialContractStatus(Authentication authentication) {
+        try {
+            String principal = authentication.getName();
+            User currentUser = userRepository.findByEmail(principal)
+                    .orElseGet(() -> userRepository.findByUsername(principal).orElse(null));
+            
+            if (currentUser == null) {
+                throw new RuntimeException("Không tìm thấy người dùng với thông tin xác thực hiện tại");
+            }
+            
+            // For now, return a default status. This can be extended with actual contract logic
+            Map<String, Object> status = new HashMap<>();
+            status.put("hasOfficialContract", true); // Default to true, can be customized based on business logic
+            status.put("userId", currentUser.getId());
+            status.put("userName", currentUser.getFullName());
+            
+            return ResponseEntity.ok(status);
+            
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("hasOfficialContract", false);
+            errorResponse.put("error", "Failed to retrieve contract status: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
 }

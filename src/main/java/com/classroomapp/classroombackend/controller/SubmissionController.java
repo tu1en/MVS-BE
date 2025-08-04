@@ -22,12 +22,15 @@ import com.classroomapp.classroombackend.service.SubmissionService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/submissions")
 @RequiredArgsConstructor
 public class SubmissionController {
 
+    private static final Logger logger = LoggerFactory.getLogger(SubmissionController.class);
     private final SubmissionService submissionService;
     
     @GetMapping("/{id}")
@@ -44,7 +47,15 @@ public class SubmissionController {
     public ResponseEntity<SubmissionDto> submitOrUpdateSubmission(
             @Valid @RequestBody CreateSubmissionDto createSubmissionDto,
             Principal principal) {
-        return ResponseEntity.ok(submissionService.submit(createSubmissionDto, principal.getName()));
+        logger.info("Received submission request from user: {}", principal.getName());
+        logger.info("Submission data: assignmentId={}, comment={}, attachments count={}", 
+                createSubmissionDto.getAssignmentId(), 
+                createSubmissionDto.getComment(),
+                createSubmissionDto.getAttachments() != null ? createSubmissionDto.getAttachments().size() : 0);
+        
+        SubmissionDto result = submissionService.submit(createSubmissionDto, principal.getName());
+        logger.info("Submission successful with ID: {}", result.getId());
+        return ResponseEntity.ok(result);
     }
 
     /**

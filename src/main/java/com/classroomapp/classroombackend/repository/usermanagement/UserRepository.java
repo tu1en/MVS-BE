@@ -72,6 +72,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByRoleIdAndStatus(Integer roleId, String status);
 
     /**
+     * Find active users (all users with active status)
+     * @return List of active users
+     */
+    @Query("SELECT u FROM User u WHERE u.status = 'active'")
+    List<User> findActiveUsers();
+
+    /**
      * Find active teachers
      * @return List of active teachers
      */
