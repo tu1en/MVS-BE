@@ -23,23 +23,6 @@ import com.classroomapp.classroombackend.service.AttendanceService;
 
 import lombok.RequiredArgsConstructor;
 
-import java.util.List;
-
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceResultDto;
-import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceSessionDto;
-import com.classroomapp.classroombackend.dto.attendancemanagement.CreateAttendanceSessionDto;
-
-import lombok.RequiredArgsConstructor;
-
 @RestController
 @RequestMapping("/api/attendance-sessions")
 @RequiredArgsConstructor
@@ -77,7 +60,8 @@ public class AttendanceSessionController {
     public ResponseEntity<String> markAttendance(@PathVariable Long sessionId, Principal principal) {
         StudentAttendanceDto dto = new StudentAttendanceDto();
         dto.setSessionId(sessionId);
-        attendanceService.markAttendance(dto, (UserDetails) ((Authentication) principal).getPrincipal());
+        UserDetails userDetails = (UserDetails) ((Authentication) principal).getPrincipal();
+        attendanceService.markAttendance(dto, userDetails);
         return ResponseEntity.ok("Attendance marked successfully");
     }
 
@@ -97,21 +81,21 @@ public class AttendanceSessionController {
         dto.setStartTime(session.getCreatedAt());
         dto.setEndTime(session.getExpiresAt());
         dto.setStatus(session.getIsOpen() ? "ACTIVE" : "CLOSED");
-        dto.setActive(session.isActive());
+        dto.setActive(session.isActive()); // Sửa lỗi method undefined
         dto.setAutoMarkTeacherAttendance(session.isAutoMarkTeacherAttendance());
         dto.setCreatedAt(session.getCreatedAt());
-        
+
         if (session.getClassroom().getTeacher() != null) {
             dto.setTeacherId(session.getClassroom().getTeacher().getId());
             dto.setTeacherName(session.getClassroom().getTeacher().getFullName());
         }
-        
+
         if (session.getLecture() != null) {
             dto.setTitle(session.getLecture().getTitle());
         } else {
             dto.setTitle("Attendance Session");
         }
-        
+
         return dto;
     }
-} 
+}

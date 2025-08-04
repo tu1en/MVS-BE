@@ -90,7 +90,7 @@ public class Announcement {
     private User creator;
 
     public enum TargetAudience {
-        ALL, STUDENTS, TEACHERS
+        ALL, STUDENTS, TEACHERS, ACCOUNTANTS
     }
 
     public enum Priority {

@@ -21,8 +21,10 @@ import com.classroomapp.classroombackend.repository.usermanagement.UserRepositor
 import com.classroomapp.classroombackend.service.AnnouncementService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class AnnouncementServiceImpl implements AnnouncementService {
 
@@ -64,12 +66,16 @@ public class AnnouncementServiceImpl implements AnnouncementService {
             case ALL:
                 targetUsers.addAll(userRepository.findActiveStudents());
                 targetUsers.addAll(userRepository.findActiveTeachers());
+                targetUsers.addAll(userRepository.findActiveAccountants());
                 break;
             case STUDENTS:
                 targetUsers.addAll(userRepository.findActiveStudents());
                 break;
             case TEACHERS:
                 targetUsers.addAll(userRepository.findActiveTeachers());
+                break;
+            case ACCOUNTANTS:
+                targetUsers.addAll(userRepository.findActiveAccountants());
                 break;
         }
 
@@ -126,12 +132,132 @@ public class AnnouncementServiceImpl implements AnnouncementService {
 
     public List<AnnouncementDto> getAnnouncementsForStudent() {
         List<Announcement> announcements = announcementRepository.findByTargetAudienceInAndStatusOrderByCreatedAtDesc(
-                List.of(Announcement.TargetAudience.STUDENTS, Announcement.TargetAudience.ALL),
+                List.of(Announcement.TargetAudience.ALL, Announcement.TargetAudience.STUDENTS),
                 Announcement.AnnouncementStatus.ACTIVE
         );
         return announcements.stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
+    }
+
+    public List<AnnouncementDto> getAnnouncementsForTeacher() {
+        List<Announcement> announcements = announcementRepository.findByTargetAudienceInAndStatusOrderByCreatedAtDesc(
+                List.of(Announcement.TargetAudience.ALL, Announcement.TargetAudience.TEACHERS),
+                Announcement.AnnouncementStatus.ACTIVE
+        );
+        return announcements.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public int getUnreadAnnouncementCountForTeacher() {
+        // Return count of active announcements for teachers
+        // This is a simplified implementation - in production you would track read status per user
+        List<Announcement> announcements = announcementRepository.findByTargetAudienceInAndStatusOrderByCreatedAtDesc(
+                List.of(Announcement.TargetAudience.ALL, Announcement.TargetAudience.TEACHERS),
+                Announcement.AnnouncementStatus.ACTIVE
+        );
+        log.info("Found {} unread announcements for teachers", announcements.size());
+        return announcements.size();
+    }
+
+    @Override
+    public int getUnreadAnnouncementCountForStudent() {
+        // Return count of active announcements for students
+        // This is a simplified implementation - in production you would track read status per user
+        List<Announcement> announcements = announcementRepository.findByTargetAudienceInAndStatusOrderByCreatedAtDesc(
+                List.of(Announcement.TargetAudience.ALL, Announcement.TargetAudience.STUDENTS),
+                Announcement.AnnouncementStatus.ACTIVE
+        );
+        log.info("Found {} unread announcements for students", announcements.size());
+        return announcements.size();
+    }
+
+    @Override
+    public void markAnnouncementAsRead(Long announcementId) {
+        // In a full implementation, you would track read status per user in a separate table
+        // For now, this is a placeholder that logs the action
+        log.info("Marking announcement {} as read", announcementId);
+        // TODO: Implement user-specific read tracking
+    }
+
+    @Override
+    public List<AnnouncementDto> getRecentUnreadAnnouncementsForTeacher(int limit) {
+        List<Announcement> announcements = announcementRepository.findByTargetAudienceInAndStatusOrderByCreatedAtDesc(
+                List.of(Announcement.TargetAudience.ALL, Announcement.TargetAudience.TEACHERS),
+                Announcement.AnnouncementStatus.ACTIVE
+        );
+        return announcements.stream()
+                .limit(limit)
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<AnnouncementDto> getRecentUnreadAnnouncementsForStudent(int limit) {
+        List<Announcement> announcements = announcementRepository.findByTargetAudienceInAndStatusOrderByCreatedAtDesc(
+                List.of(Announcement.TargetAudience.ALL, Announcement.TargetAudience.STUDENTS),
+                Announcement.AnnouncementStatus.ACTIVE
+        );
+        return announcements.stream()
+                .limit(limit)
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public void markAllAnnouncementsAsReadForTeacher() {
+        // In a full implementation, you would mark all announcements as read for the current teacher
+        log.info("Marking all announcements as read for teacher");
+        // TODO: Implement user-specific read tracking
+    }
+
+    @Override
+    public void markAllAnnouncementsAsReadForStudent() {
+        // In a full implementation, you would mark all announcements as read for the current student
+        log.info("Marking all announcements as read for student");
+        // TODO: Implement user-specific read tracking
+    }
+
+    // Accountant methods - similar to Teacher methods
+    @Override
+    public List<AnnouncementDto> getAnnouncementsForAccountant() {
+        List<Announcement> announcements = announcementRepository.findByTargetAudienceInAndStatusOrderByCreatedAtDesc(
+                List.of(Announcement.TargetAudience.ALL, Announcement.TargetAudience.ACCOUNTANTS),
+                Announcement.AnnouncementStatus.ACTIVE
+        );
+        return announcements.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public int getUnreadAnnouncementCountForAccountant() {
+        List<Announcement> announcements = announcementRepository.findByTargetAudienceInAndStatusOrderByCreatedAtDesc(
+                List.of(Announcement.TargetAudience.ALL, Announcement.TargetAudience.ACCOUNTANTS),
+                Announcement.AnnouncementStatus.ACTIVE
+        );
+        log.info("Found {} unread announcements for accountants", announcements.size());
+        return announcements.size();
+    }
+
+    @Override
+    public List<AnnouncementDto> getRecentUnreadAnnouncementsForAccountant(int limit) {
+        List<Announcement> announcements = announcementRepository.findByTargetAudienceInAndStatusOrderByCreatedAtDesc(
+                List.of(Announcement.TargetAudience.ALL, Announcement.TargetAudience.ACCOUNTANTS),
+                Announcement.AnnouncementStatus.ACTIVE
+        );
+        return announcements.stream()
+                .limit(limit)
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public void markAllAnnouncementsAsReadForAccountant() {
+        log.info("Marking all announcements as read for accountant");
+        // TODO: Implement user-specific read tracking
     }
 
 

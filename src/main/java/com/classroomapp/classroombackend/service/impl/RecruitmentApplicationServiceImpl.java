@@ -55,8 +55,8 @@ public class RecruitmentApplicationServiceImpl implements RecruitmentApplication
         
         // Validate file format
         String fileName = cvFile.getOriginalFilename();
-        if (fileName != null && !fileName.toLowerCase().matches(".*\\.(pdf|doc|docx)$")) {
-            throw new RuntimeException("CV file must be PDF, DOC, or DOCX format");
+        if (fileName != null && !fileName.toLowerCase().matches(".*\\.pdf$")) {
+            throw new RuntimeException("Chỉ hỗ trợ file PDF !");
         }
         
         JobPosition job = jobPositionRepo.findById(jobPositionId)
