@@ -17,7 +17,7 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Random;
 
-@Component
+// @Component - Disabled to prevent loading test data
 public class AttendanceDataLoader implements CommandLineRunner {
 
     @Autowired
@@ -31,11 +31,12 @@ public class AttendanceDataLoader implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        // Only load data if tables are empty
-        if (explanationRepository.count() == 0) {
-            loadExplanationData();
-        }
+        // Always refresh explanation data to ensure correct timestamps
+        System.out.println("Refreshing explanation data with current timestamps...");
+        explanationRepository.deleteAll();
+        loadExplanationData();
         
+        // Only load attendance data if tables are empty
         if (attendanceLogRepository.count() == 0) {
             loadAttendanceLogData();
         }
@@ -75,7 +76,14 @@ public class AttendanceDataLoader implements CommandLineRunner {
             explanation.setReason(reasons[i]);
             explanation.setAbsenceDate(LocalDate.now().minusDays(random.nextInt(30)));
             explanation.setStatus(statuses[random.nextInt(statuses.length)]);
-            explanation.setSubmittedAt(LocalDateTime.now().minusDays(random.nextInt(7)));
+            // Set submission time to a realistic time within the last few days
+            LocalDateTime baseTime = LocalDateTime.now().minusDays(random.nextInt(3));
+            // Add random hours and minutes to make it more realistic
+            LocalDateTime submissionTime = baseTime
+                .withHour(8 + random.nextInt(10)) // Between 8 AM and 6 PM
+                .withMinute(random.nextInt(60))
+                .withSecond(random.nextInt(60));
+            explanation.setSubmittedAt(submissionTime);
             
             if (!explanation.getStatus().equals(ExplanationStatus.PENDING)) {
                 explanation.setApproverName("Manager " + (i % 3 + 1));
@@ -132,13 +140,14 @@ public class AttendanceDataLoader implements CommandLineRunner {
     }
 
     private String getRoleString(Integer roleId) {
-        if (roleId == null) return "Staff";
+        if (roleId == null) return "Student";
         switch (roleId) {
-            case 1: return "Teacher";
-            case 2: return "Accountant"; 
-            case 3: return "Admin";
-            case 4: return "Manager";
-            default: return "Staff";
+            case 1: return "Student";
+            case 2: return "Teacher";
+            case 3: return "Manager";
+            case 4: return "Admin";
+            case 5: return "Accountant";
+            default: return "Student";
         }
     }
 

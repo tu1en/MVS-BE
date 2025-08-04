@@ -1,5 +1,6 @@
 package com.classroomapp.classroombackend.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -16,12 +17,14 @@ public class AttendanceExplanation {
     private String submitterName;
 
     @Column(name = "absence_date", nullable = false)
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate absenceDate;
 
     @Column(name = "reason", nullable = false)
     private String reason;
 
     @Column(name = "submitted_at", nullable = false)
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime submittedAt;
 
     @Enumerated(EnumType.STRING)
@@ -33,6 +36,9 @@ public class AttendanceExplanation {
 
     @Column(name = "department")
     private String department;
+
+    @Column(name = "attachment_url")
+    private String attachmentUrl;
 
     // Constructors
     public AttendanceExplanation() {
@@ -110,5 +116,13 @@ public class AttendanceExplanation {
 
     public void setDepartment(String department) {
         this.department = department;
+    }
+
+    public String getAttachmentUrl() {
+        return attachmentUrl;
+    }
+
+    public void setAttachmentUrl(String attachmentUrl) {
+        this.attachmentUrl = attachmentUrl;
     }
 }

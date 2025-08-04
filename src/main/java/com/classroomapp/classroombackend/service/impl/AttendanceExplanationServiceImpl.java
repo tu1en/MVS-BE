@@ -38,6 +38,8 @@ public class AttendanceExplanationServiceImpl implements AttendanceExplanationSe
         return repository.findByFilters(startDate, endDate, status, department, pageable);
     }
 
+
+
     @Override
     public AttendanceExplanation approveExplanation(Long id, String approverName) {
         AttendanceExplanation explanation = repository.findById(id)
@@ -124,5 +126,10 @@ public class AttendanceExplanationServiceImpl implements AttendanceExplanationSe
         } catch (Exception e) {
             throw new RuntimeException("Failed to export Excel file", e);
         }
+    }
+
+    @Override
+    public void clearAllExplanations() {
+        repository.deleteAll();
     }
 }

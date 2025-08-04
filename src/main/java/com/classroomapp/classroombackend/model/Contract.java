@@ -31,7 +31,7 @@ public class Contract {
     private String phoneNumber;
 
     @Column(name = "contract_type", nullable = false)
-    private String contractType; // "TEACHER", "STAFF"
+    private String contractType; // "TEACHER", "ACCOUNTANT"
 
     @Column(name = "position", nullable = false)
     private String position;
