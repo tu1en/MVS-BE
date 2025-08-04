@@ -17,29 +17,46 @@
         .content {
             padding: 20px;
         }
-        .success {
-            color: #52c41a;
-            font-weight: bold;
+        .credentials {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>Yêu cầu học đã được chấp thuận</h1>
+        <h1>Tài khoản Minh Việt Education của bạn</h1>
     </div>
     <div class="content">
-        <p>Kính gửi <span th:text="${name}"></span>,</p>
+        <p>Kính gửi <span th:text="${fullName}"></span>,</p>
         
-        <p>Chúng tôi vui mừng thông báo rằng yêu cầu đăng ký học của bạn đã được chấp thuận.</p>
+        <p>Yêu cầu tạo tài khoản học sinh cho hệ thống Minh Việt Education của bạn đã được duyệt.</p>
         
-        <p class="success">Tài khoản của bạn đã được cập nhật với vai trò học sinh.</p>
+        <p>Đây là thông tin đăng nhập của bạn:</p>
         
-        <p>Bạn có thể đăng nhập vào hệ thống ngay bây giờ để sử dụng các tính năng mới.</p>
+        <div class="credentials">
+            <p><strong>Tên đăng nhập:</strong> <span th:text="${username}"></span></p>
+            <p><strong>Mật khẩu tạm thời:</strong> <span th:text="${password}"></span></p>
+        </div>
         
-        <p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi.</p>
+        <p>Vui lòng sử dụng thông tin này để đăng nhập. Vì lý do bảo mật, chúng tôi khuyên bạn nên đổi mật khẩu sau lần đăng nhập đầu tiên.</p>
+        
+        <p>Nếu bạn có bất kỳ câu hỏi hoặc cần hỗ trợ, vui lòng liên hệ với đội ngũ hỗ trợ của chúng tôi.</p>
         
         <p>Trân trọng,<br>
-        Đội ngũ Minh Việt Educational System</p>
+        Đội ngũ Minh Việt Education.</p>
+    </div>
+    <div class="footer">
+        <p>&copy; Minh Việt Education 2025 Đã đăng ký bản quyền.</p>
     </div>
 </body>
 </html> 
