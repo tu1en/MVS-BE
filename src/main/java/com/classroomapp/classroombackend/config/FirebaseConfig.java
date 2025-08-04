@@ -14,6 +14,8 @@ import org.springframework.core.io.ClassPathResource;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
+import com.google.firebase.messaging.FirebaseMessaging;
+import org.springframework.context.annotation.Bean;
 
 @Configuration
 @ConditionalOnProperty(name = "firebase.enabled", havingValue = "true", matchIfMissing = false)
@@ -34,8 +36,21 @@ public class FirebaseConfig {
                 String serviceAccountPath = "mve-1-firebase-adminsdk.json";
                 ClassPathResource resource = new ClassPathResource(serviceAccountPath);
 
+                logger.info("Looking for Firebase service account file at: {}", serviceAccountPath);
+                logger.info("Resource exists: {}", resource.exists());
+                
                 if (!resource.exists()) {
                     logger.error("!!! CRITICAL: Firebase service account file not found at classpath: {}. Firebase features will fail.", serviceAccountPath);
+                    // List all files in resources to debug
+                    try {
+                        logger.info("Available files in classpath root:");
+                        ClassPathResource rootResource = new ClassPathResource(".");
+                        if (rootResource.exists()) {
+                            logger.info("Root resource found");
+                        }
+                    } catch (Exception e) {
+                        logger.error("Error listing resources", e);
+                    }
                     return;
                 }
                 
@@ -45,7 +60,7 @@ public class FirebaseConfig {
                         .setStorageBucket(storageBucket)
                         .build();
                     
-                    FirebaseApp.initializeApp(options);
+                    FirebaseApp.initializeApp(options, "classroom-management");
                     logger.info(">>>> Firebase has been initialized successfully! <<<<");
                 }
             } else {
@@ -54,6 +69,20 @@ public class FirebaseConfig {
         } catch (Exception e) {
             logger.error("!!! CRITICAL: Failed to initialize Firebase. All Firebase-dependent features will fail.", e);
         }
+    }
+    
+    /**
+     * Configure FirebaseMessaging bean for dependency injection
+     */
+    @Bean
+    public FirebaseMessaging firebaseMessaging() {
+        // Ensure FirebaseApp is initialized first
+        if (FirebaseApp.getApps().isEmpty()) {
+            throw new IllegalStateException("FirebaseApp has not been initialized. Please check your Firebase configuration file and bucket name configuration.");
+        }
+        
+        FirebaseApp firebaseApp = FirebaseApp.getInstance("classroom-management");
+        return FirebaseMessaging.getInstance(firebaseApp);
     }
 }
 

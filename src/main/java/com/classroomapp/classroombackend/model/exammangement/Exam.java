@@ -1,6 +1,6 @@
 package com.classroomapp.classroombackend.model.exammangement;
 
-import java.time.Instant;
+import java.time.OffsetDateTime;
 
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 
@@ -15,7 +15,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Data;
 
-@Entity(name = "Exam")
+@Entity
 @Table(name = "exams")
 @Data
 public class Exam {
@@ -24,19 +24,19 @@ public class Exam {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(columnDefinition = "NVARCHAR(255)", nullable = false)
+    @Column(name = "title", nullable = false, columnDefinition = "NVARCHAR(255)")
     private String title;
+
+    @Column(nullable = false)
+    private Integer durationInMinutes;
+
+    @Column(nullable = false)
+    private OffsetDateTime startTime;
+
+    @Column(nullable = false)
+    private OffsetDateTime endTime;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "classroom_id", nullable = false)
     private Classroom classroom;
-
-    @Column(nullable = false)
-    private Instant startTime; // The time when the exam becomes available
-
-    @Column(nullable = false)
-    private Instant endTime;   // The time when the exam is no longer available
-
-    @Column(nullable = false)
-    private Integer durationInMinutes; // The duration students have to complete the exam
-} 
+}

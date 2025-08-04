@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.classroomapp.classroombackend.constants.RoleConstants;
 import com.classroomapp.classroombackend.dto.StudentMessageDto;
 import com.classroomapp.classroombackend.dto.UserDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto;
@@ -31,7 +32,6 @@ import com.classroomapp.classroombackend.service.AttendanceService;
 import com.classroomapp.classroombackend.service.ClassroomService;
 import com.classroomapp.classroombackend.service.StudentMessageService;
 import com.classroomapp.classroombackend.service.UserService;
-import com.classroomapp.classroombackend.constants.RoleConstants;
 
 import jakarta.validation.Valid;
 
@@ -384,8 +384,6 @@ public class FrontendApiBridgeController {
         }
     }
 
-
-
     /**
      * Bridge endpoint for getting unread message count for students
      * Frontend calls: /student-messages/unread-count
@@ -412,7 +410,34 @@ public class FrontendApiBridgeController {
                 }});
             }});
         }
-    }    /**
+    }  
+    
+  @GetMapping("/messages/dashboard/unread-count")
+public ResponseEntity<?> getDashboardUnreadMessageCount(Authentication authentication) {
+    try {
+        String username = authentication.getName();
+        User currentUser = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+        
+        Long unreadCount = messageService.countUnreadMessages(currentUser.getId());
+        
+        return ResponseEntity.ok(new java.util.HashMap<String, Object>() {{
+            put("data", new java.util.HashMap<String, Object>() {{
+                put("count", unreadCount);
+            }});
+        }});
+    } catch (Exception e) {
+        System.err.println("Error getting unread message count: " + e.getMessage());
+        e.printStackTrace();
+        return ResponseEntity.ok(new java.util.HashMap<String, Object>() {{
+            put("data", new java.util.HashMap<String, Integer>() {{
+                put("count", 0);
+            }});
+        }});
+    }
+}
+    
+    /**
      * Bridge endpoint for getting attendance stats for teachers
      * Frontend calls: /attendance/current-teacher/stats
      */

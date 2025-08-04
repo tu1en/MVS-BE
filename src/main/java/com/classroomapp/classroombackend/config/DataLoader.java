@@ -2,6 +2,8 @@ package com.classroomapp.classroombackend.config;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -16,61 +18,57 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.classroomapp.classroombackend.constants.RoleConstants;
-
-import com.classroomapp.classroombackend.model.JobPosition;
-import com.classroomapp.classroombackend.model.RecruitmentApplication;
-import com.classroomapp.classroombackend.model.RecruitmentPlan;
 import com.classroomapp.classroombackend.model.Absence;
 import com.classroomapp.classroombackend.model.Accomplishment;
 import com.classroomapp.classroombackend.model.Announcement;
-import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
+import com.classroomapp.classroombackend.model.Blog;
+import com.classroomapp.classroombackend.model.CourseMaterial;
+import com.classroomapp.classroombackend.model.JobPosition;
+import com.classroomapp.classroombackend.model.Lecture;
+import com.classroomapp.classroombackend.model.RecruitmentApplication;
+import com.classroomapp.classroombackend.model.RecruitmentPlan;
+import com.classroomapp.classroombackend.model.Request;
+import com.classroomapp.classroombackend.model.Schedule;
+import com.classroomapp.classroombackend.model.StudentMessage;
 import com.classroomapp.classroombackend.model.StudentProgress;
+import com.classroomapp.classroombackend.model.TimetableEvent;
+import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
 import com.classroomapp.classroombackend.model.assignmentmanagement.Submission;
 import com.classroomapp.classroombackend.model.attendancemanagement.Attendance;
 import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSession;
 import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceStatus;
-import com.classroomapp.classroombackend.model.Blog;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.classroommanagement.ClassroomEnrollment;
 import com.classroomapp.classroombackend.model.classroommanagement.ClassroomEnrollmentId;
 import com.classroomapp.classroombackend.model.classroommanagement.Course;
-import com.classroomapp.classroombackend.model.CourseMaterial;
-import com.classroomapp.classroombackend.model.Lecture;
-import com.classroomapp.classroombackend.model.Schedule;
-import com.classroomapp.classroombackend.model.TimetableEvent;
-import com.classroomapp.classroombackend.model.StudentMessage;
-import com.classroomapp.classroombackend.model.Request;
 import com.classroomapp.classroombackend.model.usermanagement.Role;
 import com.classroomapp.classroombackend.model.usermanagement.User;
-
-import com.classroomapp.classroombackend.repository.JobPositionRepository;
-import com.classroomapp.classroombackend.repository.RecruitmentApplicationRepository;
-import com.classroomapp.classroombackend.repository.RecruitmentPlanRepository;
-import com.classroomapp.classroombackend.repository.absencemanagement.AbsenceRepository;
 import com.classroomapp.classroombackend.repository.AccomplishmentRepository;
 import com.classroomapp.classroombackend.repository.AnnouncementRepository;
-import com.classroomapp.classroombackend.repository.assignmentmanagement.AssignmentRepository;
+import com.classroomapp.classroombackend.repository.BlogRepository;
+import com.classroomapp.classroombackend.repository.CourseMaterialRepository;
+import com.classroomapp.classroombackend.repository.JobPositionRepository;
+import com.classroomapp.classroombackend.repository.LectureRepository;
+import com.classroomapp.classroombackend.repository.RecruitmentApplicationRepository;
+import com.classroomapp.classroombackend.repository.RecruitmentPlanRepository;
+import com.classroomapp.classroombackend.repository.ScheduleRepository;
+import com.classroomapp.classroombackend.repository.StudentMessageRepository;
 import com.classroomapp.classroombackend.repository.StudentProgressRepository;
+import com.classroomapp.classroombackend.repository.TimetableEventRepository;
+import com.classroomapp.classroombackend.repository.absencemanagement.AbsenceRepository;
+import com.classroomapp.classroombackend.repository.assignmentmanagement.AssignmentRepository;
 import com.classroomapp.classroombackend.repository.assignmentmanagement.SubmissionRepository;
 import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceRepository;
 import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceSessionRepository;
-import com.classroomapp.classroombackend.repository.BlogRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomEnrollmentRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
-import com.classroomapp.classroombackend.repository.CourseMaterialRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.CourseRepository;
-import com.classroomapp.classroombackend.repository.LectureRepository;
-import com.classroomapp.classroombackend.repository.ScheduleRepository;
-
-import com.classroomapp.classroombackend.repository.TimetableEventRepository;
-import com.classroomapp.classroombackend.repository.StudentMessageRepository;
 import com.classroomapp.classroombackend.repository.requestmanagement.RequestRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.RoleRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import java.time.LocalTime;
 
 @Component
     @Order(1) // Run first since we removed DatabaseCleanupService
@@ -668,19 +666,29 @@ public class DataLoader implements CommandLineRunner {
                 return List.of();
             }
 
-            List<Classroom> classrooms = List.of();
+            List<Classroom> classrooms = new ArrayList<>();
 
             // Create classrooms with specific teachers and courses
             for (int i = 0; i < Math.min(teachers.size(), courses.size()); i++) {
                 Classroom classroom = new Classroom();
                 classroom.setName("Class " + (i + 1));
                 classroom.setDescription("Classroom for " + courses.get(i).getName());
-                classroom.setTeacher(teachers.get(i));
+                
+                // Ensure teacher@test.com is assigned to classroom 1
+                if (i == 0) {
+                    User mainTeacher = userRepository.findByEmail("teacher@test.com").orElse(teachers.get(0));
+                    classroom.setTeacher(mainTeacher);
+                    log.info("✅ Assigned teacher@test.com to classroom 1");
+                } else {
+                    classroom.setTeacher(teachers.get(i));
+                }
+                
                 classroom.setSubject(courses.get(i).getName());
+                classroom.setSection("Section " + (char)('A' + i)); // Add section: A, B, C, etc.
                 classroom.setCourseId(courses.get(i).getId());
                 
                 Classroom savedClassroom = classroomRepository.save(classroom);
-                classrooms = List.of(savedClassroom);
+                classrooms.add(savedClassroom); // Add to list instead of replacing
             }
 
             log.info("✅ Created {} classrooms", classrooms.size());

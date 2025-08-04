@@ -46,8 +46,16 @@ public class SubmissionServiceImpl implements SubmissionService {
     @Override
     @Transactional
     public SubmissionDto submit(CreateSubmissionDto dto, String studentUsername) {
+        System.out.println("=== SUBMISSION SERVICE DEBUG ===");
+        System.out.println("Student username: " + studentUsername);
+        System.out.println("Assignment ID: " + dto.getAssignmentId());
+        System.out.println("Comment: " + dto.getComment());
+        System.out.println("Attachments: " + (dto.getAttachments() != null ? dto.getAttachments().size() : 0));
+        
         User student = userRepository.findByEmail(studentUsername)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", studentUsername));
+        
+        System.out.println("Found student: " + student.getId() + " - " + student.getEmail());
 
         Assignment assignment = assignmentRepository.findById(dto.getAssignmentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Assignment", "id", dto.getAssignmentId()));
@@ -79,7 +87,13 @@ public class SubmissionServiceImpl implements SubmissionService {
         }
 
         Submission savedSubmission = submissionRepository.save(submission);
-        return modelMapper.map(savedSubmission, SubmissionDto.class);
+        System.out.println("Saved submission with ID: " + savedSubmission.getId());
+        System.out.println("Submission attachments count: " + savedSubmission.getAttachments().size());
+        
+        SubmissionDto result = modelMapper.map(savedSubmission, SubmissionDto.class);
+        System.out.println("Mapped to DTO with ID: " + result.getId());
+        System.out.println("=== END SUBMISSION SERVICE DEBUG ===");
+        return result;
     }
 
     @Override

@@ -96,5 +96,12 @@ public interface UserService {
      */
     User findUserEntityByEmail(String email);
 
+    /**
+     * Find user entity by ID
+     * @param id user ID
+     * @return User entity if found, null otherwise
+     */
+    User findById(Long id);
+
     List<UserDto> getAllUsers();
 }

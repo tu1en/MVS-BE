@@ -1,8 +1,14 @@
 package com.classroomapp.classroombackend.model;
 
-import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "attendance_logs")
@@ -23,7 +29,7 @@ public class AttendanceLog {
     @Column(name = "department")
     private String department;
 
-    @Column(name = "date", nullable = false)
+@Column(name = "attendance_date", nullable = false)
     private LocalDate date;
 
     @Column(name = "shift")

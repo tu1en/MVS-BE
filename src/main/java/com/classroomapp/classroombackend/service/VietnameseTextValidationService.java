@@ -1,8 +1,6 @@
 package com.classroomapp.classroombackend.service;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Service;
@@ -15,8 +13,8 @@ import lombok.extern.slf4j.Slf4j;
  * This service helps detect corrupted Vietnamese characters and provides
  * methods to validate and fix encoding problems.
  */
-@Slf4j
 @Service
+@Slf4j
 public class VietnameseTextValidationService {
 
     // Pattern to detect Vietnamese characters

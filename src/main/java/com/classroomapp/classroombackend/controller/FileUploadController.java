@@ -63,10 +63,18 @@ public class FileUploadController {
             
             return ResponseEntity.ok(responseMap);
         } catch (Exception e) {
-            logger.error("Error uploading file: {}", e.getMessage(), e);
+            logger.error("Error uploading file: {} - Full exception: ", e.getMessage(), e);
+            logger.error("Exception class: {}", e.getClass().getName());
+            if (e.getCause() != null) {
+                logger.error("Root cause: {} - {}", e.getCause().getClass().getName(), e.getCause().getMessage());
+            }
             
             Map<String, String> response = new HashMap<>();
             response.put("error", e.getMessage());
+            response.put("type", e.getClass().getSimpleName());
+            if (e.getCause() != null) {
+                response.put("cause", e.getCause().getMessage());
+            }
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }

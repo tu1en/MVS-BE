@@ -13,6 +13,12 @@ import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSe
 public interface AttendanceSessionRepository extends JpaRepository<AttendanceSession, Long> {
     List<AttendanceSession> findByClassroomId(Long classroomId);
     Optional<AttendanceSession> findByLectureId(Long lectureId);
+
+    
+    Optional<AttendanceSession> findByClassroomIdAndIsOpenTrue(Long classroomId);
+
+    
+    List<AttendanceSession> findByClassroom_TeacherId(Long teacherId);
     
     boolean existsByClassroomIdAndStatus(Long classroomId, AttendanceSession.SessionStatus status);
 
@@ -23,8 +29,8 @@ public interface AttendanceSessionRepository extends JpaRepository<AttendanceSes
      */
     @Query("SELECT s FROM AttendanceSession s " +
            "JOIN s.lecture l " +
-           "JOIN l.schedule sch " +
-           "WHERE sch.teacher.id = :teacherId " +
+           "JOIN s.classroom c " +
+           "WHERE c.teacher.id = :teacherId " +
            "AND s.teacherClockInTime IS NOT NULL " +
            "ORDER BY s.teacherClockInTime DESC")
     List<AttendanceSession> findTeachingHistoryByTeacherId(@Param("teacherId") Long teacherId);

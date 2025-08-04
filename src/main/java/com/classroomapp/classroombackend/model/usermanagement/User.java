@@ -57,7 +57,13 @@ public class User {
 
     @Column(columnDefinition = "NVARCHAR(100)")
     private String department;
-    
+
+    @Column(name = "department_id")
+    private Long departmentId;
+
+    @Column(name = "eligible_for_shift_assignment")
+    private boolean eligibleForShiftAssignment = true;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -66,81 +72,46 @@ public class User {
 
     @Column(columnDefinition = "NVARCHAR(32) default 'active'")
     private String status = "active";
-    
-    // Leave management fields for Teachers
+
     @Column(name = "annual_leave_balance", nullable = true)
-    private Integer annualLeaveBalance = 12; // Default 12 days per year for teachers
-    
+    private Integer annualLeaveBalance = 12;
+
     @Column(name = "leave_reset_date", nullable = true)
-    private LocalDate leaveResetDate; // Date when annual leave resets (hire anniversary)
-    
+    private LocalDate leaveResetDate;
+
     /**
      * Get the role name as String based on the roleId
-     * 
-     * @return String representation of the user's role
      */
     public String getRole() {
         if (roleId == null) return "USER";
-        
-        switch (roleId) {
-            case 1: return "STUDENT";
-            case 2: return "TEACHER";
-            case 3: return "MANAGER";
-            case 4: return "ADMIN";
-            case 5: return "ACCOUNTANT";
-            default: return "USER";
-        }
+        return switch (roleId) {
+            case 1 -> "STUDENT";
+            case 2 -> "TEACHER";
+            case 3 -> "MANAGER";
+            case 4 -> "ADMIN";
+            case 5 -> "ACCOUNTANT";
+            default -> "USER";
+        };
     }
-    
+
     @PrePersist
     protected void onCreate() {
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
-        if (updatedAt == null) {
-            updatedAt = LocalDateTime.now();
-        }
-        // Set leave reset date cho giáo viên hoặc kế toán viên (1 năm kể từ bây giờ)
-        if (roleId != null && (roleId == 2 || roleId == 5) && leaveResetDate == null) { // TEACHER hoặc ACCOUNTANT
+        if (createdAt == null) createdAt = LocalDateTime.now();
+        if (updatedAt == null) updatedAt = LocalDateTime.now();
+        if (roleId != null && (roleId == 2 || roleId == 5) && leaveResetDate == null) {
             leaveResetDate = LocalDate.now().plusYears(1);
         }
     }
-    
+
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
-    
-    // Explicit getters to resolve compilation issues
-    public Long getId() { return id; }
-    public String getUsername() { return username; }
-    public String getPassword() { return password; }
-    public String getEmail() { return email; }
-    public String getFullName() { return fullName; }
-    public String getPhoneNumber() { return phoneNumber; }
-    public Integer getRoleId() { return roleId; }
-    public LocalDate getHireDate() { return hireDate; }
-    public String getDepartment() { return department; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public String getStatus() { return status; }
-    
-    // Explicit setters to resolve compilation issues
-    public void setId(Long id) { this.id = id; }
-    public void setUsername(String username) { this.username = username; }
-    public void setPassword(String password) { this.password = password; }
-    public void setEmail(String email) { this.email = email; }
-    public void setFullName(String fullName) { this.fullName = fullName; }
-    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
-    public void setRoleId(Integer roleId) { this.roleId = roleId; }
-    public void setRoleId(int roleId) { this.roleId = roleId; }
-    public void setHireDate(LocalDate hireDate) { this.hireDate = hireDate; }
-    public void setDepartment(String department) { this.department = department; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
-    public void setStatus(String status) { this.status = status; }
-    public Integer getAnnualLeaveBalance() { return annualLeaveBalance; }
-    public void setAnnualLeaveBalance(Integer annualLeaveBalance) { this.annualLeaveBalance = annualLeaveBalance; }
-    public LocalDate getLeaveResetDate() { return leaveResetDate; }
-    public void setLeaveResetDate(LocalDate leaveResetDate) { this.leaveResetDate = leaveResetDate; }
+
+    // Nếu IDE hoặc framework yêu cầu explicit getter/setter, bạn có thể giữ lại bên dưới:
+    public Long getDepartmentId() { return departmentId; }
+    public void setDepartmentId(Long departmentId) { this.departmentId = departmentId; }
+
+    public boolean isEligibleForShiftAssignment() { return eligibleForShiftAssignment; }
+    public void setEligibleForShiftAssignment(boolean eligible) { this.eligibleForShiftAssignment = eligible; }
 }

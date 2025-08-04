@@ -2,6 +2,7 @@ package com.classroomapp.classroombackend.dto.classroommanagement;
 
 import java.util.List;
 
+import com.classroomapp.classroombackend.dto.LectureDto;
 import com.classroomapp.classroombackend.dto.ScheduleDto;
 import com.classroomapp.classroombackend.dto.UserDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto;
@@ -32,6 +33,10 @@ public class CourseDetailsDto {
     // Course content
     private SyllabusDto syllabus;
     private List<ScheduleDto> schedules;
+    
+    // Lectures
+    private List<LectureDto> lectures;
+    private int totalLectures;
     
     // Assignments
     private List<AssignmentDto> assignments;

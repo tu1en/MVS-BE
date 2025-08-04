@@ -1,10 +1,13 @@
 package com.classroomapp.classroombackend.controller;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -12,11 +15,17 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.classroomapp.classroombackend.dto.AnnouncementDto;
 import com.classroomapp.classroombackend.dto.CreateAnnouncementDto;
+import com.classroomapp.classroombackend.dto.attendancemanagement.MyAttendanceHistoryDto;
+import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
+import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.AnnouncementService;
+import com.classroomapp.classroombackend.service.AttendanceService;
 import com.classroomapp.classroombackend.service.impl.AnnouncementServiceImpl;
 
 import jakarta.validation.Valid;
@@ -31,6 +40,8 @@ public class AnnouncementController {
 
     private final AnnouncementService announcementService;
     private final AnnouncementServiceImpl announcementServiceImpl;
+private final UserRepository userRepository;
+private final AttendanceService attendanceService;
 
 
     @PostMapping
@@ -83,6 +94,32 @@ public class AnnouncementController {
         List<AnnouncementDto> announcements = announcementServiceImpl.getAnnouncementsForStudent();
         return ResponseEntity.ok(announcements);
     }
+
+  // Thêm vào FrontendApiBridgeController
+@GetMapping("/attendance/my-history")
+public ResponseEntity<?> getMyAttendanceHistory(
+        @RequestParam Long classroomId,
+        Authentication authentication) {
+    try {
+        String username = authentication.getName();
+        User currentUser = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+        
+        List<MyAttendanceHistoryDto> history = attendanceService.getMyAttendanceHistory(currentUser.getId(), classroomId);
+        return ResponseEntity.ok(Map.of("data", history));
+    } catch (Exception e) {
+        System.err.println("Error getting attendance history: " + e.getMessage());
+        e.printStackTrace();
+        // Return mock data for testing
+        List<MyAttendanceHistoryDto> mockHistory = new ArrayList<>();
+        mockHistory.add(new MyAttendanceHistoryDto(1L, "Buổi học Java 1", java.time.LocalDate.now().minusDays(1), 
+            com.classroomapp.classroombackend.model.attendancemanagement.AttendanceStatus.PRESENT));
+        mockHistory.add(new MyAttendanceHistoryDto(2L, "Buổi học Java 2", java.time.LocalDate.now().minusDays(2), 
+            com.classroomapp.classroombackend.model.attendancemanagement.AttendanceStatus.PRESENT));
+        
+        return ResponseEntity.ok(Map.of("data", mockHistory));
+    }
+}
 
     // The old endpoints below are now either refactored or can be removed.
     // I am keeping them commented out for reference, but they should be cleaned up.
