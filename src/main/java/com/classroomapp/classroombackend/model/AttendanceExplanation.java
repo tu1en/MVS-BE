@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -34,12 +35,14 @@ public class AttendanceExplanation {
     private String submitterName;
 
     @Column(name = "absence_date", nullable = false)
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate absenceDate;
 
     @Column(name = "reason", nullable = false)
     private String reason;
 
     @Column(name = "submitted_at", nullable = false)
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime submittedAt;
 @Column(name = "violation_id")
 private Long violationId;

@@ -13,6 +13,8 @@ public interface AttendanceExplanationService {
     AttendanceExplanation submitExplanation(AttendanceExplanation explanation);
 
     Page<AttendanceExplanation> getReports(LocalDate startDate, LocalDate endDate, ExplanationStatus status, String department, Pageable pageable);
+    
+
 
     AttendanceExplanation approveExplanation(Long id, String approverName);
 
@@ -23,4 +25,6 @@ public interface AttendanceExplanationService {
     Map<String, Long> getStatusStatistics(LocalDate startDate, LocalDate endDate);
 
     byte[] exportExcel(LocalDate startDate, LocalDate endDate, ExplanationStatus status, String department);
+
+    void clearAllExplanations();
 }

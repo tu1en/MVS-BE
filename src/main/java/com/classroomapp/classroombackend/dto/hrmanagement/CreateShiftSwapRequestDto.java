@@ -18,8 +18,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CreateShiftSwapRequestDto {
     
-    @NotNull(message = "Target employee ID không được null")
-    private Long targetEmployeeId;
+    @NotNull(message = "Target user ID không được null")
+    private Long targetUserId;
     
     @NotNull(message = "Assignment ID không được null")
     private Long assignmentId;

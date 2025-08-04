@@ -44,14 +44,14 @@ public class ShiftConflictDetectionServiceImpl implements ShiftConflictDetection
     private int maxDailyHours;
 
     @Override
-    public ConflictCheckResult checkTimeConflicts(Long employeeId, LocalDate date,
+    public ConflictCheckResult checkTimeConflicts(Long assignedUserId, LocalDate date,
                                                  LocalTime startTime, LocalTime endTime,
                                                  Long excludeAssignmentId) {
         log.debug("Kiá»ƒm tra xung Ä‘á»™t thá»i gian cho employee {} ngÃ y {} tá»« {} Ä‘áº¿n {}",
-                employeeId, date, startTime, endTime);
+                assignedUserId, date, startTime, endTime);
 
         List<ShiftAssignment> conflicts = shiftAssignmentRepository.findConflictingAssignments(
-                employeeId, date, startTime, endTime, excludeAssignmentId);
+                assignedUserId, date, startTime, endTime, excludeAssignmentId);
 
         List<ConflictDetail> conflictDetails = new ArrayList<>();
 
@@ -79,16 +79,16 @@ public class ShiftConflictDetectionServiceImpl implements ShiftConflictDetection
     }
 
     @Override
-    public ConflictCheckResult checkRestTimeViolations(Long employeeId, LocalDate date,
+    public ConflictCheckResult checkRestTimeViolations(Long assignedUserId, LocalDate date,
                                                       LocalTime startTime, LocalTime endTime,
                                                       Long excludeAssignmentId) {
-        log.debug("Kiá»ƒm tra vi pháº¡m thá»i gian nghá»‰ cho employee {} ngÃ y {}", employeeId, date);
+        log.debug("Kiá»ƒm tra vi pháº¡m thá»i gian nghá»‰ cho employee {} ngÃ y {}", assignedUserId, date);
 
         LocalDate previousDate = date.minusDays(1);
         LocalDate nextDate = date.plusDays(1);
 
         List<ShiftAssignment> violations = shiftAssignmentRepository.findRestTimeViolations(
-                employeeId, previousDate, nextDate, startTime, endTime, excludeAssignmentId);
+                assignedUserId, previousDate, nextDate, startTime, endTime, excludeAssignmentId);
 
         List<ConflictDetail> conflictDetails = new ArrayList<>();
 
@@ -120,12 +120,12 @@ public class ShiftConflictDetectionServiceImpl implements ShiftConflictDetection
     }
 
     @Override
-    public ConflictCheckResult checkWeeklyHourLimits(Long employeeId, LocalDate date,
+    public ConflictCheckResult checkWeeklyHourLimits(Long assignedUserId, LocalDate date,
                                                     BigDecimal additionalHours) {
-        log.debug("Kiá»ƒm tra giá»›i háº¡n giá» lÃ m viá»‡c hÃ ng tuáº§n cho employee {}", employeeId);
+        log.debug("Kiá»ƒm tra giá»›i háº¡n giá» lÃ m viá»‡c hÃ ng tuáº§n cho employee {}", assignedUserId);
 
         LocalDate weekStart = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-        BigDecimal currentWeeklyHours = getWeeklyWorkingHours(employeeId, weekStart);
+        BigDecimal currentWeeklyHours = getWeeklyWorkingHours(assignedUserId, weekStart);
         BigDecimal totalHours = currentWeeklyHours.add(additionalHours);
 
         List<ConflictDetail> conflictDetails = new ArrayList<>();
@@ -142,7 +142,7 @@ public class ShiftConflictDetectionServiceImpl implements ShiftConflictDetection
             conflictDetails.add(detail);
         }
 
-        BigDecimal dailyHours = getDailyWorkingHours(employeeId, date).add(additionalHours);
+        BigDecimal dailyHours = getDailyWorkingHours(assignedUserId, date).add(additionalHours);
         if (dailyHours.compareTo(BigDecimal.valueOf(maxDailyHours)) > 0) {
             ConflictDetail detail = new ConflictDetail(
                     ConflictType.WEEKLY_HOUR_LIMIT,
@@ -167,26 +167,26 @@ public class ShiftConflictDetectionServiceImpl implements ShiftConflictDetection
     }
 
     @Override
-    public ConflictCheckResult checkAllConflicts(Long employeeId, LocalDate date,
+    public ConflictCheckResult checkAllConflicts(Long assignedUserId, LocalDate date,
                                                 LocalTime startTime, LocalTime endTime,
                                                 BigDecimal hours, Long excludeAssignmentId) {
-        log.debug("Kiá»ƒm tra táº¥t cáº£ xung Ä‘á»™t cho employee {} ngÃ y {}", employeeId, date);
+        log.debug("Kiá»ƒm tra táº¥t cáº£ xung Ä‘á»™t cho employee {} ngÃ y {}", assignedUserId, date);
 
         List<ConflictDetail> allConflicts = new ArrayList<>();
 
         ConflictCheckResult timeConflicts = checkTimeConflicts(
-                employeeId, date, startTime, endTime, excludeAssignmentId);
+                assignedUserId, date, startTime, endTime, excludeAssignmentId);
         if (timeConflicts.hasConflict()) {
             allConflicts.addAll(timeConflicts.getConflicts());
         }
 
         ConflictCheckResult restViolations = checkRestTimeViolations(
-                employeeId, date, startTime, endTime, excludeAssignmentId);
+                assignedUserId, date, startTime, endTime, excludeAssignmentId);
         if (restViolations.hasConflict()) {
             allConflicts.addAll(restViolations.getConflicts());
         }
 
-        ConflictCheckResult hourLimits = checkWeeklyHourLimits(employeeId, date, hours);
+        ConflictCheckResult hourLimits = checkWeeklyHourLimits(assignedUserId, date, hours);
         if (hourLimits.hasConflict()) {
             allConflicts.addAll(hourLimits.getConflicts());
         }
@@ -206,10 +206,10 @@ public class ShiftConflictDetectionServiceImpl implements ShiftConflictDetection
     }
 
     @Override
-    public ConflictCheckResult checkSwapConflicts(Long requesterId, Long targetEmployeeId,
+    public ConflictCheckResult checkSwapConflicts(Long requesterId, Long targetUserId,
                                                  ShiftAssignment requesterAssignment,
                                                  ShiftAssignment targetAssignment) {
-        log.debug("Kiá»ƒm tra xung Ä‘á»™t cho swap request giá»¯a {} vÃ  {}", requesterId, targetEmployeeId);
+        log.debug("Kiá»ƒm tra xung Ä‘á»™t cho swap request giá»¯a {} vÃ  {}", requesterId, targetUserId);
 
         List<ConflictDetail> conflictDetails = new ArrayList<>();
 
@@ -226,7 +226,7 @@ public class ShiftConflictDetectionServiceImpl implements ShiftConflictDetection
         }
 
         ConflictCheckResult targetConflicts = checkAllConflicts(
-                targetEmployeeId,
+                targetUserId,
                 requesterAssignment.getAssignmentDate(),
                 requesterAssignment.getPlannedStartTime(),
                 requesterAssignment.getPlannedEndTime(),
@@ -251,11 +251,11 @@ public class ShiftConflictDetectionServiceImpl implements ShiftConflictDetection
     }
 
     @Override
-    public List<AvailableTimeSlot> findAvailableTimeSlots(Long employeeId, LocalDate date) {
-        log.debug("TÃ¬m time slots available cho employee {} ngÃ y {}", employeeId, date);
+    public List<AvailableTimeSlot> findAvailableTimeSlots(Long assignedUserId, LocalDate date) {
+        log.debug("TÃ¬m time slots available cho employee {} ngÃ y {}", assignedUserId, date);
 
         List<ShiftAssignment> existingAssignments = shiftAssignmentRepository
-                .findByEmployeeIdAndAssignmentDateOrderByPlannedStartTimeAsc(employeeId, date);
+                .findByAssignedUserIdAndAssignmentDateOrderByPlannedStartTimeAsc(assignedUserId, date);
 
         List<AvailableTimeSlot> availableSlots = new ArrayList<>();
         LocalTime currentTime = LocalTime.of(6, 0);
@@ -289,17 +289,17 @@ public class ShiftConflictDetectionServiceImpl implements ShiftConflictDetection
     }
 
     @Override
-    public boolean isEmployeeAvailable(Long employeeId, LocalDate date,
+    public boolean isEmployeeAvailable(Long assignedUserId, LocalDate date,
                                       LocalTime startTime, LocalTime endTime) {
-        ConflictCheckResult result = checkTimeConflicts(employeeId, date, startTime, endTime, null);
+        ConflictCheckResult result = checkTimeConflicts(assignedUserId, date, startTime, endTime, null);
         return !result.hasConflict();
     }
 
     @Override
-    public BigDecimal getWeeklyWorkingHours(Long employeeId, LocalDate weekStartDate) {
+    public BigDecimal getWeeklyWorkingHours(Long assignedUserId, LocalDate weekStartDate) {
         LocalDate weekEndDate = weekStartDate.plusDays(6);
         Object[] result = shiftAssignmentRepository.calculateWorkingHours(
-                employeeId, weekStartDate, weekEndDate);
+                assignedUserId, weekStartDate, weekEndDate);
 
         if (result != null && result.length > 0 && result[0] != null) {
             return (BigDecimal) result[0];
@@ -308,11 +308,11 @@ public class ShiftConflictDetectionServiceImpl implements ShiftConflictDetection
     }
 
     @Override
-    public List<ShiftAssignment> getConflictingAssignments(Long employeeId, LocalDate date,
+    public List<ShiftAssignment> getConflictingAssignments(Long assignedUserId, LocalDate date,
                                                           LocalTime startTime, LocalTime endTime,
                                                           Long excludeAssignmentId) {
         return shiftAssignmentRepository.findConflictingAssignments(
-                employeeId, date, startTime, endTime, excludeAssignmentId);
+                assignedUserId, date, startTime, endTime, excludeAssignmentId);
     }
 
     @Override
@@ -322,7 +322,7 @@ public class ShiftConflictDetectionServiceImpl implements ShiftConflictDetection
         }
 
         ConflictCheckResult result = checkAllConflicts(
-                assignment.getEmployee().getId(),
+                assignment.getAssignedUser().getId(),
                 assignment.getAssignmentDate(),
                 assignment.getPlannedStartTime(),
                 assignment.getPlannedEndTime(),
@@ -338,9 +338,9 @@ public class ShiftConflictDetectionServiceImpl implements ShiftConflictDetection
     }
 
     @Override
-    public List<AvailableTimeSlot> suggestAlternativeTimeSlots(Long employeeId, LocalDate date,
+    public List<AvailableTimeSlot> suggestAlternativeTimeSlots(Long assignedUserId, LocalDate date,
                                                               BigDecimal requiredHours) {
-        List<AvailableTimeSlot> availableSlots = findAvailableTimeSlots(employeeId, date);
+        List<AvailableTimeSlot> availableSlots = findAvailableTimeSlots(assignedUserId, date);
 
         return availableSlots.stream()
                 .filter(slot -> slot.getMaxHours().compareTo(requiredHours) >= 0)
@@ -363,8 +363,8 @@ public class ShiftConflictDetectionServiceImpl implements ShiftConflictDetection
         }
     }
 
-    private BigDecimal getDailyWorkingHours(Long employeeId, LocalDate date) {
-        Object[] result = shiftAssignmentRepository.calculateWorkingHours(employeeId, date, date);
+    private BigDecimal getDailyWorkingHours(Long assignedUserId, LocalDate date) {
+        Object[] result = shiftAssignmentRepository.calculateWorkingHours(assignedUserId, date, date);
         if (result != null && result.length > 0 && result[0] != null) {
             return (BigDecimal) result[0];
         }

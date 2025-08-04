@@ -120,9 +120,9 @@ public class ShiftReportController {
     public ResponseEntity<ApiResponse<Map<String, Object>>> getAttendanceReport(
             @Parameter(description = "Ngày bắt đầu") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @Parameter(description = "Ngày kết thúc") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
-            @Parameter(description = "ID nhân viên (optional)") @RequestParam(required = false) Long employeeId) {
+            @Parameter(description = "ID nhân viên (optional)") @RequestParam(required = false) Long assignedUserId) {
         
-        log.info("Lấy attendance report từ {} đến {} cho employee {}", startDate, endDate, employeeId);
+        log.info("Lấy attendance report từ {} đến {} cho employee {}", startDate, endDate, assignedUserId);
 
         Map<String, Object> report = new HashMap<>();
         
@@ -140,9 +140,9 @@ public class ShiftReportController {
         report.put("attendanceIssues", attendanceIssues);
         
         // Working hours summary for specific employee
-        if (employeeId != null) {
+        if (assignedUserId != null) {
             ShiftAssignmentService.WorkingHoursSummary workingHours = 
-                shiftAssignmentService.calculateWorkingHours(employeeId, startDate, endDate);
+                shiftAssignmentService.calculateWorkingHours(assignedUserId, startDate, endDate);
             report.put("workingHoursSummary", workingHours);
         }
 
@@ -219,20 +219,20 @@ public class ShiftReportController {
     public ResponseEntity<ApiResponse<Map<String, Object>>> getPayrollReport(
             @Parameter(description = "Ngày bắt đầu") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @Parameter(description = "Ngày kết thúc") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
-            @Parameter(description = "ID nhân viên (optional)") @RequestParam(required = false) Long employeeId) {
+            @Parameter(description = "ID nhân viên (optional)") @RequestParam(required = false) Long assignedUserId) {
         
-        log.info("Lấy payroll report từ {} đến {} cho employee {}", startDate, endDate, employeeId);
+        log.info("Lấy payroll report từ {} đến {} cho employee {}", startDate, endDate, assignedUserId);
 
         Map<String, Object> report = new HashMap<>();
         
-        if (employeeId != null) {
+        if (assignedUserId != null) {
             // Individual employee payroll
             ShiftAssignmentService.WorkingHoursSummary workingHours = 
-                shiftAssignmentService.calculateWorkingHours(employeeId, startDate, endDate);
+                shiftAssignmentService.calculateWorkingHours(assignedUserId, startDate, endDate);
             report.put("workingHoursSummary", workingHours);
             
             // Employee assignments in period
-            List<?> assignments = shiftAssignmentService.findByEmployeeAndDateRange(employeeId, startDate, endDate);
+            List<?> assignments = shiftAssignmentService.findByEmployeeAndDateRange(assignedUserId, startDate, endDate);
             report.put("assignments", assignments);
         } else {
             // All employees payroll summary

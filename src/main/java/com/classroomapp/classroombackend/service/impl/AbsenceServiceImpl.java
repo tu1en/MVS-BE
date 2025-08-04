@@ -162,9 +162,9 @@ public class AbsenceServiceImpl implements AbsenceService {
     }
 
     @Override
-    public TeacherLeaveInfoDTO getTeacherLeaveInfo(Long employeeId) {
-        User employee = userRepository.findById(employeeId)
-            .orElseThrow(() -> new ResourceNotFoundException("Nhân viên không tồn tại với id: " + employeeId));
+    public TeacherLeaveInfoDTO getTeacherLeaveInfo(Long userId) {
+        User employee = userRepository.findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("Nhân viên không tồn tại với id: " + userId));
         
         if (employee.getRoleId() != RoleConstants.TEACHER && employee.getRoleId() != RoleConstants.ACCOUNTANT) {
             throw new BusinessLogicException("Người dùng không phải là giáo viên hoặc kế toán viên");

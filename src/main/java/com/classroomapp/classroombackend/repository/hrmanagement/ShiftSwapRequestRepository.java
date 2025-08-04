@@ -18,16 +18,16 @@ public interface ShiftSwapRequestRepository extends JpaRepository<ShiftSwapReque
 
     List<ShiftSwapRequest> findByRequesterIdOrderByCreatedAtDesc(Long requesterId);
 
-    List<ShiftSwapRequest> findByTargetEmployeeIdOrderByCreatedAtDesc(Long targetEmployeeId);
+    List<ShiftSwapRequest> findByTargetEmployeeIdOrderByCreatedAtDesc(Long targetUserId);
 
     List<ShiftSwapRequest> findByStatusOrderByCreatedAtDesc(ShiftSwapRequest.SwapStatus status);
 
     @Query("SELECT ssr FROM ShiftSwapRequest ssr WHERE " +
-           "ssr.targetEmployee.id = :targetEmployeeId AND " +
+           "ssr.targetEmployee.id = :targetUserId AND " +
            "ssr.status = 'PENDING' AND " +
            "ssr.expiryTime > CURRENT_TIMESTAMP " +
            "ORDER BY ssr.priority DESC, ssr.createdAt ASC")
-    List<ShiftSwapRequest> findPendingRequestsForTarget(@Param("targetEmployeeId") Long targetEmployeeId);
+    List<ShiftSwapRequest> findPendingRequestsForTarget(@Param("targetUserId") Long targetUserId);
 
     @Query("SELECT ssr FROM ShiftSwapRequest ssr WHERE " +
            "ssr.status = 'ACCEPTED_BY_TARGET' AND " +
@@ -54,7 +54,7 @@ public interface ShiftSwapRequestRepository extends JpaRepository<ShiftSwapReque
            "JOIN ssr.requester r " +
            "JOIN ssr.targetEmployee te WHERE " +
            "(:requesterId IS NULL OR ssr.requester.id = :requesterId) AND " +
-           "(:targetEmployeeId IS NULL OR ssr.targetEmployee.id = :targetEmployeeId) AND " +
+           "(:targetUserId IS NULL OR ssr.targetEmployee.id = :targetUserId) AND " +
            "(:status IS NULL OR ssr.status = :status) AND " +
            "(:priority IS NULL OR ssr.priority = :priority) AND " +
            "(:isEmergency IS NULL OR ssr.isEmergency = :isEmergency) AND " +
@@ -64,7 +64,7 @@ public interface ShiftSwapRequestRepository extends JpaRepository<ShiftSwapReque
            "LOWER(ssr.requestReason) LIKE LOWER(CONCAT('%', :search, '%'))) " +
            "ORDER BY ssr.priority DESC, ssr.isEmergency DESC, ssr.createdAt DESC")
     Page<ShiftSwapRequest> searchRequests(@Param("requesterId") Long requesterId,
-                                         @Param("targetEmployeeId") Long targetEmployeeId,
+                                         @Param("targetUserId") Long targetUserId,
                                          @Param("status") ShiftSwapRequest.SwapStatus status,
                                          @Param("priority") ShiftSwapRequest.Priority priority,
                                          @Param("isEmergency") Boolean isEmergency,

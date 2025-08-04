@@ -29,8 +29,9 @@ import lombok.extern.slf4j.Slf4j;
  * Gá»­i notifications cho shift assignments, swap requests, schedule changes
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
+@RequiredArgsConstructor
+
 public class ShiftNotificationService {
 
     private final FirebaseMessaging firebaseMessaging;
@@ -81,12 +82,12 @@ public class ShiftNotificationService {
         Map<String, String> data = new HashMap<>();
         data.put("type", NotificationType.SHIFT_ASSIGNED.getCode());
         data.put("assignmentId", assignment.getId().toString());
-        data.put("employeeId", assignment.getEmployee().getId().toString());
+        data.put("assignedUserId", assignment.getAssignedUser().getId().toString());
         data.put("date", assignment.getAssignmentDate().toString());
         data.put("startTime", assignment.getPlannedStartTime().toString());
         data.put("endTime", assignment.getPlannedEndTime().toString());
 
-        return sendNotificationToUser(assignment.getEmployee(), title, body, data);
+        return sendNotificationToUser(assignment.getAssignedUser(), title, body, data);
     }
 
     /**
@@ -103,9 +104,9 @@ public class ShiftNotificationService {
         Map<String, String> data = new HashMap<>();
         data.put("type", NotificationType.SHIFT_UPDATED.getCode());
         data.put("assignmentId", assignment.getId().toString());
-        data.put("employeeId", assignment.getEmployee().getId().toString());
+        data.put("assignedUserId", assignment.getAssignedUser().getId().toString());
 
-        return sendNotificationToUser(assignment.getEmployee(), title, body, data);
+        return sendNotificationToUser(assignment.getAssignedUser(), title, body, data);
     }
 
     /**
@@ -123,10 +124,10 @@ public class ShiftNotificationService {
         Map<String, String> data = new HashMap<>();
         data.put("type", NotificationType.SHIFT_CANCELLED.getCode());
         data.put("assignmentId", assignment.getId().toString());
-        data.put("employeeId", assignment.getEmployee().getId().toString());
+        data.put("assignedUserId", assignment.getAssignedUser().getId().toString());
         data.put("reason", reason);
 
-        return sendNotificationToUser(assignment.getEmployee(), title, body, data);
+        return sendNotificationToUser(assignment.getAssignedUser(), title, body, data);
     }
 
     /**
@@ -145,10 +146,10 @@ public class ShiftNotificationService {
         Map<String, String> data = new HashMap<>();
         data.put("type", NotificationType.SHIFT_REMINDER.getCode());
         data.put("assignmentId", assignment.getId().toString());
-        data.put("employeeId", assignment.getEmployee().getId().toString());
+        data.put("assignedUserId", assignment.getAssignedUser().getId().toString());
         data.put("minutesBefore", String.valueOf(minutesBefore));
 
-        return sendNotificationToUser(assignment.getEmployee(), title, body, data);
+        return sendNotificationToUser(assignment.getAssignedUser(), title, body, data);
     }
 
     /**
@@ -164,10 +165,10 @@ public class ShiftNotificationService {
         Map<String, String> data = new HashMap<>();
         data.put("type", NotificationType.CHECK_IN_REMINDER.getCode());
         data.put("assignmentId", assignment.getId().toString());
-        data.put("employeeId", assignment.getEmployee().getId().toString());
+        data.put("assignedUserId", assignment.getAssignedUser().getId().toString());
         data.put("action", "check_in");
 
-        return sendNotificationToUser(assignment.getEmployee(), title, body, data);
+        return sendNotificationToUser(assignment.getAssignedUser(), title, body, data);
     }
 
     /**
@@ -183,10 +184,10 @@ public class ShiftNotificationService {
         Map<String, String> data = new HashMap<>();
         data.put("type", NotificationType.CHECK_OUT_REMINDER.getCode());
         data.put("assignmentId", assignment.getId().toString());
-        data.put("employeeId", assignment.getEmployee().getId().toString());
+        data.put("assignedUserId", assignment.getAssignedUser().getId().toString());
         data.put("action", "check_out");
 
-        return sendNotificationToUser(assignment.getEmployee(), title, body, data);
+        return sendNotificationToUser(assignment.getAssignedUser(), title, body, data);
     }
 
     /**
@@ -225,7 +226,7 @@ public class ShiftNotificationService {
         Map<String, String> data = new HashMap<>();
         data.put("type", NotificationType.SWAP_REQUEST_APPROVED.getCode());
         data.put("swapRequestId", swapRequest.getId().toString());
-        data.put("targetEmployeeName", swapRequest.getTargetEmployee().getFullName());
+        data.put("targetUserName", swapRequest.getTargetEmployee().getFullName());
 
         // Gá»­i cho cáº£ requester vÃ  target employee
         CompletableFuture<Void> requesterNotification = sendNotificationToUser(swapRequest.getRequester(), title, body, data);
@@ -248,7 +249,7 @@ public class ShiftNotificationService {
         Map<String, String> data = new HashMap<>();
         data.put("type", NotificationType.SWAP_REQUEST_REJECTED.getCode());
         data.put("swapRequestId", swapRequest.getId().toString());
-        data.put("targetEmployeeName", swapRequest.getTargetEmployee().getFullName());
+        data.put("targetUserName", swapRequest.getTargetEmployee().getFullName());
         data.put("reason", reason);
 
         return sendNotificationToUser(swapRequest.getRequester(), title, body, data);

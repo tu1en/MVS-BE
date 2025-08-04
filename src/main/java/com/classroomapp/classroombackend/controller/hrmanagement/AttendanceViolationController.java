@@ -44,7 +44,7 @@ public class AttendanceViolationController {
      * GET /api/hr/violations/{id}
      */
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER') or hasRole('ADMIN')")
+    @PreAuthorize("@securityUtils.isStaff()")
     public ResponseEntity<AttendanceViolationDto> getViolationById(@PathVariable Long id) {
         log.info("Getting violation by ID: {}", id);
         
@@ -63,7 +63,7 @@ public class AttendanceViolationController {
      * GET /api/hr/violations/my
      */
     @GetMapping("/my")
-    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER') or hasRole('ADMIN')")
+    @PreAuthorize("@securityUtils.isStaff()")
     public ResponseEntity<Page<AttendanceViolationDto>> getMyViolations(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -309,7 +309,7 @@ public class AttendanceViolationController {
      * GET /api/hr/violations/dashboard/my
      */
     @GetMapping("/dashboard/my")
-    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER') or hasRole('ADMIN')")
+    @PreAuthorize("@securityUtils.isStaff()")
     public ResponseEntity<Object> getMyViolationDashboard() {
         log.info("Getting violation dashboard for current user");
         

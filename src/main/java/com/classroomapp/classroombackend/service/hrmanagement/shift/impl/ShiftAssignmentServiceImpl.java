@@ -39,13 +39,12 @@ public class ShiftAssignmentServiceImpl implements ShiftAssignmentService {
 
     private final ShiftAssignmentRepository shiftAssignmentRepository;
     private final ShiftConflictDetectionService conflictDetectionService;
-    private final FirebaseShiftService firebaseShiftService;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public ShiftAssignment createAssignment(ShiftAssignment assignment) {
         log.info("Táº¡o shift assignment má»›i cho employee {} ngÃ y {}", 
-                assignment.getEmployee().getId(), assignment.getAssignmentDate());
+                assignment.getAssignedUser().getId(), assignment.getAssignmentDate());
 
         validateAssignment(assignment);
         
@@ -177,14 +176,19 @@ public class ShiftAssignmentServiceImpl implements ShiftAssignmentService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ShiftAssignment> findByEmployeeAndDate(Long employeeId, LocalDate date) {
-        return shiftAssignmentRepository.findByEmployeeIdAndAssignmentDateOrderByPlannedStartTimeAsc(employeeId, date);
+    public List<ShiftAssignment> findByEmployeeAndDate(Long assignedUserId, LocalDate date) {
+        return shiftAssignmentRepository.findByAssignedUserIdAndAssignmentDateOrderByPlannedStartTimeAsc(assignedUserId, date);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<ShiftAssignment> findByEmployeeAndDateRange(Long employeeId, LocalDate startDate, LocalDate endDate) {
-        return shiftAssignmentRepository.findByEmployeeAndDateRange(employeeId, startDate, endDate);
+    public List<ShiftAssignment> findByEmployeeAndDateRange(Long assignedUserId, LocalDate startDate, LocalDate endDate) {
+        return shiftAssignmentRepository.findByAssignedUserAndDateRange(assignedUserId, startDate, endDate);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ShiftAssignment> findByAssignedUserAndDateRange(Long assignedUserId, LocalDate startDate, LocalDate endDate) {
+        return shiftAssignmentRepository.findByAssignedUserAndDateRange(assignedUserId, startDate, endDate);
     }
 
     @Override
@@ -195,25 +199,25 @@ public class ShiftAssignmentServiceImpl implements ShiftAssignmentService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ShiftAssignment> findByWeek(LocalDate weekStart, Long employeeId) {
+    public List<ShiftAssignment> findByWeek(LocalDate weekStart, Long assignedUserId) {
         LocalDate weekEnd = weekStart.plusDays(6);
-        return shiftAssignmentRepository.findByWeek(weekStart, weekEnd, employeeId);
+        return shiftAssignmentRepository.findByWeek(weekStart, weekEnd, assignedUserId);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<ShiftAssignment> findByMonth(int year, int month, Long employeeId) {
-        return shiftAssignmentRepository.findByMonth(year, month, employeeId);
+    public List<ShiftAssignment> findByMonth(int year, int month, Long assignedUserId) {
+        return shiftAssignmentRepository.findByMonth(year, month, assignedUserId);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<ShiftAssignment> searchAssignments(Long employeeId, LocalDate startDate, LocalDate endDate,
+    public Page<ShiftAssignment> searchAssignments(Long assignedUserId, LocalDate startDate, LocalDate endDate,
                                                   ShiftAssignment.AssignmentStatus status,
                                                   ShiftAssignment.AttendanceStatus attendanceStatus,
                                                   String search, Pageable pageable) {
         return shiftAssignmentRepository.searchAssignments(
-            employeeId, startDate, endDate, status, attendanceStatus, search, pageable);
+            assignedUserId, startDate, endDate, status, attendanceStatus, search, pageable);
     }
 
     @Override
@@ -283,7 +287,7 @@ public class ShiftAssignmentServiceImpl implements ShiftAssignmentService {
             throw new BusinessLogicException("KhÃ´ng thá»ƒ táº¡o assignment cho ngÃ y trong quÃ¡ khá»©");
         }
 
-        if (assignment.getEmployee() == null) {
+        if (assignment.getAssignedUser() == null) {
             throw new BusinessLogicException("Employee khÃ´ng Ä‘Æ°á»£c null");
         }
 
@@ -296,7 +300,7 @@ public class ShiftAssignmentServiceImpl implements ShiftAssignmentService {
     @Transactional(readOnly = true)
     public ShiftConflictDetectionService.ConflictCheckResult checkConflicts(ShiftAssignment assignment) {
         return conflictDetectionService.checkAllConflicts(
-            assignment.getEmployee().getId(),
+            assignment.getAssignedUser().getId(),
             assignment.getAssignmentDate(),
             assignment.getPlannedStartTime(),
             assignment.getPlannedEndTime(),
@@ -307,15 +311,15 @@ public class ShiftAssignmentServiceImpl implements ShiftAssignmentService {
 
     @Override
     @Transactional(readOnly = true)
-    public WorkingHoursSummary calculateWorkingHours(Long employeeId, LocalDate startDate, LocalDate endDate) {
-        Object[] result = shiftAssignmentRepository.calculateWorkingHours(employeeId, startDate, endDate);
+    public WorkingHoursSummary calculateWorkingHours(Long assignedUserId, LocalDate startDate, LocalDate endDate) {
+        Object[] result = shiftAssignmentRepository.calculateWorkingHours(assignedUserId, startDate, endDate);
         
         if (result != null && result.length >= 3) {
             BigDecimal plannedHours = (BigDecimal) result[0];
             BigDecimal actualHours = (BigDecimal) result[1];
             BigDecimal overtimeHours = (BigDecimal) result[2];
 
-            List<ShiftAssignment> assignments = findByEmployeeAndDateRange(employeeId, startDate, endDate);
+            List<ShiftAssignment> assignments = findByAssignedUserAndDateRange(assignedUserId, startDate, endDate);
             int totalAssignments = assignments.size();
             int completedAssignments = (int) assignments.stream()
                 .filter(a -> a.getStatus() == ShiftAssignment.AssignmentStatus.COMPLETED)
@@ -342,19 +346,19 @@ public class ShiftAssignmentServiceImpl implements ShiftAssignmentService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ShiftAssignment> findSwappableAssignments(Long employeeId, LocalDate date, Long shiftTemplateId) {
-        return shiftAssignmentRepository.findSwappableAssignments(employeeId, date, shiftTemplateId);
+    public List<ShiftAssignment> findSwappableAssignments(Long assignedUserId, LocalDate date, Long shiftTemplateId) {
+        return shiftAssignmentRepository.findSwappableAssignments(assignedUserId, date, shiftTemplateId);
     }
 
     @Override
-    public List<ShiftAssignment> autoAssignShifts(List<Long> employeeIds, LocalDate startDate, LocalDate endDate) {
+    public List<ShiftAssignment> autoAssignShifts(List<Long> assignedUserIds, LocalDate startDate, LocalDate endDate) {
         // TODO: Implement auto-assignment logic
         throw new BusinessLogicException("Auto-assignment functionality chÆ°a Ä‘Æ°á»£c implement");
     }
 
     @Override
     public List<ShiftAssignment> copyAssignments(LocalDate sourceStart, LocalDate sourceEnd, 
-                                                LocalDate targetStart, List<Long> employeeIds) {
+                                                LocalDate targetStart, List<Long> assignedUserIds) {
         // TODO: Implement copy assignments logic
         throw new BusinessLogicException("Copy assignments functionality chÆ°a Ä‘Æ°á»£c implement");
     }
@@ -378,6 +382,8 @@ public class ShiftAssignmentServiceImpl implements ShiftAssignmentService {
                 case SCHEDULED: scheduledAssignments = count; break;
                 case COMPLETED: completedAssignments = count; break;
                 case CANCELLED: cancelledAssignments = count; break;
+                case NO_SHOW: break; // No specific handling needed
+                case IN_PROGRESS: break; // No specific handling needed
             }
         }
 
@@ -410,11 +416,11 @@ public class ShiftAssignmentServiceImpl implements ShiftAssignmentService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ShiftAssignment> findCurrentWeekAssignments(Long employeeId) {
+    public List<ShiftAssignment> findCurrentWeekAssignments(Long assignedUserId) {
         LocalDate today = LocalDate.now();
         LocalDate weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate weekEnd = weekStart.plusDays(6);
         
-        return shiftAssignmentRepository.findCurrentWeekAssignments(employeeId, weekStart, weekEnd);
+        return shiftAssignmentRepository.findCurrentWeekAssignments(assignedUserId, weekStart, weekEnd);
     }
 }

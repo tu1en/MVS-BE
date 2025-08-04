@@ -21,7 +21,7 @@ import lombok.NoArgsConstructor;
 public class CreateSingleShiftAssignmentDto {
     
     @NotNull(message = "ID nhÃ¢n viÃªn khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
-    private Long employeeId;
+    private Long assignedUserId;
     
     @NotNull(message = "NgÃ y phÃ¢n cÃ´ng khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
     @FutureOrPresent(message = "NgÃ y phÃ¢n cÃ´ng pháº£i tá»« hÃ´m nay trá»Ÿ Ä‘i")

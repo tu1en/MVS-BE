@@ -62,7 +62,7 @@ public class SalaryStatisticsController {
      * GET /api/hr/salary/statistics/yearly/{userId}
      */
     @GetMapping("/yearly/{userId}")
-    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER') or hasRole('ADMIN')")
+    @PreAuthorize("@securityUtils.isStaff()")
     public ResponseEntity<List<SalaryCalculationService.MonthlyPayrollSummary>> getYearlyPayrollSummary(
             @PathVariable Long userId,
             @RequestParam Integer year) {
@@ -94,7 +94,7 @@ public class SalaryStatisticsController {
      * GET /api/hr/salary/statistics/my-yearly
      */
     @GetMapping("/my-yearly")
-    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER') or hasRole('ADMIN')")
+    @PreAuthorize("@securityUtils.isStaff()")
     public ResponseEntity<List<SalaryCalculationService.MonthlyPayrollSummary>> getMyYearlyPayrollSummary(
             @RequestParam Integer year) {
         
@@ -298,7 +298,7 @@ public class SalaryStatisticsController {
      * GET /api/hr/salary/statistics/attendance-summary/{userId}
      */
     @GetMapping("/attendance-summary/{userId}")
-    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER') or hasRole('ADMIN')")
+    @PreAuthorize("@securityUtils.isStaff()")
     public ResponseEntity<SalaryCalculationService.AttendanceSummary> getAttendanceSummaryForPayroll(
             @PathVariable Long userId,
             @RequestParam Integer year,
@@ -332,7 +332,7 @@ public class SalaryStatisticsController {
      * GET /api/hr/salary/statistics/my-attendance-summary
      */
     @GetMapping("/my-attendance-summary")
-    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('MANAGER') or hasRole('ADMIN')")
+    @PreAuthorize("@securityUtils.isStaff()")
     public ResponseEntity<SalaryCalculationService.AttendanceSummary> getMyAttendanceSummaryForPayroll(
             @RequestParam Integer year,
             @RequestParam Integer month) {

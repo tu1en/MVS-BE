@@ -17,7 +17,7 @@ public interface AbsenceService {
     List<AbsenceDTO> getAllAbsenceRequests();
     List<AbsenceDTO> getPendingAbsenceRequests();
     List<TeacherLeaveInfoDTO> getAllTeachersLeaveInfo(); // Trả về cả Teacher và Accountant
-    TeacherLeaveInfoDTO getTeacherLeaveInfo(Long employeeId); // Trả về info cho Teacher hoặc Accountant
+    TeacherLeaveInfoDTO getTeacherLeaveInfo(Long userId); // Trả về info cho Teacher hoặc Accountant
     
     // Approval operations
     AbsenceDTO approveAbsence(Long absenceId, Long managerId);

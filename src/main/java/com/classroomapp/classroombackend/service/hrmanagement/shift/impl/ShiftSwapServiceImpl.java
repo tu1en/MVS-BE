@@ -117,14 +117,14 @@ public class ShiftSwapServiceImpl implements ShiftSwapService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ShiftSwapRequest> findByTargetEmployee(Long targetEmployeeId) {
-        return swapRequestRepository.findByTargetEmployeeIdOrderByCreatedAtDesc(targetEmployeeId);
+    public List<ShiftSwapRequest> findByTargetEmployee(Long targetUserId) {
+        return swapRequestRepository.findByTargetEmployeeIdOrderByCreatedAtDesc(targetUserId);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<ShiftSwapRequest> findPendingRequestsForTarget(Long targetEmployeeId) {
-        return swapRequestRepository.findPendingRequestsForTarget(targetEmployeeId);
+    public List<ShiftSwapRequest> findPendingRequestsForTarget(Long targetUserId) {
+        return swapRequestRepository.findPendingRequestsForTarget(targetUserId);
     }
 
     @Override
@@ -141,12 +141,12 @@ public class ShiftSwapServiceImpl implements ShiftSwapService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<ShiftSwapRequest> searchRequests(Long requesterId, Long targetEmployeeId,
+    public Page<ShiftSwapRequest> searchRequests(Long requesterId, Long targetUserId,
                                                 ShiftSwapRequest.SwapStatus status,
                                                 ShiftSwapRequest.Priority priority,
                                                 Boolean isEmergency, String search,
                                                 Pageable pageable) {
-        return swapRequestRepository.searchRequests(requesterId, targetEmployeeId, status, 
+        return swapRequestRepository.searchRequests(requesterId, targetUserId, status, 
                                                    priority, isEmergency, search, pageable);
     }
 
@@ -254,9 +254,9 @@ public class ShiftSwapServiceImpl implements ShiftSwapService {
         var targetAssignment = request.getTargetAssignment();
 
         // Táº¡o temporary variables Ä‘á»ƒ swap
-        var tempEmployee = requesterAssignment.getEmployee();
-        requesterAssignment.setEmployee(targetAssignment.getEmployee());
-        targetAssignment.setEmployee(tempEmployee);
+        var tempEmployee = requesterAssignment.getAssignedUser();
+        requesterAssignment.setAssignedUser(targetAssignment.getAssignedUser());
+        targetAssignment.setAssignedUser(tempEmployee);
 
         // Note: Actual swap implementation would involve updating assignments in database
         // This is simplified for demonstration

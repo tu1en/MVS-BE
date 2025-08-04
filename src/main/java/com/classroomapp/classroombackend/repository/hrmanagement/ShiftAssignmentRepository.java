@@ -23,16 +23,16 @@ public interface ShiftAssignmentRepository extends JpaRepository<ShiftAssignment
     /**
      * TÃ¬m assignments theo employee vÃ  ngÃ y
      */
-    List<ShiftAssignment> findByEmployeeIdAndAssignmentDateOrderByPlannedStartTimeAsc(Long employeeId, LocalDate date);
+    List<ShiftAssignment> findByAssignedUserIdAndAssignmentDateOrderByPlannedStartTimeAsc(Long assignedUserId, LocalDate date);
 
     /**
-     * TÃ¬m assignments theo employee trong khoáº£ng thá»i gian
+     * TÃ¬m assignments theo assigned user trong khoáº£ng thá»i gian
      */
     @Query("SELECT sa FROM ShiftAssignment sa WHERE " +
-           "sa.employee.id = :employeeId AND " +
+           "sa.assignedUser.id = :assignedUserId AND " +
            "sa.assignmentDate BETWEEN :startDate AND :endDate " +
            "ORDER BY sa.assignmentDate ASC, sa.plannedStartTime ASC")
-    List<ShiftAssignment> findByEmployeeAndDateRange(@Param("employeeId") Long employeeId,
+    List<ShiftAssignment> findByAssignedUserAndDateRange(@Param("assignedUserId") Long assignedUserId,
                                                      @Param("startDate") LocalDate startDate,
                                                      @Param("endDate") LocalDate endDate);
 
@@ -61,12 +61,12 @@ public interface ShiftAssignmentRepository extends JpaRepository<ShiftAssignment
      * Kiá»ƒm tra xung Ä‘á»™t thá»i gian cho employee
      */
     @Query("SELECT sa FROM ShiftAssignment sa WHERE " +
-           "sa.employee.id = :employeeId AND " +
+           "sa.assignedUser.id = :assignedUserId AND " +
            "sa.assignmentDate = :date AND " +
            "sa.status NOT IN ('CANCELLED') AND " +
            "(:excludeId IS NULL OR sa.id != :excludeId) AND " +
            "((sa.plannedStartTime < :endTime AND sa.plannedEndTime > :startTime))")
-    List<ShiftAssignment> findConflictingAssignments(@Param("employeeId") Long employeeId,
+    List<ShiftAssignment> findConflictingAssignments(@Param("assignedUserId") Long assignedUserId,
                                                      @Param("date") LocalDate date,
                                                      @Param("startTime") LocalTime startTime,
                                                      @Param("endTime") LocalTime endTime,
@@ -76,7 +76,7 @@ public interface ShiftAssignmentRepository extends JpaRepository<ShiftAssignment
      * Kiá»ƒm tra minimum rest time violations
      */
     @Query("SELECT sa FROM ShiftAssignment sa WHERE " +
-           "sa.employee.id = :employeeId AND " +
+           "sa.assignedUser.id = :assignedUserId AND " +
            "sa.status NOT IN ('CANCELLED') AND " +
            "(:excludeId IS NULL OR sa.id != :excludeId) AND " +
            "(" +
@@ -85,7 +85,7 @@ public interface ShiftAssignmentRepository extends JpaRepository<ShiftAssignment
            "  (sa.assignmentDate = :nextDate AND " +
            "   FUNCTION('DATEDIFF', HOUR, :endTime, sa.plannedStartTime) < 8)" +
            ")")
-    List<ShiftAssignment> findRestTimeViolations(@Param("employeeId") Long employeeId,
+    List<ShiftAssignment> findRestTimeViolations(@Param("assignedUserId") Long assignedUserId,
                                                  @Param("previousDate") LocalDate previousDate,
                                                  @Param("nextDate") LocalDate nextDate,
                                                  @Param("startTime") LocalTime startTime,
@@ -121,30 +121,30 @@ public interface ShiftAssignmentRepository extends JpaRepository<ShiftAssignment
      */
     @Query("SELECT sa FROM ShiftAssignment sa WHERE " +
            "sa.assignmentDate BETWEEN :weekStart AND :weekEnd " +
-           "AND (:employeeId IS NULL OR sa.employee.id = :employeeId) " +
+           "AND (:assignedUserId IS NULL OR sa.assignedUser.id = :assignedUserId) " +
            "ORDER BY sa.assignmentDate ASC, sa.plannedStartTime ASC")
     List<ShiftAssignment> findByWeek(@Param("weekStart") LocalDate weekStart,
                                      @Param("weekEnd") LocalDate weekEnd,
-                                     @Param("employeeId") Long employeeId);
+                                     @Param("assignedUserId") Long assignedUserId);
 
     /**
      * TÃ¬m assignments theo thÃ¡ng
      */
     @Query("SELECT sa FROM ShiftAssignment sa WHERE " +
            "YEAR(sa.assignmentDate) = :year AND MONTH(sa.assignmentDate) = :month " +
-           "AND (:employeeId IS NULL OR sa.employee.id = :employeeId) " +
+           "AND (:assignedUserId IS NULL OR sa.assignedUser.id = :assignedUserId) " +
            "ORDER BY sa.assignmentDate ASC, sa.plannedStartTime ASC")
     List<ShiftAssignment> findByMonth(@Param("year") int year,
                                       @Param("month") int month,
-                                      @Param("employeeId") Long employeeId);
+                                      @Param("assignedUserId") Long assignedUserId);
 
     /**
      * Search assignments vá»›i filters
      */
     @Query("SELECT sa FROM ShiftAssignment sa " +
-           "JOIN sa.employee e " +
+           "JOIN sa.assignedUser e " +
            "JOIN sa.shiftTemplate st WHERE " +
-           "(:employeeId IS NULL OR sa.employee.id = :employeeId) AND " +
+           "(:assignedUserId IS NULL OR sa.assignedUser.id = :assignedUserId) AND " +
            "(:startDate IS NULL OR sa.assignmentDate >= :startDate) AND " +
            "(:endDate IS NULL OR sa.assignmentDate <= :endDate) AND " +
            "(:status IS NULL OR sa.status = :status) AND " +
@@ -153,7 +153,7 @@ public interface ShiftAssignmentRepository extends JpaRepository<ShiftAssignment
            "LOWER(e.fullName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(st.templateName) LIKE LOWER(CONCAT('%', :search, '%'))) " +
            "ORDER BY sa.assignmentDate DESC, sa.plannedStartTime ASC")
-    Page<ShiftAssignment> searchAssignments(@Param("employeeId") Long employeeId,
+    Page<ShiftAssignment> searchAssignments(@Param("assignedUserId") Long assignedUserId,
                                            @Param("startDate") LocalDate startDate,
                                            @Param("endDate") LocalDate endDate,
                                            @Param("status") ShiftAssignment.AssignmentStatus status,
@@ -162,17 +162,17 @@ public interface ShiftAssignmentRepository extends JpaRepository<ShiftAssignment
                                            Pageable pageable);
 
     /**
-     * TÃ­nh tá»•ng giá» lÃ m viá»‡c cá»§a employee trong khoáº£ng thá»i gian
+     * TÃ­nh tá»•ng giá» lÃ m viá»‡c cá»§a assigned user trong khoáº£ng thá»i gian
      */
     @Query("SELECT " +
            "COALESCE(SUM(sa.plannedHours), 0) as totalPlannedHours, " +
            "COALESCE(SUM(sa.actualHours), 0) as totalActualHours, " +
            "COALESCE(SUM(sa.overtimeHours), 0) as totalOvertimeHours " +
            "FROM ShiftAssignment sa WHERE " +
-           "sa.employee.id = :employeeId AND " +
+           "sa.assignedUser.id = :assignedUserId AND " +
            "sa.assignmentDate BETWEEN :startDate AND :endDate AND " +
            "sa.status IN ('COMPLETED', 'IN_PROGRESS')")
-    Object[] calculateWorkingHours(@Param("employeeId") Long employeeId,
+    Object[] calculateWorkingHours(@Param("assignedUserId") Long assignedUserId,
                                    @Param("startDate") LocalDate startDate,
                                    @Param("endDate") LocalDate endDate);
 
@@ -188,9 +188,9 @@ public interface ShiftAssignmentRepository extends JpaRepository<ShiftAssignment
     /**
      * TÃ¬m employees cÃ³ nhiá»u assignments nháº¥t
      */
-    @Query("SELECT sa.employee, COUNT(sa) as assignmentCount FROM ShiftAssignment sa WHERE " +
+    @Query("SELECT sa.assignedUser, COUNT(sa) as assignmentCount FROM ShiftAssignment sa WHERE " +
            "sa.assignmentDate BETWEEN :startDate AND :endDate " +
-           "GROUP BY sa.employee " +
+           "GROUP BY sa.assignedUser " +
            "ORDER BY assignmentCount DESC")
     List<Object[]> findTopEmployeesByAssignments(@Param("startDate") LocalDate startDate,
                                                  @Param("endDate") LocalDate endDate,
@@ -227,23 +227,23 @@ public interface ShiftAssignmentRepository extends JpaRepository<ShiftAssignment
      * TÃ¬m assignments cÃ³ thá»ƒ swap
      */
     @Query("SELECT sa FROM ShiftAssignment sa WHERE " +
-           "sa.employee.id != :employeeId AND " +
+           "sa.assignedUser.id != :assignedUserId AND " +
            "sa.assignmentDate = :date AND " +
            "sa.status = 'SCHEDULED' AND " +
            "sa.shiftTemplate.id = :shiftTemplateId " +
            "ORDER BY sa.plannedStartTime ASC")
-    List<ShiftAssignment> findSwappableAssignments(@Param("employeeId") Long employeeId,
+    List<ShiftAssignment> findSwappableAssignments(@Param("assignedUserId") Long assignedUserId,
                                                    @Param("date") LocalDate date,
                                                    @Param("shiftTemplateId") Long shiftTemplateId);
 
     /**
-     * TÃ¬m assignments cá»§a employee trong tuáº§n hiá»‡n táº¡i
+     * TÃ¬m assignments cá»§a assigned user trong tuáº§n hiá»‡n táº¡i
      */
     @Query("SELECT sa FROM ShiftAssignment sa WHERE " +
-           "sa.employee.id = :employeeId AND " +
+           "sa.assignedUser.id = :assignedUserId AND " +
            "sa.assignmentDate >= :weekStart AND sa.assignmentDate <= :weekEnd " +
            "ORDER BY sa.assignmentDate ASC, sa.plannedStartTime ASC")
-    List<ShiftAssignment> findCurrentWeekAssignments(@Param("employeeId") Long employeeId,
+    List<ShiftAssignment> findCurrentWeekAssignments(@Param("assignedUserId") Long assignedUserId,
                                                      @Param("weekStart") LocalDate weekStart,
                                                      @Param("weekEnd") LocalDate weekEnd);
 }

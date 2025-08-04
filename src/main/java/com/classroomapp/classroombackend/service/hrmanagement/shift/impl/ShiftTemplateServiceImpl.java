@@ -244,8 +244,8 @@ public class ShiftTemplateServiceImpl implements ShiftTemplateService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ShiftTemplate> findAvailableTemplatesForEmployeeAndDate(Long employeeId, java.time.LocalDate date) {
-        return shiftTemplateRepository.findAvailableTemplatesForEmployeeAndDate(employeeId, date);
+    public List<ShiftTemplate> findAvailableTemplatesForEmployeeAndDate(Long assignedUserId, java.time.LocalDate date) {
+        return shiftTemplateRepository.findAvailableTemplatesForEmployeeAndDate(assignedUserId, date);
     }
 
     @Override

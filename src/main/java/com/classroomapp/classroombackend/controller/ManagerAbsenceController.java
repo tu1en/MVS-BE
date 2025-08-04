@@ -148,9 +148,9 @@ public class ManagerAbsenceController {
         return ResponseEntity.ok(employeesInfo);
     }
 
-    @GetMapping("/employees/{employeeId}")
-    public ResponseEntity<TeacherLeaveInfoDTO> getEmployeeLeaveInfo(@PathVariable Long employeeId) {
-        TeacherLeaveInfoDTO employeeInfo = absenceService.getTeacherLeaveInfo(employeeId);
+    @GetMapping("/employees/{userId}")
+    public ResponseEntity<TeacherLeaveInfoDTO> getEmployeeLeaveInfo(@PathVariable Long userId) {
+        TeacherLeaveInfoDTO employeeInfo = absenceService.getTeacherLeaveInfo(userId);
         return ResponseEntity.ok(employeeInfo);
     }
 

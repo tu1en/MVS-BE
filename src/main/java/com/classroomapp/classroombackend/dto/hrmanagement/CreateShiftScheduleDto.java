@@ -33,7 +33,7 @@ public class CreateShiftScheduleDto {
     
     // Backward compatibility fields
     @NotNull(message = "Employee ID khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
-    private Long employeeId;
+    private Long assignedUserId;
     
     @NotNull(message = "Template ID khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
     private Long templateId;
