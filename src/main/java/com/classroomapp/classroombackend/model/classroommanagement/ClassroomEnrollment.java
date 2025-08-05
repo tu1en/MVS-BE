@@ -1,7 +1,10 @@
 package com.classroomapp.classroombackend.model.classroommanagement;
 
+import java.time.LocalDateTime;
+
 import com.classroomapp.classroombackend.model.usermanagement.User;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
@@ -22,7 +25,9 @@ public class ClassroomEnrollment {
     @MapsId("classroomId")
     @JoinColumn(name = "classroom_id")
     private Classroom classroom;
-
+// Thêm field vào class
+@Column(name = "enrollment_date")
+private LocalDateTime enrollmentDate;
     @ManyToOne
     @MapsId("userId")
     @JoinColumn(name = "user_id")

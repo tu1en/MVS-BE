@@ -1,15 +1,10 @@
 package com.classroomapp.classroombackend.service.impl;
 
-import com.classroomapp.classroombackend.dto.UserDto;
-import com.classroomapp.classroombackend.model.usermanagement.User;
-import com.classroomapp.classroombackend.exception.BusinessLogicException;
-import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
-import com.classroomapp.classroombackend.repository.usermanagement.RoleRepository;
-import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
-import com.classroomapp.classroombackend.service.UserService;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
-import lombok.RequiredArgsConstructor;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -20,14 +15,19 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import com.classroomapp.classroombackend.constants.RoleConstants;
+import com.classroomapp.classroombackend.dto.UserDto;
+import com.classroomapp.classroombackend.exception.BusinessLogicException;
+import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
 import com.classroomapp.classroombackend.model.usermanagement.Role;
+import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.usermanagement.RoleRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.classroomapp.classroombackend.service.UserService;
+
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -64,11 +64,18 @@ public class UserServiceImpl implements UserService {
     public Page<UserDto> findAllUsers(String keyword, Pageable pageable) {
         Page<User> userPage;
         if (keyword != null && !keyword.isEmpty()) {
-            userPage = userRepository.findByFullNameContainingIgnoreCaseOrEmailContainingIgnoreCase(keyword, keyword, pageable);
+            userPage = userRepository.findByFullNameContainingIgnoreCaseOrEmailContainingIgnoreCase(keyword, keyword,
+                    pageable);
         } else {
             userPage = userRepository.findAll(pageable);
         }
         return userPage.map(this::convertToUserDto);
+    }
+
+    // Thêm method này vào UserServiceImpl
+    public User findByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username));
     }
 
     @Transactional
@@ -80,7 +87,7 @@ public class UserServiceImpl implements UserService {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String currentUsername = "";
         if (principal instanceof UserDetails) {
-            currentUsername = ((UserDetails)principal).getUsername();
+            currentUsername = ((UserDetails) principal).getUsername();
         } else {
             currentUsername = principal.toString();
         }
@@ -107,7 +114,7 @@ public class UserServiceImpl implements UserService {
         // Find user by ID or throw exception if not found
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
-        
+
         return this.convertToUserDto(user);
     }
 
@@ -116,7 +123,7 @@ public class UserServiceImpl implements UserService {
         // Find user by username or throw exception if not found
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username));
-        
+
         return this.convertToUserDto(user);
     }
 
@@ -127,12 +134,12 @@ public class UserServiceImpl implements UserService {
         if (userRepository.existsByEmail(userDto.getEmail())) {
             throw new IllegalArgumentException("Email already registered");
         }
-        
+
         // Check if username already exists
         if (userRepository.existsByUsername(userDto.getUsername())) {
             throw new IllegalArgumentException("Username already exists");
         }
-        
+
         // Convert DTO to entity
         User user = new User();
         user.setUsername(userDto.getUsername());
@@ -151,12 +158,12 @@ public class UserServiceImpl implements UserService {
             // Default to STUDENT role
             user.setRoleId(RoleConstants.STUDENT);
         }
-        
+
         // Set department cho Accountant
         if (user.getRoleId() != null && user.getRoleId() == RoleConstants.ACCOUNTANT) {
             user.setDepartment("Kế toán viên");
         }
-        
+
         // Save user and return as DTO
         User savedUser = userRepository.save(user);
         return convertToUserDto(savedUser);
@@ -168,13 +175,13 @@ public class UserServiceImpl implements UserService {
         // Check if user exists
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
-        
+
         // Check if email is being changed and is already taken by another user
-        if (!existingUser.getEmail().equals(userDto.getEmail()) && 
+        if (!existingUser.getEmail().equals(userDto.getEmail()) &&
                 userRepository.existsByEmail(userDto.getEmail())) {
             throw new IllegalArgumentException("Email already registered");
         }
-        
+
         // Update fields
         existingUser.setEmail(userDto.getEmail());
         existingUser.setFullName(userDto.getName());
@@ -185,12 +192,12 @@ public class UserServiceImpl implements UserService {
             Integer roleId = convertRoleToRoleId(role);
             existingUser.setRoleId(roleId);
         }
-        
+
         // Set department cho Accountant khi update
         if (existingUser.getRoleId() != null && existingUser.getRoleId() == RoleConstants.ACCOUNTANT) {
             existingUser.setDepartment("Kế toán viên");
         }
-        
+
         // Save updated user and return as DTO
         User updatedUser = userRepository.save(existingUser);
         return convertToUserDto(updatedUser);
@@ -203,21 +210,21 @@ public class UserServiceImpl implements UserService {
         if (!userRepository.existsById(id)) {
             throw new ResourceNotFoundException("User not found with id: " + id);
         }
-        
+
         // Prevent self-deletion
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String currentUsername = "";
         if (principal instanceof UserDetails) {
-            currentUsername = ((UserDetails)principal).getUsername();
+            currentUsername = ((UserDetails) principal).getUsername();
         } else {
             currentUsername = principal.toString();
         }
-        
+
         User user = userRepository.findById(id).get();
         if (user.getEmail().equals(currentUsername)) {
             throw new BusinessLogicException("Cannot delete your own account.");
         }
-        
+
         // Delete user
         userRepository.deleteById(id);
     }
@@ -228,7 +235,7 @@ public class UserServiceImpl implements UserService {
         // Check if user exists
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
-        
+
         // Check if admin is trying to reset their own password
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String currentUsername = "";
@@ -237,15 +244,15 @@ public class UserServiceImpl implements UserService {
         } else {
             currentUsername = principal.toString();
         }
-        
+
         if (existingUser.getEmail().equals(currentUsername)) {
             throw new BusinessLogicException("Cannot reset your own password through this method.");
         }
-        
+
         // Reset password to default '123456789' (properly encoded)
         String defaultPassword = "123456789";
         existingUser.setPassword(passwordEncoder.encode(defaultPassword));
-        
+
         // Save updated user
         userRepository.save(existingUser);
         // In a real application, notify user via email about the password reset
@@ -277,7 +284,7 @@ public class UserServiceImpl implements UserService {
     public boolean IsEmailExists(String email) {
         return userRepository.existsByEmail(email);
     }
-    
+
     @Override
     public List<UserDto> FindUsersByRole(Integer roleId) {
         // Use the repository method to find users by role ID
@@ -294,17 +301,18 @@ public class UserServiceImpl implements UserService {
             throw new BusinessLogicException("Roles cannot be empty.");
         }
         // The current schema only supports one role per user.
-        // We throw an error if more than one role is provided to make this limitation clear.
+        // We throw an error if more than one role is provided to make this limitation
+        // clear.
         if (roleNames.size() > 1) {
             throw new BusinessLogicException("System currently supports only one role per user.");
         }
 
         String newRoleName = roleNames.iterator().next();
-        
+
         // Handle both ROLE_ prefixed and non-prefixed role names
-        final String roleNameForDatabase = newRoleName.startsWith("ROLE_") 
-            ? newRoleName.substring(5) // Remove "ROLE_" prefix
-            : newRoleName;
+        final String roleNameForDatabase = newRoleName.startsWith("ROLE_")
+                ? newRoleName.substring(5) // Remove "ROLE_" prefix
+                : newRoleName;
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
@@ -317,8 +325,8 @@ public class UserServiceImpl implements UserService {
         if (principal instanceof UserDetails) {
             String currentUsername = ((UserDetails) principal).getUsername();
             if (user.getEmail().equals(currentUsername) &&
-                user.getRoleId() == RoleConstants.ADMIN &&
-                !newRole.getId().equals(RoleConstants.ADMIN)) {
+                    user.getRoleId() == RoleConstants.ADMIN &&
+                    !newRole.getId().equals(RoleConstants.ADMIN)) {
                 throw new BusinessLogicException("Cannot remove ADMIN role from your own account.");
             }
         }
@@ -345,7 +353,7 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("Failed to send email", e);
         }
     }
-    
+
     @Override
     public User findUserEntityByEmail(String email) {
         return userRepository.findByEmail(email)

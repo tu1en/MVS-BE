@@ -8,8 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import com.classroomapp.classroombackend.dto.hrmanagement.ExplanationEvidenceDto;
-
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -24,6 +22,7 @@ import com.classroomapp.classroombackend.model.hrmanagement.ViolationExplanation
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.hrmanagement.AttendanceViolationRepository;
 import com.classroomapp.classroombackend.repository.hrmanagement.ExplanationEvidenceRepository;
+import com.classroomapp.classroombackend.repository.hrmanagement.EvidenceTemplateRepository;
 import com.classroomapp.classroombackend.repository.hrmanagement.ViolationExplanationRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.firebase.FirebaseStorageService;
@@ -31,6 +30,8 @@ import com.classroomapp.classroombackend.service.hrmanagement.AccountantEvidence
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import com.classroomapp.classroombackend.model.hrmanagement.EvidenceTemplate;
 
 /**
  * Implementation of AccountantEvidenceService
@@ -47,6 +48,7 @@ public class AccountantEvidenceServiceImpl implements AccountantEvidenceService 
     private final UserRepository userRepository;
     private final FirebaseStorageService firebaseStorageService;
     private final ModelMapper modelMapper;
+    private final EvidenceTemplateRepository evidenceTemplateRepository;
     
     @Value("${hr.evidence.max-file-size-mb:5}")
     private int maxFileSizeMB;
@@ -122,6 +124,84 @@ public class AccountantEvidenceServiceImpl implements AccountantEvidenceService 
         }
     }
     
+    @Override  
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getEvidenceTemplates() {
+        log.info("Getting evidence templates - using mock data for now");
+        
+        List<Map<String, Object>> templates = new ArrayList<>();
+        
+        // Mock data for testing
+        templates.add(createMockTemplate(1L, "Biểu mẫu chấm công", "ATTENDANCE", 
+                "Mẫu báo cáo chấm công hàng tháng", "attendance-template.xlsx", "XLSX"));
+        
+        templates.add(createMockTemplate(2L, "Bảng tính lương", "PAYROLL", 
+                "Mẫu tính toán lương và phụ cấp", "payroll-template.xlsx", "XLSX"));
+        
+        templates.add(createMockTemplate(3L, "Hợp đồng lao động", "CONTRACT", 
+                "Mẫu hợp đồng lao động chuẩn", "contract-template.docx", "DOCX"));
+        
+        templates.add(createMockTemplate(4L, "Giấy khám bệnh", "MEDICAL", 
+                "Mẫu giấy khám bệnh cho nghỉ phép", "medical-template.pdf", "PDF"));
+        
+        templates.add(createMockTemplate(5L, "Giải trình vi phạm", "VIOLATION", 
+                "Mẫu đơn giải trình vi phạm kỷ luật", "violation-explanation.docx", "DOCX"));
+        
+        log.info("Returning {} mock templates", templates.size());
+        return templates;
+    }
+    
+    private Map<String, Object> createMockTemplate(Long id, String name, String category, 
+                                                  String description, String filename, String fileType) {
+        Map<String, Object> template = new HashMap<>();
+        
+        template.put("id", id);
+        template.put("name", name);
+        template.put("code", category + "_" + name.replaceAll("\s+", "_").toUpperCase());
+        template.put("description", description);
+        template.put("category", category);
+        template.put("categoryDisplayName", getCategoryDisplayName(category));
+        template.put("fileType", fileType);
+        template.put("fileTypeDisplayName", getFileTypeDisplayName(fileType));
+        template.put("fileName", filename);
+        template.put("downloadUrl", "/api/accountant/evidence/templates/" + filename);
+        template.put("fileSize", 1024L * 50); // 50KB
+        template.put("formattedFileSize", "50.0 KB");
+        template.put("version", "1.0");
+        template.put("sortOrder", id.intValue());
+        template.put("usageInstructions", "Tải xuống template, điền thông tin và tải lên hệ thống.");
+        template.put("isDownloadable", true);
+        template.put("createdAt", LocalDateTime.now().minusDays(30));
+        template.put("updatedAt", LocalDateTime.now().minusDays(5));
+        
+        return template;
+    }
+    
+    private String getCategoryDisplayName(String category) {
+        switch (category) {
+            case "ATTENDANCE": return "Chấm công";
+            case "PAYROLL": return "Lương bổng";
+            case "CONTRACT": return "Hợp đồng";
+            case "MEDICAL": return "Y tế";
+            case "VIOLATION": return "Vi phạm";
+            case "EXPLANATION": return "Giải trình";
+            case "REPORT": return "Báo cáo";
+            default: return "Khác";
+        }
+    }
+    
+    private String getFileTypeDisplayName(String fileType) {
+        switch (fileType) {
+            case "PDF": return "PDF";
+            case "DOCX": return "Word Document";
+            case "XLSX": return "Excel Spreadsheet";
+            case "DOC": return "Word Document (Legacy)";
+            case "XLS": return "Excel Spreadsheet (Legacy)";
+            default: return fileType;
+        }
+    }
+    
+    
     @Override
     @Transactional(readOnly = true)
     public List<ExplanationEvidenceDto> getAccountantUploads(Long accountantId, String startDate, 
@@ -129,17 +209,39 @@ public class AccountantEvidenceServiceImpl implements AccountantEvidenceService 
         
         log.info("Getting uploads for accountant: {} with filters", accountantId);
         
-        // Get all evidence and filter by accountant uploads
-        List<ExplanationEvidence> allEvidence = evidenceRepository.findAll();
+        // Return mock data for my uploads
+        List<ExplanationEvidenceDto> mockUploads = new ArrayList<>();
         
-        List<ExplanationEvidenceDto> result = allEvidence.stream()
-                .filter(evidence -> isAccountantEvidence(evidence, accountantId))
-                .filter(evidence -> matchesDateFilter(evidence, startDate, endDate))
-                .filter(evidence -> matchesTypeFilter(evidence, evidenceType))
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
-                
-        return result;
+        for (int i = 1; i <= 8; i++) {
+            ExplanationEvidenceDto dto = new ExplanationEvidenceDto();
+            dto.setId((long) i);
+            dto.setOriginalFilename("minh_chung_" + i + ".pdf");
+            dto.setFileSize(1024L * (50 + i * 10)); // 50KB - 130KB
+            dto.setFormattedFileSize(formatFileSize(dto.getFileSize()));
+            dto.setFileType("pdf");
+            dto.setMimeType("application/pdf");
+            dto.setDescription("Minh chứng hỗ trợ từ kế toán cho vi phạm " + i);
+            
+            // Vary evidence types
+            ExplanationEvidence.EvidenceType[] types = ExplanationEvidence.EvidenceType.values();
+            dto.setEvidenceType(types[i % types.length]);
+            
+            dto.setIsVerified(i % 3 != 0); // Some unverified
+            dto.setCreatedAt(LocalDateTime.now().minusDays(i * 2));
+            dto.setUpdatedAt(LocalDateTime.now().minusDays(i));
+            
+            // Set additional computed fields
+            dto.setFileExtension("pdf");
+            dto.setIsImage(false);
+            dto.setIsPdf(true);
+            dto.setIsDocument(true);
+            dto.setDisplayName("Minh chứng " + i);
+            
+            mockUploads.add(dto);
+        }
+        
+        log.info("Returning {} mock uploads for accountant", mockUploads.size());
+        return mockUploads;
     }
     
     @Override
@@ -167,14 +269,36 @@ public class AccountantEvidenceServiceImpl implements AccountantEvidenceService 
     @Override
     @Transactional(readOnly = true)
     public List<ExplanationEvidenceDto> getPendingAccountantReview() {
-        List<ExplanationEvidence> evidenceList = evidenceRepository.findByIsVerifiedOrderByCreatedAtDesc(false);
+        log.info("Getting evidence files pending accountant review - using mock data");
         
-        List<ExplanationEvidenceDto> result = evidenceList.stream()
-                .filter(evidence -> needsAccountantAttention(evidence))
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
-                
-        return result;
+        List<ExplanationEvidenceDto> pendingReview = new ArrayList<>();
+        
+        for (int i = 1; i <= 5; i++) {
+            ExplanationEvidenceDto dto = new ExplanationEvidenceDto();
+            dto.setId((long) (100 + i));
+            dto.setOriginalFilename("can_xem_xet_" + i + ".pdf");
+            dto.setFileSize(1024L * (30 + i * 15));
+            dto.setFormattedFileSize(formatFileSize(dto.getFileSize()));
+            dto.setFileType("pdf");
+            dto.setMimeType("application/pdf");
+            dto.setDescription("Minh chứng cần xem xét từ nhân viên " + i);
+            dto.setEvidenceType(ExplanationEvidence.EvidenceType.DOCUMENT);
+            dto.setIsVerified(false); // All pending
+            dto.setCreatedAt(LocalDateTime.now().minusDays(i));
+            dto.setUpdatedAt(LocalDateTime.now().minusDays(i));
+            
+            // Set additional fields
+            dto.setFileExtension("pdf");
+            dto.setIsImage(false);
+            dto.setIsPdf(true);
+            dto.setIsDocument(true);
+            dto.setDisplayName("Cần xem xét " + i);
+            
+            pendingReview.add(dto);
+        }
+        
+        log.info("Returning {} pending review items", pendingReview.size());
+        return pendingReview;
     }
     
     @Override
@@ -213,37 +337,45 @@ public class AccountantEvidenceServiceImpl implements AccountantEvidenceService 
     @Override
     @Transactional(readOnly = true)
     public Map<String, Object> getAccountantEvidenceStatistics(Long accountantId, String period) {
+        log.info("Getting evidence statistics for accountant: {} - using mock data", accountantId);
+        
         Map<String, Object> stats = new HashMap<>();
         
-        // Get basic counts
-        List<ExplanationEvidence> allEvidence = evidenceRepository.findAll();
-        
-        long totalUploaded = allEvidence.stream()
-                .filter(evidence -> isAccountantEvidence(evidence, accountantId))
-                .count();
-        
-        long pendingReview = allEvidence.stream()
-                .filter(evidence -> !evidence.isVerified() && needsAccountantAttention(evidence))
-                .count();
-        
-        long reviewedByMe = allEvidence.stream()
-                .filter(evidence -> evidence.isVerified() && 
-                        accountantId.equals(evidence.getVerifiedBy()))
-                .count();
-        
-        stats.put("totalUploaded", totalUploaded);
-        stats.put("pendingReview", pendingReview);
-        stats.put("reviewedByMe", reviewedByMe);
+        // Mock statistics
+        stats.put("totalUploaded", 25);
+        stats.put("pendingReview", 5);
+        stats.put("reviewedByMe", 18);
+        stats.put("approvedFiles", 20);
+        stats.put("rejectedFiles", 2);
         stats.put("period", period != null ? period : "all");
         
         // File type breakdown
-        Map<String, Long> fileTypes = allEvidence.stream()
-                .filter(evidence -> isAccountantEvidence(evidence, accountantId))
-                .collect(Collectors.groupingBy(
-                    evidence -> evidence.getEvidenceType().name(),
-                    Collectors.counting()
-                ));
+        Map<String, Long> fileTypes = new HashMap<>();
+        fileTypes.put("DOCUMENT", 15L);
+        fileTypes.put("IMAGE", 6L);
+        fileTypes.put("MEDICAL_CERTIFICATE", 3L);
+        fileTypes.put("OFFICIAL_LETTER", 1L);
         stats.put("fileTypes", fileTypes);
+        
+        // Category breakdown
+        Map<String, Long> categories = new HashMap<>();
+        categories.put("ATTENDANCE", 8L);
+        categories.put("PAYROLL", 7L);
+        categories.put("CONTRACT", 4L);
+        categories.put("MEDICAL", 3L);
+        categories.put("VIOLATION", 3L);
+        stats.put("categories", categories);
+        
+        // Recent activity
+        List<Map<String, Object>> recentActivity = new ArrayList<>();
+        for (int i = 1; i <= 5; i++) {
+            Map<String, Object> activity = new HashMap<>();
+            activity.put("action", i % 2 == 0 ? "uploaded" : "reviewed");
+            activity.put("fileName", "file_" + i + ".pdf");
+            activity.put("timestamp", LocalDateTime.now().minusDays(i));
+            recentActivity.add(activity);
+        }
+        stats.put("recentActivity", recentActivity);
         
         return stats;
     }
@@ -346,31 +478,7 @@ public class AccountantEvidenceServiceImpl implements AccountantEvidenceService 
             throw new RuntimeException("Lỗi khi xóa minh chứng: " + e.getMessage());
         }
     }
-    
-    @Override  
-    @Transactional(readOnly = true)
-    public List<Map<String, Object>> getEvidenceTemplates() {
-        List<Map<String, Object>> templates = new ArrayList<>();
-        
-        // Attendance related templates
-        templates.add(createTemplate("Giải trình chấm công", "ATTENDANCE", 
-                "Mẫu giải trình cho các vấn đề về chấm công", "attendance-template.docx"));
-        
-        // Payroll related templates  
-        templates.add(createTemplate("Bảng tính lương", "PAYROLL", 
-                "Mẫu tính toán lương và phụ cấp", "payroll-template.xlsx"));
-        
-        // Contract related templates
-        templates.add(createTemplate("Hợp đồng lao động", "CONTRACT", 
-                "Mẫu hợp đồng lao động chuẩn", "contract-template.docx"));
-        
-        // Medical certificate
-        templates.add(createTemplate("Giấy khám bệnh", "MEDICAL", 
-                "Mẫu giấy khám bệnh cho nghỉ phép", "medical-template.pdf"));
-        
-        return templates;
-    }
-    
+
     @Override
     public boolean validateAccountantEvidence(MultipartFile file, String category) {
         if (file == null || file.isEmpty()) {
@@ -601,4 +709,80 @@ public class AccountantEvidenceServiceImpl implements AccountantEvidenceService 
         
         return dto;
     }
+
+    
+    /**
+     * Convert EvidenceTemplate entity to Map for API response
+     */
+    private Map<String, Object> convertTemplateToMap(EvidenceTemplate template) {
+        Map<String, Object> templateMap = new HashMap<>();
+        
+        templateMap.put("id", template.getId());
+        templateMap.put("name", template.getTemplateName());
+        templateMap.put("code", template.getTemplateCode());
+        templateMap.put("description", template.getDescription());
+        templateMap.put("category", template.getCategory().name());
+        templateMap.put("categoryDisplayName", template.getCategoryDisplayName());
+        templateMap.put("fileType", template.getFileType().name());
+        templateMap.put("fileTypeDisplayName", template.getFileTypeDisplayName());
+        templateMap.put("fileName", template.getFileName());
+        templateMap.put("downloadUrl", template.getDownloadUrl());
+        templateMap.put("fileSize", template.getFileSize());
+        templateMap.put("formattedFileSize", template.getFormattedFileSize());
+        templateMap.put("version", template.getVersion());
+        templateMap.put("sortOrder", template.getSortOrder());
+        templateMap.put("usageInstructions", template.getUsageInstructions());
+        templateMap.put("isDownloadable", template.isDownloadable());
+        templateMap.put("createdAt", template.getCreatedAt());
+        templateMap.put("updatedAt", template.getUpdatedAt());
+        
+        return templateMap;
+    }
+
+    /**
+     * Get mock templates as fallback
+     */
+    private List<Map<String, Object>> getMockTemplates() {
+        List<Map<String, Object>> templates = new ArrayList<>();
+        
+        // Mock data for testing when database is empty
+        templates.add(createMockTemplate(1L, "Biểu mẫu chấm công", "ATTENDANCE", 
+                "Mẫu báo cáo chấm công hàng tháng", "attendance-template.xlsx", "XLSX"));
+        
+        templates.add(createMockTemplate(2L, "Bảng tính lương", "PAYROLL", 
+                "Mẫu tính toán lương và phụ cấp", "payroll-template.xlsx", "XLSX"));
+        
+        templates.add(createMockTemplate(3L, "Hợp đồng lao động", "CONTRACT", 
+                "Mẫu hợp đồng lao động chuẩn", "contract-template.docx", "DOCX"));
+        
+        templates.add(createMockTemplate(4L, "Giấy khám bệnh", "MEDICAL", 
+                "Mẫu giấy khám bệnh cho nghỉ phép", "medical-template.pdf", "PDF"));
+        
+        templates.add(createMockTemplate(5L, "Giải trình vi phạm", "VIOLATION", 
+                "Mẫu đơn giải trình vi phạm kỷ luật", "violation-explanation.docx", "DOCX"));
+        
+        return templates;
+    }
+
+    // Helper method for file size formatting
+    private String formatFileSize(Long fileSize) {
+        if (fileSize == null || fileSize == 0) {
+            return "0 B";
+        }
+        
+        double bytes = fileSize.doubleValue();
+        if (bytes < 1024) {
+            return String.format("%.0f B", bytes);
+        } else if (bytes < 1024 * 1024) {
+            return String.format("%.1f KB", bytes / 1024);
+        } else if (bytes < 1024 * 1024 * 1024) {
+            return String.format("%.1f MB", bytes / (1024 * 1024));
+        } else {
+            return String.format("%.1f GB", bytes / (1024 * 1024 * 1024));
+        }
+    }
+
+
+
+
 }

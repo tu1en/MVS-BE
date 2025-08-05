@@ -21,8 +21,10 @@ import com.classroomapp.classroombackend.constants.RoleConstants;
 import com.classroomapp.classroombackend.model.Absence;
 import com.classroomapp.classroombackend.model.Accomplishment;
 import com.classroomapp.classroombackend.model.Announcement;
+import com.classroomapp.classroombackend.model.AttendanceExplanation;
 import com.classroomapp.classroombackend.model.Blog;
 import com.classroomapp.classroombackend.model.CourseMaterial;
+import com.classroomapp.classroombackend.model.ExplanationStatus;
 import com.classroomapp.classroombackend.model.JobPosition;
 import com.classroomapp.classroombackend.model.Lecture;
 import com.classroomapp.classroombackend.model.RecruitmentApplication;
@@ -45,6 +47,7 @@ import com.classroomapp.classroombackend.model.usermanagement.Role;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.AccomplishmentRepository;
 import com.classroomapp.classroombackend.repository.AnnouncementRepository;
+import com.classroomapp.classroombackend.repository.AttendanceExplanationRepository;
 import com.classroomapp.classroombackend.repository.BlogRepository;
 import com.classroomapp.classroombackend.repository.CourseMaterialRepository;
 import com.classroomapp.classroombackend.repository.JobPositionRepository;
@@ -120,6 +123,9 @@ public class DataLoader implements CommandLineRunner {
     
     @Autowired
     private AttendanceSessionRepository attendanceSessionRepository;
+    
+    @Autowired
+    private AttendanceExplanationRepository attendanceExplanationRepository;
     
     @Autowired
     private StudentMessageRepository studentMessageRepository;
@@ -228,7 +234,7 @@ public class DataLoader implements CommandLineRunner {
             // Seed messages
             seedMessages();
             
-            // Đã loại bỏ seedExams vì không tương thích với model Exam hiện tại
+// seedEvidenceTemplates(); // Method not implemented yet
             
             // Seed student progress
             seedStudentProgress();
@@ -242,6 +248,9 @@ public class DataLoader implements CommandLineRunner {
         // Always verify database state
         verifyDatabaseState();
         verifyUserRoleAssignments();
+        
+        // Always create attendance explanations test data
+        // createAttendanceExplanationsData(); // Method not implemented yet
 
         // Always run the submission seeder to add new test data
         log.info("============== Checking for new submissions to seed ==============");

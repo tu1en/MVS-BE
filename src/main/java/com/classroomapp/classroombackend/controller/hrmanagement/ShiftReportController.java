@@ -82,7 +82,7 @@ public class ShiftReportController {
             shiftScheduleService.getScheduleStatistics(startOfMonth, endOfMonth);
         dashboard.put("scheduleStats", scheduleStats);
 
-        return ResponseEntity.ok(ApiResponse.success("Lấy dashboard statistics thành công", dashboard));
+        return ResponseEntity.ok(ApiResponse.success(dashboard, "Lấy dashboard statistics thành công"));
     }
 
     @Operation(summary = "Báo cáo template usage", 
@@ -110,7 +110,7 @@ public class ShiftReportController {
         List<?> overtimeEligible = shiftTemplateService.findOvertimeEligibleTemplates();
         report.put("overtimeEligibleTemplates", overtimeEligible);
 
-        return ResponseEntity.ok(ApiResponse.success("Lấy template usage report thành công", report));
+        return ResponseEntity.ok(ApiResponse.success(report, "Lấy template usage report thành công"));
     }
 
     @Operation(summary = "Báo cáo attendance", 
@@ -146,7 +146,7 @@ public class ShiftReportController {
             report.put("workingHoursSummary", workingHours);
         }
 
-        return ResponseEntity.ok(ApiResponse.success("Lấy attendance report thành công", report));
+        return ResponseEntity.ok(ApiResponse.success(report, "Lấy attendance report thành công"));
     }
 
     @Operation(summary = "Báo cáo swap requests", 
@@ -177,7 +177,7 @@ public class ShiftReportController {
         List<?> pendingApproval = shiftSwapService.findPendingManagerApproval();
         report.put("pendingManagerApproval", pendingApproval);
 
-        return ResponseEntity.ok(ApiResponse.success("Lấy swap requests report thành công", report));
+        return ResponseEntity.ok(ApiResponse.success(report, "Lấy swap requests report thành công"));
     }
 
     @Operation(summary = "Báo cáo schedule performance", 
@@ -209,7 +209,7 @@ public class ShiftReportController {
         List<?> upcomingSchedules = shiftScheduleService.findUpcomingSchedules(7);
         report.put("upcomingSchedules", upcomingSchedules);
 
-        return ResponseEntity.ok(ApiResponse.success("Lấy schedule performance report thành công", report));
+        return ResponseEntity.ok(ApiResponse.success(report, "Lấy schedule performance report thành công"));
     }
 
     @Operation(summary = "Báo cáo payroll", 
@@ -245,7 +245,7 @@ public class ShiftReportController {
             report.put("overtimeAssignments", overtimeAssignments);
         }
 
-        return ResponseEntity.ok(ApiResponse.success("Lấy payroll report thành công", report));
+        return ResponseEntity.ok(ApiResponse.success(report, "Lấy payroll report thành công"));
     }
 
     @Operation(summary = "Export assignment report", 
@@ -345,7 +345,7 @@ public class ShiftReportController {
         List<?> activeSchedules = shiftScheduleService.findActiveSchedules();
         metrics.put("activeSchedules", activeSchedules.size());
 
-        return ResponseEntity.ok(ApiResponse.success("Lấy realtime metrics thành công", metrics));
+        return ResponseEntity.ok(ApiResponse.success(metrics, "Lấy realtime metrics thành công"));
     }
 
     @Operation(summary = "Health check cho shift management", 
@@ -387,6 +387,6 @@ public class ShiftReportController {
             health.put("error", e.getMessage());
         }
 
-        return ResponseEntity.ok(ApiResponse.success("Health check completed", health));
+        return ResponseEntity.ok(ApiResponse.success(health, "Health check completed"));
     }
 }

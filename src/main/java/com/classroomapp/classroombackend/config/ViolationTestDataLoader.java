@@ -1,0 +1,290 @@
+package com.classroomapp.classroombackend.config;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.classroomapp.classroombackend.model.hrmanagement.StaffAttendanceLog;
+import com.classroomapp.classroombackend.model.hrmanagement.UserShiftAssignment;
+import com.classroomapp.classroombackend.model.hrmanagement.WorkShift;
+import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.hrmanagement.StaffAttendanceLogRepository;
+import com.classroomapp.classroombackend.repository.hrmanagement.UserShiftAssignmentRepository;
+import com.classroomapp.classroombackend.repository.hrmanagement.WorkShiftRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+
+/**
+ * Data loader for violation detection testing
+ * Creates sample data to test the attendance violation workflow
+ */
+@Component
+@Order(999) // Run after main DataLoader
+public class ViolationTestDataLoader implements CommandLineRunner {
+
+    private static final Logger logger = LoggerFactory.getLogger(ViolationTestDataLoader.class);
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private WorkShiftRepository workShiftRepository;
+
+    @Autowired
+    private UserShiftAssignmentRepository userShiftAssignmentRepository;
+
+    @Autowired
+    private StaffAttendanceLogRepository staffAttendanceLogRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Override
+    @Transactional
+    public void run(String... args) throws Exception {
+        logger.info("Starting ViolationTestDataLoader...");
+
+        // Only load if no test data exists
+        if (workShiftRepository.count() > 0) {
+            logger.info("Work shifts already exist, skipping violation test data loading");
+            return;
+        }
+
+        try {
+            createTestUsers();
+            createWorkShifts();
+            createShiftAssignments();
+            createAttendanceLogs();
+            logger.info("ViolationTestDataLoader completed successfully!");
+        } catch (Exception e) {
+            logger.error("Error in ViolationTestDataLoader: {}", e.getMessage(), e);
+        }
+    }
+
+    private void createTestUsers() {
+        logger.info("Creating test users for violation testing...");
+
+        // Create additional test users if they don't exist
+        if (userRepository.findByEmail("john.teacher@mvs.edu").isEmpty()) {
+            User teacher1 = new User();
+            teacher1.setUsername("john.teacher");
+            teacher1.setEmail("john.teacher@mvs.edu");
+            teacher1.setPassword(passwordEncoder.encode("password123"));
+            teacher1.setFullName("John Smith");
+            teacher1.setRoleId(2); // TEACHER
+            teacher1.setDepartmentId(1L);
+            teacher1.setDepartment("Mathematics");
+            teacher1.setStatus("active");
+            teacher1.setEligibleForShiftAssignment(true);
+            userRepository.save(teacher1);
+            logger.info("Created teacher: {}", teacher1.getFullName());
+        }
+
+        if (userRepository.findByEmail("jane.teacher@mvs.edu").isEmpty()) {
+            User teacher2 = new User();
+            teacher2.setUsername("jane.teacher");
+            teacher2.setEmail("jane.teacher@mvs.edu");
+            teacher2.setPassword(passwordEncoder.encode("password123"));
+            teacher2.setFullName("Jane Doe");
+            teacher2.setRoleId(2); // TEACHER
+            teacher2.setDepartmentId(1L);
+            teacher2.setDepartment("Mathematics");
+            teacher2.setStatus("active");
+            teacher2.setEligibleForShiftAssignment(true);
+            userRepository.save(teacher2);
+            logger.info("Created teacher: {}", teacher2.getFullName());
+        }
+
+        if (userRepository.findByEmail("bob.accountant@mvs.edu").isEmpty()) {
+            User accountant = new User();
+            accountant.setUsername("bob.accountant");
+            accountant.setEmail("bob.accountant@mvs.edu");
+            accountant.setPassword(passwordEncoder.encode("password123"));
+            accountant.setFullName("Bob Wilson");
+            accountant.setRoleId(5); // ACCOUNTANT
+            accountant.setDepartmentId(2L);
+            accountant.setDepartment("Finance");
+            accountant.setStatus("active");
+            accountant.setEligibleForShiftAssignment(true);
+            userRepository.save(accountant);
+            logger.info("Created accountant: {}", accountant.getFullName());
+        }
+    }
+
+    private void createWorkShifts() {
+        logger.info("Creating work shifts...");
+
+        // Morning Teaching Shift
+        WorkShift morningShift = new WorkShift();
+        morningShift.setName("Morning Teaching Shift");
+        morningShift.setStartTime(LocalTime.of(7, 30)); // 7:30 AM
+        morningShift.setEndTime(LocalTime.of(11, 30)); // 11:30 AM
+        morningShift.setBreakHours(0.5); // 30 minute break
+        morningShift.setDescription("Morning classes for primary students");
+        morningShift.setIsActive(true);
+        morningShift.setCreatedBy(1L);
+        workShiftRepository.save(morningShift);
+        logger.info("Created work shift: {}", morningShift.getName());
+
+        // Afternoon Teaching Shift
+        WorkShift afternoonShift = new WorkShift();
+        afternoonShift.setName("Afternoon Teaching Shift");
+        afternoonShift.setStartTime(LocalTime.of(13, 0)); // 1:00 PM
+        afternoonShift.setEndTime(LocalTime.of(17, 0)); // 5:00 PM
+        afternoonShift.setBreakHours(0.5); // 30 minute break
+        afternoonShift.setDescription("Afternoon classes for secondary students");
+        afternoonShift.setIsActive(true);
+        afternoonShift.setCreatedBy(1L);
+        workShiftRepository.save(afternoonShift);
+        logger.info("Created work shift: {}", afternoonShift.getName());
+
+        // Office Hours
+        WorkShift officeShift = new WorkShift();
+        officeShift.setName("Administrative Office Hours");
+        officeShift.setStartTime(LocalTime.of(8, 0)); // 8:00 AM
+        officeShift.setEndTime(LocalTime.of(16, 0)); // 4:00 PM
+        officeShift.setBreakHours(1.0); // 1 hour lunch break
+        officeShift.setDescription("Regular office hours for administrative staff");
+        officeShift.setIsActive(true);
+        officeShift.setCreatedBy(1L);
+        workShiftRepository.save(officeShift);
+        logger.info("Created work shift: {}", officeShift.getName());
+    }
+
+    private void createShiftAssignments() {
+        logger.info("Creating shift assignments...");
+
+        // Get users and shifts
+        User johnTeacher = userRepository.findByEmail("john.teacher@mvs.edu").orElse(null);
+        User janeTeacher = userRepository.findByEmail("jane.teacher@mvs.edu").orElse(null);
+        User bobAccountant = userRepository.findByEmail("bob.accountant@mvs.edu").orElse(null);
+
+        List<WorkShift> shifts = workShiftRepository.findAll();
+        WorkShift morningShift = shifts.stream()
+            .filter(s -> s.getName().contains("Morning"))
+            .findFirst().orElse(null);
+        WorkShift afternoonShift = shifts.stream()
+            .filter(s -> s.getName().contains("Afternoon"))
+            .findFirst().orElse(null);
+        WorkShift officeShift = shifts.stream()
+            .filter(s -> s.getName().contains("Administrative"))
+            .findFirst().orElse(null);
+
+        LocalDate testDate = LocalDate.of(2025, 8, 4);
+        LocalDate endDate = testDate.plusDays(30); // 30-day assignment
+
+        // Assign John to morning shift
+        if (johnTeacher != null && morningShift != null) {
+            UserShiftAssignment assignment1 = new UserShiftAssignment();
+            assignment1.setUser(johnTeacher);
+            assignment1.setWorkShift(morningShift);
+            assignment1.setStartDate(testDate);
+            assignment1.setEndDate(endDate);
+            assignment1.setNotes("Test assignment for violation detection");
+            assignment1.setIsActive(true);
+            assignment1.setCreatedBy(1L);
+            userShiftAssignmentRepository.save(assignment1);
+            logger.info("Assigned {} to {}", johnTeacher.getFullName(), morningShift.getName());
+        }
+
+        // Assign Jane to afternoon shift
+        if (janeTeacher != null && afternoonShift != null) {
+            UserShiftAssignment assignment2 = new UserShiftAssignment();
+            assignment2.setUser(janeTeacher);
+            assignment2.setWorkShift(afternoonShift);
+            assignment2.setStartDate(testDate);
+            assignment2.setEndDate(endDate);
+            assignment2.setNotes("Test assignment for violation detection");
+            assignment2.setIsActive(true);
+            assignment2.setCreatedBy(1L);
+            userShiftAssignmentRepository.save(assignment2);
+            logger.info("Assigned {} to {}", janeTeacher.getFullName(), afternoonShift.getName());
+        }
+
+        // Assign Bob to office hours
+        if (bobAccountant != null && officeShift != null) {
+            UserShiftAssignment assignment3 = new UserShiftAssignment();
+            assignment3.setUser(bobAccountant);
+            assignment3.setWorkShift(officeShift);
+            assignment3.setStartDate(testDate);
+            assignment3.setEndDate(endDate);
+            assignment3.setNotes("Test assignment for violation detection");
+            assignment3.setIsActive(true);
+            assignment3.setCreatedBy(1L);
+            userShiftAssignmentRepository.save(assignment3);
+            logger.info("Assigned {} to {}", bobAccountant.getFullName(), officeShift.getName());
+        }
+    }
+
+    private void createAttendanceLogs() {
+        logger.info("Creating attendance logs that will trigger violations...");
+
+        User johnTeacher = userRepository.findByEmail("john.teacher@mvs.edu").orElse(null);
+        User janeTeacher = userRepository.findByEmail("jane.teacher@mvs.edu").orElse(null);
+        User bobAccountant = userRepository.findByEmail("bob.accountant@mvs.edu").orElse(null);
+
+        LocalDate testDate = LocalDate.of(2025, 8, 4);
+
+        // Case 1: John arrives 20 minutes late (Expected: 7:30, Actual: 7:50)
+        if (johnTeacher != null) {
+            StaffAttendanceLog lateArrival = new StaffAttendanceLog();
+            lateArrival.setUser(johnTeacher);
+            lateArrival.setAttendanceDate(testDate);
+            lateArrival.setCheckInTime(LocalTime.of(7, 50)); // 20 minutes late
+            lateArrival.setCheckOutTime(LocalTime.of(11, 30)); // On time checkout
+            lateArrival.setAttendanceType(StaffAttendanceLog.AttendanceType.NORMAL);
+            lateArrival.setNotes("Late arrival test case");
+            lateArrival.setCreatedBy(johnTeacher.getId());
+            staffAttendanceLogRepository.save(lateArrival);
+            logger.info("Created LATE ARRIVAL log for {}: expected 07:30, actual 07:50", johnTeacher.getFullName());
+        }
+
+        // Case 2: Jane leaves 30 minutes early (Expected: 17:00, Actual: 16:30)
+        if (janeTeacher != null) {
+            StaffAttendanceLog earlyDeparture = new StaffAttendanceLog();
+            earlyDeparture.setUser(janeTeacher);
+            earlyDeparture.setAttendanceDate(testDate);
+            earlyDeparture.setCheckInTime(LocalTime.of(13, 0)); // On time check-in
+            earlyDeparture.setCheckOutTime(LocalTime.of(16, 30)); // 30 minutes early
+            earlyDeparture.setAttendanceType(StaffAttendanceLog.AttendanceType.NORMAL);
+            earlyDeparture.setNotes("Early departure test case");
+            earlyDeparture.setCreatedBy(janeTeacher.getId());
+            staffAttendanceLogRepository.save(earlyDeparture);
+            logger.info("Created EARLY DEPARTURE log for {}: expected 17:00, actual 16:30", janeTeacher.getFullName());
+        }
+
+        // Case 3: Bob forgets to check out (Missing check-out)
+        if (bobAccountant != null) {
+            StaffAttendanceLog missingCheckOut = new StaffAttendanceLog();
+            missingCheckOut.setUser(bobAccountant);
+            missingCheckOut.setAttendanceDate(testDate);
+            missingCheckOut.setCheckInTime(LocalTime.of(8, 5)); // Slightly late but within tolerance
+            missingCheckOut.setCheckOutTime(null); // Missing check-out
+            missingCheckOut.setAttendanceType(StaffAttendanceLog.AttendanceType.NORMAL);
+            missingCheckOut.setNotes("Missing check-out test case");
+            missingCheckOut.setCreatedBy(bobAccountant.getId());
+            staffAttendanceLogRepository.save(missingCheckOut);
+            logger.info("Created MISSING CHECK-OUT log for {}: checked in 08:05, no check-out", bobAccountant.getFullName());
+        }
+
+        logger.info("Test attendance logs created successfully!");
+        logger.info("Expected violations for {}:", testDate);
+        logger.info("1. LATE_ARRIVAL - John Smith (20 minutes late)");
+        logger.info("2. EARLY_DEPARTURE - Jane Doe (30 minutes early)");
+        logger.info("3. MISSING_CHECK_OUT - Bob Wilson (no check-out)");
+        logger.info("");
+        logger.info("To test the violation detection, call:");
+        logger.info("POST /api/admin/detect-violations?date=2025-08-04");
+        logger.info("Or use the service method:");
+        logger.info("violationDetectionService.detectDailyViolations(LocalDate.of(2025, 8, 4))");
+    }
+}

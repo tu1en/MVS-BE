@@ -72,7 +72,7 @@ public class ShiftTemplateController {
             .map(template -> modelMapper.map(template, ShiftTemplateDto.class))
             .collect(Collectors.toList());
 
-        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách templates thành công", templateDtos));
+        return ResponseEntity.ok(ApiResponse.success(templateDtos, "Lấy danh sách templates thành công"));
     }
 
     @Operation(summary = "Tìm kiếm shift templates với pagination", 
@@ -93,7 +93,7 @@ public class ShiftTemplateController {
         Page<ShiftTemplateDto> templateDtos = templates.map(template -> 
             modelMapper.map(template, ShiftTemplateDto.class));
 
-        return ResponseEntity.ok(ApiResponse.success("Tìm kiếm templates thành công", templateDtos));
+        return ResponseEntity.ok(ApiResponse.success(templateDtos, "Tìm kiếm templates thành công"));
     }
 
     @Operation(summary = "Lấy shift template theo ID", 
@@ -110,7 +110,7 @@ public class ShiftTemplateController {
                 "Không tìm thấy shift template với ID: " + id));
 
         ShiftTemplateDto templateDto = modelMapper.map(template, ShiftTemplateDto.class);
-        return ResponseEntity.ok(ApiResponse.success("Lấy template thành công", templateDto));
+        return ResponseEntity.ok(ApiResponse.success(templateDto, "Lấy template thành công"));
     }
 
     @Operation(summary = "Tạo shift template mới", 
@@ -127,7 +127,7 @@ public class ShiftTemplateController {
         ShiftTemplateDto createdDto = modelMapper.map(created, ShiftTemplateDto.class);
 
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Tạo template thành công", createdDto));
+            .body(ApiResponse.success(createdDto, "Tạo template thành công"));
     }
 
     @Operation(summary = "Cập nhật shift template", 
@@ -144,7 +144,7 @@ public class ShiftTemplateController {
         ShiftTemplate updated = shiftTemplateService.updateTemplate(id, template);
         ShiftTemplateDto updatedDto = modelMapper.map(updated, ShiftTemplateDto.class);
 
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật template thành công", updatedDto));
+        return ResponseEntity.ok(ApiResponse.success(updatedDto, "Cập nhật template thành công"));
     }
 
     @Operation(summary = "Xóa shift template", 
@@ -157,7 +157,7 @@ public class ShiftTemplateController {
         log.info("Xóa shift template ID: {}", id);
 
         shiftTemplateService.deleteTemplate(id);
-        return ResponseEntity.ok(ApiResponse.success("Xóa template thành công", null));
+        return ResponseEntity.ok(ApiResponse.<Void>success(null, "Xóa template thành công"));
     }
 
     @Operation(summary = "Lấy templates theo khoảng thời gian", 
@@ -178,7 +178,7 @@ public class ShiftTemplateController {
             .map(template -> modelMapper.map(template, ShiftTemplateDto.class))
             .collect(Collectors.toList());
 
-        return ResponseEntity.ok(ApiResponse.success("Lấy templates theo time range thành công", templateDtos));
+        return ResponseEntity.ok(ApiResponse.success(templateDtos, "Lấy templates theo time range thành công"));
     }
 
     @Operation(summary = "Lấy templates có thể làm tăng ca", 
@@ -193,7 +193,7 @@ public class ShiftTemplateController {
             .map(template -> modelMapper.map(template, ShiftTemplateDto.class))
             .collect(Collectors.toList());
 
-        return ResponseEntity.ok(ApiResponse.success("Lấy overtime templates thành công", templateDtos));
+        return ResponseEntity.ok(ApiResponse.success(templateDtos, "Lấy overtime templates thành công"));
     }
 
     @Operation(summary = "Kiểm tra xung đột thời gian", 
@@ -215,8 +215,8 @@ public class ShiftTemplateController {
             .map(template -> modelMapper.map(template, ShiftTemplateDto.class))
             .collect(Collectors.toList());
 
-        return ResponseEntity.ok(ApiResponse.success(
-            conflicts.isEmpty() ? "Không có xung đột" : "Phát hiện " + conflicts.size() + " xung đột", conflictDtos));
+        String message = conflicts.isEmpty() ? "Không có xung đột" : "Phát hiện " + conflicts.size() + " xung đột";
+        return ResponseEntity.ok(ApiResponse.success(conflictDtos, message));
     }
 
     @Operation(summary = "Lấy thống kê templates", 
@@ -227,7 +227,7 @@ public class ShiftTemplateController {
         log.info("Lấy template statistics");
 
         ShiftTemplateService.TemplateStatistics stats = shiftTemplateService.getTemplateStatistics();
-        return ResponseEntity.ok(ApiResponse.success("Lấy thống kê thành công", stats));
+        return ResponseEntity.ok(ApiResponse.success(stats, "Lấy thống kê thành công"));
     }
 
     @Operation(summary = "Cập nhật trạng thái active", 
@@ -241,8 +241,8 @@ public class ShiftTemplateController {
         log.info("Cập nhật active status cho template ID: {} thành {}", id, isActive);
 
         shiftTemplateService.updateActiveStatus(id, isActive);
-        return ResponseEntity.ok(ApiResponse.success(
-            "Cập nhật trạng thái " + (isActive ? "kích hoạt" : "vô hiệu hóa") + " thành công", null));
+        String message = "Cập nhật trạng thái " + (isActive ? "kích hoạt" : "vô hiệu hóa") + " thành công";
+        return ResponseEntity.ok(ApiResponse.<Void>success(null, message));
     }
 
     @Operation(summary = "Cập nhật thứ tự sắp xếp", 
@@ -256,6 +256,6 @@ public class ShiftTemplateController {
         log.info("Cập nhật sort order cho template ID: {} thành {}", id, sortOrder);
 
         shiftTemplateService.updateSortOrder(id, sortOrder);
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật thứ tự sắp xếp thành công", null));
+        return ResponseEntity.ok(ApiResponse.<Void>success(null, "Cập nhật thứ tự sắp xếp thành công"));
     }
 }

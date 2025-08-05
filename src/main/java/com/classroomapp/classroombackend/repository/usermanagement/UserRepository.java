@@ -15,89 +15,64 @@ import com.classroomapp.classroombackend.model.usermanagement.User;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    /**
-     * Find a user by username
-     * @param username the username to search for
-     * @return Optional containing user if found
-     */
     Optional<User> findByUsername(String username);
 
-    /**
-     * Find a user by email
-     * @param email the email to search for
-     * @return Optional containing user if found
-     */
     Optional<User> findByEmail(String email);
 
-    /**
-     * Check if username exists
-     * @param username the username to check
-     * @return true if username exists, false otherwise
-     */
     boolean existsByUsername(String username);
 
-    /**
-     * Check if email exists
-     * @param email the email to check
-     * @return true if email exists, false otherwise
-     */
     boolean existsByEmail(String email);
 
-    /**
-     * Find users by role ID
-     * @param roleId the role ID to search for
-     * @return List of users with the specified role
-     */
+    // Tìm user theo roleId
     List<User> findByRoleId(Integer roleId);
 
-    /**
-     * Find users by status
-     * @param status the status to search for
-     * @return List of users with the specified status
-     */
+    // Tìm tất cả teachers (roleId = 2)
+    @Query("SELECT u FROM User u WHERE u.roleId = 2 ORDER BY u.fullName ASC")
+    List<User> findAllTeachers();
+
+    // Tìm tất cả managers (roleId = 3) 
+    @Query("SELECT u FROM User u WHERE u.roleId = 3 ORDER BY u.fullName ASC")
+    List<User> findAllManagers();
+
+    // Tìm user theo roleId và sắp xếp theo tên
+    List<User> findByRoleIdOrderByFullNameAsc(Integer roleId);
+
+    // Tìm teachers theo tên hoặc email
+    @Query("SELECT u FROM User u WHERE u.roleId = 2 AND (LOWER(u.fullName) LIKE LOWER(CONCAT('%', :name, '%')) OR LOWER(u.email) LIKE LOWER(CONCAT('%', :name, '%')))")
+    List<User> findTeachersByNameOrEmail(@Param("name") String name);
+
+    // Tìm user theo keyword và roleId
+    @Query("SELECT u FROM User u WHERE (LOWER(u.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND u.roleId = :roleId")
+    List<User> findByKeywordAndRole(@Param("keyword") String keyword, @Param("roleId") Integer roleId);
+
+    // Đếm user theo roleId
+    long countByRoleId(Integer roleId);
+
+    // Tìm user active theo roleId
+    @Query("SELECT u FROM User u WHERE u.status = 'active' AND u.roleId = :roleId ORDER BY u.fullName ASC")
+    List<User> findByIsActiveTrueAndRoleIdOrderByFullNameAsc(@Param("roleId") Integer roleId);
+
+    @Query("SELECT u FROM User u WHERE u.id IN (SELECT c.createdBy FROM CourseTemplate c WHERE c.isActive = true)")
+    List<User> findCreateCourseUsers();
+
     List<User> findByStatus(String status);
 
-    /**
-     * Find users by department
-     * @param department the department to search for
-     * @return List of users in the specified department
-     */
     List<User> findByDepartment(String department);
 
-    /**
-     * Find users by role and status
-     * @param roleId the role ID
-     * @param status the status
-     * @return List of users matching both role and status
-     */
     List<User> findByRoleIdAndStatus(Integer roleId, String status);
 
-    /**
-     * Find active users (all users with active status)
-     * @return List of active users
-     */
     @Query("SELECT u FROM User u WHERE u.status = 'active'")
     List<User> findActiveUsers();
 
-    /**
-     * Find active teachers
-     * @return List of active teachers
-     */
     @Query("SELECT u FROM User u WHERE u.roleId = 2 AND u.status = 'active'")
     List<User> findActiveTeachers();
 
-    /**
-     * Find active students
-     * @return List of active students
-     */
     @Query("SELECT u FROM User u WHERE u.roleId = 1 AND u.status = 'active'")
     List<User> findActiveStudents();
 
-    /**
-     * Search users by name containing keyword
-     * @param keyword the search keyword
-     * @return List of users whose full name contains the keyword
-     */
+    @Query("SELECT u FROM User u WHERE u.roleId = 5 AND u.status = 'active'")
+    List<User> findActiveAccountants();
+
     @Query("SELECT u FROM User u WHERE u.fullName LIKE %:keyword% OR u.username LIKE %:keyword%")
     List<User> searchUsersByName(@Param("keyword") String keyword);
 
@@ -108,24 +83,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT COUNT(DISTINCT e.user.id) FROM ClassroomEnrollment e WHERE e.classroom.id IN :classroomIds")
     long countStudentsByClassroomIds(@Param("classroomIds") List<Long> classroomIds);
 
-    /**
-     * Find users by roleId in list
-     * @param roleIds danh sách roleId
-     * @return List<User>
-     */
     List<User> findByRoleIdIn(List<Integer> roleIds);
 
-    /**
-     * Find active accountants (roleId = 5)
-     * @return List<User>
-     */
-    @Query("SELECT u FROM User u WHERE u.roleId = 5 AND u.status = 'active'")
-    List<User> findActiveAccountants();
-
-    /**
-     * Find users by email in list
-     * @param emails list of emails to search
-     * @return List of users matching the emails
-     */
     List<User> findByEmailIn(List<String> emails);
 }

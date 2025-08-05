@@ -65,4 +65,67 @@ public interface EmailService {
      * @param reason Lý do từ chối
      */
     void sendInterviewRejectionEmail(String to, String name, String jobTitle, String reason);
+    
+    /**
+     * Send enrollment request confirmation to student
+     * @param to Student email address
+     * @param studentName Student's full name
+     * @param courseName Course name
+     * @param courseSubject Course subject
+     * @param courseDuration Course duration in weeks
+     * @param courseFee Course fee
+     * @param message Student's message (optional)
+     */
+    void sendEnrollmentRequestConfirmation(String to, String studentName, String courseName, 
+                                         String courseSubject, Integer courseDuration, 
+                                         String courseFee, String message);
+    
+    /**
+     * Send new enrollment request notification to managers
+     * @param to Manager email address
+     * @param studentName Student's full name
+     * @param studentEmail Student's email
+     * @param courseName Course name
+     * @param courseSubject Course subject
+     * @param courseDuration Course duration in weeks
+     * @param courseFee Course fee
+     * @param message Student's message (optional)
+     * @param dashboardUrl URL to management dashboard
+     */
+    void sendNewEnrollmentNotificationToManager(String to, String studentName, String studentEmail,
+                                               String courseName, String courseSubject, 
+                                               Integer courseDuration, String courseFee,
+                                               String message, String dashboardUrl);
+    
+    /**
+     * Send enrollment approval notification to student
+     * @param to Student email address
+     * @param studentName Student's full name
+     * @param courseName Course name
+     * @param courseSubject Course subject
+     * @param courseDuration Course duration in weeks
+     * @param courseFee Course fee
+     * @param instructorName Instructor name
+     * @param approvedBy Manager who approved
+     * @param paymentUrl Payment URL (optional)
+     */
+    void sendEnrollmentApprovalNotification(String to, String studentName, String courseName,
+                                           String courseSubject, Integer courseDuration,
+                                           String courseFee, String instructorName,
+                                           String approvedBy, String paymentUrl);
+    
+    /**
+     * Send enrollment rejection notification to student
+     * @param to Student email address
+     * @param studentName Student's full name
+     * @param courseName Course name
+     * @param courseSubject Course subject
+     * @param rejectionReason Reason for rejection
+     * @param reviewedBy Manager who rejected
+     * @param coursesUrl URL to browse other courses
+     * @param contactUrl URL to contact support
+     */
+    void sendEnrollmentRejectionNotification(String to, String studentName, String courseName,
+                                            String courseSubject, String rejectionReason,
+                                            String reviewedBy, String coursesUrl, String contactUrl);
 }

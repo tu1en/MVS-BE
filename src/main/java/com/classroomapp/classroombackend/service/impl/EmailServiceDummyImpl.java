@@ -38,7 +38,47 @@ public class EmailServiceDummyImpl implements EmailService {
         log.info("DUMMY EMAIL SERVICE: Would send form completion confirmation to {} ({}) - Role: {}", 
                 to, fullName, requestedRole);
     }
+// Thêm các method này vào EmailServiceDummyImpl.java (sau method sendInterviewRejectionEmail)
 
+@Override
+public void sendEnrollmentRequestConfirmation(String to, String studentName, String courseName, 
+                                            String courseSubject, Integer courseDuration, 
+                                            String courseFee, String message) {
+    log.info("DUMMY EMAIL SERVICE: Would send enrollment request confirmation to {} ({}) - Course: {}, Subject: {}, Duration: {} weeks, Fee: {}",
+            to, studentName, courseName, courseSubject, courseDuration, courseFee);
+    if (message != null) {
+        log.info("Student message: {}", message);
+    }
+}
+
+@Override
+public void sendNewEnrollmentNotificationToManager(String to, String studentName, String studentEmail,
+                                                  String courseName, String courseSubject, 
+                                                  Integer courseDuration, String courseFee,
+                                                  String message, String dashboardUrl) {
+    log.info("DUMMY EMAIL SERVICE: Would send new enrollment notification to manager {} - Student: {} ({}), Course: {}, Dashboard: {}",
+            to, studentName, studentEmail, courseName, dashboardUrl);
+}
+
+@Override
+public void sendEnrollmentApprovalNotification(String to, String studentName, String courseName,
+                                              String courseSubject, Integer courseDuration,
+                                              String courseFee, String instructorName,
+                                              String approvedBy, String paymentUrl) {
+    log.info("DUMMY EMAIL SERVICE: Would send enrollment approval notification to {} ({}) - Course: {}, Instructor: {}, Approved by: {}",
+            to, studentName, courseName, instructorName, approvedBy);
+    if (paymentUrl != null) {
+        log.info("Payment URL: {}", paymentUrl);
+    }
+}
+
+@Override
+public void sendEnrollmentRejectionNotification(String to, String studentName, String courseName,
+                                               String courseSubject, String rejectionReason,
+                                               String reviewedBy, String coursesUrl, String contactUrl) {
+    log.info("DUMMY EMAIL SERVICE: Would send enrollment rejection notification to {} ({}) - Course: {}, Reason: {}, Reviewed by: {}",
+            to, studentName, courseName, rejectionReason, reviewedBy);
+}
     @Override
     public void sendApprovalEmail(String to, String fullName, String roleName, String temporaryPassword) {
         log.info("DUMMY EMAIL SERVICE: Would send approval email to {} ({}) - Role: {}, Password: {}",

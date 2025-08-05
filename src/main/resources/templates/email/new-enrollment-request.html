@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Enrollment Request</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #28a745;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #f8f9fa;
+            padding: 30px;
+            border-radius: 0 0 5px 5px;
+        }
+        .student-info {
+            background-color: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+            border-left: 4px solid #28a745;
+        }
+        .course-info {
+            background-color: #e9ecef;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .action-button {
+            display: inline-block;
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 5px;
+            font-weight: bold;
+        }
+        .action-button:hover {
+            background-color: #0056b3;
+        }
+        .urgent {
+            background-color: #dc3545;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            font-size: 0.9em;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔔 New Enrollment Request</h1>
+    </div>
+    
+    <div class="content">
+        <div class="urgent">
+            <strong>⚡ Action Required</strong> - New student enrollment request needs review
+        </div>
+        
+        <p>A new student has submitted an enrollment request that requires your attention:</p>
+        
+        <div class="student-info">
+            <h3>👨‍🎓 Student Information</h3>
+            <p><strong>Name:</strong> <span th:text="${studentName}">Student Name</span></p>
+            <p><strong>Email:</strong> <span th:text="${studentEmail}">student@email.com</span></p>
+            <p><strong>Request Date:</strong> <span th:text="${#dates.format(requestDate, 'dd/MM/yyyy HH:mm')}">Date</span></p>
+        </div>
+        
+        <div class="course-info">
+            <h3>📚 Course Details</h3>
+            <p><strong>Course:</strong> <span th:text="${courseName}">Course Name</span></p>
+            <p><strong>Subject:</strong> <span th:text="${courseSubject}">Subject</span></p>
+            <p><strong>Duration:</strong> <span th:text="${courseDuration}">Duration</span> weeks</p>
+            <p><strong>Enrollment Fee:</strong> <span th:text="${courseFee}">Fee</span></p>
+        </div>
+        
+        <div th:if="${message}" style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h4>💬 Student's Message:</h4>
+            <p th:text="${message}" style="font-style: italic; margin: 0;">Student message here</p>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="#" th:href="${dashboardUrl}" class="action-button">
+                🖥️ Review in Dashboard
+            </a>
+        </div>
+        
+        <div style="background-color: #d1ecf1; border: 1px solid #bee5eb; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h4>📋 Next Steps:</h4>
+            <ol>
+                <li>Review the student's profile and enrollment history</li>
+                <li>Check course capacity and prerequisites</li>
+                <li>Approve or reject the request with appropriate feedback</li>
+                <li>The system will automatically send notification to the student</li>
+            </ol>
+        </div>
+        
+        <div class="footer">
+            <p>Please process this request as soon as possible to maintain good student experience.</p>
+            <p style="font-size: 0.8em; color: #999;">
+                This is an automated notification from the Course Management System
+            </p>
+        </div>
+    </div>
+</body>
+</html>

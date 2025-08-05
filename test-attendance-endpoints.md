@@ -37,7 +37,7 @@ GET http://localhost:8080/api/test/attendance/by-date?date=2024-01-15
 
 ## 🔐 Main Attendance Endpoints (Require Authentication)
 
-### **For Managers** (Role: MANAGER):
+### **For Managers and Accountants** (Role: MANAGER or ACCOUNTANT):
 
 ```bash
 # Get all staff attendance for today

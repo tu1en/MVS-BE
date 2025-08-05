@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enrollment Request Received</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #007bff;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #f8f9fa;
+            padding: 30px;
+            border-radius: 0 0 5px 5px;
+        }
+        .course-info {
+            background-color: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .status-badge {
+            background-color: #ffc107;
+            color: #212529;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📚 Enrollment Request Received</h1>
+    </div>
+    
+    <div class="content">
+        <p>Dear <strong th:text="${studentName}">Student</strong>,</p>
+        
+        <p>We have successfully received your enrollment request for the following course:</p>
+        
+        <div class="course-info">
+            <h3 th:text="${courseName}">Course Name</h3>
+            <p><strong>Subject:</strong> <span th:text="${courseSubject}">Subject</span></p>
+            <p><strong>Duration:</strong> <span th:text="${courseDuration}">Duration</span> weeks</p>
+            <p><strong>Enrollment Fee:</strong> <span th:text="${courseFee}">Fee</span></p>
+            <div style="margin-top: 15px;">
+                <span class="status-badge">PENDING REVIEW</span>
+            </div>
+        </div>
+        
+        <div th:if="${message}" style="background-color: #e9ecef; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <p><strong>Your Message:</strong></p>
+            <p th:text="${message}" style="font-style: italic;">Your message here</p>
+        </div>
+        
+        <p><strong>What happens next?</strong></p>
+        <ul>
+            <li>Our academic team will review your enrollment request</li>
+            <li>You will receive an email notification once a decision is made</li>
+            <li>If approved, you'll receive further instructions about course access and payment</li>
+            <li>If you have any questions, please don't hesitate to contact us</li>
+        </ul>
+        
+        <p>Thank you for your interest in our courses!</p>
+        
+        <div class="footer">
+            <p>Best regards,<br/>
+            <strong>The Education Team</strong></p>
+            
+            <p style="font-size: 0.8em; color: #999;">
+                Request submitted on: <span th:text="${#dates.format(requestDate, 'dd/MM/yyyy HH:mm')}">Date</span>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
