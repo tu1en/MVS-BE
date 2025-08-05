@@ -13,19 +13,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import com.classroomapp.classroombackend.model.attendancemanagement.Attendance;
-import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSession;
-import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceSessionRepository;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.PutMapping;
-import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceRepository;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceRecordDto;
@@ -34,12 +30,15 @@ import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceSubm
 import com.classroomapp.classroombackend.dto.attendancemanagement.CreateAttendanceSessionDto;
 import com.classroomapp.classroombackend.dto.attendancemanagement.MyAttendanceHistoryDto;
 import com.classroomapp.classroombackend.dto.attendancemanagement.TeachingHistoryDto;
-import com.classroomapp.classroombackend.model.usermanagement.User;
-import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
-import com.classroomapp.classroombackend.service.AttendanceService;
 import com.classroomapp.classroombackend.model.AttendanceLog;
+import com.classroomapp.classroombackend.model.attendancemanagement.Attendance;
+import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSession;
+import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceRepository;
+import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceSessionRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.AttendanceLogService;
-
+import com.classroomapp.classroombackend.service.AttendanceService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -140,7 +139,31 @@ public class AttendanceController {
             return ResponseEntity.status(500).body(new ArrayList<>());
         }
     }
-    
+
+// Thay thế method getPersonalAttendanceHistory hiện có bằng:
+
+@GetMapping("/my-history-range")
+@PreAuthorize("isAuthenticated()")
+public ResponseEntity<Map<String, Object>> getPersonalAttendanceHistory(
+        @RequestParam Long userId,
+        @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
+        @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate) {
+    try {
+        List<AttendanceLog> history = attendanceLogService.getPersonalAttendanceHistory(userId, startDate, endDate);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("data", history);
+        response.put("totalElements", history.size());
+        
+        return ResponseEntity.ok(response);
+    } catch (Exception e) {
+        System.err.println("Error in getPersonalAttendanceHistory: " + e.getMessage());
+        e.printStackTrace();
+        Map<String, Object> response = new HashMap<>();
+        response.put("data", new ArrayList<>());
+        return ResponseEntity.ok(response);
+    }
+}
     /**
      * Gets the attendance history for a specific student in a specific classroom.
      * Accessible only by users with the 'TEACHER' role for viewing any student's record.
@@ -199,7 +222,7 @@ public class AttendanceController {
     }
 
     @GetMapping("/teacher-status")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ACCOUNTANT')")
     public ResponseEntity<List<AttendanceLog>> getTeacherAttendanceStatus(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) String shift) {
@@ -207,17 +230,49 @@ public class AttendanceController {
         return ResponseEntity.ok(logs);
     }
 
-    @GetMapping("/daily-shift")
-    @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<List<AttendanceLog>> getDailyAttendanceByShift(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-            @RequestParam String shift) {
-        List<AttendanceLog> logs = attendanceLogService.getDailyAttendanceByShift(date, shift);
-        return ResponseEntity.ok(logs);
+@GetMapping("/daily-shift")
+@PreAuthorize("hasAnyRole('MANAGER', 'ACCOUNTANT')")
+public ResponseEntity<Map<String, Object>> getDailyAttendanceByShift(
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+        @RequestParam String shift,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size) {
+    try {
+        List<AttendanceLog> allLogs = attendanceLogService.getDailyAttendanceByShift(date, shift);
+        
+        // Pagination logic
+        int totalElements = allLogs.size();
+        int startIndex = page * size;
+        int endIndex = Math.min(startIndex + size, totalElements);
+        
+        List<AttendanceLog> paginatedLogs = new ArrayList<>();
+        if (startIndex < totalElements) {
+            paginatedLogs = allLogs.subList(startIndex, endIndex);
+        }
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("data", paginatedLogs);
+        response.put("totalElements", totalElements);
+        response.put("totalPages", (int) Math.ceil((double) totalElements / size));
+        response.put("currentPage", page);
+        response.put("pageSize", size);
+        
+        return ResponseEntity.ok(response);
+    } catch (Exception e) {
+        System.err.println("Error in getDailyAttendanceByShift: " + e.getMessage());
+        e.printStackTrace();
+        
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("data", new ArrayList<>());
+        errorResponse.put("totalElements", 0);
+        errorResponse.put("error", e.getMessage());
+        
+        return ResponseEntity.ok(errorResponse);
     }
+}
 
     @GetMapping("/all-logs")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ACCOUNTANT')")
     public ResponseEntity<List<AttendanceLog>> getAllStaffAttendanceLogs(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         List<AttendanceLog> logs = attendanceLogService.getAllStaffAttendanceLogs(date);
@@ -238,15 +293,7 @@ public class AttendanceController {
         return ResponseEntity.ok(history);
     }
 
-    @GetMapping("/my-history-range")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<AttendanceLog>> getPersonalAttendanceHistory(
-            @RequestParam Long userId,
-            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
-            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate) {
-        List<AttendanceLog> history = attendanceLogService.getPersonalAttendanceHistory(userId, startDate, endDate);
-        return ResponseEntity.ok(history);
-    }
+
 
     /**
      * Gets all attendance sessions for the current teacher

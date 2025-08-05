@@ -46,4 +46,11 @@ public interface ClassroomRepository extends JpaRepository<Classroom, Long> {
     // Find classroom IDs by student ID (for schedule service)
     @Query("SELECT c.id FROM Classroom c JOIN c.enrollments e WHERE e.user.id = :studentId")
     List<Long> findClassroomsIdsByStudentId(@Param("studentId") Long studentId);
+    
+    // Find classrooms by course template ID
+    List<Classroom> findByCourseId(Long courseId);
+    
+    // Find active classrooms by course template ID
+    @Query("SELECT c FROM Classroom c WHERE c.courseId = :courseId")
+    List<Classroom> findActiveByCourseId(@Param("courseId") Long courseId);
 }

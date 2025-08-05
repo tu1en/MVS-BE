@@ -20,6 +20,10 @@ import com.classroomapp.classroombackend.repository.hrmanagement.AttendanceViola
 import com.classroomapp.classroombackend.repository.hrmanagement.StaffAttendanceLogRepository;
 import com.classroomapp.classroombackend.repository.hrmanagement.UserShiftAssignmentRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.classroomapp.classroombackend.repository.hrmanagement.ViolationExplanationRepository;
+import com.classroomapp.classroombackend.model.hrmanagement.ViolationExplanation;
+import java.time.LocalDateTime;
+import java.util.Objects;
 import com.classroomapp.classroombackend.service.hrmanagement.ViolationDetectionService;
 
 import lombok.RequiredArgsConstructor;
@@ -35,6 +39,7 @@ public class ViolationDetectionServiceImpl implements ViolationDetectionService 
     private final StaffAttendanceLogRepository attendanceLogRepository;
     private final UserShiftAssignmentRepository shiftAssignmentRepository;
     private final UserRepository userRepository;
+    private final ViolationExplanationRepository violationExplanationRepository;
 
     private ViolationDetectionConfig config = new ViolationDetectionConfig();
 
@@ -255,6 +260,215 @@ public class ViolationDetectionServiceImpl implements ViolationDetectionService 
         violation.setStatus(AttendanceViolation.ViolationStatus.ESCALATED);
         violationRepository.save(violation);
     }
+    
+    @Override
+    @Transactional
+    public ViolationDetectionSummary detectDailyViolations(LocalDate date) {
+        log.info("Starting daily violation detection for date: {}", date);
+        long startTime = System.currentTimeMillis();
+        
+        if (date == null) {
+            date = LocalDate.now().minusDays(1); // Default to yesterday
+        }
+        
+        ViolationDetectionSummary summary = new ViolationDetectionSummary(date);
+        
+        try {
+            // Step 1: Detect all violations for the specified date
+            List<AttendanceViolation> detectedViolations = detectViolationsForDate(date);
+            log.info("Detected {} potential violations for date: {}", detectedViolations.size(), date);
+            
+            int newViolations = 0;
+            int explanationsCreated = 0;
+            int notificationsSent = 0;
+            
+            for (AttendanceViolation violation : detectedViolations) {
+                try {
+                    // Step 2: Check if violation already exists (prevent duplicates)
+                    boolean exists = violationExists(
+                        violation.getUser().getId(), 
+                        violation.getViolationDate(), 
+                        violation.getViolationType()
+                    );
+                    
+                    if (exists) {
+                        summary.incrementDuplicatesSkipped();
+                        log.debug("Violation already exists for user {} on {} ({}), skipping", 
+                            violation.getUser().getId(), date, violation.getViolationType());
+                        continue;
+                    }
+                    
+                    // Step 3: Enhance violation with additional data
+                    enhanceViolationData(violation, date);
+                    
+                    // Step 4: Save the violation
+                    AttendanceViolation savedViolation = violationRepository.save(violation);
+                    newViolations++;
+                    updateSummaryForViolation(summary, savedViolation);
+                    
+                    log.info("Created new violation: {} for user {} on {}", 
+                        savedViolation.getViolationType(), 
+                        savedViolation.getUser().getFullName(), 
+                        savedViolation.getViolationDate());
+                    
+                    // Step 5: Create ViolationExplanation if none exists
+                    if (!violationExplanationRepository.existsByViolationId(savedViolation.getId())) {
+                        ViolationExplanation explanation = createViolationExplanation(savedViolation);
+                        violationExplanationRepository.save(explanation);
+                        explanationsCreated++;
+                        
+                        log.info("Created explanation request for violation {} (user: {})", 
+                            savedViolation.getId(), savedViolation.getUser().getFullName());
+                    }
+                    
+                    // Step 6: Send notifications
+                    try {
+                        notifyViolationDetected(savedViolation);
+                        notificationsSent++;
+                    } catch (Exception e) {
+                        log.warn("Failed to send notification for violation {}: {}", 
+                            savedViolation.getId(), e.getMessage());
+                    }
+                    
+                } catch (Exception e) {
+                    log.error("Error processing violation for user {} on {}: {}", 
+                        violation.getUser().getId(), date, e.getMessage(), e);
+                    // Continue processing other violations
+                }
+            }
+            
+            // Step 7: Log summary
+            long processingTime = System.currentTimeMillis() - startTime;
+            summary.setProcessingTimeMs(processingTime);
+            
+            log.info("Daily violation detection completed for {}: {} new violations, {} explanations created, {} notifications sent, {} duplicates skipped. Processing time: {}ms",
+                date, newViolations, explanationsCreated, notificationsSent, summary.getDuplicatesSkipped(), processingTime);
+                
+        } catch (Exception e) {
+            log.error("Fatal error during daily violation detection for {}: {}", date, e.getMessage(), e);
+            throw new RuntimeException("Daily violation detection failed for date: " + date, e);
+        }
+        
+        return summary;
+    }
+    
+    /**
+     * Enhance violation with calculated severity, system description, and other metadata
+     */
+    private void enhanceViolationData(AttendanceViolation violation, LocalDate date) {
+        if (violation == null) return;
+        
+        // Calculate severity based on violation type and deviation
+        AttendanceViolation.ViolationSeverity severity = calculateSeverity(
+            violation.getViolationType(), 
+            violation.getDeviationMinutes() != null ? violation.getDeviationMinutes() : 0
+        );
+        violation.setSeverity(severity);
+        
+        // Generate system description
+        String description = generateSystemDescription(
+            violation.getViolationType(),
+            violation.getDeviationMinutes(),
+            violation.getExpectedTime(),
+            violation.getActualTime()
+        );
+        violation.setSystemDescription(description);
+        
+        // Set status and metadata
+        violation.setStatus(AttendanceViolation.ViolationStatus.PENDING_EXPLANATION);
+        violation.setAutoDetected(true);
+        violation.setDetectionTime(LocalDateTime.now());
+        
+        log.debug("Enhanced violation data: type={}, severity={}, description={}", 
+            violation.getViolationType(), violation.getSeverity(), violation.getSystemDescription());
+    }
+    
+    /**
+     * Create ViolationExplanation with WAITING_FOR_INPUT status
+     */
+    private ViolationExplanation createViolationExplanation(AttendanceViolation violation) {
+        ViolationExplanation explanation = new ViolationExplanation();
+        explanation.setViolation(violation);
+        explanation.setSubmittedBy(violation.getUser());
+        explanation.setExplanationText("System auto-generated explanation request - awaiting user input");
+        explanation.setStatus(ViolationExplanation.ExplanationStatus.SUBMITTED);
+        explanation.setSubmittedAt(LocalDateTime.now());
+        
+        return explanation;
+    }
+    
+    /**
+     * Send notifications to violator and their manager
+     * This is a stub implementation - replace with actual notification system
+     */
+    private void notifyViolationDetected(AttendanceViolation violation) {
+        if (violation == null || violation.getUser() == null) {
+            log.warn("Cannot send notification - violation or user is null");
+            return;
+        }
+        
+        User violator = violation.getUser();
+        
+        // Notify the violator
+        notifyUser(violator, violation, "violation_detected_user");
+        
+        // Notify their manager (if they have one)
+        User manager = findUserManager(violator);
+        if (manager != null) {
+            notifyUser(manager, violation, "violation_detected_manager");
+        }
+        
+        log.debug("Notifications sent for violation {} (user: {}, manager: {})", 
+            violation.getId(), violator.getFullName(), manager != null ? manager.getFullName() : "none");
+    }
+    
+    /**
+     * Stub method for user notification
+     * Replace this with actual notification implementation (WebSocket, Email, etc.)
+     */
+    private void notifyUser(User user, AttendanceViolation violation, String notificationType) {
+        // TODO: Implement actual notification logic
+        // This could be:
+        // - WebSocket notification for real-time updates
+        // - Email notification via EmailService
+        // - Push notification via Firebase
+        // - Database notification record
+        
+        log.info("NOTIFICATION STUB: {} notification sent to {} ({}) for violation {} on {}", 
+            notificationType, user.getFullName(), user.getEmail(), 
+            violation.getViolationType(), violation.getViolationDate());
+        
+        // Example implementation ideas:
+        // webSocketService.sendNotification(user.getId(), createNotificationMessage(violation, notificationType));
+        // emailService.sendViolationNotification(user.getEmail(), violation);
+        // notificationRepository.save(createNotificationRecord(user, violation, notificationType));
+    }
+    
+    /**
+     * Find user's manager (stub implementation)
+     * Replace with actual manager lookup logic
+     */
+    private User findUserManager(User user) {
+        if (user == null) return null;
+        
+        // TODO: Implement actual manager lookup logic
+        // This could be based on:
+        // - Department hierarchy
+        // - Organizational structure
+        // - Direct manager assignment
+        
+        // For now, return a manager based on role hierarchy
+        if ("TEACHER".equals(user.getRole()) || "ACCOUNTANT".equals(user.getRole())) {
+            // Find a manager in the same department
+            return userRepository.findAll().stream()
+                .filter(u -> u.getRoleId() == 3) // MANAGER role
+                .filter(u -> Objects.equals(u.getDepartmentId(), user.getDepartmentId()))
+                .findFirst()
+                .orElse(null);
+        }
+        
+        return null;
+    }
 
     // === Helper methods === //
     private AttendanceViolation createLateArrivalViolation(User user, UserShiftAssignment assignment, StaffAttendanceLog log, LocalDate date) {
@@ -265,6 +479,8 @@ public class ViolationDetectionServiceImpl implements ViolationDetectionService 
         violation.setViolationType(AttendanceViolation.ViolationType.LATE_ARRIVAL);
         violation.setViolationDate(date);
         violation.setDeviationMinutes(deviation);
+        violation.setExpectedTime(shift.getStartTime());
+        violation.setActualTime(log.getCheckInTime());
         return violation;
     }
 
@@ -276,30 +492,41 @@ public class ViolationDetectionServiceImpl implements ViolationDetectionService 
         violation.setViolationType(AttendanceViolation.ViolationType.EARLY_DEPARTURE);
         violation.setViolationDate(date);
         violation.setDeviationMinutes(deviation);
+        violation.setExpectedTime(shift.getEndTime());
+        violation.setActualTime(log.getCheckOutTime());
         return violation;
     }
 
     private AttendanceViolation createMissingCheckInViolation(User user, UserShiftAssignment assignment, StaffAttendanceLog log, LocalDate date) {
+        WorkShift shift = assignment.getWorkShift();
         AttendanceViolation violation = new AttendanceViolation();
         violation.setUser(user);
         violation.setViolationType(AttendanceViolation.ViolationType.MISSING_CHECK_IN);
         violation.setViolationDate(date);
+        violation.setExpectedTime(shift.getStartTime());
+        violation.setActualTime(null); // No check-in recorded
         return violation;
     }
 
     private AttendanceViolation createMissingCheckOutViolation(User user, UserShiftAssignment assignment, StaffAttendanceLog log, LocalDate date) {
+        WorkShift shift = assignment.getWorkShift();
         AttendanceViolation violation = new AttendanceViolation();
         violation.setUser(user);
         violation.setViolationType(AttendanceViolation.ViolationType.MISSING_CHECK_OUT);
         violation.setViolationDate(date);
+        violation.setExpectedTime(shift.getEndTime());
+        violation.setActualTime(null); // No check-out recorded
         return violation;
     }
 
     private AttendanceViolation createAbsentViolation(User user, UserShiftAssignment assignment, LocalDate date) {
+        WorkShift shift = assignment.getWorkShift();
         AttendanceViolation violation = new AttendanceViolation();
         violation.setUser(user);
         violation.setViolationType(AttendanceViolation.ViolationType.ABSENT_WITHOUT_LEAVE);
         violation.setViolationDate(date);
+        violation.setExpectedTime(shift.getStartTime());
+        violation.setActualTime(null); // No attendance recorded
         return violation;
     }
 

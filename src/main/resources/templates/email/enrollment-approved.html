@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enrollment Approved</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+        .content {
+            background-color: #f8f9fa;
+            padding: 30px;
+            border-radius: 0 0 10px 10px;
+        }
+        .success-banner {
+            background-color: #d4edda;
+            border: 2px solid #c3e6cb;
+            color: #155724;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+            font-size: 1.1em;
+        }
+        .course-info {
+            background-color: white;
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 10px;
+            border-left: 5px solid #28a745;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .payment-section {
+            background-color: #fff3cd;
+            border: 2px solid #ffeaa7;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 10px;
+        }
+        .payment-method {
+            background-color: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .next-steps {
+            background-color: #e2e3e5;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .contact-info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #28a745;
+            text-align: center;
+        }
+        .emoji {
+            font-size: 1.5em;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎉 Congratulations!</h1>
+        <h2>Your Enrollment Has Been Approved</h2>
+    </div>
+    
+    <div class="content">
+        <div class="success-banner">
+            <strong>✅ ENROLLMENT APPROVED</strong><br/>
+            Welcome to your new learning journey!
+        </div>
+        
+        <p>Dear <strong th:text="${studentName}">Student</strong>,</p>
+        
+        <p>We're excited to inform you that your enrollment request has been <strong style="color: #28a745;">APPROVED</strong>!</p>
+        
+        <div class="course-info">
+            <h3>📚 Course Details</h3>
+            <p><strong>Course Name:</strong> <span th:text="${courseName}">Course Name</span></p>
+            <p><strong>Subject:</strong> <span th:text="${courseSubject}">Subject</span></p>
+            <p><strong>Duration:</strong> <span th:text="${courseDuration}">Duration</span> weeks</p>
+            <p><strong>Instructor:</strong> <span th:text="${instructorName}">Instructor Name</span></p>
+            <p><strong>Start Date:</strong> <span th:text="${#dates.format(startDate, 'dd/MM/yyyy')}">Start Date</span></p>
+            <p><strong>Enrollment Fee:</strong> <span th:text="${courseFee}" style="font-size: 1.2em; color: #007bff; font-weight: bold;">Fee</span></p>
+        </div>
+        
+        <div class="next-steps">
+            <h3>📋 Next Steps</h3>
+            <ol>
+                <li><strong>Complete Payment:</strong> Choose your preferred payment method below</li>
+                <li><strong>Access Course Materials:</strong> You'll receive login credentials after payment</li>
+                <li><strong>Join Course Community:</strong> Connect with classmates and instructors</li>
+                <li><strong>Attend Orientation:</strong> Details will be sent separately</li>
+            </ol>
+        </div>
+        
+        <div class="payment-section">
+            <h3>💳 Payment Options</h3>
+            <p><strong>Please complete payment within 7 days to secure your spot.</strong></p>
+            
+            <div class="payment-method">
+                <h4>🏢 Option 1: In-Person Payment</h4>
+                <p><strong>Visit our office:</strong><br/>
+                📍 Address: 123 Education Street, District 1, Ho Chi Minh City<br/>
+                🕒 Hours: Monday-Friday, 8:00 AM - 5:00 PM<br/>
+                📞 Phone: (028) 1234-5678</p>
+            </div>
+            
+            <div class="payment-method">
+                <h4>🏦 Option 2: Bank Transfer</h4>
+                <p><strong>Bank Details:</strong><br/>
+                🏦 Bank: Vietcombank<br/>
+                💳 Account Number: 1234567890<br/>
+                👤 Account Name: ABC Education Center<br/>
+                📝 Transfer Note: "Course Fee - [Your Name] - [Course Name]"</p>
+            </div>
+            
+            <div class="payment-method">
+                <h4>💻 Option 3: Online Payment</h4>
+                <p>
+                    <a href="#" th:href="${paymentUrl}" style="display: inline-block; background-color: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                        🔗 Pay Online Now
+                    </a>
+                </p>
+            </div>
+        </div>
+        
+        <div class="contact-info">
+            <h4>📞 Need Help?</h4>
+            <p>If you have any questions about payment or the course, please contact us:</p>
+            <p>📧 Email: support@education-center.com<br/>
+            📱 Phone: (028) 1234-5678<br/>
+            💬 Live Chat: Available on our website</p>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0; padding: 20px; background-color: #e8f5e8; border-radius: 10px;">
+            <p style="font-size: 1.1em; margin: 0;"><strong>🌟 We can't wait to have you in class! 🌟</strong></p>
+        </div>
+        
+        <div class="footer">
+            <p><strong>Welcome to our learning community!</strong></p>
+            <p style="color: #666;">Best regards,<br/>
+            <strong>The Education Team</strong></p>
+            
+            <p style="font-size: 0.8em; color: #999; margin-top: 20px;">
+                Approved on: <span th:text="${#dates.format(approvalDate, 'dd/MM/yyyy HH:mm')}">Date</span><br/>
+                Approved by: <span th:text="${approvedBy}">Manager Name</span>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

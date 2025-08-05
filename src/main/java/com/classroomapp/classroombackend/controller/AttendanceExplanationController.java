@@ -100,4 +100,10 @@ public class AttendanceExplanationController {
         service.clearAllExplanations();
         return new ResponseEntity<>("All explanation data cleared successfully", HttpStatus.OK);
     }
+    
+    @PostMapping("/create-test-data")
+    public ResponseEntity<String> createTestData() {
+        service.createTestData();
+        return new ResponseEntity<>("Test data created successfully", HttpStatus.OK);
+    }
 }

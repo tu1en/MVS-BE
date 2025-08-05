@@ -2,7 +2,9 @@ package com.classroomapp.classroombackend.service.impl;
 
 import com.classroomapp.classroombackend.model.AttendanceExplanation;
 import com.classroomapp.classroombackend.model.ExplanationStatus;
+import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.AttendanceExplanationRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.AttendanceExplanationService;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -17,7 +19,9 @@ import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -25,6 +29,9 @@ public class AttendanceExplanationServiceImpl implements AttendanceExplanationSe
 
     @Autowired
     private AttendanceExplanationRepository repository;
+    
+    @Autowired
+    private UserRepository userRepository;
 
     @Override
     public AttendanceExplanation submitExplanation(AttendanceExplanation explanation) {
@@ -131,5 +138,47 @@ public class AttendanceExplanationServiceImpl implements AttendanceExplanationSe
     @Override
     public void clearAllExplanations() {
         repository.deleteAll();
+    }
+    
+    @Override
+    public void createTestData() {
+        // Tạo dữ liệu test cho AttendanceExplanation
+        String[] staffEmails = {
+            "teacher@test.com", "math@test.com", "literature@test.com", "english@test.com",
+            "teacher2@test.com", "teacher3@test.com", "accountant@test.com", "manager@test.com"
+        };
+        
+        List<User> staffUsers = new ArrayList<>();
+        for (String email : staffEmails) {
+            userRepository.findByEmail(email).ifPresent(staffUsers::add);
+        }
+        
+        if (staffUsers.isEmpty()) {
+            // Fallback: tạo dữ liệu mà không có staff assignment (sẽ lỗi nhưng ít ra có thông báo)
+            return;
+        }
+        
+        List<AttendanceExplanation> testExplanations = new ArrayList<>();
+        LocalDateTime baseTime = LocalDateTime.now().minusDays(30);
+        
+        for (int i = 1; i <= 10; i++) {
+            AttendanceExplanation explanation = new AttendanceExplanation();
+            
+            // Assign a staff user
+            User staff = staffUsers.get((i - 1) % staffUsers.size());
+            explanation.setStaff(staff);
+            explanation.setSubmitterName(staff.getFullName());
+            
+            explanation.setDepartment(i % 2 == 0 ? "IT" : "Marketing");
+            explanation.setAbsenceDate(baseTime.plusDays(i * 2).toLocalDate());
+            explanation.setReason(i % 3 == 0 ? "Ốm" : (i % 3 == 1 ? "Việc gia đình" : "Công tác"));
+            explanation.setExplanationText("Giải trình chi tiết cho việc vắng mặt ngày " + explanation.getAbsenceDate() + 
+                ". Nhân viên: " + staff.getFullName());
+            explanation.setSubmittedAt(baseTime.plusDays(i * 2 + 1));
+            explanation.setStatus(ExplanationStatus.values()[i % 3]); // PENDING, APPROVED, REJECTED
+            testExplanations.add(explanation);
+        }
+        
+        repository.saveAll(testExplanations);
     }
 }

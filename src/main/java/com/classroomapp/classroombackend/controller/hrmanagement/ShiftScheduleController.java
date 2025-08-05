@@ -16,7 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;  // ADD THIS IMPORT
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -83,7 +83,8 @@ public class ShiftScheduleController {
         Page<ShiftScheduleDto> scheduleDtos = schedules.map(schedule -> 
             modelMapper.map(schedule, ShiftScheduleDto.class));
 
-        return ResponseEntity.ok(ApiResponse.success("Tìm kiếm schedules thành công", scheduleDtos));
+        // Fixed: data first, message second
+        return ResponseEntity.ok(ApiResponse.success(scheduleDtos, "Tìm kiếm schedules thành công"));
     }
 
     @Operation(summary = "Lấy schedule theo ID", 
@@ -100,7 +101,8 @@ public class ShiftScheduleController {
                 "Không tìm thấy schedule với ID: " + id));
 
         ShiftScheduleDto scheduleDto = modelMapper.map(schedule, ShiftScheduleDto.class);
-        return ResponseEntity.ok(ApiResponse.success("Lấy schedule thành công", scheduleDto));
+        // Fixed: data first, message second
+        return ResponseEntity.ok(ApiResponse.success(scheduleDto, "Lấy schedule thành công"));
     }
 
     @Operation(summary = "Tạo schedule mới", 
@@ -124,7 +126,8 @@ public class ShiftScheduleController {
 
         ShiftSchedule created = shiftScheduleService.createSchedule(schedule);
         ShiftScheduleDto createdDto = modelMapper.map(created, ShiftScheduleDto.class);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo schedule thành công", createdDto));
+        // Fixed: data first, message second
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(createdDto, "Tạo schedule thành công"));
     }
 
     @Operation(summary = "Cập nhật schedule", 
@@ -139,7 +142,8 @@ public class ShiftScheduleController {
 
         ShiftSchedule updated = shiftScheduleService.updateSchedule(id, modelMapper.map(updateDto, ShiftSchedule.class));
         ShiftScheduleDto updatedDto = modelMapper.map(updated, ShiftScheduleDto.class);
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật schedule thành công", updatedDto));
+        // Fixed: data first, message second
+        return ResponseEntity.ok(ApiResponse.success(updatedDto, "Cập nhật schedule thành công"));
     }
 
     @Operation(summary = "Xóa schedule", 
@@ -151,7 +155,8 @@ public class ShiftScheduleController {
         
         log.info("Xóa schedule: {}", id);
         shiftScheduleService.deleteSchedule(id);
-        return ResponseEntity.ok(ApiResponse.success("Xóa schedule thành công", null));
+        // Fixed: For void methods, you might need to use a different success method or pass null as data
+        return ResponseEntity.ok(ApiResponse.success(null, "Xóa schedule thành công"));
     }
 
     @Operation(summary = "Publish schedule", 
@@ -160,7 +165,7 @@ public class ShiftScheduleController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<ShiftScheduleDto>> publishSchedule(
             @Parameter(description = "ID của schedule") @PathVariable Long id,
-            Authentication authentication) {  // ADD Authentication parameter
+            Authentication authentication) {
         
         log.info("Publish schedule: {}", id);
         
@@ -170,9 +175,10 @@ public class ShiftScheduleController {
             throw new com.classroomapp.classroombackend.exception.ResourceNotFoundException("Không tìm thấy user: " + authentication.getName());
         }
         
-        ShiftSchedule published = shiftScheduleService.publishSchedule(id, user);  // Pass both parameters
+        ShiftSchedule published = shiftScheduleService.publishSchedule(id, user);
         ShiftScheduleDto publishedDto = modelMapper.map(published, ShiftScheduleDto.class);
-        return ResponseEntity.ok(ApiResponse.success("Publish schedule thành công", publishedDto));
+        // Fixed: data first, message second
+        return ResponseEntity.ok(ApiResponse.success(publishedDto, "Publish schedule thành công"));
     }
 
     @Operation(summary = "Archive schedule", 
@@ -185,7 +191,8 @@ public class ShiftScheduleController {
         log.info("Archive schedule: {}", id);
         ShiftSchedule archived = shiftScheduleService.archiveSchedule(id);
         ShiftScheduleDto archivedDto = modelMapper.map(archived, ShiftScheduleDto.class);
-        return ResponseEntity.ok(ApiResponse.success("Archive schedule thành công", archivedDto));
+        // Fixed: data first, message second
+        return ResponseEntity.ok(ApiResponse.success(archivedDto, "Archive schedule thành công"));
     }
 
     @Operation(summary = "Tìm kiếm schedules theo người tạo")
@@ -195,6 +202,7 @@ public class ShiftScheduleController {
         List<ShiftScheduleDto> scheduleDtos = schedules.stream()
             .map(s -> modelMapper.map(s, ShiftScheduleDto.class))
             .collect(Collectors.toList());
-        return ResponseEntity.ok(ApiResponse.success("Lấy schedules thành công", scheduleDtos));
+        // Fixed: data first, message second
+        return ResponseEntity.ok(ApiResponse.success(scheduleDtos, "Lấy schedules thành công"));
     }
 }

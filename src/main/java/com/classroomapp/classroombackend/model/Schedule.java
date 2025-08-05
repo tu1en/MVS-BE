@@ -67,6 +67,7 @@ public class Schedule {
             return "Evening";
         }
     }
+    
 
     public Integer getDayOfWeek() { return dayOfWeek; }
     public void setDayOfWeek(Integer dayOfWeek) { this.dayOfWeek = dayOfWeek; }

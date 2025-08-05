@@ -136,6 +136,22 @@ public interface ViolationDetectionService {
     void escalateViolation(Long violationId, long escalatedBy, String escalationReason);
     
     /**
+     * Detect daily violations and automatically generate explanation requests + notify users
+     * This is the main method for the attendance violation workflow
+     * @param date the date to process (optional, defaults to yesterday)
+     * @return summary of detected violations and generated explanations
+     */
+    ViolationDetectionSummary detectDailyViolations(LocalDate date);
+    
+    /**
+     * Detect daily violations for today (convenience method)
+     * @return summary of detected violations and generated explanations
+     */
+    default ViolationDetectionSummary detectDailyViolations() {
+        return detectDailyViolations(LocalDate.now().minusDays(1));
+    }
+
+    /**
      * Summary class for violation detection results
      */
     class ViolationDetectionSummary {

@@ -27,4 +27,6 @@ public interface AttendanceExplanationService {
     byte[] exportExcel(LocalDate startDate, LocalDate endDate, ExplanationStatus status, String department);
 
     void clearAllExplanations();
+    
+    void createTestData();
 }
