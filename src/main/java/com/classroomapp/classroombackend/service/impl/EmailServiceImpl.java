@@ -108,6 +108,17 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
+    public void sendInterviewScheduledEmail(String to, String name, String jobTitle, String interviewTime) {
+        String subject = "Thông báo lịch phỏng vấn vị trí: " + jobTitle;
+        Context context = new Context();
+        context.setVariable("name", name);
+        context.setVariable("jobTitle", jobTitle);
+        context.setVariable("interviewTime", interviewTime);
+        String body = templateEngine.process("email/interview-scheduled", context);
+        sendEmail(to, subject, body);
+    }
+
+    @Override
     public void sendInterviewRejectionEmail(String to, String name, String jobTitle, String reason) {
         String subject = "Kết quả ứng tuyển vị trí: " + jobTitle;
         Context context = new Context();
@@ -115,6 +126,29 @@ public class EmailServiceImpl implements EmailService {
         context.setVariable("jobTitle", jobTitle);
         context.setVariable("reason", reason);
         String body = templateEngine.process("email/interview-rejected", context);
+        sendEmail(to, subject, body);
+    }
+
+    @Override
+    public void sendInterviewRejectionEmail(String to, String name, String jobTitle, String reason, String evaluation) {
+        String subject = "Kết quả ứng tuyển vị trí: " + jobTitle;
+        Context context = new Context();
+        context.setVariable("name", name);
+        context.setVariable("jobTitle", jobTitle);
+        context.setVariable("reason", reason);
+        context.setVariable("evaluation", evaluation);
+        String body = templateEngine.process("email/interview-rejected", context);
+        sendEmail(to, subject, body);
+    }
+
+    @Override
+    public void sendOfferResendEmail(String to, String name, String jobTitle, String offer) {
+        String subject = "Thông Báo Offer - " + jobTitle;
+        Context context = new Context();
+        context.setVariable("name", name);
+        context.setVariable("jobTitle", jobTitle);
+        context.setVariable("offer", offer);
+        String body = templateEngine.process("email/offer-resend", context);
         sendEmail(to, subject, body);
     }
 // Thêm method này vào EmailServiceImpl.java (sau method sendInterviewRejectionEmail)

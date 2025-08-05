@@ -41,6 +41,11 @@ public class InterviewScheduleController {
         }
         
         InterviewScheduleDto dto = interviewService.create(applicationId, start, end);
+        
+        // Gửi mail thông báo lịch phỏng vấn
+        String interviewTime = start.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) + " - " + end.format(DateTimeFormatter.ofPattern("HH:mm"));
+        emailService.sendInterviewScheduledEmail(dto.getApplicantEmail(), dto.getApplicantName(), dto.getJobTitle(), interviewTime);
+        
         return ResponseEntity.ok(dto);
     }
 
@@ -96,6 +101,29 @@ public class InterviewScheduleController {
         return ResponseEntity.ok().build();
     }
 
+    @PutMapping("/{id}/offer")
+    public ResponseEntity<?> updateOffer(@PathVariable Long id, @RequestBody OfferUpdateRequest request) {
+        interviewService.updateOffer(id, request.getOffer());
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/{id}/evaluation")
+    public ResponseEntity<?> updateEvaluation(@PathVariable Long id, @RequestBody EvaluationUpdateRequest request) {
+        interviewService.updateEvaluation(id, request.getEvaluation());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/resend-offer")
+    public ResponseEntity<?> resendOffer(@PathVariable Long id, @RequestBody OfferUpdateRequest request) {
+        // Lấy thông tin interview để gửi email (không cập nhật offer trong database)
+        InterviewScheduleDto interview = interviewService.getById(id);
+        if (interview != null) {
+            emailService.sendOfferResendEmail(interview.getApplicantEmail(), interview.getApplicantName(), interview.getJobTitle(), request.getOffer());
+        }
+        
+        return ResponseEntity.ok().build();
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(@PathVariable Long id) {
         interviewService.delete(id);
@@ -113,7 +141,13 @@ public class InterviewScheduleController {
             // Tạo user mới với trạng thái chưa có hợp đồng
             userService.createUserWithoutContract(interview.getApplicantEmail(), interview.getApplicantName(), "TEACHER");
         } else if ("REJECTED".equals(body.getStatus())) {
-            emailService.sendEmail(interview.getApplicantEmail(), "Kết quả phỏng vấn", "Rất tiếc, bạn đã không vượt qua phỏng vấn. Lý do: " + (body.getResult() != null ? body.getResult() : "Không có"));
+            // Gửi mail từ chối với evaluation
+            InterviewScheduleDto interviewDto = interviewService.getAll().stream().filter(i -> i.getId().equals(id)).findFirst().orElse(null);
+            if (interviewDto != null) {
+                emailService.sendInterviewRejectionEmail(interview.getApplicantEmail(), interview.getApplicantName(), interview.getJobTitle(), body.getResult(), interviewDto.getEvaluation());
+            } else {
+                emailService.sendInterviewRejectionEmail(interview.getApplicantEmail(), interview.getApplicantName(), interview.getJobTitle(), body.getResult());
+            }
         }
         return ResponseEntity.ok().build();
     }
@@ -126,4 +160,16 @@ class InterviewResultDto {
     public void setStatus(String status) { this.status = status; }
     public String getResult() { return result; }
     public void setResult(String result) { this.result = result; }
+}
+
+class OfferUpdateRequest {
+    private String offer;
+    public String getOffer() { return offer; }
+    public void setOffer(String offer) { this.offer = offer; }
+}
+
+class EvaluationUpdateRequest {
+    private String evaluation;
+    public String getEvaluation() { return evaluation; }
+    public void setEvaluation(String evaluation) { this.evaluation = evaluation; }
 } 

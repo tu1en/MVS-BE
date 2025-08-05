@@ -13,6 +13,7 @@ import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.cloud.StorageClient;
 
 import lombok.extern.slf4j.Slf4j;
@@ -31,14 +32,18 @@ public class FirebaseStorageServiceImpl implements FirebaseStorageService {
             String fileName = generateFileName(file.getOriginalFilename());
             String filePath = folder + "/" + fileName;
             
-            Storage storage = StorageClient.getInstance().bucket().getStorage();
+            Storage storage = StorageClient.getInstance(FirebaseApp.getInstance("classroom-management")).bucket().getStorage();
             BlobId blobId = BlobId.of(bucketName, filePath);
             BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
                     .setContentType(file.getContentType())
                     .build();
             
             Blob blob = storage.create(blobInfo, file.getBytes());
-            String downloadUrl = getDownloadUrl(filePath);
+            
+            // Make the blob publicly accessible
+            blob.createAcl(com.google.cloud.storage.Acl.of(com.google.cloud.storage.Acl.User.ofAllUsers(), com.google.cloud.storage.Acl.Role.READER));
+            
+            String downloadUrl = String.format("https://firebasestorage.googleapis.com/v0/b/%s/o/%s?alt=media", bucketName, java.net.URLEncoder.encode(filePath, "UTF-8"));
             
             return FileUploadResponse.builder()
                     .filename(fileName)
@@ -56,7 +61,7 @@ public class FirebaseStorageServiceImpl implements FirebaseStorageService {
     @Override
     public boolean deleteFile(String filePath) {
         try {
-            Storage storage = StorageClient.getInstance().bucket().getStorage();
+            Storage storage = StorageClient.getInstance(FirebaseApp.getInstance("classroom-management")).bucket().getStorage();
             BlobId blobId = BlobId.of(bucketName, filePath);
             return storage.delete(blobId);
         } catch (Exception e) {
@@ -68,12 +73,12 @@ public class FirebaseStorageServiceImpl implements FirebaseStorageService {
     @Override
     public String getDownloadUrl(String filePath) {
         try {
-            Storage storage = StorageClient.getInstance().bucket().getStorage();
+            Storage storage = StorageClient.getInstance(FirebaseApp.getInstance("classroom-management")).bucket().getStorage();
             BlobId blobId = BlobId.of(bucketName, filePath);
             Blob blob = storage.get(blobId);
             
             if (blob != null) {
-                return String.format("https://storage.googleapis.com/%s/%s", bucketName, filePath);
+                return String.format("https://firebasestorage.googleapis.com/v0/b/%s/o/%s?alt=media", bucketName, java.net.URLEncoder.encode(filePath, "UTF-8"));
             }
             return null;
         } catch (Exception e) {
@@ -85,7 +90,7 @@ public class FirebaseStorageServiceImpl implements FirebaseStorageService {
     @Override
     public boolean fileExists(String filePath) {
         try {
-            Storage storage = StorageClient.getInstance().bucket().getStorage();
+            Storage storage = StorageClient.getInstance(FirebaseApp.getInstance("classroom-management")).bucket().getStorage();
             BlobId blobId = BlobId.of(bucketName, filePath);
             Blob blob = storage.get(blobId);
             return blob != null && blob.exists();
@@ -98,14 +103,14 @@ public class FirebaseStorageServiceImpl implements FirebaseStorageService {
     @Override
     public String generateSignedUrl(String filePath, int expirationMinutes) {
         try {
-            Storage storage = StorageClient.getInstance().bucket().getStorage();
+            Storage storage = StorageClient.getInstance(FirebaseApp.getInstance("classroom-management")).bucket().getStorage();
             BlobId blobId = BlobId.of(bucketName, filePath);
             Blob blob = storage.get(blobId);
 
             if (blob != null && blob.exists()) {
                 // For simplicity, return the public URL
                 // In production, you would generate a proper signed URL
-                return String.format("https://storage.googleapis.com/%s/%s", bucketName, filePath);
+                return String.format("https://firebasestorage.googleapis.com/v0/b/%s/o/%s?alt=media", bucketName, java.net.URLEncoder.encode(filePath, "UTF-8"));
             }
             return null;
         } catch (Exception e) {

@@ -6,6 +6,7 @@ import com.google.firebase.FirebaseOptions;
 import com.google.firebase.database.FirebaseDatabase;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
@@ -19,6 +20,7 @@ import java.io.InputStream;
  * Cáº¥u hÃ¬nh Firebase Realtime Database cho real-time updates
  */
 @Configuration
+@ConditionalOnProperty(name = "firebase.enabled", havingValue = "true", matchIfMissing = false)
 @Slf4j
 public class FirebaseClassroomConfig {
 
@@ -27,6 +29,9 @@ public class FirebaseClassroomConfig {
 
     @Value("${firebase.config.path:mve-1-firebase-adminsdk.json}")
     private String firebaseConfigPath;
+
+    @Value("${firebase.bucket-name}")
+    private String storageBucket;
 
     private static final String CLASSROOM_APP_NAME = "classroom-management";
 
@@ -46,6 +51,7 @@ public class FirebaseClassroomConfig {
                     FirebaseOptions options = FirebaseOptions.builder()
                             .setCredentials(GoogleCredentials.fromStream(serviceAccount))
                             .setDatabaseUrl(databaseUrl)
+                            .setStorageBucket(storageBucket)
                             .build();
 
                     FirebaseApp.initializeApp(options, CLASSROOM_APP_NAME);
