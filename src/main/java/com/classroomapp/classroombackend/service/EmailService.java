@@ -58,6 +58,15 @@ public interface EmailService {
     void sendInterviewInvitationEmail(String to, String name, String jobTitle);
 
     /**
+     * Gửi email thông báo lịch phỏng vấn đã được lên
+     * @param to Địa chỉ email ứng viên
+     * @param name Tên ứng viên
+     * @param jobTitle Vị trí ứng tuyển
+     * @param interviewTime Thời gian phỏng vấn
+     */
+    void sendInterviewScheduledEmail(String to, String name, String jobTitle, String interviewTime);
+
+    /**
      * Gửi email từ chối ứng viên phỏng vấn
      * @param to Địa chỉ email ứng viên
      * @param name Tên ứng viên
@@ -65,6 +74,25 @@ public interface EmailService {
      * @param reason Lý do từ chối
      */
     void sendInterviewRejectionEmail(String to, String name, String jobTitle, String reason);
+
+    /**
+     * Gửi email từ chối ứng viên phỏng vấn với đánh giá
+     * @param to Địa chỉ email ứng viên
+     * @param name Tên ứng viên
+     * @param jobTitle Vị trí ứng tuyển
+     * @param reason Lý do từ chối
+     * @param evaluation Đánh giá từ cuộc phỏng vấn
+     */
+    void sendInterviewRejectionEmail(String to, String name, String jobTitle, String reason, String evaluation);
+
+    /**
+     * Gửi email offer riêng biệt cho ứng viên
+     * @param to Địa chỉ email ứng viên
+     * @param name Tên ứng viên
+     * @param jobTitle Vị trí ứng tuyển
+     * @param offer Nội dung offer
+     */
+    void sendOfferResendEmail(String to, String name, String jobTitle, String offer);
     
     /**
      * Send enrollment request confirmation to student

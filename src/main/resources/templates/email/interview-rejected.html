@@ -24,6 +24,13 @@
             margin: 15px 0;
             border-radius: 4px;
         }
+        .evaluation {
+            background-color: #fff7e6;
+            border: 1px solid #ffd591;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
         .footer {
             margin-top: 20px;
             text-align: center;
@@ -39,10 +46,17 @@
     <div class="content">
         <p>Kính gửi <span th:text="${name}"></span>,</p>
         <p>Chúng tôi rất tiếc phải thông báo rằng bạn chưa được chọn vào vòng tiếp theo cho vị trí: <span th:text="${jobTitle}"></span>.</p>
-        <div class="reason">
+        
+        <div th:if="${reason != null && reason != ''}" class="reason">
             <p><strong>Lý do:</strong></p>
             <p th:text="${reason}"></p>
         </div>
+        
+        <div th:if="${evaluation != null && evaluation != ''}" class="evaluation">
+            <p><strong>Đánh giá từ cuộc phỏng vấn:</strong></p>
+            <p th:text="${evaluation}"></p>
+        </div>
+        
         <p>Cảm ơn bạn đã quan tâm và dành thời gian ứng tuyển. Chúc bạn thành công trong những cơ hội tiếp theo!</p>
         <p>Trân trọng,<br>
             Đội ngũ Minh Việt Education</p>

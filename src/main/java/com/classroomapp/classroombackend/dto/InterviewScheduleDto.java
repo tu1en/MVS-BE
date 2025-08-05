@@ -22,4 +22,6 @@ public class InterviewScheduleDto {
     
     private String status;
     private String result;
+    private String offer;
+    private String evaluation;
 } 
