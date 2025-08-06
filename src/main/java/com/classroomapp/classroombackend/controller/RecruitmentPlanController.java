@@ -69,13 +69,19 @@ public class RecruitmentPlanController {
     }
     
     @PutMapping("/{id}/status")
-    public ResponseEntity<RecruitmentPlan> changeStatus(@PathVariable Long id, @RequestBody StatusUpdateRequest request) {
+    public ResponseEntity<?> changeStatus(@PathVariable Long id, @RequestBody StatusUpdateRequest request) {
         try {
             RecruitmentPlan.Status planStatus = RecruitmentPlan.Status.valueOf(request.getStatus().toUpperCase());
+            
+            // Kiểm tra nếu đang cố gắng mở kế hoạch có ngày bắt đầu trong tương lai
+            if (planStatus == RecruitmentPlan.Status.OPEN && !recruitmentPlanService.canOpenPlan(id)) {
+                return ResponseEntity.badRequest().body("Chưa đến ngày mở kế hoạch tuyển dụng này!");
+            }
+            
             RecruitmentPlan updatedPlan = recruitmentPlanService.changeStatus(id, planStatus);
             return ResponseEntity.ok(updatedPlan);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
     
@@ -90,12 +96,17 @@ public class RecruitmentPlanController {
     }
     
     @PostMapping("/{id}/open")
-    public ResponseEntity<RecruitmentPlan> openRecruitmentPlan(@PathVariable Long id) {
+    public ResponseEntity<?> openRecruitmentPlan(@PathVariable Long id) {
         try {
+            // Kiểm tra nếu đang cố gắng mở kế hoạch có ngày bắt đầu trong tương lai
+            if (!recruitmentPlanService.canOpenPlan(id)) {
+                return ResponseEntity.badRequest().body("Chưa đến ngày mở kế hoạch tuyển dụng này!");
+            }
+            
             RecruitmentPlan openedPlan = recruitmentPlanService.changeStatus(id, RecruitmentPlan.Status.OPEN);
             return ResponseEntity.ok(openedPlan);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 } 
