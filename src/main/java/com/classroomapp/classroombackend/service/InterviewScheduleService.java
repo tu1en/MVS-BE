@@ -10,6 +10,9 @@ public interface InterviewScheduleService {
     List<InterviewScheduleDto> getByApplication(Long applicationId);
     List<InterviewScheduleDto> getAll();
     void updateStatus(Long id, String status, String result);
+    void updateOffer(Long id, String offer);
+    void updateEvaluation(Long id, String evaluation);
+    InterviewScheduleDto getById(Long id);
     void delete(Long id);
     boolean hasConflict(LocalDateTime startTime, LocalDateTime endTime);
 } 

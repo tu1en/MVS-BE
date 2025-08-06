@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thông Báo Offer</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #ff8c00;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #ff8c00;
+            margin: 0;
+            font-size: 28px;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .greeting {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .offer-section {
+            background-color: #fff8f0;
+            border-left: 4px solid #ff8c00;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .offer-title {
+            font-weight: bold;
+            color: #ff8c00;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        .offer-content {
+            background-color: #ffffff;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #ffe4b5;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #666;
+            font-size: 14px;
+        }
+        .contact-info {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .highlight {
+            color: #ff8c00;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎉 Thông Báo Offer</h1>
+        </div>
+        
+        <div class="content">
+            <div class="greeting">
+                Xin chào <span class="highlight" th:text="${name}">[Tên ứng viên]</span>,
+            </div>
+            
+            <p>Chúng tôi rất vui mừng thông báo rằng bạn đã được chọn cho vị trí <span class="highlight" th:text="${jobTitle}">[Vị trí]</span> tại công ty chúng tôi.</p>
+            
+            <div class="offer-section">
+                <div class="offer-title">📋 Chi Tiết Offer:</div>
+                <div class="offer-content" th:text="${offer}">[Nội dung offer]</div>
+            </div>
+            
+            <p>Vui lòng xem xét kỹ lưỡng các điều khoản trong offer và liên hệ với chúng tôi nếu bạn có bất kỳ câu hỏi nào.</p>
+            
+            <div class="contact-info">
+                <p><strong>📧 Liên hệ:</strong> hr@company.com</p>
+                <p><strong>📞 Điện thoại:</strong> +84 123 456 789</p>
+                <p><strong>🏢 Địa chỉ:</strong> 123 Đường ABC, Quận 1, TP.HCM</p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Trân trọng,</p>
+            <p><strong>Đội ngũ Nhân sự</strong></p>
+            <p>Email này được gửi tự động, vui lòng không trả lời trực tiếp.</p>
+        </div>
+    </div>
+</body>
+</html> 

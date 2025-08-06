@@ -31,4 +31,10 @@ public class InterviewSchedule {
 
     @Column(name = "result", columnDefinition = "NVARCHAR(MAX)")
     private String result;
+
+    @Column(name = "offer", columnDefinition = "NVARCHAR(MAX)")
+    private String offer;
+
+    @Column(name = "evaluation", columnDefinition = "NVARCHAR(MAX)")
+    private String evaluation;
 } 

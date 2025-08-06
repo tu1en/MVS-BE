@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+        .header {
+            background-color: #1890ff;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .content {
+            padding: 20px;
+        }
+        .schedule-info {
+            background-color: #f0f8ff;
+            border: 1px solid #d6e4ff;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .important {
+            color: #1890ff;
+            font-weight: bold;
+        }
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Thông báo lịch phỏng vấn</h1>
+    </div>
+    <div class="content">
+        <p>Kính gửi <span th:text="${name}"></span>,</p>
+        <p>Chúc mừng bạn đã được duyệt vào vòng phỏng vấn cho vị trí: <span class="important" th:text="${jobTitle}"></span>.</p>
+        
+        <div class="schedule-info">
+            <p><strong>Thông tin lịch phỏng vấn:</strong></p>
+            <p><strong>Vị trí:</strong> <span th:text="${jobTitle}"></span></p>
+            <p><strong>Thời gian:</strong> <span th:text="${interviewTime}"></span></p>
+            <p><strong>Địa điểm:</strong> Văn phòng Minh Việt Education</p>
+        </div>
+        
+        <p class="important">Vui lòng có mặt trước giờ phỏng vấn 15 phút để chuẩn bị.</p>
+        
+        <p><strong>Lưu ý:</strong></p>
+        <ul>
+            <li>Mang theo CV và các giấy tờ liên quan</li>
+            <li>Trang phục lịch sự, chuyên nghiệp</li>
+            <li>Chuẩn bị sẵn sàng cho các câu hỏi phỏng vấn</li>
+        </ul>
+        
+        <p>Chúc bạn may mắn và thành công!</p>
+        <p>Trân trọng,<br>
+        Đội ngũ Minh Việt Education</p>
+    </div>
+    <div class="footer">
+        <p>&copy; Minh Việt Education 2025 Đã đăng ký bản quyền.</p>
+    </div>
+</body>
+</html> 

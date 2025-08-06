@@ -828,8 +828,8 @@ seedEvidenceTemplates();
             // Tạo kế hoạch tuyển dụng cho lớp 10
             RecruitmentPlan plan1 = new RecruitmentPlan();
             plan1.setTitle("Kế hoạch tuyển dụng giáo viên lớp 10");
-            plan1.setStartDate(LocalDate.now().plusDays(1));
-            plan1.setEndDate(LocalDate.now().plusDays(30));
+            plan1.setStartDate(LocalDate.now().minusDays(5)); // Ngày bắt đầu trong quá khứ
+            plan1.setEndDate(LocalDate.now().plusDays(25));
             plan1.setTotalQuantity(3);
             plan1.setStatus(RecruitmentPlan.Status.OPEN);
             recruitmentPlanRepository.save(plan1);
@@ -837,8 +837,8 @@ seedEvidenceTemplates();
             // Tạo kế hoạch tuyển dụng cho lớp 11
             RecruitmentPlan plan2 = new RecruitmentPlan();
             plan2.setTitle("Kế hoạch tuyển dụng giáo viên lớp 11");
-            plan2.setStartDate(LocalDate.now().plusDays(5));
-            plan2.setEndDate(LocalDate.now().plusDays(35));
+            plan2.setStartDate(LocalDate.now().minusDays(3)); // Ngày bắt đầu trong quá khứ
+            plan2.setEndDate(LocalDate.now().plusDays(27));
             plan2.setTotalQuantity(2);
             plan2.setStatus(RecruitmentPlan.Status.OPEN);
             recruitmentPlanRepository.save(plan2);
@@ -846,8 +846,8 @@ seedEvidenceTemplates();
             // Tạo kế hoạch tuyển dụng cho lớp 12
             RecruitmentPlan plan3 = new RecruitmentPlan();
             plan3.setTitle("Kế hoạch tuyển dụng giáo viên lớp 12");
-            plan3.setStartDate(LocalDate.now().plusDays(10));
-            plan3.setEndDate(LocalDate.now().plusDays(40));
+            plan3.setStartDate(LocalDate.now().minusDays(1)); // Ngày bắt đầu trong quá khứ
+            plan3.setEndDate(LocalDate.now().plusDays(29));
             plan3.setTotalQuantity(4);
             plan3.setStatus(RecruitmentPlan.Status.OPEN);
             recruitmentPlanRepository.save(plan3);
