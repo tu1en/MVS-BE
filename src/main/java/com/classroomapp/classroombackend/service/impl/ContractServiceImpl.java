@@ -195,7 +195,7 @@ public class ContractServiceImpl implements ContractService {
                     candidate.setPhoneNumber(interview.getApplicantPhone() != null ? interview.getApplicantPhone() : "Chưa có");
                     candidate.setPosition(interview.getJobTitle());
                     candidate.setOffer(interview.getOffer()); // Lấy thông tin offer
-                    candidate.setContractType("TEACHE"); // Mặc định là giáo viên
+                    candidate.setContractType("TEACHER"); // Mặc định là giáo viên
                     
                     // Lấy mức lương từ job position (nếu có)
                     if (interview.getSalaryRange() != null && !interview.getSalaryRange().isEmpty()) {
