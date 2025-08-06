@@ -3,6 +3,7 @@ package com.classroomapp.classroombackend.service.impl;
 import com.classroomapp.classroombackend.dto.JobPositionDto;
 import com.classroomapp.classroombackend.model.JobPosition;
 import com.classroomapp.classroombackend.repository.JobPositionRepository;
+import com.classroomapp.classroombackend.repository.RecruitmentApplicationRepository;
 import com.classroomapp.classroombackend.service.JobPositionService;
 import com.classroomapp.classroombackend.service.RecruitmentPlanService;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class JobPositionServiceImpl implements JobPositionService {
     private final JobPositionRepository jobPositionRepository;
+    private final RecruitmentApplicationRepository recruitmentApplicationRepository;
     private final RecruitmentPlanService recruitmentPlanService;
     private final ModelMapper modelMapper = new ModelMapper();
 
@@ -92,6 +94,12 @@ public class JobPositionServiceImpl implements JobPositionService {
                 .orElseThrow(() -> new RuntimeException("JobPosition not found"));
         
         Long recruitmentPlanId = entity.getRecruitmentPlan() != null ? entity.getRecruitmentPlan().getId() : null;
+        
+        // Xóa tất cả đơn ứng tuyển liên quan đến vị trí này
+        recruitmentApplicationRepository.deleteByJobPositionId(id);
+        
+        // Xóa tất cả interview schedules liên quan đến các đơn ứng tuyển đã xóa
+        // (Điều này sẽ được xử lý tự động bởi cascade hoặc foreign key constraints)
         
         jobPositionRepository.deleteById(id);
         
