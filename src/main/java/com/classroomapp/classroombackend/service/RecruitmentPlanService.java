@@ -3,6 +3,7 @@ package com.classroomapp.classroombackend.service;
 import com.classroomapp.classroombackend.model.RecruitmentPlan;
 import com.classroomapp.classroombackend.repository.RecruitmentPlanRepository;
 import com.classroomapp.classroombackend.repository.JobPositionRepository;
+import com.classroomapp.classroombackend.repository.RecruitmentApplicationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,9 @@ public class RecruitmentPlanService {
     
     @Autowired
     private JobPositionRepository jobPositionRepository;
+    
+    @Autowired
+    private RecruitmentApplicationRepository recruitmentApplicationRepository;
     
     public List<RecruitmentPlan> getAllRecruitmentPlans() {
         // Tự động scan và đóng kế hoạch tương lai trước khi trả về
@@ -99,6 +103,12 @@ public class RecruitmentPlanService {
     }
     
     public void deleteRecruitmentPlan(Long id) {
+        // Xóa các vị trí liên quan
+        jobPositionRepository.deleteByRecruitmentPlanId(id);
+        
+        // Xóa các đơn ứng tuyển liên quan
+        recruitmentApplicationRepository.deleteByJobPosition_RecruitmentPlanId(id);
+        
         recruitmentPlanRepository.deleteById(id);
     }
     
