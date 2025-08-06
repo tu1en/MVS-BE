@@ -112,6 +112,16 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
         return false; // Không có conflict
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<InterviewScheduleDto> getAcceptedInterviews() {
+        return interviewRepo.findAll()
+                .stream()
+                .filter(schedule -> "ACCEPTED".equals(schedule.getStatus()))
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
     private InterviewScheduleDto toDto(InterviewSchedule entity) {
         InterviewScheduleDto dto = new InterviewScheduleDto();
         dto.setId(entity.getId());
