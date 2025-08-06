@@ -14,8 +14,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -26,6 +29,8 @@ import java.util.Map;
 
 @Service
 public class AttendanceExplanationServiceImpl implements AttendanceExplanationService {
+
+    private static final Logger logger = LoggerFactory.getLogger(AttendanceExplanationServiceImpl.class);
 
     @Autowired
     private AttendanceExplanationRepository repository;
@@ -87,10 +92,33 @@ public class AttendanceExplanationServiceImpl implements AttendanceExplanationSe
 
     @Override
     public byte[] exportExcel(LocalDate startDate, LocalDate endDate, ExplanationStatus status, String department) {
+        if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("Start date phải trước end date");
+        }
+        
         Page<AttendanceExplanation> explanations = repository.findByFilters(startDate, endDate, status, department, Pageable.unpaged());
+        
+        if (explanations.isEmpty()) {
+            logger.warn("Không tìm thấy dữ liệu attendance explanation cho các tiêu chí đã cho");
+        }
 
-        try (Workbook workbook = new XSSFWorkbook()) {
+        try (Workbook workbook = new XSSFWorkbook();
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            
             Sheet sheet = workbook.createSheet("Attendance Explanations");
+
+            // Create header style
+            CellStyle headerStyle = workbook.createCellStyle();
+            Font headerFont = workbook.createFont();
+            headerFont.setBold(true);
+            headerFont.setFontHeightInPoints((short) 12);
+            headerStyle.setFont(headerFont);
+            headerStyle.setFillForegroundColor(IndexedColors.LIGHT_BLUE.getIndex());
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            headerStyle.setBorderBottom(BorderStyle.THIN);
+            headerStyle.setBorderTop(BorderStyle.THIN);
+            headerStyle.setBorderRight(BorderStyle.THIN);
+            headerStyle.setBorderLeft(BorderStyle.THIN);
 
             // Create header row
             Row headerRow = sheet.createRow(0);
@@ -98,40 +126,101 @@ public class AttendanceExplanationServiceImpl implements AttendanceExplanationSe
             for (int i = 0; i < headers.length; i++) {
                 Cell cell = headerRow.createCell(i);
                 cell.setCellValue(headers[i]);
-                CellStyle style = workbook.createCellStyle();
-                Font font = workbook.createFont();
-                font.setBold(true);
-                style.setFont(font);
-                cell.setCellStyle(style);
+                cell.setCellStyle(headerStyle);
             }
+
+            // Create data style
+            CellStyle dataStyle = workbook.createCellStyle();
+            dataStyle.setBorderBottom(BorderStyle.THIN);
+            dataStyle.setBorderTop(BorderStyle.THIN);
+            dataStyle.setBorderRight(BorderStyle.THIN);
+            dataStyle.setBorderLeft(BorderStyle.THIN);
+            dataStyle.setWrapText(true);
 
             // Create data rows
             int rowNum = 1;
             DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
             DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+            
             for (AttendanceExplanation exp : explanations) {
-                Row row = sheet.createRow(rowNum++);
-                row.createCell(0).setCellValue(exp.getId());
-                row.createCell(1).setCellValue(exp.getSubmitterName());
-                row.createCell(2).setCellValue(exp.getAbsenceDate().format(dateFormatter));
-                row.createCell(3).setCellValue(exp.getReason());
-                row.createCell(4).setCellValue(exp.getSubmittedAt().format(dateTimeFormatter));
-                row.createCell(5).setCellValue(exp.getStatus().toString());
-                row.createCell(6).setCellValue(exp.getApproverName() != null ? exp.getApproverName() : "N/A");
-                row.createCell(7).setCellValue(exp.getDepartment() != null ? exp.getDepartment() : "N/A");
+                try {
+                    Row row = sheet.createRow(rowNum++);
+                    
+                    Cell idCell = row.createCell(0);
+                    idCell.setCellValue(exp.getId() != null ? exp.getId() : 0);
+                    idCell.setCellStyle(dataStyle);
+                    
+                    Cell submitterCell = row.createCell(1);
+                    submitterCell.setCellValue(exp.getSubmitterName() != null ? exp.getSubmitterName() : "N/A");
+                    submitterCell.setCellStyle(dataStyle);
+                    
+                    Cell dateCell = row.createCell(2);
+                    dateCell.setCellValue(exp.getAbsenceDate() != null ? exp.getAbsenceDate().format(dateFormatter) : "");
+                    dateCell.setCellStyle(dataStyle);
+                    
+                    Cell reasonCell = row.createCell(3);
+                    String reason = exp.getReason() != null ? exp.getReason() : "";
+                    if (reason.length() > 500) {
+                        reason = reason.substring(0, 500) + "...";
+                    }
+                    reasonCell.setCellValue(reason);
+                    reasonCell.setCellStyle(dataStyle);
+                    
+                    Cell submittedAtCell = row.createCell(4);
+                    submittedAtCell.setCellValue(exp.getSubmittedAt() != null ? exp.getSubmittedAt().format(dateTimeFormatter) : "");
+                    submittedAtCell.setCellStyle(dataStyle);
+                    
+                    Cell statusCell = row.createCell(5);
+                    statusCell.setCellValue(exp.getStatus() != null ? exp.getStatus().toString() : "Unknown");
+                    statusCell.setCellStyle(dataStyle);
+                    
+                    Cell approverCell = row.createCell(6);
+                    approverCell.setCellValue(exp.getApproverName() != null ? exp.getApproverName() : "N/A");
+                    approverCell.setCellStyle(dataStyle);
+                    
+                    Cell departmentCell = row.createCell(7);
+                    departmentCell.setCellValue(exp.getDepartment() != null ? exp.getDepartment() : "N/A");
+                    departmentCell.setCellStyle(dataStyle);
+                    
+                } catch (Exception e) {
+                    logger.warn("Lỗi xử lý attendance explanation ID {}: {}", exp.getId(), e.getMessage());
+                }
             }
 
-            // Auto-size columns
+            // Auto-size columns with limits
             for (int i = 0; i < headers.length; i++) {
                 sheet.autoSizeColumn(i);
+                int currentWidth = sheet.getColumnWidth(i);
+                if (currentWidth > 15000) {
+                    sheet.setColumnWidth(i, 15000);
+                }
+                if (currentWidth < 2000) {
+                    sheet.setColumnWidth(i, 2000);
+                }
             }
 
-            // Write to byte array
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            // Set row heights for better readability
+            for (int i = 1; i <= explanations.getContent().size(); i++) {
+                Row row = sheet.getRow(i);
+                if (row != null) {
+                    row.setHeightInPoints(25);
+                }
+            }
+
             workbook.write(out);
-            return out.toByteArray();
+            byte[] result = out.toByteArray();
+            
+            logger.info("Thành công export {} attendance explanations, kích thước file: {} bytes", 
+                       explanations.getContent().size(), result.length);
+            
+            return result;
+            
+        } catch (IOException e) {
+            logger.error("Lỗi tạo file Excel export: {}", e.getMessage());
+            throw new RuntimeException("Không thể tạo file Excel: " + e.getMessage(), e);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to export Excel file", e);
+            logger.error("Lỗi không mong muốn khi export attendance explanations: {}", e.getMessage());
+            throw new RuntimeException("Lỗi export Excel: " + e.getMessage(), e);
         }
     }
 
