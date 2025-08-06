@@ -15,13 +15,25 @@ public class JobPositionController {
     private final JobPositionService jobPositionService;
 
     @PostMapping
-    public ResponseEntity<JobPositionDto> create(@RequestBody JobPositionDto dto) {
-        return ResponseEntity.ok(jobPositionService.createJobPosition(dto));
+    public ResponseEntity<?> create(@RequestBody JobPositionDto dto) {
+        try {
+            return ResponseEntity.ok(jobPositionService.createJobPosition(dto));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Có lỗi xảy ra khi tạo vị trí");
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<JobPositionDto> update(@PathVariable Long id, @RequestBody JobPositionDto dto) {
-        return ResponseEntity.ok(jobPositionService.updateJobPosition(id, dto));
+    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody JobPositionDto dto) {
+        try {
+            return ResponseEntity.ok(jobPositionService.updateJobPosition(id, dto));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Có lỗi xảy ra khi cập nhật vị trí");
+        }
     }
 
     @DeleteMapping("/{id}")
