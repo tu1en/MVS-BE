@@ -66,6 +66,36 @@ public class Contract {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    // --- CUSTOM FIELDS FOR VIETNAMESE CONTRACT ---
+    @Column(name = "birth_date")
+    private LocalDate birthDate;
+
+    @Column(name = "citizen_id", length = 20)
+    private String citizenId; // Số CCCD
+
+    @Column(name = "address", columnDefinition = "NVARCHAR(255)")
+    private String address;
+
+    @Column(name = "qualification", columnDefinition = "NVARCHAR(255)")
+    private String qualification;
+
+    @Column(name = "subject", columnDefinition = "NVARCHAR(255)")
+    private String subject;
+
+    @Column(name = "education_level", columnDefinition = "NVARCHAR(255)")
+    private String educationLevel;
+
+    @Column(name = "offer", columnDefinition = "NVARCHAR(255)")
+    private String offer;
+
+    public String getOffer() {
+        return offer;
+    }
+
+    public void setOffer(String offer) {
+        this.offer = offer;
+    }
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

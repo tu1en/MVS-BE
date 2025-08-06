@@ -261,11 +261,28 @@ public class ContractServiceImpl implements ContractService {
         dto.setCreatedBy(contract.getCreatedBy());
         dto.setCreatedAt(contract.getCreatedAt());
         dto.setUpdatedAt(contract.getUpdatedAt());
+        dto.setOffer(contract.getOffer()); // Nếu có trường offer
+        // --- CUSTOM FIELDS ---
+        dto.setBirthDate(contract.getBirthDate());
+        dto.setCitizenId(contract.getCitizenId());
+        dto.setAddress(contract.getAddress());
+        dto.setQualification(contract.getQualification());
+        dto.setSubject(contract.getSubject());
+        dto.setEducationLevel(contract.getEducationLevel());
         return dto;
     }
 
     private Contract convertToEntity(ContractDto contractDto) {
-        return modelMapper.map(contractDto, Contract.class);
+        Contract contract = modelMapper.map(contractDto, Contract.class);
+        // --- CUSTOM FIELDS ---
+        contract.setBirthDate(contractDto.getBirthDate());
+        contract.setCitizenId(contractDto.getCitizenId());
+        contract.setAddress(contractDto.getAddress());
+        contract.setQualification(contractDto.getQualification());
+        contract.setSubject(contractDto.getSubject());
+        contract.setEducationLevel(contractDto.getEducationLevel());
+        contract.setOffer(contractDto.getOffer()); // Nếu có trường offer
+        return contract;
     }
 
     @Override
