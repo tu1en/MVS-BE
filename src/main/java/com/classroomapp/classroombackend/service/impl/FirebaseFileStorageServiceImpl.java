@@ -1,6 +1,7 @@
 package com.classroomapp.classroombackend.service.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -11,6 +12,7 @@ import com.classroomapp.classroombackend.service.firebase.FirebaseStorageService
 import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Primary
 @Slf4j
 public class FirebaseFileStorageServiceImpl implements FileStorageService {
 
