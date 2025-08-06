@@ -97,6 +97,39 @@ public ResponseEntity<List<AnnouncementDto>> getAccountantRecentUnread(
     return ResponseEntity.ok(announcements.stream().limit(limit).collect(Collectors.toList()));
 }
 
+@GetMapping("/accountant")
+@PreAuthorize("hasRole('ACCOUNTANT') or hasRole('ADMIN')")
+public ResponseEntity<List<AnnouncementDto>> getAnnouncementsForAccountant() {
+    log.info("Request to get announcements for accountant");
+    List<AnnouncementDto> announcements = announcementServiceImpl.getAnnouncementsForAccountant();
+    return ResponseEntity.ok(announcements);
+}
+
+@GetMapping("/teacher")
+@PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
+public ResponseEntity<List<AnnouncementDto>> getAnnouncementsForTeacher() {
+    log.info("Request to get announcements for teacher");
+    List<AnnouncementDto> announcements = announcementServiceImpl.getAnnouncementsForTeacher();
+    return ResponseEntity.ok(announcements);
+}
+
+@GetMapping("/teacher/unread-count")
+@PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
+public ResponseEntity<Integer> getTeacherUnreadCount() {
+    log.info("Request to get teacher unread announcements count");
+    List<AnnouncementDto> announcements = announcementServiceImpl.getAnnouncementsForTeacher();
+    return ResponseEntity.ok(announcements.size());
+}
+
+@GetMapping("/teacher/recent-unread")
+@PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
+public ResponseEntity<List<AnnouncementDto>> getTeacherRecentUnread(
+        @RequestParam(defaultValue = "5") int limit) {
+    log.info("Request to get teacher recent unread announcements, limit: {}", limit);
+    List<AnnouncementDto> announcements = announcementServiceImpl.getAnnouncementsForTeacher();
+    return ResponseEntity.ok(announcements.stream().limit(limit).collect(Collectors.toList()));
+}
+
     @GetMapping
     public ResponseEntity<List<AnnouncementDto>> getAllAnnouncements() {
         log.info("Request to get all announcements");
