@@ -12,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.classroomapp.classroombackend.model.hrmanagement.StaffAttendanceLog;
+import com.classroomapp.classroombackend.model.usermanagement.User;
 
 /**
  * Repository interface for StaffAttendanceLog entity
@@ -21,6 +22,14 @@ public interface StaffAttendanceLogRepository extends JpaRepository<StaffAttenda
     
     /**
      * Find attendance log by user and date
+     * @param user the user entity
+     * @param attendanceDate the attendance date
+     * @return optional attendance log
+     */
+    Optional<StaffAttendanceLog> findByUserAndAttendanceDate(User user, LocalDate attendanceDate);
+    
+    /**
+     * Find attendance log by user ID and date
      * @param userId the user ID
      * @param attendanceDate the attendance date
      * @return optional attendance log
@@ -216,4 +225,13 @@ public interface StaffAttendanceLogRepository extends JpaRepository<StaffAttenda
      * @return list of attendance logs
      */
     List<StaffAttendanceLog> findByUserIdAndAttendanceDateBetweenOrderByAttendanceDateAsc(Long userId, LocalDate startDate, LocalDate endDate);
+    
+    /**
+     * Find attendance logs by user entity and date range
+     * @param user the user entity
+     * @param startDate start date
+     * @param endDate end date
+     * @return list of attendance logs
+     */
+    List<StaffAttendanceLog> findByUserAndAttendanceDateBetween(User user, LocalDate startDate, LocalDate endDate);
 }

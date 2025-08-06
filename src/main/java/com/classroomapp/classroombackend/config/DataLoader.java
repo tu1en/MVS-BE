@@ -43,6 +43,8 @@ import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.classroommanagement.ClassroomEnrollment;
 import com.classroomapp.classroombackend.model.classroommanagement.ClassroomEnrollmentId;
 import com.classroomapp.classroombackend.model.classroommanagement.Course;
+// Thêm import này vào đầu DataLoader.java
+import com.classroomapp.classroombackend.model.hrmanagement.EvidenceTemplate;
 import com.classroomapp.classroombackend.model.usermanagement.Role;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.AccomplishmentRepository;
@@ -66,6 +68,7 @@ import com.classroomapp.classroombackend.repository.attendancemanagement.Attenda
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomEnrollmentRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.CourseRepository;
+import com.classroomapp.classroombackend.repository.hrmanagement.EvidenceTemplateRepository;
 import com.classroomapp.classroombackend.repository.requestmanagement.RequestRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.RoleRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
@@ -84,7 +87,8 @@ public class DataLoader implements CommandLineRunner {
     
     @Autowired
     private UserRepository userRepository;
-    
+    @Autowired
+private EvidenceTemplateRepository evidenceTemplateRepository;
     @Autowired
     private RoleRepository roleRepository;
     
@@ -234,7 +238,7 @@ public class DataLoader implements CommandLineRunner {
             // Seed messages
             seedMessages();
             
-// seedEvidenceTemplates(); // Method not implemented yet
+seedEvidenceTemplates();
             
             // Seed student progress
             seedStudentProgress();
@@ -250,7 +254,7 @@ public class DataLoader implements CommandLineRunner {
         verifyUserRoleAssignments();
         
         // Always create attendance explanations test data
-        // createAttendanceExplanationsData(); // Method not implemented yet
+        createAttendanceExplanationsData();
 
         // Always run the submission seeder to add new test data
         log.info("============== Checking for new submissions to seed ==============");
@@ -1400,4 +1404,183 @@ public class DataLoader implements CommandLineRunner {
 
         log.info("============== User Role Verification Complete ==============");
     }
+    // Thêm method này vào cuối class DataLoader
+private void seedEvidenceTemplates() {
+    if (evidenceTemplateRepository.count() == 0) {
+        try {
+            log.info("============== Seeding Evidence Templates ==============");
+            
+            // Attendance Templates
+            createEvidenceTemplate("Biểu mẫu chấm công hàng tháng", "ATT_MONTHLY", 
+                "Mẫu báo cáo chấm công chi tiết theo tháng", 
+                EvidenceTemplate.TemplateCategory.ATTENDANCE,
+                EvidenceTemplate.FileType.XLSX, "attendance_monthly.xlsx", 1);
+                
+            createEvidenceTemplate("Giải trình vắng mặt", "ATT_ABSENCE", 
+                "Mẫu đơn xin nghỉ và giải trình vắng mặt", 
+                EvidenceTemplate.TemplateCategory.ATTENDANCE,
+                EvidenceTemplate.FileType.DOCX, "absence_explanation.docx", 2);
+                
+            createEvidenceTemplate("Bảng chấm công tuần", "ATT_WEEKLY", 
+                "Mẫu chấm công theo tuần cho từng nhân viên", 
+                EvidenceTemplate.TemplateCategory.ATTENDANCE,
+                EvidenceTemplate.FileType.XLSX, "attendance_weekly.xlsx", 3);
+            
+            // Payroll Templates  
+            createEvidenceTemplate("Bảng tính lương", "PAY_SALARY", 
+                "Mẫu tính toán lương cơ bản và phụ cấp", 
+                EvidenceTemplate.TemplateCategory.PAYROLL,
+                EvidenceTemplate.FileType.XLSX, "payroll_calculation.xlsx", 4);
+                
+            createEvidenceTemplate("Phiếu lương cá nhân", "PAY_INDIVIDUAL", 
+                "Mẫu phiếu lương chi tiết cho từng nhân viên", 
+                EvidenceTemplate.TemplateCategory.PAYROLL,
+                EvidenceTemplate.FileType.PDF, "individual_payslip.pdf", 5);
+                
+            createEvidenceTemplate("Báo cáo lương tổng hợp", "PAY_SUMMARY", 
+                "Mẫu báo cáo tổng hợp lương theo phòng ban", 
+                EvidenceTemplate.TemplateCategory.PAYROLL,
+                EvidenceTemplate.FileType.XLSX, "payroll_summary.xlsx", 6);
+            
+            // Contract Templates
+            createEvidenceTemplate("Hợp đồng lao động", "CON_EMPLOYMENT", 
+                "Mẫu hợp đồng lao động chuẩn", 
+                EvidenceTemplate.TemplateCategory.CONTRACT,
+                EvidenceTemplate.FileType.DOCX, "employment_contract.docx", 7);
+                
+            createEvidenceTemplate("Phụ lục hợp đồng", "CON_ADDENDUM", 
+                "Mẫu phụ lục thay đổi điều kiện hợp đồng", 
+                EvidenceTemplate.TemplateCategory.CONTRACT,
+                EvidenceTemplate.FileType.DOCX, "contract_addendum.docx", 8);
+            
+            // Medical Templates
+            createEvidenceTemplate("Giấy khám bệnh", "MED_CERTIFICATE", 
+                "Mẫu giấy khám bệnh cho nghỉ phép", 
+                EvidenceTemplate.TemplateCategory.MEDICAL,
+                EvidenceTemplate.FileType.PDF, "medical_certificate.pdf", 9);
+                
+            createEvidenceTemplate("Đơn xin nghỉ ốm", "MED_SICK_LEAVE", 
+                "Mẫu đơn xin nghỉ ốm có giấy bác sĩ", 
+                EvidenceTemplate.TemplateCategory.MEDICAL,
+                EvidenceTemplate.FileType.DOCX, "sick_leave_request.docx", 10);
+            
+            // Violation Templates
+            createEvidenceTemplate("Biên bản vi phạm", "VIO_RECORD", 
+                "Mẫu biên bản ghi nhận vi phạm kỷ luật", 
+                EvidenceTemplate.TemplateCategory.VIOLATION,
+                EvidenceTemplate.FileType.DOCX, "violation_record.docx", 11);
+                
+            createEvidenceTemplate("Giải trình vi phạm", "VIO_EXPLANATION", 
+                "Mẫu đơn giải trình cho vi phạm", 
+                EvidenceTemplate.TemplateCategory.VIOLATION,
+                EvidenceTemplate.FileType.DOCX, "violation_explanation.docx", 12);
+            
+            // Report Templates
+            createEvidenceTemplate("Báo cáo nhân sự tháng", "REP_HR_MONTHLY", 
+                "Mẫu báo cáo tổng hợp nhân sự theo tháng", 
+                EvidenceTemplate.TemplateCategory.REPORT,
+                EvidenceTemplate.FileType.XLSX, "hr_monthly_report.xlsx", 13);
+                
+            createEvidenceTemplate("Báo cáo tài chính nhân sự", "REP_HR_FINANCE", 
+                "Mẫu báo cáo chi phí nhân sự", 
+                EvidenceTemplate.TemplateCategory.REPORT,
+                EvidenceTemplate.FileType.XLSX, "hr_finance_report.xlsx", 14);
+            
+            log.info("✅ Created {} evidence templates", evidenceTemplateRepository.count());
+            
+        } catch (Exception e) {
+            log.error("❌ Error seeding evidence templates: {}", e.getMessage(), e);
+        }
+    } else {
+        log.info("✅ Evidence templates already seeded. Count: {}", evidenceTemplateRepository.count());
+    }
+}
+
+private void createEvidenceTemplate(String name, String code, String description, 
+                                   EvidenceTemplate.TemplateCategory category, 
+                                   EvidenceTemplate.FileType fileType, 
+                                   String fileName, int sortOrder) {
+    
+    EvidenceTemplate template = new EvidenceTemplate();
+    template.setTemplateName(name);
+    template.setTemplateCode(code);
+    template.setDescription(description);
+    template.setCategory(category);
+    template.setFileType(fileType);
+    template.setFileName(fileName);
+    template.setFilePath("/templates/evidence/" + fileName);
+    template.setDownloadUrl("/api/accountant/evidence/templates/" + fileName);
+    template.setFileSize(1024L * 50); // Mock 50KB
+    template.setVersion("1.0");
+    template.setIsActive(true);
+    template.setSortOrder(sortOrder);
+    template.setUsageInstructions("Tải xuống template, điền đầy đủ thông tin và tải lên hệ thống.");
+    template.setCreatedBy(1L); // Admin user
+    
+    evidenceTemplateRepository.save(template);
+}
+
+private void createAttendanceExplanationsData() {
+    log.info("============== Creating Attendance Explanations Test Data ==============");
+    
+    if (attendanceExplanationRepository.count() > 0) {
+        log.info("AttendanceExplanations already exist, skipping creation");
+        return;
+    }
+    
+    // Get staff users (teachers, accountant, manager)
+    String[] staffEmails = {
+        "teacher@test.com", "math@test.com", "literature@test.com", "english@test.com",
+        "teacher2@test.com", "teacher3@test.com", "accountant@test.com", "manager@test.com"
+    };
+    
+    List<User> staffUsers = new ArrayList<>();
+    for (String email : staffEmails) {
+        userRepository.findByEmail(email).ifPresent(staffUsers::add);
+    }
+    
+    if (staffUsers.isEmpty()) {
+        log.warn("No staff users found, skipping attendance explanations creation");
+        return;
+    }
+    
+    List<AttendanceExplanation> explanations = new ArrayList<>();
+    LocalDateTime baseTime = LocalDateTime.now().minusDays(30);
+    
+    for (int i = 1; i <= 15; i++) {
+        AttendanceExplanation explanation = new AttendanceExplanation();
+        
+        // Assign a staff user (rotate through available staff)
+        User staff = staffUsers.get((i - 1) % staffUsers.size());
+        explanation.setStaff(staff);
+        explanation.setSubmitterName(staff.getFullName());
+        
+        explanation.setDepartment(i % 3 == 0 ? "IT" : (i % 3 == 1 ? "Marketing" : "HR"));
+        explanation.setAbsenceDate(baseTime.plusDays(i * 2).toLocalDate());
+        
+        // Vary reasons
+        String[] reasons = {"Ốm", "Việc gia đình", "Công tác", "Thai sản", "Khám bệnh"};
+        explanation.setReason(reasons[i % reasons.length]);
+        
+        explanation.setExplanationText("Giải trình chi tiết cho việc vắng mặt ngày " + 
+            explanation.getAbsenceDate() + ". Lý do: " + explanation.getReason() + 
+            ". Nhân viên: " + staff.getFullName());
+        explanation.setSubmittedAt(baseTime.plusDays(i * 2 + 1));
+        
+        // Vary status
+        ExplanationStatus[] statuses = ExplanationStatus.values();
+        explanation.setStatus(statuses[i % statuses.length]);
+        
+        if (explanation.getStatus() != ExplanationStatus.PENDING) {
+            explanation.setApproverName("Quản lý " + (i % 3 + 1));
+        }
+        
+        explanations.add(explanation);
+    }
+    
+    attendanceExplanationRepository.saveAll(explanations);
+    log.info("✅ Created {} attendance explanations with {} staff users", 
+            explanations.size(), staffUsers.size());
+    log.info("============== Attendance Explanations Creation Complete ==============");
+}
 } 

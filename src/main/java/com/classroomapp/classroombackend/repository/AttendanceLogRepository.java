@@ -15,6 +15,9 @@ public interface AttendanceLogRepository extends JpaRepository<AttendanceLog, Lo
     List<AttendanceLog> findByRoleAndDate(String role, LocalDate date);
     List<AttendanceLog> findByDateAndShift(LocalDate date, String shift);
     List<AttendanceLog> findByUserIdAndDateBetween(Long userId, LocalDate startDate, LocalDate endDate);
-List<AttendanceLog> findByRole(String role);
-
+    List<AttendanceLog> findByRole(String role);
+    
+    // New methods for enhanced reporting
+    List<AttendanceLog> findByDateBetween(LocalDate startDate, LocalDate endDate);
+    List<AttendanceLog> findByDepartmentAndDateBetween(String department, LocalDate startDate, LocalDate endDate);
 }
