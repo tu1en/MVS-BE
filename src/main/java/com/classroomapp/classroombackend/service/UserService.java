@@ -104,4 +104,6 @@ public interface UserService {
     User findById(Long id);
 
     List<UserDto> getAllUsers();
+
+    User findByUsername(String username);
 }
