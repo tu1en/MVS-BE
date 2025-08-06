@@ -2,12 +2,14 @@ package com.classroomapp.classroombackend.model.usermanagement;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -74,6 +76,12 @@ public class User {
     @Column(name = "leave_reset_date", nullable = true)
     private LocalDate leaveResetDate; // Date when annual leave resets (hire anniversary)
     
+    @OneToMany(mappedBy = "parent")
+    private List<ParentChildRelationship> children;
+
+    @OneToMany(mappedBy = "child")
+    private List<ParentChildRelationship> parents;
+    
     /**
      * Get the role name as String based on the roleId
      * 
@@ -88,6 +96,7 @@ public class User {
             case 3: return "MANAGER";
             case 4: return "ADMIN";
             case 5: return "ACCOUNTANT";
+            case 6: return "PARENT";
             default: return "USER";
         }
     }

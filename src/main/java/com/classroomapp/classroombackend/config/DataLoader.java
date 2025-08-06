@@ -42,6 +42,7 @@ import com.classroomapp.classroombackend.model.StudentMessage;
 import com.classroomapp.classroombackend.model.Request;
 import com.classroomapp.classroombackend.model.usermanagement.Role;
 import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.model.usermanagement.ParentChildRelationship;
 import com.classroomapp.classroombackend.repository.ContractRepository;
 import com.classroomapp.classroombackend.repository.JobPositionRepository;
 import com.classroomapp.classroombackend.repository.RecruitmentApplicationRepository;
@@ -67,6 +68,7 @@ import com.classroomapp.classroombackend.repository.StudentMessageRepository;
 import com.classroomapp.classroombackend.repository.requestmanagement.RequestRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.RoleRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.ParentChildRelationshipRepository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -156,6 +158,9 @@ public class DataLoader implements CommandLineRunner {
     @Autowired
     private PasswordEncoder passwordEncoder;
     
+    @Autowired
+    private ParentChildRelationshipRepository parentChildRelationshipRepository;
+    
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -175,6 +180,20 @@ public class DataLoader implements CommandLineRunner {
             // Seed users
             seedUsers();
             
+            // Seed parent-child relationship: parent (id 16) -> child (id 1)
+            User parent = userRepository.findById(16L).orElse(null);
+            User child = userRepository.findById(1L).orElse(null);
+            if (parent != null && child != null) {
+                ParentChildRelationship rel = new ParentChildRelationship();
+                rel.setParent(parent);
+                rel.setChild(child);
+                rel.setRelationshipType(ParentChildRelationship.RelationshipType.FATHER);
+                rel.setStatus("ACTIVE");
+                rel.setCreatedAt(java.time.LocalDateTime.now());
+                parentChildRelationshipRepository.save(rel);
+                log.info("Seeded parent-child relationship: parent {} -> child {}", parent.getId(), child.getId());
+            }
+
             // Seed courses
             seedCourses();
             
@@ -397,7 +416,11 @@ public class DataLoader implements CommandLineRunner {
                 accountant.setId(5);
                 roleRepository.save(accountant);
 
-                log.info("✅ Created roles with explicit IDs (including ACCOUNTANT).");
+                Role parent = new Role("PARENT");
+                parent.setId(6);
+                roleRepository.save(parent);
+
+                log.info("✅ Created roles with explicit IDs (including ACCOUNTANT and PARENT).");
 
             } finally {
                 entityManager.createNativeQuery("SET IDENTITY_INSERT roles OFF").executeUpdate();
@@ -609,6 +632,19 @@ public class DataLoader implements CommandLineRunner {
                 accContract.setCreatedAt(LocalDateTime.now());
                 contractRepository.save(accContract);
                 log.info("✅ Created accountant user with ID: " + accountant.getId());
+
+                // Create parent user
+                User parent = new User();
+                parent.setId(601L);
+                parent.setUsername("parent");
+                parent.setPassword(passwordEncoder.encode("parent123"));
+                parent.setEmail("parent@test.com");
+                parent.setFullName("Nguyễn Văn Phụ Huynh");
+                parent.setRoleId(RoleConstants.PARENT);
+                parent.setPhoneNumber("0909988776");
+                parent.setDepartment("Phụ Huynh");
+                userRepository.save(parent);
+                log.info("✅ Created parent user with ID: " + parent.getId());
 
                 log.info("✅ Created users with standardized, explicit IDs.");
 

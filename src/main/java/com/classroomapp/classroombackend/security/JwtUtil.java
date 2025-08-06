@@ -132,6 +132,7 @@ public class JwtUtil {
             case 3: return "MANAGER";
             case 4: return "ADMIN";
             case 5: return "ACCOUNTANT";
+            case 6: return "PARENT";
             default: return "USER";
         }
     }
