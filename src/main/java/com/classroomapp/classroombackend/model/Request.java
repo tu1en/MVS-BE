@@ -24,7 +24,7 @@ public class Request {
     @Column(nullable = true, length = 255)
     private String email;
 
-    @Column(name = "full_name", nullable = true, length = 255)
+    @Column(name = "full_name", nullable = true, columnDefinition = "NVARCHAR(MAX)")
     private String fullName;
 
     @Column(name = "phone_number", nullable = true, length = 20)
