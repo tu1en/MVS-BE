@@ -95,6 +95,12 @@ public class InterviewScheduleController {
         return ResponseEntity.ok(interviewService.getByApplication(applicationId));
     }
 
+    @GetMapping("/accepted")
+    public ResponseEntity<List<InterviewScheduleDto>> getAcceptedInterviews() {
+        List<InterviewScheduleDto> acceptedInterviews = interviewService.getAcceptedInterviews();
+        return ResponseEntity.ok(acceptedInterviews);
+    }
+
     @PutMapping("/{id}/status")
     public ResponseEntity<?> updateStatus(@PathVariable Long id, @RequestParam String status, @RequestParam(required = false) String result) {
         interviewService.updateStatus(id, status, result);
