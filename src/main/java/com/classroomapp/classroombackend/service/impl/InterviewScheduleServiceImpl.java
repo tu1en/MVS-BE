@@ -67,8 +67,34 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
 
     @Override
     @Transactional
+    public void updateOffer(Long id, String offer) {
+        InterviewSchedule entity = interviewRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Interview not found"));
+        entity.setOffer(offer);
+        interviewRepo.save(entity);
+    }
+
+    @Override
+    @Transactional
+    public void updateEvaluation(Long id, String evaluation) {
+        InterviewSchedule entity = interviewRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Interview not found"));
+        entity.setEvaluation(evaluation);
+        interviewRepo.save(entity);
+    }
+
+    @Override
+    @Transactional
     public void delete(Long id) {
         interviewRepo.deleteById(id);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public InterviewScheduleDto getById(Long id) {
+        InterviewSchedule entity = interviewRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Interview not found"));
+        return toDto(entity);
     }
 
     @Override
@@ -93,6 +119,8 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
         dto.setEndTime(entity.getEndTime());
         dto.setStatus(entity.getStatus());
         dto.setResult(entity.getResult());
+        dto.setOffer(entity.getOffer());
+        dto.setEvaluation(entity.getEvaluation());
         
         if (entity.getApplication() != null) {
             dto.setApplicationId(entity.getApplication().getId());
