@@ -28,4 +28,5 @@ public class ContractDto {
     private String createdBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String offer; // Thông tin offer từ Quản Lý Offer
 }

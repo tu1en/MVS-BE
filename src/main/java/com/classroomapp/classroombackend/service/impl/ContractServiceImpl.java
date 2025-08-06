@@ -139,12 +139,12 @@ public class ContractServiceImpl implements ContractService {
     public List<ContractDto> getCandidatesReadyForContract() {
         log.info("Fetching candidates ready for contract creation");
         
-        // Lấy danh sách tất cả phỏng vấn đã được chấp nhận
-        List<InterviewScheduleDto> acceptedInterviews = interviewScheduleService.getAll().stream()
-                .filter(interview -> "ACCEPTED".equals(interview.getStatus()))
+        // Lấy danh sách tất cả ứng viên đã được duyệt ở Quản Lý Offer
+        List<InterviewScheduleDto> approvedCandidates = interviewScheduleService.getAll().stream()
+                .filter(interview -> "APPROVED".equals(interview.getStatus()))
                 .collect(Collectors.toList());
         
-        log.info("Found {} accepted interviews", acceptedInterviews.size());
+        log.info("Found {} approved candidates from Offer Management", approvedCandidates.size());
         
         // Lấy tất cả hợp đồng hiện tại
         List<Contract> allContracts = contractRepository.findAll();
@@ -155,7 +155,7 @@ public class ContractServiceImpl implements ContractService {
             log.info("Existing contract email: '{}'", contract.getEmail()));
         
         // Lọc những người chưa có hợp đồng
-        List<ContractDto> candidates = acceptedInterviews.stream()
+        List<ContractDto> candidates = approvedCandidates.stream()
                 .filter(interview -> {
                     // Kiểm tra xem ứng viên đã có hợp đồng chưa
                     String applicantEmail = interview.getApplicantEmail();
@@ -194,7 +194,8 @@ public class ContractServiceImpl implements ContractService {
                     candidate.setEmail(interview.getApplicantEmail());
                     candidate.setPhoneNumber(interview.getApplicantPhone() != null ? interview.getApplicantPhone() : "Chưa có");
                     candidate.setPosition(interview.getJobTitle());
-                    candidate.setContractType("TEACHER"); // Mặc định là giáo viên
+                    candidate.setOffer(interview.getOffer()); // Lấy thông tin offer
+                    candidate.setContractType("TEACHE"); // Mặc định là giáo viên
                     
                     // Lấy mức lương từ job position (nếu có)
                     if (interview.getSalaryRange() != null && !interview.getSalaryRange().isEmpty()) {
