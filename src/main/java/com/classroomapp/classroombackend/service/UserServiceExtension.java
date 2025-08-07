@@ -25,4 +25,11 @@ public interface UserServiceExtension {
      */
     boolean createOrUpdateUser(String email, String fullName, String role);
     boolean createUserWithoutContract(String email, String fullName, String role);
+    
+    /**
+     * Check if user has active contract
+     * @param email User's email
+     * @return true if user has active contract, false otherwise
+     */
+    boolean hasActiveContract(String email);
 } 

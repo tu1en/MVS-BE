@@ -166,16 +166,41 @@ public class InterviewScheduleController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/{id}/check-account")
+    public ResponseEntity<?> checkAccount(@PathVariable Long id) {
+        InterviewScheduleDto interview = interviewService.getById(id);
+        if (interview == null) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        boolean hasAccount = userService.userExists(interview.getApplicantEmail());
+        boolean hasContract = false; // Mặc định chưa có hợp đồng
+        
+        if (hasAccount) {
+            // Kiểm tra trạng thái hợp đồng từ user status
+            hasContract = userService.hasActiveContract(interview.getApplicantEmail());
+        }
+        
+        return ResponseEntity.ok(new AccountCheckResponse(hasAccount, hasContract));
+    }
+
     @PutMapping("/{id}/result")
     public ResponseEntity<?> setResult(@PathVariable Long id, @RequestBody InterviewResultDto body) {
         interviewService.updateStatus(id, body.getStatus(), body.getResult());
         InterviewScheduleDto interview = interviewService.getAll().stream().filter(i -> i.getId().equals(id)).findFirst().orElse(null);
         if (interview == null) return ResponseEntity.notFound().build();
+        
         // Gửi mail kết quả
-        if ("ACCEPTED".equals(body.getStatus())) {
+        if ("APPROVED".equals(body.getStatus()) || "ACCEPTED".equals(body.getStatus())) {
             emailService.sendEmail(interview.getApplicantEmail(), "Kết quả phỏng vấn", "Chúc mừng bạn đã vượt qua phỏng vấn cho vị trí: " + interview.getJobTitle());
-            // Tạo user mới với trạng thái chưa có hợp đồng
-            userService.createUserWithoutContract(interview.getApplicantEmail(), interview.getApplicantName(), "TEACHER");
+            
+            // Tạo user mới với trạng thái chưa có hợp đồng nếu cần
+            if (body.getCreateAccount() != null && body.getCreateAccount()) {
+                userService.createUserWithoutContract(interview.getApplicantEmail(), interview.getApplicantName(), "TEACHER");
+            } else {
+                // Tạo user mới với trạng thái chưa có hợp đồng (logic mặc định)
+                userService.createUserWithoutContract(interview.getApplicantEmail(), interview.getApplicantName(), "TEACHER");
+            }
         } else if ("REJECTED".equals(body.getStatus())) {
             // Gửi mail từ chối với evaluation
             InterviewScheduleDto interviewDto = interviewService.getAll().stream().filter(i -> i.getId().equals(id)).findFirst().orElse(null);
@@ -192,10 +217,14 @@ public class InterviewScheduleController {
 class InterviewResultDto {
     private String status;
     private String result;
+    private Boolean createAccount;
+    
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public String getResult() { return result; }
     public void setResult(String result) { this.result = result; }
+    public Boolean getCreateAccount() { return createAccount; }
+    public void setCreateAccount(Boolean createAccount) { this.createAccount = createAccount; }
 }
 
 class OfferUpdateRequest {
@@ -208,4 +237,19 @@ class EvaluationUpdateRequest {
     private String evaluation;
     public String getEvaluation() { return evaluation; }
     public void setEvaluation(String evaluation) { this.evaluation = evaluation; }
+} 
+
+class AccountCheckResponse {
+    private boolean hasAccount;
+    private boolean hasContract;
+    
+    public AccountCheckResponse(boolean hasAccount, boolean hasContract) {
+        this.hasAccount = hasAccount;
+        this.hasContract = hasContract;
+    }
+    
+    public boolean isHasAccount() { return hasAccount; }
+    public void setHasAccount(boolean hasAccount) { this.hasAccount = hasAccount; }
+    public boolean isHasContract() { return hasContract; }
+    public void setHasContract(boolean hasContract) { this.hasContract = hasContract; }
 } 
