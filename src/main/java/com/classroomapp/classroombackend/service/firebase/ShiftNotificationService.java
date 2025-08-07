@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.classroomapp.classroombackend.model.hrmanagement.ShiftAssignment;
@@ -29,10 +31,10 @@ import lombok.extern.slf4j.Slf4j;
  * Gá»­i notifications cho shift assignments, swap requests, schedule changes
  */
 @Service
-@Slf4j
 @RequiredArgsConstructor
-
 public class ShiftNotificationService {
+
+    private static final Logger log = LoggerFactory.getLogger(ShiftNotificationService.class);
 
     private final FirebaseMessaging firebaseMessaging;
     private final FirebaseShiftService firebaseShiftService;

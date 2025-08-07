@@ -258,6 +258,17 @@ public class CourseTemplateService {
     public long getCourseTemplateCount() {
         return courseTemplateRepository.countByIsActiveTrue();
     }
+
+    /**
+     * Get course templates by teacher
+     */
+    public List<CourseTemplateDto> getCourseTemplatesByTeacher(Long teacherId) {
+        logger.debug("Getting course templates for teacher: {}", teacherId);
+        List<CourseTemplate> templates = courseTemplateRepository.findByCreatedByAndIsActiveTrueOrderByCreatedAtDesc(teacherId);
+        return templates.stream()
+                .map(courseTemplateMapper::toDto)
+                .collect(Collectors.toList());
+    }
     
     /**
      * Create Excel template
@@ -275,6 +286,54 @@ public class CourseTemplateService {
         List<CourseTemplate> templates = courseTemplateRepository.findByIsPublicTrueAndIsActiveTrueOrderByCreatedAtDesc();
         return templates.stream()
                 .map(this::convertToPublicDto)
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Get public course templates with filtering
+     */
+    @Transactional(readOnly = true)
+    public List<PublicCourseTemplateDto> getPublicCourseTemplatesWithFilter(String search, String category, String level) {
+        List<CourseTemplate> templates = courseTemplateRepository.findByIsPublicTrueAndIsActiveTrueOrderByCreatedAtDesc();
+        
+        return templates.stream()
+                .map(this::convertToPublicDto)
+                .filter(dto -> {
+                    // Apply search filter
+                    if (search != null && !search.trim().isEmpty()) {
+                        String searchLower = search.toLowerCase();
+                        if (!dto.getName().toLowerCase().contains(searchLower) &&
+                            !dto.getDescription().toLowerCase().contains(searchLower) &&
+                            (dto.getSubject() == null || !dto.getSubject().toLowerCase().contains(searchLower))) {
+                            return false;
+                        }
+                    }
+                    
+                    // Apply category filter
+                    if (category != null && !category.trim().isEmpty() && !"all".equals(category)) {
+                        if (dto.getSubject() == null || !dto.getSubject().toLowerCase().equals(category.toLowerCase())) {
+                            return false;
+                        }
+                    }
+                    
+                    // Apply level filter
+                    if (level != null && !level.trim().isEmpty() && !"all".equals(level)) {
+                        // For now, we'll use a simple mapping based on totalWeeks
+                        String courseLevel = "basic";
+                        if (dto.getTotalWeeks() != null) {
+                            if (dto.getTotalWeeks() > 16) {
+                                courseLevel = "advanced";
+                            } else if (dto.getTotalWeeks() > 8) {
+                                courseLevel = "intermediate";
+                            }
+                        }
+                        if (!courseLevel.equals(level.toLowerCase())) {
+                            return false;
+                        }
+                    }
+                    
+                    return true;
+                })
                 .collect(Collectors.toList());
     }
     

@@ -13,6 +13,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -55,11 +56,124 @@ public class TeacherController {
     private final AttendanceRepository attendanceRepository;
     private final ScheduleService scheduleService;
     private final AbsenceService absenceService;
+    // private final CourseTemplateService courseTemplateService; // COMMENTED OUT - Service not found
 
+    // ==================== TEACHER COURSE SYSTEM INTEGRATION ====================
+    
     /**
-     * Get teacher's schedule
-     * Frontend calls: /teacher/schedule
+     * Get all courses accessible to teacher (both teaching and available for management)
+     * Frontend calls: /api/teacher/course-templates
      */
+    // COMMENTED OUT - CourseTemplateDto and CourseTemplateService not found
+    /*
+    @GetMapping("/course-templates")
+    public ResponseEntity<List<CourseTemplateDto>> getTeacherCourseTemplates(Authentication authentication) {
+        try {
+            String email = authentication.getName();
+            User currentUser = userRepository.findByEmail(email)
+                    .orElseGet(() -> userRepository.findByUsername(email)
+                                     .orElseThrow(() -> new ResourceNotFoundException("User not found with email/username: " + email)));
+            
+            // Get all course templates that teacher can manage
+            List<CourseTemplateDto> courses = courseTemplateService.getAllCourseTemplates();
+            return ResponseEntity.ok(courses);
+            
+        } catch (Exception e) {
+            return ResponseEntity.ok(new ArrayList<>());
+        }
+    }
+    */
+    
+    /**
+     * Get course template details for teacher management
+     * Frontend calls: /api/teacher/course-templates/{id}
+     */
+    /*
+    @GetMapping("/course-templates/{id}")
+    public ResponseEntity<CourseTemplateDto> getTeacherCourseTemplate(@PathVariable Long id, Authentication authentication) {
+        try {
+            String email = authentication.getName();
+            User currentUser = userRepository.findByEmail(email)
+                    .orElseGet(() -> userRepository.findByUsername(email)
+                                     .orElseThrow(() -> new ResourceNotFoundException("User not found with email/username: " + email)));
+            
+            CourseTemplateDto course = courseTemplateService.getCourseTemplateById(id);
+            return ResponseEntity.ok(course);
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+    }
+    */
+    
+    /*
+    @PostMapping("/course-templates")
+    public ResponseEntity<CourseTemplateDto> createCourseTemplate(@RequestBody CourseTemplateDto courseDto, Authentication authentication) {
+        try {
+            String email = authentication.getName();
+            User currentUser = userRepository.findByEmail(email)
+                    .orElseGet(() -> userRepository.findByUsername(email)
+                                     .orElseThrow(() -> new ResourceNotFoundException("User not found with email/username: " + email)));
+            
+            // Set teacher as the creator
+            courseDto.setTeacherId(currentUser.getId());
+            courseDto.setTeacherName(currentUser.getFullName());
+            
+            CourseTemplateDto createdCourse = courseTemplateService.createCourseTemplate(courseDto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdCourse);
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+    */
+    
+    /*
+    @PutMapping("/course-templates/{id}")
+    public ResponseEntity<CourseTemplateDto> updateCourseTemplate(@PathVariable Long id, @RequestBody CourseTemplateDto courseDto, Authentication authentication) {
+        try {
+            String email = authentication.getName();
+            User currentUser = userRepository.findByEmail(email)
+                    .orElseGet(() -> userRepository.findByUsername(email)
+                                     .orElseThrow(() -> new ResourceNotFoundException("User not found with email/username: " + email)));
+            
+            courseDto.setId(id);
+            courseDto.setTeacherId(currentUser.getId());
+            courseDto.setTeacherName(currentUser.getFullName());
+            
+            CourseTemplateDto updatedCourse = courseTemplateService.updateCourseTemplate(courseDto);
+            return ResponseEntity.ok(updatedCourse);
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+    */
+    
+    /*
+    @GetMapping("/course-enrollments")
+    public ResponseEntity<Map<String, Object>> getTeacherCourseEnrollments(Authentication authentication) {
+        try {
+            String email = authentication.getName();
+            User currentUser = userRepository.findByEmail(email)
+                    .orElseGet(() -> userRepository.findByUsername(email)
+                                     .orElseThrow(() -> new ResourceNotFoundException("User not found with email/username: " + email)));
+            
+            // Get teacher's course templates
+            List<CourseTemplateDto> teacherCourses = courseTemplateService.getCourseTemplatesByTeacher(currentUser.getId());
+            
+            Map<String, Object> enrollmentData = new HashMap<>();
+            enrollmentData.put("courses", teacherCourses);
+            enrollmentData.put("totalCourses", teacherCourses.size());
+            enrollmentData.put("totalEnrollments", 0); // Will be calculated when enrollment system is implemented
+            
+            return ResponseEntity.ok(enrollmentData);
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Failed to retrieve enrollments: " + e.getMessage()));
+        }
+    }
+    */
     @GetMapping("/schedules")
     public ResponseEntity<?> getTeacherSchedule(Authentication authentication) {
         try {

@@ -33,6 +33,8 @@ public interface CourseTemplateRepository extends JpaRepository<CourseTemplate, 
     
     long countByCreatedByAndIsActiveTrue(Long createdBy);
     
+    // Methods for teacher course templates
+    
     // Methods for public course templates
     List<CourseTemplate> findByIsPublicTrueAndIsActiveTrueOrderByCreatedAtDesc();
     

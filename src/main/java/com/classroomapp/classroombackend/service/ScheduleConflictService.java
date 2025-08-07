@@ -1,16 +1,18 @@
 package com.classroomapp.classroombackend.service;
 
-import com.classroomapp.classroombackend.entity.ScheduleConflict;
-import com.classroomapp.classroombackend.repository.ScheduleConflictRepository;
-import com.classroomapp.classroombackend.service.hrmanagement.shift.ShiftConflictDetectionService.ConflictType;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.stereotype.Service;
+
+import com.classroomapp.classroombackend.entity.ScheduleConflict;
+import com.classroomapp.classroombackend.repository.ScheduleConflictRepository;
+import com.classroomapp.classroombackend.service.hrmanagement.shift.ShiftConflictDetectionService.ConflictType;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
@@ -61,13 +63,28 @@ public class ScheduleConflictService {
         log.info("Deleted conflict with ID: {}", conflictId);
     }
     
-    public List<ScheduleConflict> checkScheduleConflicts(Long teacherId, Long roomId, String schedule, 
+    // ✅ FIX: Sửa thứ tự tham số để match với ClassController
+    public List<ScheduleConflict> checkScheduleConflicts(Long roomId, Long teacherId, String schedule, 
                                                         LocalDate startDate, LocalDate endDate) {
-        // Implementation for checking schedule conflicts
-        List<ScheduleConflict> conflicts = scheduleConflictRepository.findByDetectedAtBetween(
-            startDate.atStartOfDay(), endDate.atTime(23, 59, 59));
-        log.info("Found {} schedule conflicts between {} and {}", conflicts.size(), startDate, endDate);
-        return conflicts;
+        try {
+            // Log để debug
+            log.info("Checking schedule conflicts - Room: {}, Teacher: {}, Period: {} to {}", 
+                    roomId, teacherId, startDate, endDate);
+            
+            // Implementation for checking schedule conflicts
+            List<ScheduleConflict> conflicts = scheduleConflictRepository.findByDetectedAtBetween(
+                startDate.atStartOfDay(), endDate.atTime(23, 59, 59));
+                
+            // Additional logic để check conflicts thực tế có thể thêm ở đây
+            // Ví dụ: check room conflicts, teacher conflicts, etc.
+            
+            log.info("Found {} schedule conflicts between {} and {}", conflicts.size(), startDate, endDate);
+            return conflicts;
+            
+        } catch (Exception e) {
+            log.error("Error checking schedule conflicts: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to check schedule conflicts: " + e.getMessage());
+        }
     }
     
     public Map<String, Object> getRoomAvailabilitySummary(Long roomId, LocalDate startDate, LocalDate endDate) {
@@ -94,7 +111,7 @@ public class ScheduleConflictService {
         return summary;
     }
     
-    public Map<String, Object> findOptimalSlot(Long teacherId, Long roomId, List<String> preferredDays, 
+    public Map<String, Object> findOptimalSlot(Long roomId, Long teacherId, List<String> preferredDays, 
                                               String startTime, String endTime, 
                                               LocalDate startDate, LocalDate endDate) {
         Map<String, Object> result = new HashMap<>();
@@ -109,8 +126,8 @@ public class ScheduleConflictService {
         result.put("suggestedDate", startDate);
         result.put("suggestedTime", startTime + " - " + endTime);
         
-        log.info("Found optimal slot for teacher {} and room {}: {} conflicts total", 
-                teacherId, roomId, teacherConflicts.size() + roomConflicts.size());
+        log.info("Found optimal slot for room {} and teacher {}: {} conflicts total", 
+                roomId, teacherId, teacherConflicts.size() + roomConflicts.size());
         
         return result;
     }

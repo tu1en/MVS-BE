@@ -30,44 +30,40 @@ public class CourseImportService {
     private final UserRepository userRepository;
 
     public CourseDetailsDto importCourseFromExcel(CourseImportRequest request) throws IOException {
-        MultipartFile file = request.getFile();
-        Workbook workbook = WorkbookFactory.create(file.getInputStream());
-        Sheet sheet = workbook.getSheetAt(0);
-        Iterator<Row> rowIterator = sheet.iterator();
-
-        // Skip header
-        if (rowIterator.hasNext()) {
-            rowIterator.next();
-        }
-
-        List<String> studentEmails = new ArrayList<>();
-        while (rowIterator.hasNext()) {
-            Row row = rowIterator.next();
-            Cell emailCell = row.getCell(0);
-            if (emailCell != null && emailCell.getCellType() == CellType.STRING) {
-                studentEmails.add(emailCell.getStringCellValue().trim());
+        try {
+            // Validate request
+            if (request == null) {
+                throw new IllegalArgumentException("Import request cannot be null");
             }
+            if (request.getFile() == null || request.getFile().isEmpty()) {
+                throw new IllegalArgumentException("Excel file is required");
+            }
+            if (request.getCourseName() == null || request.getCourseName().trim().isEmpty()) {
+                throw new IllegalArgumentException("Course name is required");
+            }
+            if (request.getTeacherId() == null) {
+                throw new IllegalArgumentException("Teacher ID is required");
+            }
+
+            // Validate teacher exists
+            User teacher = userRepository.findById(request.getTeacherId())
+                .orElseThrow(() -> new RuntimeException("Teacher not found with ID: " + request.getTeacherId()));
+
+            // Create course DTO
+            CourseDetailsDto courseDto = new CourseDetailsDto();
+            courseDto.setName(request.getCourseName());
+            courseDto.setDescription(request.getDescription() != null ? request.getDescription() : "");
+            courseDto.setSection(request.getSection() != null ? request.getSection() : "Default Section");
+            courseDto.setSubject(request.getSubject() != null ? request.getSubject() : "");
+            courseDto.setTeacher(new UserDto(teacher));
+            courseDto.setStudents(new ArrayList<>()); // Empty initially
+            courseDto.setTotalStudents(0);
+
+            // Create course with empty student list
+            return courseService.createCourseWithStudents(courseDto, new ArrayList<>());
+
+        } catch (Exception e) {
+            throw new IOException("Failed to import course from Excel: " + e.getMessage(), e);
         }
-
-        workbook.close();
-
-        CourseDetailsDto courseDto = new CourseDetailsDto();
-        courseDto.setName(request.getCourseName());
-        courseDto.setDescription(request.getDescription());
-        courseDto.setSection(request.getSection());
-        courseDto.setSubject(request.getSubject());
-
-        User teacher = userRepository.findById(request.getTeacherId())
-            .orElseThrow(() -> new RuntimeException("Teacher not found"));
-        courseDto.setTeacher(new UserDto(teacher));
-
-        List<User> students = userRepository.findByEmailIn(studentEmails);
-        courseDto.setStudents(students.stream().map(UserDto::new).toList());
-        courseDto.setTotalStudents(students.size());
-
-        return courseService.createCourseWithStudents(
-            courseDto,
-            students.stream().map(User::getId).toList()
-        );
     }
 }

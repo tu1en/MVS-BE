@@ -42,13 +42,15 @@ public class ClassService {
     @Autowired
     private RoomRepository roomRepository;
     
-    
     @Autowired
     private ClassLessonRepository classLessonRepository;
     
     @Autowired
     private ScheduleConflictService scheduleConflictService;
     
+    // ✅ FIX: Inject WebSocket notification service
+    @Autowired
+    private WebSocketNotificationService webSocketNotificationService;
     
     /**
      * Create a new class from course template
@@ -97,7 +99,7 @@ public class ClassService {
         classEntity.setCourseTemplate(courseTemplate);
         classEntity.setClassName(request.getClassName());
         classEntity.setDescription(request.getDescription());
-        classEntity.setTeacher(teacher); // Fixed: removed duplicate "setTeacher"
+        classEntity.setTeacher(teacher);
         classEntity.setRoom(room);
         classEntity.setStartDate(request.getStartDate());
         classEntity.setEndDate(request.getEndDate());
@@ -113,7 +115,19 @@ public class ClassService {
         
         logger.info("Created class " + classEntity.getClassName() + " with " + courseTemplate.getLessonTemplates().size() + " lessons");
         
-        return convertToDto(classEntity);
+        // Convert to DTO
+        ClassDto classDto = convertToDto(classEntity);
+        
+        // ✅ FIX: Send WebSocket notification with full data
+        try {
+            webSocketNotificationService.notifyClassCreated(classDto);
+            logger.info("Sent WebSocket notification for class creation: {}", classDto.getClassName());
+        } catch (Exception e) {
+            logger.error("Failed to send WebSocket notification for class creation", e);
+            // Don't fail the whole operation if notification fails
+        }
+        
+        return classDto;
     }
     
     /**
@@ -137,7 +151,7 @@ public class ClassService {
         createRequest.setMaxStudents(sourceClass.getMaxStudents());
         createRequest.setCreatedBy(request.getCreatedBy());
         
-        ClassDto newClass = createClassFromTemplate(createRequest); // Fixed: return ClassDto, not ClassEntity
+        ClassDto newClass = createClassFromTemplate(createRequest);
         
         // Copy materials from template (if needed)
         // copyMaterialsFromTemplate(sourceClass, newClass);
@@ -202,10 +216,22 @@ public class ClassService {
         ClassEntity classEntity = classRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Class not found with id: " + id));
         
+        ClassEntity.ClassStatus oldStatus = classEntity.getStatus();
         classEntity.setStatus(ClassEntity.ClassStatus.valueOf(status));
         classEntity = classRepository.save(classEntity);
         
-        return convertToDto(classEntity);
+        ClassDto classDto = convertToDto(classEntity);
+        
+        // Send WebSocket notification for status update
+        try {
+            webSocketNotificationService.notifyClassUpdated(classDto);
+            logger.info("Sent WebSocket notification for class status update: {} -> {}", 
+                       oldStatus, status);
+        } catch (Exception e) {
+            logger.error("Failed to send WebSocket notification for class status update", e);
+        }
+        
+        return classDto;
     }
     
     /**

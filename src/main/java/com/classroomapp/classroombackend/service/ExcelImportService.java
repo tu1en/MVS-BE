@@ -204,6 +204,14 @@ public class ExcelImportService {
         }
         
         logger.info("Thành công phân tích {} bài học từ file Excel", lessons.size());
+        
+        // Debug logging - print first few lessons
+        for (int i = 0; i < Math.min(3, lessons.size()); i++) {
+            LessonData lesson = lessons.get(i);
+            logger.info("DEBUG - Lesson {}: Week={}, Topic='{}', Type='{}', Duration={}", 
+                       i+1, lesson.getWeek(), lesson.getTopicName(), lesson.getLessonType(), lesson.getDurationMinutes());
+        }
+        
         return lessons;
     }
     
