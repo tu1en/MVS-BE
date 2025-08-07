@@ -14,6 +14,7 @@ public interface InterviewScheduleService {
     void updateEvaluation(Long id, String evaluation);
     InterviewScheduleDto getById(Long id);
     void delete(Long id);
-    boolean hasConflict(LocalDateTime startTime, LocalDateTime endTime);
+    boolean hasConflict(LocalDateTime startTime, LocalDateTime endTime, Long excludeApplicationId);
+    InterviewScheduleDto update(Long id, LocalDateTime startTime, LocalDateTime endTime);
     List<InterviewScheduleDto> getAcceptedInterviews();
 } 

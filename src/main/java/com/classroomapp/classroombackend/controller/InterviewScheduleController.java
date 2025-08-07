@@ -36,7 +36,7 @@ public class InterviewScheduleController {
         }
         
         // Kiểm tra trùng lịch
-        if (interviewService.hasConflict(start, end)) {
+        if (interviewService.hasConflict(start, end, applicationId)) {
             return ResponseEntity.badRequest().build();
         }
         
@@ -51,13 +51,43 @@ public class InterviewScheduleController {
 
     @PostMapping("/check-conflict")
     public ResponseEntity<Boolean> checkConflict(@RequestParam String startTime,
-                                                @RequestParam String endTime) {
+                                               @RequestParam String endTime,
+                                               @RequestParam(required = false) Long excludeApplicationId) {
         DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
         LocalDateTime start = LocalDateTime.parse(startTime, formatter);
         LocalDateTime end = LocalDateTime.parse(endTime, formatter);
         
-        boolean hasConflict = interviewService.hasConflict(start, end);
+        boolean hasConflict = interviewService.hasConflict(start, end, excludeApplicationId);
         return ResponseEntity.ok(hasConflict);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<InterviewScheduleDto> update(@PathVariable Long id,
+                                                     @RequestParam String startTime,
+                                                     @RequestParam String endTime) {
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+        LocalDateTime start = LocalDateTime.parse(startTime, formatter);
+        LocalDateTime end = LocalDateTime.parse(endTime, formatter);
+
+        // Kiểm tra không cho phép xếp lịch trong quá khứ
+        LocalDateTime now = LocalDateTime.now();
+        if (start.isBefore(now)) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        // Lấy thông tin interview hiện tại
+        InterviewScheduleDto currentInterview = interviewService.getById(id);
+        if (currentInterview == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Kiểm tra trùng lịch (loại trừ lịch hiện tại)
+        if (interviewService.hasConflict(start, end, currentInterview.getApplicationId())) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        InterviewScheduleDto updated = interviewService.update(id, start, end);
+        return ResponseEntity.ok(updated);
     }
 
     @GetMapping
