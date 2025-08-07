@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thông Báo Offer Chi Tiết</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #ff8c00;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #ff8c00;
+            margin: 0;
+            font-size: 28px;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .greeting {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .offer-section {
+            background-color: #fff8f0;
+            border-left: 4px solid #ff8c00;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .salary-section {
+            background-color: #f0f8ff;
+            border-left: 4px solid #1890ff;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .salary-details {
+            background-color: #f6ffed;
+            border-left: 4px solid #52c41a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .tax-section {
+            background-color: #fff7e6;
+            border-left: 4px solid #fa8c16;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .section-title {
+            font-weight: bold;
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        .salary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .salary-item {
+            background-color: #ffffff;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #d9d9d9;
+        }
+        .salary-label {
+            font-weight: bold;
+            color: #666;
+            font-size: 14px;
+        }
+        .salary-value {
+            color: #1890ff;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .calculation-formula {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #d9d9d9;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 15px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #666;
+            font-size: 14px;
+        }
+        .contact-info {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .highlight {
+            color: #ff8c00;
+            font-weight: bold;
+        }
+        .note {
+            background-color: #fff2e8;
+            border: 1px solid #ffd591;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 15px 0;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎉 Thông Báo Offer Chi Tiết</h1>
+        </div>
+        
+        <div class="content">
+            <div class="greeting">
+                Xin chào <span class="highlight" th:text="${name}">[Tên ứng viên]</span>,
+            </div>
+            
+            <p>Chúng tôi rất vui mừng thông báo rằng bạn đã được chọn cho vị trí <span class="highlight" th:text="${jobTitle}">[Vị trí]</span> tại công ty chúng tôi.</p>
+            
+            <div class="offer-section">
+                <div class="section-title">📋 Chi Tiết Offer:</div>
+                <div th:text="${offer}">[Nội dung offer]</div>
+            </div>
+
+            <div class="salary-section">
+                <div class="section-title">💰 Chi Tiết Lương:</div>
+                <div class="salary-grid">
+                    <div class="salary-item">
+                        <div class="salary-label">Lương GROSS:</div>
+                        <div class="salary-value" th:text="${salaryDetails.grossSalary != null ? #numbers.formatDecimal(salaryDetails.grossSalary, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : 'N/A'}">0 VNĐ</div>
+                    </div>
+                    <div class="salary-item">
+                        <div class="salary-label">Lương NET:</div>
+                        <div class="salary-value" th:text="${salaryDetails.netSalary != null ? #numbers.formatDecimal(salaryDetails.netSalary, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : 'N/A'}">0 VNĐ</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="salary-details">
+                <div class="section-title">📊 Chi Tiết Bảo Hiểm:</div>
+                <div class="salary-grid">
+                    <div class="salary-item">
+                        <div class="salary-label">Đóng góp nhân viên (10.5%):</div>
+                        <div class="salary-value" th:text="${salaryDetails.employeeContribution != null ? #numbers.formatDecimal(salaryDetails.employeeContribution, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : 'N/A'}">0 VNĐ</div>
+                    </div>
+                    <div class="salary-item">
+                        <div class="salary-label">Đóng góp công ty (21.5%):</div>
+                        <div class="salary-value" th:text="${salaryDetails.employerContribution != null ? #numbers.formatDecimal(salaryDetails.employerContribution, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : 'N/A'}">0 VNĐ</div>
+                    </div>
+                    <div class="salary-item">
+                        <div class="salary-label">Tổng bảo hiểm (32%):</div>
+                        <div class="salary-value" th:text="${salaryDetails.totalInsuranceContribution != null ? #numbers.formatDecimal(salaryDetails.totalInsuranceContribution, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : 'N/A'}">0 VNĐ</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tax-section">
+                <div class="section-title">📈 Chi Tiết Thuế Thu Nhập Cá Nhân:</div>
+                <div class="salary-grid">
+                    <div class="salary-item">
+                        <div class="salary-label">Thu nhập chịu thuế:</div>
+                        <div class="salary-value" th:text="${salaryDetails.taxableIncome != null ? #numbers.formatDecimal(salaryDetails.taxableIncome, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : 'N/A'}">0 VNĐ</div>
+                    </div>
+                    <div class="salary-item">
+                        <div class="salary-label">Giảm trừ người phụ thuộc:</div>
+                        <div class="salary-value" th:text="${salaryDetails.dependentDeductions != null ? #numbers.formatDecimal(salaryDetails.dependentDeductions, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : 'N/A'}">0 VNĐ</div>
+                    </div>
+                    <div class="salary-item">
+                        <div class="salary-label">Tổng thuế TNCN:</div>
+                        <div class="salary-value" th:text="${salaryDetails.personalIncomeTax != null ? #numbers.formatDecimal(salaryDetails.personalIncomeTax, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : 'N/A'}">0 VNĐ</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="calculation-formula">
+                <div class="section-title">🧮 Cách Tính Lương NET:</div>
+                <div><strong>Lương NET = Lương GROSS - Đóng góp nhân viên - Thuế TNCN</strong></div>
+                <div th:if="${salaryDetails.grossSalary != null and salaryDetails.employeeContribution != null and salaryDetails.personalIncomeTax != null and salaryDetails.netSalary != null}">
+                    <span th:text="${#numbers.formatDecimal(salaryDetails.grossSalary, 0, 'COMMA', 0, 'POINT')}">0</span> - 
+                    <span th:text="${#numbers.formatDecimal(salaryDetails.employeeContribution, 0, 'COMMA', 0, 'POINT')}">0</span> - 
+                    <span th:text="${#numbers.formatDecimal(salaryDetails.personalIncomeTax, 0, 'COMMA', 0, 'POINT')}">0</span> = 
+                    <strong th:text="${#numbers.formatDecimal(salaryDetails.netSalary, 0, 'COMMA', 0, 'POINT') + ' VNĐ'}">0 VNĐ</strong>
+                </div>
+            </div>
+
+            <div class="note">
+                <strong>Lưu ý:</strong> Tính toán dựa trên chuẩn pháp luật Việt Nam. 
+                Tỷ lệ đóng góp và thuế có thể thay đổi theo quy định mới.
+            </div>
+            
+            <p>Vui lòng xem xét kỹ lưỡng các điều khoản trong offer và liên hệ với chúng tôi nếu bạn có bất kỳ câu hỏi nào.</p>
+            
+            <div class="contact-info">
+                <p><strong>📧 Liên hệ:</strong> hr@company.com</p>
+                <p><strong>📞 Điện thoại:</strong> +84 123 456 789</p>
+                <p><strong>🏢 Địa chỉ:</strong> 123 Đường ABC, Quận 1, TP.HCM</p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Trân trọng,<br>
+            <strong>Đội ngũ Nhân sự</strong><br>
+            <em>MVS Company</em></p>
+        </div>
+    </div>
+</body>
+</html>

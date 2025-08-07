@@ -5,12 +5,15 @@ import com.classroomapp.classroombackend.dto.RecruitmentApplicationDto;
 import com.classroomapp.classroombackend.service.EmailService;
 import com.classroomapp.classroombackend.service.InterviewScheduleService;
 import com.classroomapp.classroombackend.service.UserServiceExtension;
+import com.classroomapp.classroombackend.util.TopCVCalculation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+
+import java.math.BigDecimal;
 
 @RestController
 @RequestMapping("/api/interview-schedules")
@@ -154,7 +157,13 @@ public class InterviewScheduleController {
         // Lấy thông tin interview để gửi email (không cập nhật offer trong database)
         InterviewScheduleDto interview = interviewService.getById(id);
         if (interview != null) {
-            emailService.sendOfferResendEmail(interview.getApplicantEmail(), interview.getApplicantName(), interview.getJobTitle(), request.getOffer());
+            emailService.sendOfferResendEmailWithDetails(
+                interview.getApplicantEmail(), 
+                interview.getApplicantName(), 
+                interview.getJobTitle(), 
+                request.getOffer(),
+                request.getSalaryDetails()
+            );
         }
         
         return ResponseEntity.ok().build();
@@ -212,6 +221,40 @@ public class InterviewScheduleController {
         }
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/{id}/salary-calculation")
+    public ResponseEntity<TopCVCalculation.SalaryCalculationResult> calculateSalaryDetails(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "0") int numberOfDependents) {
+        try {
+            InterviewScheduleDto interview = interviewService.getById(id);
+            if (interview == null) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            // Parse offer amount from string to BigDecimal
+            BigDecimal grossSalary = null;
+            if (interview.getOffer() != null && !interview.getOffer().trim().isEmpty()) {
+                try {
+                    // Remove any non-numeric characters and parse
+                    String cleanOffer = interview.getOffer().replaceAll("[^0-9]", "");
+                    grossSalary = new BigDecimal(cleanOffer);
+                } catch (NumberFormatException e) {
+                    return ResponseEntity.badRequest().build();
+                }
+            } else {
+                return ResponseEntity.badRequest().body(null);
+            }
+            
+            // Calculate salary details using TopCVCalculation
+            TopCVCalculation.SalaryCalculationResult result = 
+                TopCVCalculation.calculateFromGrossToNet(grossSalary, numberOfDependents);
+            
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }
 
 class InterviewResultDto {
@@ -229,8 +272,13 @@ class InterviewResultDto {
 
 class OfferUpdateRequest {
     private String offer;
+    private Object salaryDetails;
+    
     public String getOffer() { return offer; }
     public void setOffer(String offer) { this.offer = offer; }
+    
+    public Object getSalaryDetails() { return salaryDetails; }
+    public void setSalaryDetails(Object salaryDetails) { this.salaryDetails = salaryDetails; }
 }
 
 class EvaluationUpdateRequest {
