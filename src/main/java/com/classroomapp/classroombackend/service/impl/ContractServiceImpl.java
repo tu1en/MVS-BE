@@ -139,12 +139,12 @@ public class ContractServiceImpl implements ContractService {
     public List<ContractDto> getCandidatesReadyForContract() {
         log.info("Fetching candidates ready for contract creation");
         
-        // Lấy danh sách tất cả phỏng vấn đã được chấp nhận
-        List<InterviewScheduleDto> acceptedInterviews = interviewScheduleService.getAll().stream()
-                .filter(interview -> "ACCEPTED".equals(interview.getStatus()))
+        // Lấy danh sách tất cả ứng viên đã được duyệt ở Quản Lý Offer
+        List<InterviewScheduleDto> approvedCandidates = interviewScheduleService.getAll().stream()
+                .filter(interview -> "APPROVED".equals(interview.getStatus()))
                 .collect(Collectors.toList());
         
-        log.info("Found {} accepted interviews", acceptedInterviews.size());
+        log.info("Found {} approved candidates from Offer Management", approvedCandidates.size());
         
         // Lấy tất cả hợp đồng hiện tại
         List<Contract> allContracts = contractRepository.findAll();
@@ -155,7 +155,7 @@ public class ContractServiceImpl implements ContractService {
             log.info("Existing contract email: '{}'", contract.getEmail()));
         
         // Lọc những người chưa có hợp đồng
-        List<ContractDto> candidates = acceptedInterviews.stream()
+        List<ContractDto> candidates = approvedCandidates.stream()
                 .filter(interview -> {
                     // Kiểm tra xem ứng viên đã có hợp đồng chưa
                     String applicantEmail = interview.getApplicantEmail();
@@ -194,6 +194,7 @@ public class ContractServiceImpl implements ContractService {
                     candidate.setEmail(interview.getApplicantEmail());
                     candidate.setPhoneNumber(interview.getApplicantPhone() != null ? interview.getApplicantPhone() : "Chưa có");
                     candidate.setPosition(interview.getJobTitle());
+                    candidate.setOffer(interview.getOffer()); // Lấy thông tin offer
                     candidate.setContractType("TEACHER"); // Mặc định là giáo viên
                     
                     // Lấy mức lương từ job position (nếu có)
@@ -260,11 +261,28 @@ public class ContractServiceImpl implements ContractService {
         dto.setCreatedBy(contract.getCreatedBy());
         dto.setCreatedAt(contract.getCreatedAt());
         dto.setUpdatedAt(contract.getUpdatedAt());
+        dto.setOffer(contract.getOffer()); // Nếu có trường offer
+        // --- CUSTOM FIELDS ---
+        dto.setBirthDate(contract.getBirthDate());
+        dto.setCitizenId(contract.getCitizenId());
+        dto.setAddress(contract.getAddress());
+        dto.setQualification(contract.getQualification());
+        dto.setSubject(contract.getSubject());
+        dto.setEducationLevel(contract.getEducationLevel());
         return dto;
     }
 
     private Contract convertToEntity(ContractDto contractDto) {
-        return modelMapper.map(contractDto, Contract.class);
+        Contract contract = modelMapper.map(contractDto, Contract.class);
+        // --- CUSTOM FIELDS ---
+        contract.setBirthDate(contractDto.getBirthDate());
+        contract.setCitizenId(contractDto.getCitizenId());
+        contract.setAddress(contractDto.getAddress());
+        contract.setQualification(contractDto.getQualification());
+        contract.setSubject(contractDto.getSubject());
+        contract.setEducationLevel(contractDto.getEducationLevel());
+        contract.setOffer(contractDto.getOffer()); // Nếu có trường offer
+        return contract;
     }
 
     @Override

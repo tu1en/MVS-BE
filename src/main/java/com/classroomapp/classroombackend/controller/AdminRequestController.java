@@ -15,7 +15,7 @@ import com.classroomapp.classroombackend.dto.requestmanagement.RequestDTO;
 import com.classroomapp.classroombackend.service.AdminRequestService;
 
 @RestController
-@RequestMapping("/api/admin/requests")
+@RequestMapping("/api/manager/requests")
 @PreAuthorize("hasRole('MANAGER')")
 public class AdminRequestController {
 

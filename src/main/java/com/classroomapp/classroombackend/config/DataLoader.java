@@ -870,27 +870,63 @@ seedEvidenceTemplates();
             return;
         }
         try {
-            // Teacher role request
-            Request teacherRequest = new Request();
-            teacherRequest.setEmail("nguyenvanA@gmail.com");
-            teacherRequest.setFullName("Nguyễn Văn A");
-            teacherRequest.setPhoneNumber("0987654321");
-            teacherRequest.setRequestedRole("TEACHER");
-            teacherRequest.setFormResponses(null); // Không có form data cho teacher
-            teacherRequest.setStatus("PENDING");
-            teacherRequest.setCreatedAt(LocalDateTime.now().minusDays(3));
-            requestRepository.save(teacherRequest);
-            // Student role request
-            Request studentRequest = new Request();
-            studentRequest.setEmail("tranvanB@gmail.com");
-            studentRequest.setFullName("Trần Văn B");
-            studentRequest.setPhoneNumber("0987123456");
-            studentRequest.setRequestedRole("STUDENT");
-            studentRequest.setFormResponses("{\"grade\":\"Lớp 11\",\"parentContact\":\"Phụ huynh: Trần Thị C, SĐT: 0912345678\",\"additionalInfo\":\"Em muốn đăng ký học thêm môn Toán và Vật lý để chuẩn bị cho kỳ thi quốc gia.\"}");
-            studentRequest.setStatus("PENDING");
-            studentRequest.setCreatedAt(LocalDateTime.now().minusDays(1));
-            requestRepository.save(studentRequest);
-            log.info("✅ Created 2 sample role requests.");
+            // Student role request 1
+            Request studentRequest1 = new Request();
+            studentRequest1.setEmail("tranvanB@gmail.com");
+            studentRequest1.setFullName("Trần Văn B");
+            studentRequest1.setPhoneNumber("0987123456");
+            studentRequest1.setRequestedRole("STUDENT");
+            studentRequest1.setFormResponses("{\"grade\":\"Lớp 11\",\"parentContact\":\"Phụ huynh: Trần Thị C, SĐT: 0912345678\",\"additionalInfo\":\"Em muốn đăng ký tài khoản vào hệ thống Minh Việt.\"}");
+            studentRequest1.setStatus("PENDING");
+            studentRequest1.setCreatedAt(LocalDateTime.now().minusDays(1));
+            requestRepository.save(studentRequest1);
+
+            // Student role request 2
+            Request studentRequest2 = new Request();
+            studentRequest2.setEmail("nguyenthic@gmail.com");
+            studentRequest2.setFullName("Nguyễn Thị C");
+            studentRequest2.setPhoneNumber("0987654321");
+            studentRequest2.setRequestedRole("STUDENT");
+            studentRequest2.setFormResponses("{\"grade\":\"Lớp 10\",\"parentContact\":\"Phụ huynh: Nguyễn Văn D, SĐT: 0923456789\",\"additionalInfo\":\"Em muốn học tại trường Minh Việt để nâng cao kiến thức.\"}");
+            studentRequest2.setStatus("PENDING");
+            studentRequest2.setCreatedAt(LocalDateTime.now().minusDays(2));
+            requestRepository.save(studentRequest2);
+
+            // Student role request 3
+            Request studentRequest3 = new Request();
+            studentRequest3.setEmail("levand@gmail.com");
+            studentRequest3.setFullName("Lê Văn D");
+            studentRequest3.setPhoneNumber("0976543210");
+            studentRequest3.setRequestedRole("STUDENT");
+            studentRequest3.setFormResponses("{\"grade\":\"Lớp 12\",\"parentContact\":\"Phụ huynh: Lê Thị E, SĐT: 0934567890\",\"additionalInfo\":\"Em muốn đăng ký học để chuẩn bị thi đại học.\"}");
+            studentRequest3.setStatus("APPROVED");
+            studentRequest3.setCreatedAt(LocalDateTime.now().minusDays(3));
+            requestRepository.save(studentRequest3);
+
+            // Student role request 4
+            Request studentRequest4 = new Request();
+            studentRequest4.setEmail("phamthie@gmail.com");
+            studentRequest4.setFullName("Phạm Thị E");
+            studentRequest4.setPhoneNumber("0965432109");
+            studentRequest4.setRequestedRole("STUDENT");
+            studentRequest4.setFormResponses("{\"grade\":\"Lớp 11\",\"parentContact\":\"Phụ huynh: Phạm Văn F, SĐT: 0945678901\",\"additionalInfo\":\"Em muốn học tại trường để cải thiện kết quả học tập.\"}");
+            studentRequest4.setStatus("REJECTED");
+            studentRequest4.setRejectReason("Thiếu thông tin liên hệ phụ huynh");
+            studentRequest4.setCreatedAt(LocalDateTime.now().minusDays(4));
+            requestRepository.save(studentRequest4);
+
+            // Student role request 5
+            Request studentRequest5 = new Request();
+            studentRequest5.setEmail("hoangvanf@gmail.com");
+            studentRequest5.setFullName("Hoàng Văn F");
+            studentRequest5.setPhoneNumber("0954321098");
+            studentRequest5.setRequestedRole("STUDENT");
+            studentRequest5.setFormResponses("{\"grade\":\"Lớp 10\",\"parentContact\":\"Phụ huynh: Hoàng Thị G, SĐT: 0956789012\",\"additionalInfo\":\"Em muốn đăng ký học để phát triển toàn diện.\"}");
+            studentRequest5.setStatus("PENDING");
+            studentRequest5.setCreatedAt(LocalDateTime.now().minusDays(5));
+            requestRepository.save(studentRequest5);
+
+            log.info("✅ Created 5 sample role requests.");
         } catch (Exception e) {
             log.error("❌ Error creating sample requests: {}", e.getMessage());
         }

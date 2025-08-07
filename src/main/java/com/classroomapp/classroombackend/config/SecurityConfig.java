@@ -139,7 +139,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/timetable/**").authenticated()
 
                 // Role-based endpoints
-                .requestMatchers("/api/admin/requests/**").hasAnyRole("ADMIN", "MANAGER")
+                .requestMatchers("/api/manager/requests/**").hasRole("MANAGER")
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/manager/**").hasRole("MANAGER")
                 .requestMatchers("/api/teacher/**").hasAuthority("ROLE_TEACHER")
