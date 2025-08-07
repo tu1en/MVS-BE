@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.classroomapp.classroombackend.dto.response.PublicCourseTemplateDto;
@@ -29,19 +30,40 @@ public class PublicCourseController {
     private final CourseTemplateService courseTemplateService;
     
     /**
-     * Get all public course templates
+     * Get all public course templates with optional filtering
      */
     @GetMapping
-    public ResponseEntity<List<PublicCourseTemplateDto>> getPublicCourses() {
-        log.info("Fetching all public course templates");
+    public ResponseEntity<List<PublicCourseTemplateDto>> getPublicCourses(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String level) {
+        log.info("Fetching public course templates with search: '{}', category: '{}', level: '{}'", search, category, level);
         
         try {
-            List<PublicCourseTemplateDto> courses = courseTemplateService.getPublicCourseTemplates();
+            List<PublicCourseTemplateDto> courses = courseTemplateService.getPublicCourseTemplatesWithFilter(search, category, level);
             log.info("Found {} public course templates", courses.size());
             
             return ResponseEntity.ok(courses);
         } catch (Exception e) {
             log.error("Error fetching public courses", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Get course catalog for homepage/marketing
+     */
+    @GetMapping("/catalog")
+    public ResponseEntity<List<PublicCourseTemplateDto>> getCourseCatalog() {
+        log.info("Fetching course catalog for homepage");
+        
+        try {
+            List<PublicCourseTemplateDto> courses = courseTemplateService.getPublicCourseTemplates();
+            log.info("Found {} courses for catalog", courses.size());
+            
+            return ResponseEntity.ok(courses);
+        } catch (Exception e) {
+            log.error("Error fetching course catalog", e);
             return ResponseEntity.internalServerError().build();
         }
     }

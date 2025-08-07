@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -66,4 +67,35 @@ public interface ClassRepository extends JpaRepository<ClassEntity, Long> {
     List<ClassEntity> findByCreatedByOrderByCreatedAtDesc(Long createdBy);
     
     List<ClassEntity> findTop10ByOrderByCreatedAtDesc();
+    
+    // Additional methods for room management
+    @Query("SELECT c FROM ClassEntity c WHERE c.room.id = :roomId " +
+           "AND c.startDate BETWEEN :startDate AND :endDate " +
+           "AND c.status IN ('PLANNING', 'ACTIVE') " +
+           "ORDER BY c.startDate ASC")
+    List<ClassEntity> findByRoomIdAndDateRange(
+        @Param("roomId") Long roomId,
+        @Param("startDate") LocalDate startDate,
+        @Param("endDate") LocalDate endDate
+    );
+    
+    @Query("SELECT c FROM ClassEntity c WHERE c.room.id IN :roomIds " +
+           "AND c.startDate BETWEEN :startDate AND :endDate " +
+           "AND c.status IN ('PLANNING', 'ACTIVE') " +
+           "ORDER BY c.startDate ASC")
+    List<ClassEntity> findByRoomIdsAndDateRange(
+        @Param("roomIds") List<Long> roomIds,
+        @Param("startDate") LocalDate startDate,
+        @Param("endDate") LocalDate endDate
+    );
+    
+    @Query("SELECT c FROM ClassEntity c WHERE c.room.id = :roomId " +
+           "AND c.startDate = :date " +
+           "AND c.status IN ('PLANNING', 'ACTIVE') " +
+           "AND (:excludeClassId IS NULL OR c.id != :excludeClassId)")
+    List<ClassEntity> findConflictingClasses(
+        @Param("roomId") Long roomId,
+        @Param("date") LocalDate date,
+        @Param("excludeClassId") Long excludeClassId
+    );
 }

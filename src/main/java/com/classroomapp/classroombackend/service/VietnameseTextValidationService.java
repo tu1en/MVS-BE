@@ -3,9 +3,9 @@ package com.classroomapp.classroombackend.service;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * Service for validating and fixing Vietnamese text encoding issues
@@ -14,8 +14,9 @@ import lombok.extern.slf4j.Slf4j;
  * methods to validate and fix encoding problems.
  */
 @Service
-@Slf4j
 public class VietnameseTextValidationService {
+    
+    private static final Logger log = LoggerFactory.getLogger(VietnameseTextValidationService.class);
 
     // Pattern to detect Vietnamese characters
     private static final Pattern VIETNAMESE_PATTERN = Pattern.compile(

@@ -25,23 +25,29 @@ import org.springframework.web.multipart.MultipartFile;
 
 class MaterialDto {
     private Long id;
+    private String title;
+    private String description;
+    private String filePath;
     private String fileName;
     private String fileType;
     private String downloadUrl;
     private String uploadDate;
     private String uploadedBy;
     private long fileSize;
-    private String description;
     private String category;
+    private Long classroomId;
     
     public MaterialDto() {}
     
-    public MaterialDto(Long id, String fileName, String fileType, String uploadedBy) {
+    public MaterialDto(Long id, String fileName, String fileType, String uploadedBy, Long classroomId) {
         this.id = id;
         this.fileName = fileName;
         this.fileType = fileType;
         this.uploadedBy = uploadedBy;
-        this.downloadUrl = "/api/mock-materials/download/" + id;
+        this.classroomId = classroomId;
+        this.title = fileName;
+        this.filePath = "/uploads/materials/" + classroomId + "/" + fileName;
+        this.downloadUrl = "/api/materials/download/" + id;
         this.uploadDate = java.time.LocalDateTime.now().toString();
         this.fileSize = 1024000; // Mock size
         this.description = "Tài liệu học tập";
@@ -51,26 +57,43 @@ class MaterialDto {
     // Getters and setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-    public String getFileName() { return fileName; }
-    public void setFileName(String fileName) { this.fileName = fileName; }
-    public String getFileType() { return fileType; }
-    public void setFileType(String fileType) { this.fileType = fileType; }
-    public String getDownloadUrl() { return downloadUrl; }
-    public void setDownloadUrl(String downloadUrl) { this.downloadUrl = downloadUrl; }
-    public String getUploadDate() { return uploadDate; }
-    public void setUploadDate(String uploadDate) { this.uploadDate = uploadDate; }
-    public String getUploadedBy() { return uploadedBy; }
-    public void setUploadedBy(String uploadedBy) { this.uploadedBy = uploadedBy; }
-    public long getFileSize() { return fileSize; }
-    public void setFileSize(long fileSize) { this.fileSize = fileSize; }
+    
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
+    
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+    
+    public String getFilePath() { return filePath; }
+    public void setFilePath(String filePath) { this.filePath = filePath; }
+    
+    public String getFileName() { return fileName; }
+    public void setFileName(String fileName) { this.fileName = fileName; }
+    
+    public String getFileType() { return fileType; }
+    public void setFileType(String fileType) { this.fileType = fileType; }
+    
+    public String getDownloadUrl() { return downloadUrl; }
+    public void setDownloadUrl(String downloadUrl) { this.downloadUrl = downloadUrl; }
+    
+    public String getUploadDate() { return uploadDate; }
+    public void setUploadDate(String uploadDate) { this.uploadDate = uploadDate; }
+    
+    public String getUploadedBy() { return uploadedBy; }
+    public void setUploadedBy(String uploadedBy) { this.uploadedBy = uploadedBy; }
+    
+    public long getFileSize() { return fileSize; }
+    public void setFileSize(long fileSize) { this.fileSize = fileSize; }
+    
     public String getCategory() { return category; }
     public void setCategory(String category) { this.category = category; }
+    
+    public Long getClassroomId() { return classroomId; }
+    public void setClassroomId(Long classroomId) { this.classroomId = classroomId; }
 }
 
 @RestController
-@RequestMapping("/api/mock-materials")
+@RequestMapping({"/api/materials", "/api/mock-materials"})
 @CrossOrigin(origins = "*")
 public class MaterialController {
 
@@ -79,23 +102,29 @@ public class MaterialController {
     private final AtomicLong materialIdCounter = new AtomicLong(3000);
 
     public MaterialController() {
-        // Initialize mock materials
+        // Initialize mock materials for different classrooms
+        initializeMockMaterials();
+    }
+    
+    private void initializeMockMaterials() {
+        // Materials for classroom 1
         MaterialDto material1 = new MaterialDto(materialIdCounter.getAndIncrement(), 
-            "Java Programming Guide.pdf", "PDF", "Thầy Nguyễn Văn A");
-        material1.setDescription("Hướng dẫn lập trình Java từ cơ bản đến nâng cao");
-        material1.setCategory("Programming");
+            "course_handbook.pdf", "PDF", "Thầy Nguyễn Văn A", 1L);
+        material1.setTitle("Course Material for Class 1");
+        material1.setDescription("Essential materials for the course");
         materials.put(material1.getId(), material1);
         
         MaterialDto material2 = new MaterialDto(materialIdCounter.getAndIncrement(), 
-            "Database Design Examples.docx", "DOCX", "Cô Trần Thị B");
-        material2.setDescription("Các ví dụ thiết kế cơ sở dữ liệu");
-        material2.setCategory("Database");
+            "lecture_notes.txt", "TXT", "Cô Trần Thị B", 1L);
+        material2.setTitle("Lecture Notes Class 1");
+        material2.setDescription("Important lecture notes");
         materials.put(material2.getId(), material2);
         
+        // Materials for classroom 2
         MaterialDto material3 = new MaterialDto(materialIdCounter.getAndIncrement(), 
-            "Web Development Tutorial.mp4", "VIDEO", "Thầy Lê Văn C");
-        material3.setDescription("Video hướng dẫn phát triển web");
-        material3.setCategory("Web Development");
+            "web_development_guide.pdf", "PDF", "Thầy Lê Văn C", 2L);
+        material3.setTitle("Web Development Guide");
+        material3.setDescription("Complete web development tutorial");
         materials.put(material3.getId(), material3);
         
         // Mock file contents
@@ -103,6 +132,22 @@ public class MaterialController {
         fileContents.put(material1.getId(), mockContent.getBytes());
         fileContents.put(material2.getId(), mockContent.getBytes());
         fileContents.put(material3.getId(), mockContent.getBytes());
+    }
+
+    // ✅ NEW: Get materials by classroom ID - matches frontend expectation
+    @GetMapping("/classroom/{classroomId}")
+    public ResponseEntity<List<MaterialDto>> getMaterialsByClassroom(@PathVariable Long classroomId) {
+        System.out.println("✅ Yêu cầu lấy danh sách tài liệu cho lớp học ID: " + classroomId);
+        
+        List<MaterialDto> result = new ArrayList<>();
+        for (MaterialDto material : materials.values()) {
+            if (material.getClassroomId().equals(classroomId)) {
+                result.add(material);
+            }
+        }
+        
+        System.out.println("✅ Tìm thấy " + result.size() + " tài liệu cho lớp " + classroomId);
+        return ResponseEntity.ok(result);
     }
 
     // Get all materials
@@ -135,9 +180,10 @@ public class MaterialController {
             @RequestParam("file") MultipartFile file,
             @RequestParam(required = false) String description,
             @RequestParam(required = false) String category,
-            @RequestParam(required = false) String uploadedBy) {
+            @RequestParam(required = false) String uploadedBy,
+            @RequestParam(required = false) Long classroomId) {
         
-        System.out.println("Yêu cầu upload file: " + file.getOriginalFilename());
+        System.out.println("Yêu cầu upload file: " + file.getOriginalFilename() + " cho lớp: " + classroomId);
         
         try {
             Long materialId = materialIdCounter.getAndIncrement();
@@ -146,7 +192,7 @@ public class MaterialController {
             String fileType = getFileExtension(fileName);
             
             MaterialDto material = new MaterialDto(materialId, fileName, fileType, 
-                uploadedBy != null ? uploadedBy : "Unknown User");
+                uploadedBy != null ? uploadedBy : "Unknown User", classroomId != null ? classroomId : 1L);
             material.setFileSize(file.getSize());
             material.setDescription(description != null ? description : "Uploaded material");
             material.setCategory(category != null ? category : "General");
@@ -163,13 +209,14 @@ public class MaterialController {
         }
     }
 
-    // Download material
+    // ✅ FIXED: Download material - matches frontend expectation
     @GetMapping("/download/{materialId}")
     public ResponseEntity<Resource> downloadMaterial(@PathVariable Long materialId) {
-        System.out.println("Yêu cầu download tài liệu ID: " + materialId);
+        System.out.println("✅ Yêu cầu download tài liệu ID: " + materialId);
         
         MaterialDto material = materials.get(materialId);
         if (material == null) {
+            System.out.println("❌ Không tìm thấy tài liệu ID: " + materialId);
             return ResponseEntity.notFound().build();
         }
         
@@ -177,9 +224,12 @@ public class MaterialController {
         if (content == null) {
             // Create mock content if not exists
             content = ("Mock content for " + material.getFileName()).getBytes();
+            System.out.println("✅ Tạo mock content cho: " + material.getFileName());
         }
         
         ByteArrayResource resource = new ByteArrayResource(content);
+        
+        System.out.println("✅ Download thành công: " + material.getFileName());
         
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
@@ -207,20 +257,23 @@ public class MaterialController {
         return ResponseEntity.notFound().build();
     }
 
-    // Delete material
+    // ✅ FIXED: Delete material - matches frontend expectation
     @DeleteMapping("/{materialId}")
     public ResponseEntity<Void> deleteMaterial(@PathVariable Long materialId) {
-        System.out.println("Yêu cầu xóa tài liệu ID: " + materialId);
+        System.out.println("✅ Yêu cầu xóa tài liệu ID: " + materialId);
         
         if (materials.containsKey(materialId)) {
             materials.remove(materialId);
             fileContents.remove(materialId);
+            System.out.println("✅ Đã xóa tài liệu ID: " + materialId);
             return ResponseEntity.ok().build();
         }
+        
+        System.out.println("❌ Không tìm thấy tài liệu để xóa ID: " + materialId);
         return ResponseEntity.notFound().build();
     }
     
-    // Get materials by course ID
+    // Get materials by course ID (legacy support)
     @GetMapping("/course/{courseId}")
     public ResponseEntity<List<MaterialDto>> getMaterialsByCourse(
             @PathVariable Long courseId,
@@ -228,30 +281,8 @@ public class MaterialController {
             @RequestParam(required = false) String search) {
         System.out.println("Yêu cầu lấy danh sách tài liệu cho khóa học ID: " + courseId);
         
-        // In a real implementation, you would filter materials by course ID from the database
-        // For mock purposes, we'll return all materials with a mock filtering
-        List<MaterialDto> result = new ArrayList<>(materials.values());
-        
-        // Apply some mock filtering based on course ID (in this case, we'll just return all materials)
-        // For demo purposes, maybe filter based on some characteristic of the ID
-        if (courseId % 2 == 0) {
-            // For even course IDs, filter to keep only PDFs
-            result.removeIf(material -> !material.getFileType().equalsIgnoreCase("PDF"));
-        }
-        
-        // Filter by category if provided
-        if (category != null && !category.isEmpty()) {
-            result.removeIf(material -> !material.getCategory().equalsIgnoreCase(category));
-        }
-        
-        // Filter by search term if provided
-        if (search != null && !search.isEmpty()) {
-            result.removeIf(material -> 
-                !material.getFileName().toLowerCase().contains(search.toLowerCase()) &&
-                !material.getDescription().toLowerCase().contains(search.toLowerCase()));
-        }
-        
-        return ResponseEntity.ok(result);
+        // For course endpoints, we'll treat courseId as classroomId
+        return getMaterialsByClassroom(courseId);
     }
     
     private String getFileExtension(String fileName) {

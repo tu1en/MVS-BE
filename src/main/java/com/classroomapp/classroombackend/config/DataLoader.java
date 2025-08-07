@@ -72,6 +72,8 @@ import com.classroomapp.classroombackend.repository.hrmanagement.EvidenceTemplat
 import com.classroomapp.classroombackend.repository.requestmanagement.RequestRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.RoleRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.classroomapp.classroombackend.repository.RoomRepository;
+import com.classroomapp.classroombackend.entity.Room;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -97,6 +99,9 @@ private EvidenceTemplateRepository evidenceTemplateRepository;
     
     @Autowired
     private ClassroomRepository classroomRepository;
+    
+    @Autowired
+    private RoomRepository roomRepository;
     
     @Autowired
     private ClassroomEnrollmentRepository classroomEnrollmentRepository;
@@ -185,6 +190,9 @@ private EvidenceTemplateRepository evidenceTemplateRepository;
             
             // Seed courses
             seedCourses();
+            
+            // Seed rooms
+            seedRooms();
             
             // Seed classrooms
             classrooms = seedClassrooms();
@@ -666,6 +674,71 @@ seedEvidenceTemplates();
             courseRepository.save(physics);
 
             log.info("✅ Created 6 sample courses.");
+        }
+    }
+
+    private void seedRooms() {
+        if (roomRepository.count() == 0) {
+            log.info("🏢 Seeding rooms...");
+            
+            // Create sample rooms
+            Room room101 = new Room();
+            room101.setRoomCode("A101");
+            room101.setRoomName("Lecture Hall A101");
+            room101.setCapacity(50);
+            room101.setLocation("Building A, Floor 1");
+            room101.setFacilities("Projector, Whiteboard, Air Conditioning");
+            room101.setIsActive(true);
+            roomRepository.save(room101);
+            
+            Room room102 = new Room();
+            room102.setRoomCode("A102");
+            room102.setRoomName("Seminar Room A102");
+            room102.setCapacity(30);
+            room102.setLocation("Building A, Floor 1");
+            room102.setFacilities("Interactive Whiteboard, Conference Table");
+            room102.setIsActive(true);
+            roomRepository.save(room102);
+            
+            Room room201 = new Room();
+            room201.setRoomCode("B201");
+            room201.setRoomName("Computer Lab B201");
+            room201.setCapacity(40);
+            room201.setLocation("Building B, Floor 2");
+            room201.setFacilities("30 Computers, Projector, Air Conditioning");
+            room201.setIsActive(true);
+            roomRepository.save(room201);
+            
+            Room room202 = new Room();
+            room202.setRoomCode("B202");
+            room202.setRoomName("Science Lab B202");
+            room202.setCapacity(25);
+            room202.setLocation("Building B, Floor 2");
+            room202.setFacilities("Laboratory Equipment, Safety Equipment, Ventilation");
+            room202.setIsActive(true);
+            roomRepository.save(room202);
+            
+            Room room301 = new Room();
+            room301.setRoomCode("C301");
+            room301.setRoomName("Large Auditorium C301");
+            room301.setCapacity(100);
+            room301.setLocation("Building C, Floor 3");
+            room301.setFacilities("Sound System, Large Projector, Stage, Air Conditioning");
+            room301.setIsActive(true);
+            roomRepository.save(room301);
+            
+            Room room302 = new Room();
+            room302.setRoomCode("C302");
+            room302.setRoomName("Meeting Room C302");
+            room302.setCapacity(15);
+            room302.setLocation("Building C, Floor 3");
+            room302.setFacilities("Conference Table, TV Display, Video Conferencing");
+            room302.setIsActive(true);
+            roomRepository.save(room302);
+            
+            log.info("✅ Created 6 sample rooms.");
+        } else {
+            log.info("✅ Rooms already seeded.");
         }
     }
 

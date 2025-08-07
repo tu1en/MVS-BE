@@ -115,6 +115,16 @@ public class SecurityConfig {
                 .requestMatchers("/api/blogs/{id:[\\d]+}/publish").authenticated()
                 .requestMatchers("/api/blogs/{id:[\\d]+}/unpublish").authenticated()
                 
+                // Material endpoints - FIXED: Add these endpoints
+                .requestMatchers("/api/materials/**").authenticated()
+                .requestMatchers("/api/mock-materials/**").permitAll() // For testing purposes
+                
+                // Lecture endpoints - FIXED: Add these endpoints  
+                .requestMatchers("/api/lectures/**").authenticated()
+                
+                // Class endpoints - FIXED: Add these endpoints
+                .requestMatchers("/api/classes/**").authenticated()
+                
                 // Protected endpoints - Attendance system
                 .requestMatchers("/api/v1/attendance/**").authenticated()
                 .requestMatchers("/api/attendance-sessions/**").authenticated()
