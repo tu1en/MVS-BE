@@ -81,8 +81,9 @@ public class EmailServiceDummyImpl implements EmailService {
                 java.math.BigDecimal grossSalary = new java.math.BigDecimal(cleanOffer);
                 com.classroomapp.classroombackend.util.TopCVCalculation.SalaryCalculationResult salaryDetails = 
                     com.classroomapp.classroombackend.util.TopCVCalculation.calculateFromGrossToNet(grossSalary, 0);
-                log.info("DUMMY EMAIL SERVICE: Salary details - Gross: {}, Net: {}, Tax: {}", 
-                    salaryDetails.getGrossSalary(), salaryDetails.getNetSalary(), salaryDetails.getPersonalIncomeTax());
+                log.info("DUMMY EMAIL SERVICE: Salary details - Gross: {}, Net: {}, Tax: {}, Employee Contribution: {}", 
+                    salaryDetails.getGrossSalary(), salaryDetails.getNetSalary(), salaryDetails.getPersonalIncomeTax(), 
+                    salaryDetails.getInsuranceDetails().getTotalEmployeeContribution());
             }
         } catch (Exception e) {
             log.warn("Could not calculate salary details for offer: {}", offer, e);

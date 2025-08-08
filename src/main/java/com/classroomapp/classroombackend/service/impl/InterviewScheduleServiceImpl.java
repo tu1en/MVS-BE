@@ -106,32 +106,49 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
                 .filter(schedule -> "SCHEDULED".equals(schedule.getStatus()) || "PENDING".equals(schedule.getStatus()))
                 .collect(Collectors.toList());
             
+            System.out.println("=== Conflict Check Debug ===");
+            System.out.println("New schedule: " + startTime + " to " + endTime);
+            System.out.println("Exclude application ID: " + excludeApplicationId);
+            System.out.println("Total existing schedules: " + existingSchedules.size());
+            
             for (InterviewSchedule schedule : existingSchedules) {
                 // Bỏ qua nếu là lịch của chính ứng viên đang được kiểm tra
                 if (excludeApplicationId != null && schedule.getApplication() != null 
                     && excludeApplicationId.equals(schedule.getApplication().getId())) {
+                    System.out.println("Skipping own schedule: " + schedule.getId());
                     continue;
                 }
                 
-                // Kiểm tra overlap theo từng điều kiện:
-                // 1. Thời gian bắt đầu mới nằm trong khoảng thời gian cũ
-                boolean startOverlap = startTime.isEqual(schedule.getStartTime()) 
-                    || (startTime.isAfter(schedule.getStartTime()) && startTime.isBefore(schedule.getEndTime()));
+                System.out.println("Checking against schedule: " + schedule.getId() + 
+                    " (" + schedule.getStartTime() + " to " + schedule.getEndTime() + 
+                    ", Application: " + (schedule.getApplication() != null ? schedule.getApplication().getId() : "null") + ")");
                 
-                // 2. Thời gian kết thúc mới nằm trong khoảng thời gian cũ
-                boolean endOverlap = endTime.isEqual(schedule.getEndTime())
-                    || (endTime.isAfter(schedule.getStartTime()) && endTime.isBefore(schedule.getEndTime()));
+                // Kiểm tra overlap theo từng điều kiện:
+                // 1. Thời gian bắt đầu mới nằm trong khoảng thời gian cũ (không bao gồm điểm cuối)
+                boolean startOverlap = (startTime.isAfter(schedule.getStartTime()) && startTime.isBefore(schedule.getEndTime()));
+                
+                // 2. Thời gian kết thúc mới nằm trong khoảng thời gian cũ (không bao gồm điểm đầu)
+                boolean endOverlap = (endTime.isAfter(schedule.getStartTime()) && endTime.isBefore(schedule.getEndTime()));
                 
                 // 3. Thời gian mới bao trọn thời gian cũ
                 boolean containsExisting = startTime.isBefore(schedule.getStartTime()) && endTime.isAfter(schedule.getEndTime());
                 
-                if (startOverlap || endOverlap || containsExisting) {
+                // 4. Thời gian cũ bao trọn thời gian mới
+                boolean isContainedByExisting = schedule.getStartTime().isBefore(startTime) && schedule.getEndTime().isAfter(endTime);
+                
+                System.out.println("  startOverlap: " + startOverlap + ", endOverlap: " + endOverlap + 
+                    ", containsExisting: " + containsExisting + ", isContainedByExisting: " + isContainedByExisting);
+                
+                if (startOverlap || endOverlap || containsExisting || isContainedByExisting) {
+                    System.out.println("  *** CONFLICT DETECTED ***");
                     return true; // Có conflict
                 }
             }
+            System.out.println("  *** NO CONFLICT ***");
             return false; // Không có conflict
         } catch (Exception e) {
             // Log lỗi nếu có
+            System.err.println("Error in hasConflict: " + e.getMessage());
             e.printStackTrace();
             return true; // Trả về true để đảm bảo an toàn
         }

@@ -10,21 +10,27 @@ import java.util.ArrayList;
 
 /**
  * Utility class for calculating salary components according to Vietnamese labor law
- * Based on the calculation standards provided in the image
+ * Based on the latest calculation standards from TopCV
  */
 public class TopCVCalculation {
     
-    // Constants for Vietnamese labor law
-    private static final BigDecimal EMPLOYEE_CONTRIBUTION_RATE = new BigDecimal("0.105"); // 10.5%
-    private static final BigDecimal EMPLOYER_CONTRIBUTION_RATE = new BigDecimal("0.215"); // 21.5%
-    private static final BigDecimal TOTAL_CONTRIBUTION_RATE = new BigDecimal("0.32"); // 32%
+    // Constants for Vietnamese labor law (updated 2024)
+    // Employee contribution rates (10.5% total)
+    private static final BigDecimal SOCIAL_INSURANCE_EMPLOYEE_RATE = new BigDecimal("0.08"); // 8% BHXH
+    private static final BigDecimal HEALTH_INSURANCE_EMPLOYEE_RATE = new BigDecimal("0.015"); // 1.5% BHYT
+    private static final BigDecimal UNEMPLOYMENT_INSURANCE_EMPLOYEE_RATE = new BigDecimal("0.01"); // 1% BHTN
+    private static final BigDecimal TOTAL_EMPLOYEE_CONTRIBUTION_RATE = new BigDecimal("0.105"); // 10.5%
     
-    // Personal Income Tax brackets (progressive tax)
-    private static final BigDecimal TAX_FREE_THRESHOLD = new BigDecimal("11000000"); // 11 million VND
-    private static final BigDecimal TAX_RATE_10_PERCENT = new BigDecimal("0.10"); // 10%
+    // Employer contribution rates (21.5% total)
+    private static final BigDecimal SOCIAL_INSURANCE_EMPLOYER_RATE = new BigDecimal("0.17"); // 17% BHXH
+    private static final BigDecimal HEALTH_INSURANCE_EMPLOYER_RATE = new BigDecimal("0.03"); // 3% BHYT
+    private static final BigDecimal UNEMPLOYMENT_INSURANCE_EMPLOYER_RATE = new BigDecimal("0.01"); // 1% BHTN
+    private static final BigDecimal WORK_ACCIDENT_INSURANCE_RATE = new BigDecimal("0.005"); // 0.5% BHTNLĐ
+    private static final BigDecimal TOTAL_EMPLOYER_CONTRIBUTION_RATE = new BigDecimal("0.215"); // 21.5%
     
-    // Deduction for dependents (example values - should be researched from law)
-    private static final BigDecimal DEPENDENT_DEDUCTION = new BigDecimal("4400000"); // 4.4 million per dependent
+    // Personal Income Tax constants
+    private static final BigDecimal PERSONAL_DEDUCTION = new BigDecimal("11000000"); // 11 triệu VNĐ
+    private static final BigDecimal DEPENDENT_DEDUCTION = new BigDecimal("4400000"); // 4.4 triệu VNĐ per dependent
     
     @Data
     @NoArgsConstructor
@@ -32,14 +38,31 @@ public class TopCVCalculation {
     public static class SalaryCalculationResult {
         private BigDecimal grossSalary;
         private BigDecimal netSalary;
-        private BigDecimal employeeContribution;
-        private BigDecimal employerContribution;
-        private BigDecimal totalInsuranceContribution;
+        private BigDecimal incomeBeforeTax;
+        private InsuranceDetails insuranceDetails;
         private BigDecimal personalIncomeTax;
         private BigDecimal dependentDeductions;
         private BigDecimal taxableIncome;
         private List<TaxBracket> taxBrackets;
         private String calculationType; // "GROSS_TO_NET" or "NET_TO_GROSS"
+    }
+    
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class InsuranceDetails {
+        private BigDecimal socialInsuranceEmployee; // BHXH nhân viên
+        private BigDecimal healthInsuranceEmployee; // BHYT nhân viên
+        private BigDecimal unemploymentInsuranceEmployee; // BHTN nhân viên
+        private BigDecimal totalEmployeeContribution; // Tổng đóng góp nhân viên
+        
+        private BigDecimal socialInsuranceEmployer; // BHXH công ty
+        private BigDecimal healthInsuranceEmployer; // BHYT công ty
+        private BigDecimal unemploymentInsuranceEmployer; // BHTN công ty
+        private BigDecimal workAccidentInsurance; // BHTNLĐ
+        private BigDecimal totalEmployerContribution; // Tổng đóng góp công ty
+        
+        private BigDecimal totalInsuranceContribution; // Tổng bảo hiểm
     }
     
     @Data
@@ -64,32 +87,61 @@ public class TopCVCalculation {
         result.setGrossSalary(grossSalary);
         result.setCalculationType("GROSS_TO_NET");
         
-        // Calculate insurance contributions
-        BigDecimal employeeContribution = grossSalary.multiply(EMPLOYEE_CONTRIBUTION_RATE);
-        BigDecimal employerContribution = grossSalary.multiply(EMPLOYER_CONTRIBUTION_RATE);
-        BigDecimal totalInsuranceContribution = grossSalary.multiply(TOTAL_CONTRIBUTION_RATE);
-        
-        result.setEmployeeContribution(employeeContribution);
-        result.setEmployerContribution(employerContribution);
-        result.setTotalInsuranceContribution(totalInsuranceContribution);
+        // Calculate detailed insurance contributions
+        InsuranceDetails insuranceDetails = calculateInsuranceDetails(grossSalary);
+        result.setInsuranceDetails(insuranceDetails);
         
         // Calculate dependent deductions
         BigDecimal dependentDeductions = DEPENDENT_DEDUCTION.multiply(new BigDecimal(numberOfDependents));
         result.setDependentDeductions(dependentDeductions);
         
-        // Calculate taxable income
-        BigDecimal taxableIncome = grossSalary.subtract(dependentDeductions);
+        // Calculate income before tax: Gross - Employee contributions
+        BigDecimal incomeBeforeTax = grossSalary.subtract(insuranceDetails.getTotalEmployeeContribution());
+        result.setIncomeBeforeTax(incomeBeforeTax);
+        
+        // Calculate taxable income: Income before tax - Personal deduction - Dependent deductions
+        BigDecimal taxableIncome = incomeBeforeTax.subtract(PERSONAL_DEDUCTION).subtract(dependentDeductions);
+        if (taxableIncome.compareTo(BigDecimal.ZERO) < 0) {
+            taxableIncome = BigDecimal.ZERO;
+        }
         result.setTaxableIncome(taxableIncome);
         
         // Calculate personal income tax
         BigDecimal personalIncomeTax = calculateProgressiveTax(taxableIncome);
         result.setPersonalIncomeTax(personalIncomeTax);
         
-        // Calculate net salary
-        BigDecimal netSalary = grossSalary.subtract(employeeContribution).subtract(personalIncomeTax);
+        // Calculate net salary: Gross - Employee contributions - Personal income tax
+        BigDecimal netSalary = grossSalary.subtract(insuranceDetails.getTotalEmployeeContribution()).subtract(personalIncomeTax);
         result.setNetSalary(netSalary);
         
         return result;
+    }
+    
+    /**
+     * Calculate detailed insurance contributions
+     * @param grossSalary The gross salary amount
+     * @return InsuranceDetails with all insurance breakdowns
+     */
+    private static InsuranceDetails calculateInsuranceDetails(BigDecimal grossSalary) {
+        InsuranceDetails details = new InsuranceDetails();
+        
+        // Employee contributions (10.5% total)
+        details.setSocialInsuranceEmployee(grossSalary.multiply(SOCIAL_INSURANCE_EMPLOYEE_RATE));
+        details.setHealthInsuranceEmployee(grossSalary.multiply(HEALTH_INSURANCE_EMPLOYEE_RATE));
+        details.setUnemploymentInsuranceEmployee(grossSalary.multiply(UNEMPLOYMENT_INSURANCE_EMPLOYEE_RATE));
+        details.setTotalEmployeeContribution(grossSalary.multiply(TOTAL_EMPLOYEE_CONTRIBUTION_RATE));
+        
+        // Employer contributions (21.5% total)
+        details.setSocialInsuranceEmployer(grossSalary.multiply(SOCIAL_INSURANCE_EMPLOYER_RATE));
+        details.setHealthInsuranceEmployer(grossSalary.multiply(HEALTH_INSURANCE_EMPLOYER_RATE));
+        details.setUnemploymentInsuranceEmployer(grossSalary.multiply(UNEMPLOYMENT_INSURANCE_EMPLOYER_RATE));
+        details.setWorkAccidentInsurance(grossSalary.multiply(WORK_ACCIDENT_INSURANCE_RATE));
+        details.setTotalEmployerContribution(grossSalary.multiply(TOTAL_EMPLOYER_CONTRIBUTION_RATE));
+        
+        // Total insurance contribution (32%)
+        details.setTotalInsuranceContribution(grossSalary.multiply(new BigDecimal("0.32")));
+        
+        return details;
     }
     
     /**
@@ -131,11 +183,16 @@ public class TopCVCalculation {
     }
     
     /**
-     * Calculate progressive personal income tax
+     * Calculate progressive personal income tax according to Vietnamese law
+     * Tax brackets: 5%, 10%, 15%, 20%, 25%, 30%, 35%
      * @param taxableIncome The taxable income amount
      * @return Total tax amount
      */
     private static BigDecimal calculateProgressiveTax(BigDecimal taxableIncome) {
+        if (taxableIncome.compareTo(BigDecimal.ZERO) <= 0) {
+            return BigDecimal.ZERO;
+        }
+        
         List<TaxBracket> taxBrackets = new ArrayList<>();
         BigDecimal totalTax = BigDecimal.ZERO;
         

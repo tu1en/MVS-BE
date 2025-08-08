@@ -23,32 +23,81 @@ public class InterviewScheduleController {
     private final EmailService emailService;
     private final UserServiceExtension userService;
 
+    // Custom error response class
+    public static class ErrorResponse {
+        private String error;
+        private String message;
+        
+        public ErrorResponse(String error, String message) {
+            this.error = error;
+            this.message = message;
+        }
+        
+        public String getError() { return error; }
+        public void setError(String error) { this.error = error; }
+        public String getMessage() { return message; }
+        public void setMessage(String message) { this.message = message; }
+    }
+
     @PostMapping
-    public ResponseEntity<InterviewScheduleDto> create(@RequestParam Long applicationId,
+    public ResponseEntity<?> create(@RequestParam Long applicationId,
                                                        @RequestParam String startTime,
                                                        @RequestParam String endTime) {
-        // startTime, endTime dạng ISO string, có thể có 'Z'
-        DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+        System.out.println("=== Creating Interview Schedule ===");
+        System.out.println("Application ID: " + applicationId);
+        System.out.println("Start Time: " + startTime);
+        System.out.println("End Time: " + endTime);
+        
+        // startTime, endTime dạng string không có timezone
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
         LocalDateTime start = LocalDateTime.parse(startTime, formatter);
         LocalDateTime end = LocalDateTime.parse(endTime, formatter);
+        
+        System.out.println("Parsed Start: " + start);
+        System.out.println("Parsed End: " + end);
+        System.out.println("CREATE - Duration: " + java.time.Duration.between(start, end).toMinutes() + " minutes");
         
         // Kiểm tra không cho phép xếp lịch trong quá khứ
         LocalDateTime now = LocalDateTime.now();
         if (start.isBefore(now)) {
-            return ResponseEntity.badRequest().build();
+            System.out.println("ERROR: Start time is in the past!");
+            return ResponseEntity.badRequest().body(new ErrorResponse("PAST_TIME", "Thời gian bắt đầu không được trong quá khứ!"));
+        }
+        
+        // Kiểm tra cùng ngày
+        if (!start.toLocalDate().equals(end.toLocalDate())) {
+            System.out.println("ERROR: Start and end time must be on the same day!");
+            return ResponseEntity.badRequest().body(new ErrorResponse("DIFFERENT_DAYS", "Thời gian bắt đầu và kết thúc phải trong cùng một ngày!"));
+        }
+        
+        // Kiểm tra không quá 4 tiếng
+        long durationMinutes = java.time.Duration.between(start, end).toMinutes();
+        if (durationMinutes > 240) { // 4 hours = 240 minutes
+            System.out.println("ERROR: Interview duration cannot exceed 4 hours!");
+            return ResponseEntity.badRequest().body(new ErrorResponse("DURATION_TOO_LONG", "Thời gian phỏng vấn không được quá 4 tiếng!"));
+        }
+        
+        // Kiểm tra thời gian bắt đầu phải trước thời gian kết thúc
+        if (!start.isBefore(end)) {
+            System.out.println("ERROR: Start time must be before end time!");
+            return ResponseEntity.badRequest().body(new ErrorResponse("INVALID_TIME_ORDER", "Thời gian bắt đầu phải trước thời gian kết thúc!"));
         }
         
         // Kiểm tra trùng lịch
+        System.out.println("Checking for conflicts...");
         if (interviewService.hasConflict(start, end, applicationId)) {
-            return ResponseEntity.badRequest().build();
+            System.out.println("ERROR: Conflict detected!");
+            return ResponseEntity.badRequest().body(new ErrorResponse("SCHEDULE_CONFLICT", "Thời gian phỏng vấn bị trùng với lịch phỏng vấn khác!"));
         }
         
+        System.out.println("No conflicts, creating schedule...");
         InterviewScheduleDto dto = interviewService.create(applicationId, start, end);
         
         // Gửi mail thông báo lịch phỏng vấn
         String interviewTime = start.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) + " - " + end.format(DateTimeFormatter.ofPattern("HH:mm"));
         emailService.sendInterviewScheduledEmail(dto.getApplicantEmail(), dto.getApplicantName(), dto.getJobTitle(), interviewTime);
         
+        System.out.println("Schedule created successfully: " + dto.getId());
         return ResponseEntity.ok(dto);
     }
 
@@ -56,7 +105,7 @@ public class InterviewScheduleController {
     public ResponseEntity<Boolean> checkConflict(@RequestParam String startTime,
                                                @RequestParam String endTime,
                                                @RequestParam(required = false) Long excludeApplicationId) {
-        DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
         LocalDateTime start = LocalDateTime.parse(startTime, formatter);
         LocalDateTime end = LocalDateTime.parse(endTime, formatter);
         
@@ -65,31 +114,68 @@ public class InterviewScheduleController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<InterviewScheduleDto> update(@PathVariable Long id,
+    public ResponseEntity<?> update(@PathVariable Long id,
                                                      @RequestParam String startTime,
                                                      @RequestParam String endTime) {
-        DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+        System.out.println("=== Updating Interview Schedule ===");
+        System.out.println("Interview ID: " + id);
+        System.out.println("Start Time: " + startTime);
+        System.out.println("End Time: " + endTime);
+        
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
         LocalDateTime start = LocalDateTime.parse(startTime, formatter);
         LocalDateTime end = LocalDateTime.parse(endTime, formatter);
+
+        System.out.println("Parsed Start: " + start);
+        System.out.println("Parsed End: " + end);
 
         // Kiểm tra không cho phép xếp lịch trong quá khứ
         LocalDateTime now = LocalDateTime.now();
         if (start.isBefore(now)) {
-            return ResponseEntity.badRequest().build();
+            System.out.println("ERROR: Start time is in the past!");
+            return ResponseEntity.badRequest().body(new ErrorResponse("PAST_TIME", "Thời gian bắt đầu không được trong quá khứ!"));
+        }
+        
+        // Kiểm tra cùng ngày
+        if (!start.toLocalDate().equals(end.toLocalDate())) {
+            System.out.println("ERROR: Start and end time must be on the same day!");
+            return ResponseEntity.badRequest().body(new ErrorResponse("DIFFERENT_DAYS", "Thời gian bắt đầu và kết thúc phải trong cùng một ngày!"));
+        }
+        
+        // Kiểm tra không quá 4 tiếng
+        long durationMinutes = java.time.Duration.between(start, end).toMinutes();
+        System.out.println("UPDATE - Duration check: " + durationMinutes + " minutes (max 240)");
+        if (durationMinutes > 240) { // 4 hours = 240 minutes
+            System.out.println("ERROR: Interview duration cannot exceed 4 hours!");
+            return ResponseEntity.badRequest().body(new ErrorResponse("DURATION_TOO_LONG", "Thời gian phỏng vấn không được quá 4 tiếng!"));
+        }
+        
+        // Kiểm tra thời gian bắt đầu phải trước thời gian kết thúc
+        System.out.println("UPDATE - Time order check: start=" + start + ", end=" + end + ", start.isBefore(end)=" + start.isBefore(end));
+        if (!start.isBefore(end)) {
+            System.out.println("ERROR: Start time must be before end time!");
+            return ResponseEntity.badRequest().body(new ErrorResponse("INVALID_TIME_ORDER", "Thời gian bắt đầu phải trước thời gian kết thúc!"));
         }
 
         // Lấy thông tin interview hiện tại
         InterviewScheduleDto currentInterview = interviewService.getById(id);
         if (currentInterview == null) {
+            System.out.println("ERROR: Interview not found!");
             return ResponseEntity.notFound().build();
         }
 
+        System.out.println("Current interview application ID: " + currentInterview.getApplicationId());
+
         // Kiểm tra trùng lịch (loại trừ lịch hiện tại)
+        System.out.println("Checking for conflicts...");
         if (interviewService.hasConflict(start, end, currentInterview.getApplicationId())) {
-            return ResponseEntity.badRequest().build();
+            System.out.println("ERROR: Conflict detected!");
+            return ResponseEntity.badRequest().body(new ErrorResponse("SCHEDULE_CONFLICT", "Thời gian phỏng vấn bị trùng với lịch phỏng vấn khác!"));
         }
 
+        System.out.println("No conflicts, updating schedule...");
         InterviewScheduleDto updated = interviewService.update(id, start, end);
+        System.out.println("Schedule updated successfully: " + updated.getId());
         return ResponseEntity.ok(updated);
     }
 
@@ -255,6 +341,25 @@ public class InterviewScheduleController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    @PostMapping("/{id}/calculate-gross-from-net")
+    public ResponseEntity<TopCVCalculation.SalaryCalculationResult> calculateGrossFromNet(
+            @PathVariable Long id,
+            @RequestBody NetToGrossRequest request) {
+        try {
+            InterviewScheduleDto interview = interviewService.getById(id);
+            if (interview == null) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            BigDecimal netSalary = new BigDecimal(request.getNetSalary());
+            TopCVCalculation.SalaryCalculationResult result = TopCVCalculation.calculateFromNetToGross(netSalary, request.getNumberOfDependents());
+            
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }
 
 class InterviewResultDto {
@@ -285,6 +390,17 @@ class EvaluationUpdateRequest {
     private String evaluation;
     public String getEvaluation() { return evaluation; }
     public void setEvaluation(String evaluation) { this.evaluation = evaluation; }
+}
+
+class NetToGrossRequest {
+    private String netSalary;
+    private int numberOfDependents = 0;
+    
+    public String getNetSalary() { return netSalary; }
+    public void setNetSalary(String netSalary) { this.netSalary = netSalary; }
+    
+    public int getNumberOfDependents() { return numberOfDependents; }
+    public void setNumberOfDependents(int numberOfDependents) { this.numberOfDependents = numberOfDependents; }
 } 
 
 class AccountCheckResponse {
