@@ -12,6 +12,7 @@ public interface InterviewScheduleService {
     void updateStatus(Long id, String status, String result);
     void updateOffer(Long id, String offer);
     void updateEvaluation(Long id, String evaluation);
+    void updateHourlyRate(Long id, String hourlyRate);
     InterviewScheduleDto getById(Long id);
     void delete(Long id);
     boolean hasConflict(LocalDateTime startTime, LocalDateTime endTime, Long excludeApplicationId);

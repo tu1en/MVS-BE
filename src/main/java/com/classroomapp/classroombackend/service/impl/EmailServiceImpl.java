@@ -178,6 +178,18 @@ public class EmailServiceImpl implements EmailService {
         String body = templateEngine.process("email/offer-resend-with-details", context);
         sendEmail(to, subject, body);
     }
+
+    @Override
+    public void sendOfferResendPartTimeEmail(String to, String name, String jobTitle, String hourlyRate, String interviewTime) {
+        String subject = "🎉 Chúc mừng! Bạn đã được chọn cho vị trí " + jobTitle + " (Hợp đồng có kỳ hạn)";
+        Context context = new Context();
+        context.setVariable("name", name);
+        context.setVariable("jobTitle", jobTitle);
+        context.setVariable("hourlyRate", hourlyRate);
+        context.setVariable("interviewTime", interviewTime);
+        String body = templateEngine.process("email/offer-resend-part-time", context);
+        sendEmail(to, subject, body);
+    }
 // Thêm method này vào EmailServiceImpl.java (sau method sendInterviewRejectionEmail)
 
 @Override

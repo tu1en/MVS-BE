@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -37,4 +38,7 @@ public class InterviewSchedule {
 
     @Column(name = "evaluation", columnDefinition = "NVARCHAR(MAX)")
     private String evaluation;
+
+    @Column(name = "hourly_rate")
+    private BigDecimal hourlyRate;
 } 

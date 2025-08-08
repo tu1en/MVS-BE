@@ -97,6 +97,12 @@ public class EmailServiceDummyImpl implements EmailService {
     }
 
     @Override
+    public void sendOfferResendPartTimeEmail(String to, String name, String jobTitle, String hourlyRate, String interviewTime) {
+        log.info("DUMMY EMAIL SERVICE: Would send offer resend part-time email to {} ({}) - Job Title: {}, Hourly Rate: {}, Interview Time: {}",
+                to, name, jobTitle, hourlyRate, interviewTime);
+    }
+
+    @Override
     public void sendEnrollmentRequestConfirmation(String to, String studentName, String courseName, 
                                                 String courseSubject, Integer courseDuration, 
                                                 String courseFee, String message) {

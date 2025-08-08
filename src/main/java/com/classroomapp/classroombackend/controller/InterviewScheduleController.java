@@ -238,6 +238,12 @@ public class InterviewScheduleController {
         return ResponseEntity.ok().build();
     }
 
+    @PutMapping("/{id}/hourly-rate")
+    public ResponseEntity<?> updateHourlyRate(@PathVariable Long id, @RequestBody HourlyRateRequest request) {
+        interviewService.updateHourlyRate(id, request.getHourlyRate());
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/{id}/resend-offer")
     public ResponseEntity<?> resendOffer(@PathVariable Long id, @RequestBody OfferUpdateRequest request) {
         // Lấy thông tin interview để gửi email (không cập nhật offer trong database)
@@ -249,6 +255,26 @@ public class InterviewScheduleController {
                 interview.getJobTitle(), 
                 request.getOffer(),
                 request.getSalaryDetails()
+            );
+        }
+        
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/resend-offer-part-time")
+    public ResponseEntity<?> resendOfferPartTime(@PathVariable Long id, @RequestBody HourlyRateRequest request) {
+        // Lấy thông tin interview để gửi email part-time
+        InterviewScheduleDto interview = interviewService.getById(id);
+        if (interview != null) {
+            String interviewTime = interview.getStartTime().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) + 
+                                 " - " + interview.getEndTime().format(DateTimeFormatter.ofPattern("HH:mm"));
+            
+            emailService.sendOfferResendPartTimeEmail(
+                interview.getApplicantEmail(), 
+                interview.getApplicantName(), 
+                interview.getJobTitle(), 
+                request.getHourlyRate(),
+                interviewTime
             );
         }
         
@@ -291,10 +317,10 @@ public class InterviewScheduleController {
             
             // Tạo user mới với trạng thái chưa có hợp đồng nếu cần
             if (body.getCreateAccount() != null && body.getCreateAccount()) {
-                userService.createUserWithoutContract(interview.getApplicantEmail(), interview.getApplicantName(), "TEACHER");
+                userService.createUserWithoutContract(interview.getApplicantEmail(), interview.getApplicantName(), null);
             } else {
                 // Tạo user mới với trạng thái chưa có hợp đồng (logic mặc định)
-                userService.createUserWithoutContract(interview.getApplicantEmail(), interview.getApplicantName(), "TEACHER");
+                userService.createUserWithoutContract(interview.getApplicantEmail(), interview.getApplicantName(), null);
             }
         } else if ("REJECTED".equals(body.getStatus())) {
             // Gửi mail từ chối với evaluation
@@ -416,4 +442,11 @@ class AccountCheckResponse {
     public void setHasAccount(boolean hasAccount) { this.hasAccount = hasAccount; }
     public boolean isHasContract() { return hasContract; }
     public void setHasContract(boolean hasContract) { this.hasContract = hasContract; }
+}
+
+class HourlyRateRequest {
+    private String hourlyRate;
+    
+    public String getHourlyRate() { return hourlyRate; }
+    public void setHourlyRate(String hourlyRate) { this.hourlyRate = hourlyRate; }
 } 

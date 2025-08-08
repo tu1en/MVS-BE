@@ -103,6 +103,16 @@ public interface EmailService {
      * @param salaryDetails Chi tiết tính lương
      */
     void sendOfferResendEmailWithDetails(String to, String name, String jobTitle, String offer, Object salaryDetails);
+
+    /**
+     * Gửi email offer part-time với lương theo giờ cho ứng viên
+     * @param to Địa chỉ email ứng viên
+     * @param name Tên ứng viên
+     * @param jobTitle Vị trí ứng tuyển
+     * @param hourlyRate Lương theo giờ
+     * @param interviewTime Thời gian phỏng vấn
+     */
+    void sendOfferResendPartTimeEmail(String to, String name, String jobTitle, String hourlyRate, String interviewTime);
     
     /**
      * Send enrollment request confirmation to student

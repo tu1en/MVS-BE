@@ -14,17 +14,17 @@ public class TopCVCalculationTest {
         TopCVCalculation.SalaryCalculationResult result = TopCVCalculation.calculateFromGrossToNet(grossSalary, 0);
         
         // Kiểm tra các giá trị cơ bản
-        assertEquals(grossSalary, result.getGrossSalary());
+        assertEquals(grossSalary.setScale(0, RoundingMode.HALF_UP), result.getGrossSalary());
         assertEquals("GROSS_TO_NET", result.getCalculationType());
         
-        // Kiểm tra đóng góp bảo hiểm
-        BigDecimal expectedEmployeeContribution = grossSalary.multiply(new BigDecimal("0.105"));
+        // Kiểm tra đóng góp bảo hiểm (đã được làm tròn về số nguyên)
+        BigDecimal expectedEmployeeContribution = grossSalary.multiply(new BigDecimal("0.105")).setScale(0, RoundingMode.HALF_UP);
         assertEquals(expectedEmployeeContribution, result.getInsuranceDetails().getTotalEmployeeContribution());
         
-        BigDecimal expectedEmployerContribution = grossSalary.multiply(new BigDecimal("0.215"));
+        BigDecimal expectedEmployerContribution = grossSalary.multiply(new BigDecimal("0.215")).setScale(0, RoundingMode.HALF_UP);
         assertEquals(expectedEmployerContribution, result.getInsuranceDetails().getTotalEmployerContribution());
         
-        BigDecimal expectedTotalInsurance = grossSalary.multiply(new BigDecimal("0.32"));
+        BigDecimal expectedTotalInsurance = grossSalary.multiply(new BigDecimal("0.32")).setScale(0, RoundingMode.HALF_UP);
         assertEquals(expectedTotalInsurance, result.getInsuranceDetails().getTotalInsuranceContribution());
         
         // Kiểm tra lương NET phải nhỏ hơn GROSS

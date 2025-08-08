@@ -105,7 +105,7 @@ public class UserServiceExtensionImpl implements UserServiceExtension {
             if (optionalUser.isPresent()) {
                 // User exists, update role và trạng thái
                 User user = optionalUser.get();
-                user.setRoleId(convertRoleToRoleId(role));
+                user.setRoleId(role != null ? convertRoleToRoleId(role) : null);
                 user.setStatus("pending_contract");
                 userRepository.save(user);
                 return true;
@@ -117,7 +117,7 @@ public class UserServiceExtensionImpl implements UserServiceExtension {
                 user.setUsername(email);
                 user.setPassword(passwordEncoder.encode(tempPassword));
                 user.setFullName(fullName);
-                user.setRoleId(convertRoleToRoleId(role));
+                user.setRoleId(role != null ? convertRoleToRoleId(role) : null);
                 user.setStatus("pending_contract");
                 userRepository.save(user);
                 // Không gửi mail tài khoản ở đây (sẽ gửi khi ký hợp đồng)
