@@ -71,8 +71,34 @@ public class EmailServiceDummyImpl implements EmailService {
 
     @Override
     public void sendOfferResendEmail(String to, String name, String jobTitle, String offer) {
+<<<<<<< HEAD
         log.info("DUMMY EMAIL SERVICE: Would send offer resend email to {} ({}) - Job Title: {}, Offer: {}",
                 to, name, jobTitle, offer);
+=======
+        log.info("DUMMY EMAIL SERVICE: Would send offer resend email with salary details to {} ({}) - Job Title: {}, Offer: {}",
+                to, name, jobTitle, offer);
+        
+        // Tính toán và log chi tiết lương
+        try {
+            if (offer != null && !offer.trim().isEmpty()) {
+                String cleanOffer = offer.replaceAll("[^0-9]", "");
+                java.math.BigDecimal grossSalary = new java.math.BigDecimal(cleanOffer);
+                com.classroomapp.classroombackend.util.TopCVCalculation.SalaryCalculationResult salaryDetails = 
+                    com.classroomapp.classroombackend.util.TopCVCalculation.calculateFromGrossToNet(grossSalary, 0);
+                log.info("DUMMY EMAIL SERVICE: Salary details - Gross: {}, Net: {}, Tax: {}, Employee Contribution: {}", 
+                    salaryDetails.getGrossSalary(), salaryDetails.getNetSalary(), salaryDetails.getPersonalIncomeTax(), 
+                    salaryDetails.getInsuranceDetails().getTotalEmployeeContribution());
+            }
+        } catch (Exception e) {
+            log.warn("Could not calculate salary details for offer: {}", offer, e);
+        }
+    }
+
+    @Override
+    public void sendOfferResendEmailWithDetails(String to, String name, String jobTitle, String offer, Object salaryDetails) {
+        log.info("DUMMY EMAIL SERVICE: Would send offer resend email with details to {} ({}) - Job Title: {}, Offer: {}, Salary Details: {}",
+                to, name, jobTitle, offer, salaryDetails);
+>>>>>>> 17a86eaddc86600ac77c6d96372b947571caf746
     }
 
     @Override

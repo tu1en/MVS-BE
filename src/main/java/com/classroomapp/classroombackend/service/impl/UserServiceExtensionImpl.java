@@ -129,6 +129,27 @@ public class UserServiceExtensionImpl implements UserServiceExtension {
         }
     }
     
+<<<<<<< HEAD
+=======
+    @Override
+    public boolean hasActiveContract(String email) {
+        try {
+            Optional<User> optionalUser = userRepository.findByEmail(email);
+            if (optionalUser.isPresent()) {
+                User user = optionalUser.get();
+                // Kiểm tra trạng thái user
+                // Nếu status là "active" thì đã có hợp đồng
+                // Nếu status là "pending_contract" thì chưa có hợp đồng
+                return "active".equals(user.getStatus());
+            }
+            return false;
+        } catch (Exception e) {
+            log.error("Error checking contract status for user: {}", email, e);
+            return false;
+        }
+    }
+    
+>>>>>>> 17a86eaddc86600ac77c6d96372b947571caf746
     /**
      * Returns a human-readable role name
      */
