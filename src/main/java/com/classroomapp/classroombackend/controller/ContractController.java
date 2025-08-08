@@ -126,6 +126,19 @@ public class ContractController {
         }
     }
 
+    // Lấy thông tin offer của ứng viên để tạo hợp đồng
+    @GetMapping("/candidates/{candidateId}/offer")
+    public ResponseEntity<ContractDto> getCandidateOfferData(@PathVariable Long candidateId) {
+        log.info("GET /api/contracts/candidates/{}/offer - Fetching candidate offer data", candidateId);
+        try {
+            ContractDto offerData = contractService.getCandidateOfferData(candidateId);
+            return ResponseEntity.ok(offerData);
+        } catch (Exception e) {
+            log.error("Error fetching candidate offer data for id {}: ", candidateId, e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
     // Lấy thống kê hợp đồng
     @GetMapping("/stats")
     public ResponseEntity<ContractStatsDto> getContractStats() {

@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 public class ContractDto {
     private Long id;
     private Long userId;
+    private String contractId;
     private String fullName;
     private String email;
     private String phoneNumber;
@@ -29,6 +30,12 @@ public class ContractDto {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String offer; // Thông tin offer từ Quản Lý Offer
+    
+    // --- OFFER MANAGEMENT FIELDS ---
+    private String evaluation; // Đánh giá từ Quản lý Offer
+    private Long grossSalary; // Lương GROSS từ Quản lý Offer
+    private Long netSalary; // Lương NET từ Quản lý Offer  
+    private Long hourlySalary; // Lương theo giờ từ Quản lý Offer
 
     // --- CUSTOM FIELDS FOR VIETNAMESE CONTRACT ---
     private LocalDate birthDate;

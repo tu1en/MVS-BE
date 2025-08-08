@@ -30,6 +30,9 @@ public interface ContractService {
     // Lấy danh sách ứng viên đã đỗ phỏng vấn (chưa có hợp đồng)
     List<ContractDto> getCandidatesReadyForContract();
     
+    // Lấy thông tin offer của ứng viên để tạo hợp đồng
+    ContractDto getCandidateOfferData(Long candidateId);
+    
     // Thống kê hợp đồng
     ContractStatsDto getContractStats();
     

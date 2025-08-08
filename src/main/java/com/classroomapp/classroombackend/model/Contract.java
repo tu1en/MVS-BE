@@ -21,6 +21,9 @@ public class Contract {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
+    @Column(name = "contract_id", unique = true, nullable = false)
+    private String contractId;
+
     @Column(name = "full_name", nullable = false)
     private String fullName;
 

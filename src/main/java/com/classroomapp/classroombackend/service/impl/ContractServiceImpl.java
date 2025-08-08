@@ -1,23 +1,27 @@
 package com.classroomapp.classroombackend.service.impl;
 
 import com.classroomapp.classroombackend.dto.ContractDto;
+import com.classroomapp.classroombackend.dto.ContractStatsDto;
+import com.classroomapp.classroombackend.dto.InterviewScheduleDto;
 import com.classroomapp.classroombackend.model.Contract;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.ContractRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.ContractService;
-import com.classroomapp.classroombackend.dto.ContractStatsDto;
-import com.classroomapp.classroombackend.service.InterviewScheduleService;
-import com.classroomapp.classroombackend.dto.InterviewScheduleDto;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
+import com.classroomapp.classroombackend.service.InterviewScheduleService;
+import com.classroomapp.classroombackend.util.TopCVCalculation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,7 +33,6 @@ public class ContractServiceImpl implements ContractService {
     private final ContractRepository contractRepository;
     private final UserRepository userRepository;
     private final InterviewScheduleService interviewScheduleService;
-    private final ModelMapper modelMapper;
 
     @Override
     public List<ContractDto> getContractsByType(String contractType) {
@@ -65,7 +68,16 @@ public class ContractServiceImpl implements ContractService {
         User user = userRepository.findById(contractDto.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + contractDto.getUserId()));
         
+        // Check if user already has a contract
+        if (contractRepository.existsByUserId(contractDto.getUserId())) {
+            throw new IllegalArgumentException("User already has a contract. Each user can only have one contract.");
+        }
+        
         Contract contract = convertToEntity(contractDto);
+        
+        // Generate unique Contract ID
+        String contractId = generateNextContractId();
+        contract.setContractId(contractId);
         // Use candidate name from contractDto if provided, otherwise use user's name
         if (contractDto.getFullName() != null && !contractDto.getFullName().trim().isEmpty()) {
             contract.setFullName(contractDto.getFullName());
@@ -150,10 +162,6 @@ public class ContractServiceImpl implements ContractService {
         List<Contract> allContracts = contractRepository.findAll();
         log.info("Found {} existing contracts", allContracts.size());
         
-        // Log tất cả email của hợp đồng hiện tại
-        allContracts.forEach(contract -> 
-            log.info("Existing contract email: '{}'", contract.getEmail()));
-        
         // Lọc những người chưa có hợp đồng
         List<ContractDto> candidates = approvedCandidates.stream()
                 .filter(interview -> {
@@ -170,24 +178,18 @@ public class ContractServiceImpl implements ContractService {
                     boolean hasContract = allContracts.stream()
                             .anyMatch(contract -> {
                                 if (contract.getEmail() == null) return false;
-                                boolean matches = contract.getEmail().trim().equalsIgnoreCase(applicantEmail.trim());
-                                if (matches) {
-                                    log.info("Found matching contract for email: '{}' <-> '{}'", 
-                                            contract.getEmail(), applicantEmail);
-                                }
-                                return matches;
+                                return contract.getEmail().trim().equalsIgnoreCase(applicantEmail.trim());
                             });
                     
-                    log.info("Candidate: {} - Has contract: {} - Will include: {}", 
-                            applicantEmail, hasContract, !hasContract);
-                    return !hasContract;
+                    log.info("Candidate '{}' has contract: {}", applicantEmail, hasContract);
+                    return !hasContract; // Chỉ lấy những người chưa có hợp đồng
                 })
                 .map(interview -> {
                     ContractDto candidate = new ContractDto();
                     
-                    // Tự động tạo User ID theo thứ tự (001, 002, 003...)
-                    Long nextUserId = generateNextUserId();
-                    candidate.setUserId(nextUserId);
+                    // ✅ FIX: Sử dụng interview ID thay vì auto-generated userId
+                    candidate.setId(interview.getId()); // Interview ID để API có thể tìm đúng interview
+                    candidate.setUserId(interview.getId()); // Cũng set userId để tương thích
                     
                     // Lấy thông tin cơ bản từ interview
                     candidate.setFullName(interview.getApplicantName());
@@ -195,7 +197,16 @@ public class ContractServiceImpl implements ContractService {
                     candidate.setPhoneNumber(interview.getApplicantPhone() != null ? interview.getApplicantPhone() : "Chưa có");
                     candidate.setPosition(interview.getJobTitle());
                     candidate.setOffer(interview.getOffer()); // Lấy thông tin offer
-                    candidate.setContractType("TEACHER"); // Mặc định là giáo viên
+                    
+                    // ✅ FIX: Xác định contract type dựa trên job title thực tế
+                    String jobTitle = interview.getJobTitle() != null ? interview.getJobTitle().toLowerCase() : "";
+                    if (jobTitle.contains("giáo viên") || jobTitle.contains("teacher")) {
+                        candidate.setContractType("TEACHER");
+                        log.info("Set contract type TEACHER for position: {}", interview.getJobTitle());
+                    } else {
+                        candidate.setContractType("STAFF");
+                        log.info("Set contract type STAFF for position: {}", interview.getJobTitle());
+                    }
                     
                     // Lấy mức lương từ job position (nếu có)
                     if (interview.getSalaryRange() != null && !interview.getSalaryRange().isEmpty()) {
@@ -221,11 +232,143 @@ public class ContractServiceImpl implements ContractService {
         log.info("Found {} candidates ready for contract", candidates.size());
         return candidates;
     }
+
+    @Override
+    public ContractDto getCandidateOfferData(Long candidateId) {
+        log.info("Fetching real offer data for candidate ID: {}", candidateId);
+        try {
+            // Tìm interview schedule của candidate để lấy dữ liệu offer thực
+            InterviewScheduleDto interview = interviewScheduleService.getById(candidateId);
+            if (interview == null) {
+                log.warn("Interview not found for candidate ID: {}", candidateId);
+                throw new ResourceNotFoundException("Interview not found for candidate ID: " + candidateId);
+            }
+            
+            ContractDto offerData = new ContractDto();
+            
+            // Lấy đánh giá từ interview evaluation field
+            String evaluation = "Chưa có đánh giá";
+            if ("APPROVED".equals(interview.getStatus())) {
+                evaluation = "Đạt yêu cầu - Được phê duyệt";
+                if (interview.getEvaluation() != null && !interview.getEvaluation().trim().isEmpty()) {
+                    evaluation = interview.getEvaluation(); // Sử dụng evaluation field từ interview
+                }
+            }
+            offerData.setEvaluation(evaluation);
+            
+            // Tính toán lương từ offer amount sử dụng TopCVCalculation
+            if (interview.getOffer() != null && !interview.getOffer().trim().isEmpty()) {
+                try {
+                    // Parse offer amount từ string thành BigDecimal
+                    String cleanOffer = interview.getOffer().replaceAll("[^0-9]", "");
+                    if (!cleanOffer.isEmpty()) {
+                        BigDecimal grossSalary = new BigDecimal(cleanOffer);
+                        
+                        // Sử dụng TopCVCalculation để tính toán chi tiết lương
+                        TopCVCalculation.SalaryCalculationResult salaryResult = 
+                            TopCVCalculation.calculateFromGrossToNet(grossSalary, 0);
+                        
+                        // Xác định loại vị trí để tính lương phù hợp
+                        String jobTitle = interview.getJobTitle() != null ? interview.getJobTitle().toLowerCase() : "";
+                        String contractType = interview.getContractType() != null ? interview.getContractType().toLowerCase() : "";
+                        
+                        log.info("🔍 DEBUG: Salary calculation for candidate ID: {}", candidateId);
+                        log.info("🔍 DEBUG: Job title: '{}'", interview.getJobTitle());
+                        log.info("🔍 DEBUG: Contract type: '{}'", interview.getContractType());
+                        log.info("🔍 DEBUG: Salary range: '{}'", interview.getSalaryRange());
+                        log.info("🔍 DEBUG: Offer amount: '{}'", interview.getOffer());
+                        log.info("🔍 DEBUG: Gross salary calculated: {}", salaryResult.getGrossSalary());
+                        
+                        boolean isTeacher = jobTitle.contains("giáo viên") || jobTitle.contains("teacher") || 
+                                           contractType.contains("teacher") || contractType.contains("giáo viên");
+                        boolean isManagerOrAccountant = jobTitle.contains("quản lý") || jobTitle.contains("manager") || 
+                                                       jobTitle.contains("kế toán") || jobTitle.contains("accountant");
+                        
+                        log.info("🔍 DEBUG: isTeacher: {}, isManagerOrAccountant: {}", isTeacher, isManagerOrAccountant);
+                        
+                        if (isTeacher) {
+                            // Giáo viên: Chỉ hiển thị lương theo giờ
+                            log.info("Processing TEACHER position for candidate ID: {} - jobTitle: {}", candidateId, jobTitle);
+                            offerData.setGrossSalary(null); // Để trống
+                            offerData.setNetSalary(null);   // Để trống
+                            
+                            // Tính lương theo giờ (giả sử 8 giờ/ngày, 22 ngày/tháng)
+                            BigDecimal hourlyRate = salaryResult.getGrossSalary()
+                                .divide(new BigDecimal("176"), 0, RoundingMode.HALF_UP); // 22 ngày * 8 giờ = 176 giờ/tháng
+                            log.info("🔍 DEBUG: Calculated hourly rate for teacher: {} from gross salary: {}", hourlyRate, salaryResult.getGrossSalary());
+                            offerData.setHourlySalary(hourlyRate.longValue());
+                            
+                        } else if (isManagerOrAccountant) {
+                            // Manager & Kế toán: Chỉ hiển thị lương GROSS và NET
+                            log.info("Processing MANAGER/ACCOUNTANT position for candidate ID: {} - jobTitle: {}", candidateId, jobTitle);
+                            offerData.setGrossSalary(salaryResult.getGrossSalary().longValue());
+                            offerData.setNetSalary(salaryResult.getNetSalary().longValue());
+                            offerData.setHourlySalary(null); // Để trống
+                            
+                        } else {
+                            // Mặc định: Hiển thị tất cả (cho các vị trí khác)
+                            log.info("Processing OTHER position for candidate ID: {} - jobTitle: {}", candidateId, jobTitle);
+                            offerData.setGrossSalary(salaryResult.getGrossSalary().longValue());
+                            offerData.setNetSalary(salaryResult.getNetSalary().longValue());
+                            
+                            BigDecimal hourlyRate = salaryResult.getGrossSalary()
+                                .divide(new BigDecimal("176"), 0, RoundingMode.HALF_UP);
+                            offerData.setHourlySalary(hourlyRate.longValue());
+                        }
+                        
+                        log.info("🔍 DEBUG: Final salary details for candidate ID: {} - Gross: {}, Net: {}, Hourly: {}", 
+                                candidateId, offerData.getGrossSalary(), offerData.getNetSalary(), offerData.getHourlySalary());
+                    } else {
+                        log.warn("Empty offer amount for candidate ID: {}", candidateId);
+                        setDefaultOfferData(offerData);
+                    }
+                } catch (NumberFormatException e) {
+                    log.warn("Invalid offer amount format for candidate ID: {} - offer: {}", candidateId, interview.getOffer());
+                    setDefaultOfferData(offerData);
+                }
+            } else {
+                log.warn("No offer amount found for candidate ID: {}", candidateId);
+                setDefaultOfferData(offerData);
+            }
+            
+            log.info("Successfully fetched real offer data for candidate ID: {}", candidateId);
+            return offerData;
+        } catch (ResourceNotFoundException e) {
+            throw e; // Re-throw ResourceNotFoundException
+        } catch (Exception e) {
+            log.error("Error fetching offer data for candidate ID {}: ", candidateId, e);
+            throw new RuntimeException("Failed to fetch offer data for candidate ID: " + candidateId, e);
+        }
+    }
     
-    private Long generateNextUserId() {
-        // Lấy số hợp đồng hiện tại để tạo ID tiếp theo
-        Long contractCount = contractRepository.count();
-        return contractCount + 1;
+    private void setDefaultOfferData(ContractDto offerData) {
+        offerData.setGrossSalary(0L);
+        offerData.setNetSalary(0L);
+        offerData.setHourlySalary(0L);
+    }
+    
+    private String generateNextContractId() {
+        // Lấy ngày hiện tại
+        LocalDate today = LocalDate.now();
+        
+        // Tạo start và end của ngày để đếm hợp đồng trong ngày
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
+        
+        // Đếm số hợp đồng đã tạo trong ngày hôm nay
+        Long contractsToday = contractRepository.countByCreatedAtBetween(startOfDay, endOfDay);
+        
+        // Tạo sequence number (bắt đầu từ 01)
+        String sequence = String.format("%02d", contractsToday + 1);
+        
+        // Tạo phần ngày tháng năm (MMYY)
+        String dateFormat = String.format("%02d%02d", today.getMonthValue(), today.getYear() % 100);
+        
+        // Kết hợp thành Contract ID: sequence + MMYY
+        String contractId = sequence + dateFormat;
+        
+        log.info("Generated Contract ID: {} for date: {}", contractId, today);
+        return contractId;
     }
 
     @Override
@@ -242,10 +385,42 @@ public class ContractServiceImpl implements ContractService {
                                   activeContracts, expiredContracts);
     }
 
+    private Contract convertToEntity(ContractDto contractDto) {
+        Contract contract = new Contract();
+        contract.setId(contractDto.getId());
+        contract.setUserId(contractDto.getUserId());
+        contract.setContractId(contractDto.getContractId());
+        contract.setFullName(contractDto.getFullName());
+        contract.setEmail(contractDto.getEmail());
+        contract.setPhoneNumber(contractDto.getPhoneNumber());
+        contract.setContractType(contractDto.getContractType());
+        contract.setPosition(contractDto.getPosition());
+        contract.setDepartment(contractDto.getDepartment());
+        contract.setSalary(contractDto.getSalary());
+        contract.setWorkingHours(contractDto.getWorkingHours());
+        contract.setStartDate(contractDto.getStartDate());
+        contract.setEndDate(contractDto.getEndDate());
+        contract.setStatus(contractDto.getStatus());
+        contract.setContractTerms(contractDto.getContractTerms());
+        contract.setCreatedBy(contractDto.getCreatedBy());
+        contract.setCreatedAt(contractDto.getCreatedAt());
+        contract.setUpdatedAt(contractDto.getUpdatedAt());
+        contract.setOffer(contractDto.getOffer()); // Nếu có trường offer
+        // --- CUSTOM FIELDS ---
+        contract.setBirthDate(contractDto.getBirthDate());
+        contract.setCitizenId(contractDto.getCitizenId());
+        contract.setAddress(contractDto.getAddress());
+        contract.setQualification(contractDto.getQualification());
+        contract.setSubject(contractDto.getSubject());
+        contract.setEducationLevel(contractDto.getEducationLevel());
+        return contract;
+    }
+
     private ContractDto convertToDto(Contract contract) {
         ContractDto dto = new ContractDto();
         dto.setId(contract.getId());
         dto.setUserId(contract.getUserId());
+        dto.setContractId(contract.getContractId());
         dto.setFullName(contract.getFullName());
         dto.setEmail(contract.getEmail());
         dto.setPhoneNumber(contract.getPhoneNumber());
@@ -272,19 +447,6 @@ public class ContractServiceImpl implements ContractService {
         return dto;
     }
 
-    private Contract convertToEntity(ContractDto contractDto) {
-        Contract contract = modelMapper.map(contractDto, Contract.class);
-        // --- CUSTOM FIELDS ---
-        contract.setBirthDate(contractDto.getBirthDate());
-        contract.setCitizenId(contractDto.getCitizenId());
-        contract.setAddress(contractDto.getAddress());
-        contract.setQualification(contractDto.getQualification());
-        contract.setSubject(contractDto.getSubject());
-        contract.setEducationLevel(contractDto.getEducationLevel());
-        contract.setOffer(contractDto.getOffer()); // Nếu có trường offer
-        return contract;
-    }
-
     @Override
     public void createTestContracts() {
         log.info("Creating test contract data");
@@ -297,6 +459,7 @@ public class ContractServiceImpl implements ContractService {
         // 1. Hợp đồng ACTIVE (còn lâu mới hết hạn)
         Contract contract1 = new Contract();
         contract1.setUserId(1001L);
+        contract1.setContractId("010825"); // Contract ID mẫu
         contract1.setFullName("Nguyễn Văn An");
         contract1.setEmail("nguyen.van.an@example.com");
         contract1.setPhoneNumber("0987654321");
@@ -313,6 +476,7 @@ public class ContractServiceImpl implements ContractService {
         // 2. Hợp đồng ACTIVE (sắp gần hết hạn - còn 20 ngày)
         Contract contract2 = new Contract();
         contract2.setUserId(1002L);
+        contract2.setContractId("020825"); // Contract ID mẫu
         contract2.setFullName("Trần Thị Bình");
         contract2.setEmail("tran.thi.binh@example.com");
         contract2.setPhoneNumber("0976543210");
@@ -329,6 +493,7 @@ public class ContractServiceImpl implements ContractService {
         // 3. Hợp đồng NEAR_EXPIRY (gần hết hạn - còn 10 ngày)
         Contract contract3 = new Contract();
         contract3.setUserId(1003L);
+        contract3.setContractId("030825"); // Contract ID mẫu
         contract3.setFullName("Lê Minh Cường");
         contract3.setEmail("le.minh.cuong@example.com");
         contract3.setPhoneNumber("0965432109");
@@ -345,6 +510,7 @@ public class ContractServiceImpl implements ContractService {
         // 4. Hợp đồng NEAR_EXPIRY (gần hết hạn - còn 5 ngày)
         Contract contract4 = new Contract();
         contract4.setUserId(1004L);
+        contract4.setContractId("040825"); // Contract ID mẫu
         contract4.setFullName("Phạm Thị Dung");
         contract4.setEmail("pham.thi.dung@example.com");
         contract4.setPhoneNumber("0954321098");
@@ -361,6 +527,7 @@ public class ContractServiceImpl implements ContractService {
         // 5. Hợp đồng EXPIRED (đã hết hạn - hết hạn 3 ngày trước)
         Contract contract5 = new Contract();
         contract5.setUserId(1005L);
+        contract5.setContractId("050825"); // Contract ID mẫu
         contract5.setFullName("Hoàng Văn Em");
         contract5.setEmail("hoang.van.em@example.com");
         contract5.setPhoneNumber("0943210987");
