@@ -175,8 +175,8 @@ public class ContractServiceImpl implements ContractService {
             existingContract.setSubject(contractDto.getSubject());
         }
         
-        if (contractDto.getEducationLevel() != null && !contractDto.getEducationLevel().trim().isEmpty()) {
-            existingContract.setEducationLevel(contractDto.getEducationLevel());
+        if (contractDto.getClassLevel() != null && !contractDto.getClassLevel().trim().isEmpty()) {
+            existingContract.setClassLevel(contractDto.getClassLevel());
         }
         
         // Update editable contract fields
@@ -333,7 +333,7 @@ public class ContractServiceImpl implements ContractService {
                     evaluation = interview.getEvaluation();
                 }
             }
-            offerData.setEvaluation(evaluation);
+            offerData.setComments(evaluation);
             
             // Xác định loại vị trí để xử lý lương phù hợp
             String jobTitle = interview.getJobTitle() != null ? interview.getJobTitle().toLowerCase() : "";
@@ -412,7 +412,7 @@ public class ContractServiceImpl implements ContractService {
     }
     
     private void setDefaultOfferData(ContractDto offerData) {
-        offerData.setEvaluation("Chưa có đánh giá");
+        offerData.setComments("Chưa có đánh giá");
         offerData.setGrossSalary(0L);
         offerData.setNetSalary(0L);
         offerData.setHourlySalary(0L);
@@ -570,7 +570,12 @@ public class ContractServiceImpl implements ContractService {
         contract.setAddress(contractDto.getAddress());
         contract.setQualification(contractDto.getQualification());
         contract.setSubject(contractDto.getSubject());
-        contract.setEducationLevel(contractDto.getEducationLevel());
+        contract.setClassLevel(contractDto.getClassLevel());
+        // New working schedule fields
+        contract.setComments(contractDto.getComments());
+        contract.setWorkSchedule(contractDto.getWorkSchedule());
+        contract.setWorkShifts(contractDto.getWorkShifts());
+        contract.setWorkDays(contractDto.getWorkDays());
         return contract;
     }
 
@@ -607,7 +612,12 @@ public class ContractServiceImpl implements ContractService {
         dto.setAddress(contract.getAddress());
         dto.setQualification(contract.getQualification());
         dto.setSubject(contract.getSubject());
-        dto.setEducationLevel(contract.getEducationLevel());
+        dto.setClassLevel(contract.getClassLevel());
+        // New working schedule fields
+        dto.setComments(contract.getComments());
+        dto.setWorkSchedule(contract.getWorkSchedule());
+        dto.setWorkShifts(contract.getWorkShifts());
+        dto.setWorkDays(contract.getWorkDays());
         return dto;
     }
 

@@ -95,8 +95,20 @@ public class Contract {
     @Column(name = "subject", columnDefinition = "NVARCHAR(255)")
     private String subject;
 
-    @Column(name = "education_level", columnDefinition = "NVARCHAR(255)")
-    private String educationLevel;
+    @Column(name = "class_level", columnDefinition = "NVARCHAR(255)")
+    private String classLevel; // Changed from educationLevel to classLevel (Lớp học)
+
+    @Column(name = "comments", columnDefinition = "NVARCHAR(500)")
+    private String comments; // Changed from evaluation to comments (Nhận xét)
+
+    @Column(name = "work_schedule", columnDefinition = "NVARCHAR(500)")
+    private String workSchedule; // New field: Thời gian làm việc (shifts and days)
+
+    @Column(name = "work_shifts", columnDefinition = "NVARCHAR(255)")
+    private String workShifts; // New field: Ca làm việc (morning, afternoon, evening)
+
+    @Column(name = "work_days", columnDefinition = "NVARCHAR(255)")
+    private String workDays; // New field: Ngày trong tuần (Monday, Tuesday, etc.)
 
     @Column(name = "offer", columnDefinition = "NVARCHAR(255)")
     private String offer;
