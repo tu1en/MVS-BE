@@ -45,6 +45,16 @@ public class Contract {
     @Column(name = "salary", nullable = false)
     private Double salary;
 
+    // Separate salary fields from Offer Management
+    @Column(name = "gross_salary")
+    private Long grossSalary; // Lương GROSS từ Quản lý Offer
+
+    @Column(name = "net_salary")
+    private Long netSalary; // Lương NET từ Quản lý Offer
+
+    @Column(name = "hourly_salary")
+    private Long hourlySalary; // Lương theo giờ từ Quản lý Offer
+
     @Column(name = "working_hours")
     private String workingHours;
 

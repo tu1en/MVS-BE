@@ -141,19 +141,67 @@ public class ContractServiceImpl implements ContractService {
         Contract existingContract = contractRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Contract not found with id: " + id));
         
-        // Update fields
-        existingContract.setContractType(contractDto.getContractType());
-        existingContract.setPosition(contractDto.getPosition());
-        existingContract.setDepartment(contractDto.getDepartment());
-        existingContract.setSalary(contractDto.getSalary());
-        existingContract.setWorkingHours(contractDto.getWorkingHours());
+        // Validate required editable fields only
+        if (contractDto.getStartDate() == null) {
+            throw new IllegalArgumentException("Start date is required for contract update");
+        }
+        
+        // Log which fields are being restricted from update
+        log.info("Contract update - Preserving read-only fields: fullName, email, phoneNumber, contractType, position, department, salary, workingHours, offer, evaluation, grossSalary, netSalary, hourlySalary (salary fields completely removed from edit form)");
+        
+        // ONLY UPDATE EDITABLE FIELDS (as per frontend restrictions):
+        // - birthDate, citizenId, address, qualification, subject, educationLevel
+        // - startDate, endDate, contractTerms, status
+        
+        // Update editable personal information fields
+        if (contractDto.getBirthDate() != null) {
+            existingContract.setBirthDate(contractDto.getBirthDate());
+        }
+        
+        if (contractDto.getCitizenId() != null && !contractDto.getCitizenId().trim().isEmpty()) {
+            existingContract.setCitizenId(contractDto.getCitizenId());
+        }
+        
+        if (contractDto.getAddress() != null && !contractDto.getAddress().trim().isEmpty()) {
+            existingContract.setAddress(contractDto.getAddress());
+        }
+        
+        // Update editable professional information fields
+        if (contractDto.getQualification() != null && !contractDto.getQualification().trim().isEmpty()) {
+            existingContract.setQualification(contractDto.getQualification());
+        }
+        
+        if (contractDto.getSubject() != null && !contractDto.getSubject().trim().isEmpty()) {
+            existingContract.setSubject(contractDto.getSubject());
+        }
+        
+        if (contractDto.getEducationLevel() != null && !contractDto.getEducationLevel().trim().isEmpty()) {
+            existingContract.setEducationLevel(contractDto.getEducationLevel());
+        }
+        
+        // Update editable contract fields
         existingContract.setStartDate(contractDto.getStartDate());
-        existingContract.setEndDate(contractDto.getEndDate());
-        existingContract.setStatus(contractDto.getStatus());
-        existingContract.setContractTerms(contractDto.getContractTerms());
+        
+        if (contractDto.getEndDate() != null) {
+            existingContract.setEndDate(contractDto.getEndDate());
+        }
+        
+        if (contractDto.getStatus() != null && !contractDto.getStatus().trim().isEmpty()) {
+            existingContract.setStatus(contractDto.getStatus());
+        }
+        
+        if (contractDto.getContractTerms() != null) {
+            existingContract.setContractTerms(contractDto.getContractTerms());
+        }
+        
+        // DO NOT UPDATE THESE READ-ONLY/HIDDEN FIELDS:
+        // - fullName, email, phoneNumber (read-only in frontend)
+        // - contractType, position, department (removed from frontend)
+        // - salary, workingHours (read-only/removed in frontend)
+        // - offer, evaluation (read-only in frontend)
         
         Contract updatedContract = contractRepository.save(existingContract);
-        log.info("Contract updated successfully with id: {}", updatedContract.getId());
+        log.info("Contract updated successfully with id: {} - Only editable fields updated, read-only fields preserved", updatedContract.getId());
         
         return convertToDto(updatedContract);
     }
@@ -301,7 +349,6 @@ public class ContractServiceImpl implements ContractService {
                         
                         // Xác định loại vị trí để tính lương phù hợp
                         String jobTitle = interview.getJobTitle() != null ? interview.getJobTitle().toLowerCase() : "";
-                        String contractType = interview.getContractType() != null ? interview.getContractType().toLowerCase() : "";
                         
                         log.info("🔍 DEBUG: Salary calculation for candidate ID: {}", candidateId);
                         log.info("🔍 DEBUG: Job title: '{}'", interview.getJobTitle());
@@ -310,42 +357,20 @@ public class ContractServiceImpl implements ContractService {
                         log.info("🔍 DEBUG: Offer amount: '{}'", interview.getOffer());
                         log.info("🔍 DEBUG: Gross salary calculated: {}", salaryResult.getGrossSalary());
                         
-                        boolean isTeacher = jobTitle.contains("giáo viên") || jobTitle.contains("teacher") || 
-                                           contractType.contains("teacher") || contractType.contains("giáo viên");
-                        boolean isManagerOrAccountant = jobTitle.contains("quản lý") || jobTitle.contains("manager") || 
-                                                       jobTitle.contains("kế toán") || jobTitle.contains("accountant");
+                        // Tính toán lương cho tất cả các vị trí
+                        log.info("Processing salary calculation for candidate ID: {} - jobTitle: {}", candidateId, jobTitle);
                         
-                        log.info("🔍 DEBUG: isTeacher: {}, isManagerOrAccountant: {}", isTeacher, isManagerOrAccountant);
+                        // Đặt tất cả các loại lương
+                        offerData.setGrossSalary(salaryResult.getGrossSalary().longValue());
+                        offerData.setNetSalary(salaryResult.getNetSalary().longValue());
                         
-                        if (isTeacher) {
-                            // Giáo viên: Chỉ hiển thị lương theo giờ
-                            log.info("Processing TEACHER position for candidate ID: {} - jobTitle: {}", candidateId, jobTitle);
-                            offerData.setGrossSalary(null); // Để trống
-                            offerData.setNetSalary(null);   // Để trống
-                            
-                            // Tính lương theo giờ (giả sử 8 giờ/ngày, 22 ngày/tháng)
-                            BigDecimal hourlyRate = salaryResult.getGrossSalary()
-                                .divide(new BigDecimal("176"), 0, RoundingMode.HALF_UP); // 22 ngày * 8 giờ = 176 giờ/tháng
-                            log.info("🔍 DEBUG: Calculated hourly rate for teacher: {} from gross salary: {}", hourlyRate, salaryResult.getGrossSalary());
-                            offerData.setHourlySalary(hourlyRate.longValue());
-                            
-                        } else if (isManagerOrAccountant) {
-                            // Manager & Kế toán: Chỉ hiển thị lương GROSS và NET
-                            log.info("Processing MANAGER/ACCOUNTANT position for candidate ID: {} - jobTitle: {}", candidateId, jobTitle);
-                            offerData.setGrossSalary(salaryResult.getGrossSalary().longValue());
-                            offerData.setNetSalary(salaryResult.getNetSalary().longValue());
-                            offerData.setHourlySalary(null); // Để trống
-                            
-                        } else {
-                            // Mặc định: Hiển thị tất cả (cho các vị trí khác)
-                            log.info("Processing OTHER position for candidate ID: {} - jobTitle: {}", candidateId, jobTitle);
-                            offerData.setGrossSalary(salaryResult.getGrossSalary().longValue());
-                            offerData.setNetSalary(salaryResult.getNetSalary().longValue());
-                            
-                            BigDecimal hourlyRate = salaryResult.getGrossSalary()
-                                .divide(new BigDecimal("176"), 0, RoundingMode.HALF_UP);
-                            offerData.setHourlySalary(hourlyRate.longValue());
-                        }
+                        // Tính lương theo giờ cho tất cả vị trí (8 giờ/ngày, 22 ngày/tháng = 176 giờ/tháng)
+                        BigDecimal hourlyRate = salaryResult.getGrossSalary()
+                            .divide(new BigDecimal("176"), 0, RoundingMode.HALF_UP);
+                        offerData.setHourlySalary(hourlyRate.longValue());
+                        
+                        log.info("🔍 DEBUG: Calculated salary for candidate ID: {} - Gross: {}, Net: {}, Hourly: {}", 
+                                candidateId, offerData.getGrossSalary(), offerData.getNetSalary(), offerData.getHourlySalary());
                         
                         log.info("🔍 DEBUG: Final salary details for candidate ID: {} - Gross: {}, Net: {}, Hourly: {}", 
                                 candidateId, offerData.getGrossSalary(), offerData.getNetSalary(), offerData.getHourlySalary());
@@ -428,6 +453,12 @@ public class ContractServiceImpl implements ContractService {
         contract.setPosition(contractDto.getPosition());
         contract.setDepartment(contractDto.getDepartment());
         contract.setSalary(contractDto.getSalary());
+        
+        // Map separate salary fields from Offer Management
+        contract.setGrossSalary(contractDto.getGrossSalary());
+        contract.setNetSalary(contractDto.getNetSalary());
+        contract.setHourlySalary(contractDto.getHourlySalary());
+        
         contract.setWorkingHours(contractDto.getWorkingHours());
         contract.setStartDate(contractDto.getStartDate());
         contract.setEndDate(contractDto.getEndDate());
@@ -459,6 +490,12 @@ public class ContractServiceImpl implements ContractService {
         dto.setPosition(contract.getPosition());
         dto.setDepartment(contract.getDepartment());
         dto.setSalary(contract.getSalary());
+        
+        // Map separate salary fields from Offer Management
+        dto.setGrossSalary(contract.getGrossSalary());
+        dto.setNetSalary(contract.getNetSalary());
+        dto.setHourlySalary(contract.getHourlySalary());
+        
         dto.setWorkingHours(contract.getWorkingHours());
         dto.setStartDate(contract.getStartDate());
         dto.setEndDate(contract.getEndDate());
