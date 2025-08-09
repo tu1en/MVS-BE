@@ -127,10 +127,8 @@ public class UserServiceExtensionImpl implements UserServiceExtension {
             log.error("Error creating user without contract: {}", email, e);
             return false;
         }
-    }
+    } 
     
-<<<<<<< HEAD
-=======
     @Override
     public boolean hasActiveContract(String email) {
         try {
@@ -149,7 +147,6 @@ public class UserServiceExtensionImpl implements UserServiceExtension {
         }
     }
     
->>>>>>> 17a86eaddc86600ac77c6d96372b947571caf746
     /**
      * Returns a human-readable role name
      */

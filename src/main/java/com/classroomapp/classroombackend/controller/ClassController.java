@@ -43,6 +43,9 @@ public class ClassController {
     @Autowired
     private ScheduleConflictService scheduleConflictService;
     
+    @Autowired
+    private com.classroomapp.classroombackend.service.TeacherAvailabilityService teacherAvailabilityService;
+    
     /**
      * Create new class from template
      */
@@ -239,6 +242,22 @@ public class ClassController {
     }
     
     /**
+     * Lấy danh sách giáo viên khả dụng theo môn và lịch đã chọn
+     */
+    @PostMapping("/available-teachers")
+    public ResponseEntity<ApiResponse<List<com.classroomapp.classroombackend.dto.AvailableTeacherDto>>> getAvailableTeachers(
+            @Valid @RequestBody com.classroomapp.classroombackend.dto.AvailableTeachersRequest request) {
+        try {
+            List<com.classroomapp.classroombackend.dto.AvailableTeacherDto> teachers = teacherAvailabilityService.findAvailableTeachers(request);
+            return ResponseEntity.ok(ApiResponse.success(teachers, "Tải danh sách giáo viên khả dụng thành công"));
+        } catch (Exception e) {
+            logger.error("Error finding available teachers: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .body(ApiResponse.error("Lỗi lấy giáo viên khả dụng: " + e.getMessage()));
+        }
+    }
+    
+    /**
      * Get room availability summary
      */
     @GetMapping("/room-availability")
@@ -294,8 +313,10 @@ public class ClassController {
             String startDate = request.get("startDate").toString();
             String endDate = request.get("endDate").toString();
             
+            @SuppressWarnings("unchecked")
+            List<String> requiredDays = (List<String>) request.get("requiredDays");
             Map<String, Object> optimalSlots = scheduleConflictService.findOptimalSlot(
-                    roomId, teacherId, (List<String>) request.get("requiredDays"),
+                    roomId, teacherId, requiredDays,
                     request.get("startTime").toString(), request.get("endTime").toString(),
                     LocalDate.parse(startDate), LocalDate.parse(endDate)
             );

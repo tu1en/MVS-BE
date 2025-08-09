@@ -148,9 +148,6 @@ public class EmailServiceImpl implements EmailService {
         context.setVariable("name", name);
         context.setVariable("jobTitle", jobTitle);
         context.setVariable("offer", offer);
-<<<<<<< HEAD
-        String body = templateEngine.process("email/offer-resend", context);
-=======
         
         // Tính toán chi tiết lương từ offer
         try {
@@ -179,7 +176,6 @@ public class EmailServiceImpl implements EmailService {
         context.setVariable("offer", offer);
         context.setVariable("salaryDetails", salaryDetails);
         String body = templateEngine.process("email/offer-resend-with-details", context);
->>>>>>> 17a86eaddc86600ac77c6d96372b947571caf746
         sendEmail(to, subject, body);
     }
 // Thêm method này vào EmailServiceImpl.java (sau method sendInterviewRejectionEmail)

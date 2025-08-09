@@ -71,10 +71,6 @@ public class EmailServiceDummyImpl implements EmailService {
 
     @Override
     public void sendOfferResendEmail(String to, String name, String jobTitle, String offer) {
-<<<<<<< HEAD
-        log.info("DUMMY EMAIL SERVICE: Would send offer resend email to {} ({}) - Job Title: {}, Offer: {}",
-                to, name, jobTitle, offer);
-=======
         log.info("DUMMY EMAIL SERVICE: Would send offer resend email with salary details to {} ({}) - Job Title: {}, Offer: {}",
                 to, name, jobTitle, offer);
         
@@ -98,7 +94,6 @@ public class EmailServiceDummyImpl implements EmailService {
     public void sendOfferResendEmailWithDetails(String to, String name, String jobTitle, String offer, Object salaryDetails) {
         log.info("DUMMY EMAIL SERVICE: Would send offer resend email with details to {} ({}) - Job Title: {}, Offer: {}, Salary Details: {}",
                 to, name, jobTitle, offer, salaryDetails);
->>>>>>> 17a86eaddc86600ac77c6d96372b947571caf746
     }
 
     @Override

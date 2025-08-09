@@ -1,18 +1,21 @@
 package com.classroomapp.classroombackend.service.impl;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.classroomapp.classroombackend.dto.InterviewScheduleDto;
 import com.classroomapp.classroombackend.model.InterviewSchedule;
 import com.classroomapp.classroombackend.model.RecruitmentApplication;
 import com.classroomapp.classroombackend.repository.InterviewScheduleRepository;
 import com.classroomapp.classroombackend.repository.RecruitmentApplicationRepository;
 import com.classroomapp.classroombackend.service.InterviewScheduleService;
+
 import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -99,19 +102,6 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
 
     @Override
     @Transactional(readOnly = true)
-<<<<<<< HEAD
-    public boolean hasConflict(LocalDateTime startTime, LocalDateTime endTime) {
-        // Kiểm tra xem có lịch phỏng vấn nào trùng thời gian không
-        List<InterviewSchedule> existingSchedules = interviewRepo.findAll();
-        
-        for (InterviewSchedule schedule : existingSchedules) {
-            // Kiểm tra overlap: (start1 < end2) && (end1 > start2)
-            if (startTime.isBefore(schedule.getEndTime()) && endTime.isAfter(schedule.getStartTime())) {
-                return true; // Có conflict
-            }
-        }
-        return false; // Không có conflict
-=======
     public boolean hasConflict(LocalDateTime startTime, LocalDateTime endTime, Long excludeApplicationId) {
         try {
             // Lấy tất cả các lịch phỏng vấn đã được xếp (SCHEDULED hoặc PENDING)
@@ -176,7 +166,6 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
         entity.setEndTime(endTime);
         InterviewSchedule saved = interviewRepo.save(entity);
         return toDto(saved);
->>>>>>> 17a86eaddc86600ac77c6d96372b947571caf746
     }
 
     @Override
