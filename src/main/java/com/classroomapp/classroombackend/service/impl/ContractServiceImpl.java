@@ -21,7 +21,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
+
 import java.util.stream.Collectors;
 
 @Service
@@ -314,9 +314,9 @@ public class ContractServiceImpl implements ContractService {
 
     @Override
     public ContractDto getCandidateOfferData(Long candidateId) {
-        log.info("Fetching real offer data for candidate ID: {}", candidateId);
+        log.info("🔄 REWRITTEN: Fetching offer data from editable Offer Management for candidate ID: {}", candidateId);
         try {
-            // Tìm interview schedule của candidate để lấy dữ liệu offer thực
+            // Tìm interview schedule của candidate để lấy dữ liệu offer từ Quản Lý Offer
             InterviewScheduleDto interview = interviewScheduleService.getById(candidateId);
             if (interview == null) {
                 log.warn("Interview not found for candidate ID: {}", candidateId);
@@ -330,64 +330,78 @@ public class ContractServiceImpl implements ContractService {
             if ("APPROVED".equals(interview.getStatus())) {
                 evaluation = "Đạt yêu cầu - Được phê duyệt";
                 if (interview.getEvaluation() != null && !interview.getEvaluation().trim().isEmpty()) {
-                    evaluation = interview.getEvaluation(); // Sử dụng evaluation field từ interview
+                    evaluation = interview.getEvaluation();
                 }
             }
             offerData.setEvaluation(evaluation);
             
-            // Tính toán lương từ offer amount sử dụng TopCVCalculation
-            if (interview.getOffer() != null && !interview.getOffer().trim().isEmpty()) {
-                try {
-                    // Parse offer amount từ string thành BigDecimal
-                    String cleanOffer = interview.getOffer().replaceAll("[^0-9]", "");
-                    if (!cleanOffer.isEmpty()) {
-                        BigDecimal grossSalary = new BigDecimal(cleanOffer);
-                        
-                        // Sử dụng TopCVCalculation để tính toán chi tiết lương
-                        TopCVCalculation.SalaryCalculationResult salaryResult = 
-                            TopCVCalculation.calculateFromGrossToNet(grossSalary, 0);
-                        
-                        // Xác định loại vị trí để tính lương phù hợp
-                        String jobTitle = interview.getJobTitle() != null ? interview.getJobTitle().toLowerCase() : "";
-                        
-                        log.info("🔍 DEBUG: Salary calculation for candidate ID: {}", candidateId);
-                        log.info("🔍 DEBUG: Job title: '{}'", interview.getJobTitle());
-                        log.info("🔍 DEBUG: Contract type: '{}'", interview.getContractType());
-                        log.info("🔍 DEBUG: Salary range: '{}'", interview.getSalaryRange());
-                        log.info("🔍 DEBUG: Offer amount: '{}'", interview.getOffer());
-                        log.info("🔍 DEBUG: Gross salary calculated: {}", salaryResult.getGrossSalary());
-                        
-                        // Tính toán lương cho tất cả các vị trí
-                        log.info("Processing salary calculation for candidate ID: {} - jobTitle: {}", candidateId, jobTitle);
-                        
-                        // Đặt tất cả các loại lương
-                        offerData.setGrossSalary(salaryResult.getGrossSalary().longValue());
-                        offerData.setNetSalary(salaryResult.getNetSalary().longValue());
-                        
-                        // Tính lương theo giờ cho tất cả vị trí (8 giờ/ngày, 22 ngày/tháng = 176 giờ/tháng)
-                        BigDecimal hourlyRate = salaryResult.getGrossSalary()
-                            .divide(new BigDecimal("176"), 0, RoundingMode.HALF_UP);
-                        offerData.setHourlySalary(hourlyRate.longValue());
-                        
-                        log.info("🔍 DEBUG: Calculated salary for candidate ID: {} - Gross: {}, Net: {}, Hourly: {}", 
-                                candidateId, offerData.getGrossSalary(), offerData.getNetSalary(), offerData.getHourlySalary());
-                        
-                        log.info("🔍 DEBUG: Final salary details for candidate ID: {} - Gross: {}, Net: {}, Hourly: {}", 
-                                candidateId, offerData.getGrossSalary(), offerData.getNetSalary(), offerData.getHourlySalary());
-                    } else {
-                        log.warn("Empty offer amount for candidate ID: {}", candidateId);
-                        setDefaultOfferData(offerData);
-                    }
-                } catch (NumberFormatException e) {
-                    log.warn("Invalid offer amount format for candidate ID: {} - offer: {}", candidateId, interview.getOffer());
-                    setDefaultOfferData(offerData);
+            // Xác định loại vị trí để xử lý lương phù hợp
+            String jobTitle = interview.getJobTitle() != null ? interview.getJobTitle().toLowerCase() : "";
+            String contractType = interview.getContractType() != null ? interview.getContractType() : "";
+            boolean isTeacher = jobTitle.contains("giáo viên") || jobTitle.contains("teacher") || "TEACHER".equals(contractType);
+            
+            log.info("🔍 REWRITTEN DEBUG: Processing candidate ID: {} - JobTitle: '{}', ContractType: '{}', IsTeacher: {}", 
+                    candidateId, interview.getJobTitle(), contractType, isTeacher);
+            
+            // Xử lý lương dựa trên vị trí
+            if (isTeacher) {
+                // ✅ FOR TEACHERS: Lấy "Lương theo giờ" trực tiếp từ Quản Lý Offer
+                log.info("🎓 TEACHER CONTRACT: Fetching hourly salary from editable Offer Management");
+                
+                // Kiểm tra xem có hourly salary được set trực tiếp trong offer không
+                Long directHourlySalary = extractHourlySalaryFromOffer(interview);
+                
+                if (directHourlySalary != null && directHourlySalary > 0) {
+                    // Sử dụng lương theo giờ đã được chỉnh sửa trong Quản Lý Offer
+                    offerData.setHourlySalary(directHourlySalary);
+                    log.info("✅ TEACHER: Using direct hourly salary from Offer Management: {} VND/hour", directHourlySalary);
+                } else {
+                    // Fallback: Tính từ gross salary nếu không có hourly salary trực tiếp
+                    Long calculatedHourly = calculateHourlySalaryFromGross(interview);
+                    offerData.setHourlySalary(calculatedHourly);
+                    log.info("📊 TEACHER: Calculated hourly salary from gross: {} VND/hour", calculatedHourly);
                 }
+                
+                // Cho giáo viên, không set gross/net salary
+                offerData.setGrossSalary(null);
+                offerData.setNetSalary(null);
+                
             } else {
-                log.warn("No offer amount found for candidate ID: {}", candidateId);
-                setDefaultOfferData(offerData);
+                // ✅ FOR STAFF: Tính gross và net salary từ offer amount
+                log.info("👥 STAFF CONTRACT: Calculating gross and net salary from offer amount");
+                
+                if (interview.getOffer() != null && !interview.getOffer().trim().isEmpty()) {
+                    try {
+                        String cleanOffer = interview.getOffer().replaceAll("[^0-9]", "");
+                        if (!cleanOffer.isEmpty()) {
+                            BigDecimal grossSalary = new BigDecimal(cleanOffer);
+                            
+                            // Sử dụng TopCVCalculation để tính net salary
+                            TopCVCalculation.SalaryCalculationResult salaryResult = 
+                                TopCVCalculation.calculateFromGrossToNet(grossSalary, 0);
+                            
+                            offerData.setGrossSalary(salaryResult.getGrossSalary().longValue());
+                            offerData.setNetSalary(salaryResult.getNetSalary().longValue());
+                            
+                            log.info("✅ STAFF: Set gross salary: {} VND, net salary: {} VND", 
+                                    offerData.getGrossSalary(), offerData.getNetSalary());
+                        } else {
+                            setDefaultStaffSalary(offerData);
+                        }
+                    } catch (NumberFormatException e) {
+                        log.warn("Invalid offer amount format for staff candidate ID: {}", candidateId);
+                        setDefaultStaffSalary(offerData);
+                    }
+                } else {
+                    setDefaultStaffSalary(offerData);
+                }
+                
+                // Cho nhân viên, không set hourly salary
+                offerData.setHourlySalary(null);
             }
             
-            log.info("Successfully fetched real offer data for candidate ID: {}", candidateId);
+            log.info("🔄 REWRITTEN: Successfully fetched offer data for candidate ID: {} - IsTeacher: {}, HourlySalary: {}, GrossSalary: {}, NetSalary: {}", 
+                    candidateId, isTeacher, offerData.getHourlySalary(), offerData.getGrossSalary(), offerData.getNetSalary());
             return offerData;
         } catch (ResourceNotFoundException e) {
             throw e; // Re-throw ResourceNotFoundException
@@ -398,9 +412,91 @@ public class ContractServiceImpl implements ContractService {
     }
     
     private void setDefaultOfferData(ContractDto offerData) {
+        offerData.setEvaluation("Chưa có đánh giá");
         offerData.setGrossSalary(0L);
         offerData.setNetSalary(0L);
         offerData.setHourlySalary(0L);
+    }
+    
+    /**
+     * 🔄 REWRITTEN: Trích xuất lương theo giờ trực tiếp từ Quản Lý Offer cho giáo viên
+     * Phương thức này sẽ tìm kiếm lương theo giờ đã được chỉnh sửa trong hệ thống Quản Lý Offer
+     */
+    private Long extractHourlySalaryFromOffer(InterviewScheduleDto interview) {
+        log.info("🔍 EXTRACTING: Hourly salary from Offer Management for interview: {}", interview.getId());
+        
+        // Kiểm tra xem có trường hourly salary riêng biệt trong interview không
+        // Giả sử có trường hourlySalary trong InterviewScheduleDto (cần được thêm vào)
+        try {
+            // TODO: Cần thêm trường hourlySalary vào InterviewScheduleDto
+            // Hiện tại sử dụng offer field để parse hourly salary
+            
+            if (interview.getOffer() != null && !interview.getOffer().trim().isEmpty()) {
+                String offer = interview.getOffer().toLowerCase();
+                
+                // Tìm kiếm pattern "xxx/giờ" hoặc "xxx/hour" trong offer string
+                if (offer.contains("/giờ") || offer.contains("/hour")) {
+                    String[] parts = offer.split("/");
+                    if (parts.length > 0) {
+                        String hourlyPart = parts[0].replaceAll("[^0-9]", "");
+                        if (!hourlyPart.isEmpty()) {
+                            Long hourlySalary = Long.parseLong(hourlyPart);
+                            log.info("✅ EXTRACTED: Direct hourly salary from offer: {} VND/hour", hourlySalary);
+                            return hourlySalary;
+                        }
+                    }
+                }
+            }
+            
+            log.info("❌ NO DIRECT: Hourly salary not found in offer string");
+            return null;
+            
+        } catch (Exception e) {
+            log.warn("Error extracting hourly salary from offer: {}", e.getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * 🔄 REWRITTEN: Tính lương theo giờ từ gross salary cho giáo viên (fallback method)
+     */
+    private Long calculateHourlySalaryFromGross(InterviewScheduleDto interview) {
+        log.info("📊 CALCULATING: Hourly salary from gross for interview: {}", interview.getId());
+        
+        try {
+            if (interview.getOffer() != null && !interview.getOffer().trim().isEmpty()) {
+                String cleanOffer = interview.getOffer().replaceAll("[^0-9]", "");
+                if (!cleanOffer.isEmpty()) {
+                    BigDecimal grossSalary = new BigDecimal(cleanOffer);
+                    
+                    // Tính lương theo giờ: Gross salary / 176 giờ/tháng (8 giờ/ngày × 22 ngày/tháng)
+                    BigDecimal hourlyRate = grossSalary.divide(new BigDecimal("176"), 0, RoundingMode.HALF_UP);
+                    Long hourlySalary = hourlyRate.longValue();
+                    
+                    log.info("📊 CALCULATED: Hourly salary from gross {} VND -> {} VND/hour", grossSalary, hourlySalary);
+                    return hourlySalary;
+                }
+            }
+            
+            // Default hourly salary for teachers
+            Long defaultHourly = 100000L; // 100,000 VND/hour
+            log.info("⚠️ DEFAULT: Using default hourly salary: {} VND/hour", defaultHourly);
+            return defaultHourly;
+            
+        } catch (Exception e) {
+            log.warn("Error calculating hourly salary from gross: {}", e.getMessage());
+            return 100000L; // Default fallback
+        }
+    }
+    
+    /**
+     * 🔄 REWRITTEN: Set default salary cho nhân viên
+     */
+    private void setDefaultStaffSalary(ContractDto offerData) {
+        log.info("⚠️ SETTING: Default staff salary");
+        offerData.setGrossSalary(15000000L); // 15 triệu VND gross
+        offerData.setNetSalary(12000000L);   // 12 triệu VND net
+        offerData.setHourlySalary(null);     // Không có lương theo giờ cho nhân viên
     }
     
     private String generateNextContractId() {
