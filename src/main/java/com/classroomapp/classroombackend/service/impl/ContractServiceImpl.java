@@ -64,13 +64,22 @@ public class ContractServiceImpl implements ContractService {
     public ContractDto createContract(ContractDto contractDto) {
         log.info("Creating new contract for user: {}", contractDto.getFullName());
         
-        // Validate user exists
-        User user = userRepository.findById(contractDto.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + contractDto.getUserId()));
+        User user = null;
         
-        // Check if user already has a contract
-        if (contractRepository.existsByUserId(contractDto.getUserId())) {
-            throw new IllegalArgumentException("User already has a contract. Each user can only have one contract.");
+        // Try to find user if userId is provided and looks like a valid database ID
+        if (contractDto.getUserId() != null && contractDto.getUserId() < 999999999L) {
+            try {
+                user = userRepository.findById(contractDto.getUserId()).orElse(null);
+                if (user != null) {
+                    // Check if user already has a contract
+                    if (contractRepository.existsByUserId(contractDto.getUserId())) {
+                        throw new IllegalArgumentException("User already has a contract. Each user can only have one contract.");
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Could not find user with id: {}, proceeding with manual contract creation", contractDto.getUserId());
+                user = null;
+            }
         }
         
         Contract contract = convertToEntity(contractDto);
@@ -78,23 +87,45 @@ public class ContractServiceImpl implements ContractService {
         // Generate unique Contract ID
         String contractId = generateNextContractId();
         contract.setContractId(contractId);
-        // Use candidate name from contractDto if provided, otherwise use user's name
+        
+        // Use data from contractDto, fallback to user data if available
         if (contractDto.getFullName() != null && !contractDto.getFullName().trim().isEmpty()) {
             contract.setFullName(contractDto.getFullName());
-        } else {
+        } else if (user != null) {
             contract.setFullName(user.getFullName());
+        } else {
+            throw new IllegalArgumentException("Full name is required for contract creation");
         }
-        // Use candidate email from contractDto if provided, otherwise use user's email
+        
         if (contractDto.getEmail() != null && !contractDto.getEmail().trim().isEmpty()) {
             contract.setEmail(contractDto.getEmail());
-        } else {
+        } else if (user != null) {
             contract.setEmail(user.getEmail());
+        } else {
+            throw new IllegalArgumentException("Email is required for contract creation");
         }
-        // Use candidate phone from contractDto if provided, otherwise use user's phone
+        
         if (contractDto.getPhoneNumber() != null && !contractDto.getPhoneNumber().trim().isEmpty()) {
             contract.setPhoneNumber(contractDto.getPhoneNumber());
-        } else {
+        } else if (user != null) {
             contract.setPhoneNumber(user.getPhoneNumber());
+        }
+        
+        // Ensure required fields are set
+        if (contract.getContractType() == null || contract.getContractType().trim().isEmpty()) {
+            throw new IllegalArgumentException("Contract type is required");
+        }
+        
+        if (contract.getPosition() == null || contract.getPosition().trim().isEmpty()) {
+            throw new IllegalArgumentException("Position is required");
+        }
+        
+        if (contract.getSalary() == null || contract.getSalary() <= 0) {
+            throw new IllegalArgumentException("Valid salary is required");
+        }
+        
+        if (contract.getStartDate() == null) {
+            throw new IllegalArgumentException("Start date is required");
         }
         
         Contract savedContract = contractRepository.save(contract);
