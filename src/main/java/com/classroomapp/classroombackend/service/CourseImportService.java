@@ -41,13 +41,13 @@ public class CourseImportService {
             if (request.getCourseName() == null || request.getCourseName().trim().isEmpty()) {
                 throw new IllegalArgumentException("Course name is required");
             }
-            if (request.getTeacherId() == null) {
-                throw new IllegalArgumentException("Teacher ID is required");
+            
+            // Teacher is optional - can be assigned later
+            User teacher = null;
+            if (request.getTeacherId() != null) {
+                teacher = userRepository.findById(request.getTeacherId())
+                    .orElseThrow(() -> new RuntimeException("Teacher not found with ID: " + request.getTeacherId()));
             }
-
-            // Validate teacher exists
-            User teacher = userRepository.findById(request.getTeacherId())
-                .orElseThrow(() -> new RuntimeException("Teacher not found with ID: " + request.getTeacherId()));
 
             // Create course DTO
             CourseDetailsDto courseDto = new CourseDetailsDto();
@@ -55,9 +55,16 @@ public class CourseImportService {
             courseDto.setDescription(request.getDescription() != null ? request.getDescription() : "");
             courseDto.setSection(request.getSection() != null ? request.getSection() : "Default Section");
             courseDto.setSubject(request.getSubject() != null ? request.getSubject() : "");
-            courseDto.setTeacher(new UserDto(teacher));
+            courseDto.setTeacher(teacher != null ? new UserDto(teacher) : null); // Teacher is optional
             courseDto.setStudents(new ArrayList<>()); // Empty initially
             courseDto.setTotalStudents(0);
+            
+            // Add room information if provided (for reference only - room assignment happens separately)
+            if (request.getRoomId() != null) {
+                // Store room info in description for now, or handle room assignment separately
+                String roomInfo = request.getRoomName() != null ? request.getRoomName() : "Room ID: " + request.getRoomId();
+                courseDto.setDescription(courseDto.getDescription() + " [Phòng học: " + roomInfo + "]");
+            }
 
             // Create course with empty student list
             return courseService.createCourseWithStudents(courseDto, new ArrayList<>());
