@@ -120,8 +120,17 @@ public class ContractServiceImpl implements ContractService {
             throw new IllegalArgumentException("Position is required");
         }
         
-        if (contract.getSalary() == null || contract.getSalary() <= 0) {
-            throw new IllegalArgumentException("Valid salary is required");
+        // Validate salary based on contract type
+        if ("TEACHER".equals(contract.getContractType())) {
+            // For teachers, validate hourly salary
+            if (contract.getHourlySalary() == null || contract.getHourlySalary() <= 0) {
+                throw new IllegalArgumentException("Valid hourly salary is required for teachers");
+            }
+        } else {
+            // For staff, validate regular salary
+            if (contract.getSalary() == null || contract.getSalary() <= 0) {
+                throw new IllegalArgumentException("Valid salary is required for staff");
+            }
         }
         
         if (contract.getStartDate() == null) {
@@ -177,6 +186,24 @@ public class ContractServiceImpl implements ContractService {
         
         if (contractDto.getClassLevel() != null && !contractDto.getClassLevel().trim().isEmpty()) {
             existingContract.setClassLevel(contractDto.getClassLevel());
+        }
+        
+        // Update working schedule fields (editable for teachers)
+        if (contractDto.getWorkSchedule() != null) {
+            existingContract.setWorkSchedule(contractDto.getWorkSchedule());
+        }
+        
+        if (contractDto.getWorkShifts() != null) {
+            existingContract.setWorkShifts(contractDto.getWorkShifts());
+        }
+        
+        if (contractDto.getWorkDays() != null) {
+            existingContract.setWorkDays(contractDto.getWorkDays());
+        }
+        
+        // Update comments field (editable)
+        if (contractDto.getComments() != null) {
+            existingContract.setComments(contractDto.getComments());
         }
         
         // Update editable contract fields
