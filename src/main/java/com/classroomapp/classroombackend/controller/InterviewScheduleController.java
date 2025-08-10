@@ -315,12 +315,14 @@ public class InterviewScheduleController {
         if ("APPROVED".equals(body.getStatus()) || "ACCEPTED".equals(body.getStatus())) {
             emailService.sendEmail(interview.getApplicantEmail(), "Kết quả phỏng vấn", "Chúc mừng bạn đã vượt qua phỏng vấn cho vị trí: " + interview.getJobTitle());
             
-            // Tạo user mới với trạng thái chưa có hợp đồng nếu cần
+            // Tạo user mới với role phù hợp và trạng thái active
             if (body.getCreateAccount() != null && body.getCreateAccount()) {
-                userService.createUserWithoutContract(interview.getApplicantEmail(), interview.getApplicantName(), null);
+                String role = mapJobPositionToRole(interview.getJobTitle());
+                userService.createUserWithActiveStatus(interview.getApplicantEmail(), interview.getApplicantName(), role);
             } else {
-                // Tạo user mới với trạng thái chưa có hợp đồng (logic mặc định)
-                userService.createUserWithoutContract(interview.getApplicantEmail(), interview.getApplicantName(), null);
+                // Tạo user mới với role phù hợp và trạng thái active (logic mặc định)
+                String role = mapJobPositionToRole(interview.getJobTitle());
+                userService.createUserWithActiveStatus(interview.getApplicantEmail(), interview.getApplicantName(), role);
             }
         } else if ("REJECTED".equals(body.getStatus())) {
             // Gửi mail từ chối với evaluation
@@ -385,6 +387,38 @@ public class InterviewScheduleController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }
+    }
+    
+    /**
+     * Map job position title to appropriate user role
+     * @param jobTitle Job position title from interview
+     * @return Role string (TEACHER, ACCOUNTANT, MANAGER, STUDENT)
+     */
+    private String mapJobPositionToRole(String jobTitle) {
+        if (jobTitle == null) {
+            return "STUDENT"; // Default role
+        }
+        
+        String lowerTitle = jobTitle.toLowerCase();
+        
+        // Check for accountant positions
+        if (lowerTitle.contains("kế toán") || lowerTitle.contains("accountant")) {
+            return "ACCOUNTANT";
+        }
+        
+        // Check for HR/Manager positions
+        if (lowerTitle.contains("hr") || lowerTitle.contains("nhân sự") || 
+            lowerTitle.contains("quản lý") || lowerTitle.contains("manager")) {
+            return "MANAGER";
+        }
+        
+        // Check for teacher positions
+        if (lowerTitle.contains("giáo viên") || lowerTitle.contains("teacher")) {
+            return "TEACHER";
+        }
+        
+        // Default to STUDENT for unknown positions
+        return "STUDENT";
     }
 }
 
