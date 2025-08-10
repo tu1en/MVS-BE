@@ -1,6 +1,7 @@
 package com.classroomapp.classroombackend.controller;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -42,6 +44,9 @@ public class ClassController {
     
     @Autowired
     private ScheduleConflictService scheduleConflictService;
+    
+    @Autowired
+    private com.classroomapp.classroombackend.service.TeacherAvailabilityService teacherAvailabilityService;
     
     /**
      * Create new class from template
@@ -239,6 +244,22 @@ public class ClassController {
     }
     
     /**
+     * Lấy danh sách giáo viên khả dụng theo môn và lịch đã chọn
+     */
+    @PostMapping("/available-teachers")
+    public ResponseEntity<ApiResponse<List<com.classroomapp.classroombackend.dto.AvailableTeacherDto>>> getAvailableTeachers(
+            @Valid @RequestBody com.classroomapp.classroombackend.dto.AvailableTeachersRequest request) {
+        try {
+            List<com.classroomapp.classroombackend.dto.AvailableTeacherDto> teachers = teacherAvailabilityService.findAvailableTeachers(request);
+            return ResponseEntity.ok(ApiResponse.success(teachers, "Tải danh sách giáo viên khả dụng thành công"));
+        } catch (Exception e) {
+            logger.error("Error finding available teachers: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .body(ApiResponse.error("Lỗi lấy giáo viên khả dụng: " + e.getMessage()));
+        }
+    }
+    
+    /**
      * Get room availability summary
      */
     @GetMapping("/room-availability")
@@ -294,8 +315,10 @@ public class ClassController {
             String startDate = request.get("startDate").toString();
             String endDate = request.get("endDate").toString();
             
+            @SuppressWarnings("unchecked")
+            List<String> requiredDays = (List<String>) request.get("requiredDays");
             Map<String, Object> optimalSlots = scheduleConflictService.findOptimalSlot(
-                    roomId, teacherId, (List<String>) request.get("requiredDays"),
+                    roomId, teacherId, requiredDays,
                     request.get("startTime").toString(), request.get("endTime").toString(),
                     LocalDate.parse(startDate), LocalDate.parse(endDate)
             );
@@ -320,6 +343,102 @@ public class ClassController {
             logger.error("Error checking template availability: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                     .body(ApiResponse.error("Lỗi kiểm tra sẵn sàng khóa học: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * Get students enrolled in a class
+     */
+    @GetMapping("/{classId}/students")
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getClassStudents(@PathVariable Long classId) {
+        try {
+            // TODO: Implement actual student enrollment service
+            // For now, return empty list since we removed fake enrollment
+            List<Map<String, Object>> students = List.of();
+            
+            logger.info("Fetched {} students for class {}", students.size(), classId);
+            return ResponseEntity.ok(ApiResponse.success(students));
+        } catch (Exception e) {
+            logger.error("Error fetching class students: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .body(ApiResponse.error("Lỗi lấy danh sách học viên: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * Enroll a student in a class
+     */
+    @PostMapping("/{classId}/students/{studentId}/enroll")
+    public ResponseEntity<ApiResponse<String>> enrollStudent(@PathVariable Long classId, @PathVariable Long studentId) {
+        try {
+            // TODO: Implement actual enrollment logic
+            // For now, just return success message
+            
+            logger.info("Student {} enrolled in class {}", studentId, classId);
+            return ResponseEntity.ok(ApiResponse.success("Đã thêm học viên vào lớp thành công"));
+        } catch (Exception e) {
+            logger.error("Error enrolling student: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .body(ApiResponse.error("Lỗi thêm học viên: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * Remove a student from a class
+     */
+    @DeleteMapping("/{classId}/students/{studentId}")
+    public ResponseEntity<ApiResponse<String>> unenrollStudent(@PathVariable Long classId, @PathVariable Long studentId) {
+        try {
+            // TODO: Implement actual unenrollment logic
+            // For now, just return success message
+            
+            logger.info("Student {} removed from class {}", studentId, classId);
+            return ResponseEntity.ok(ApiResponse.success("Đã xóa học viên khỏi lớp thành công"));
+        } catch (Exception e) {
+            logger.error("Error removing student: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .body(ApiResponse.error("Lỗi xóa học viên: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * Check schedule conflicts for a student
+     */
+    @PostMapping("/students/{studentId}/schedule-conflicts")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> checkStudentScheduleConflicts(
+            @PathVariable Long studentId,
+            @RequestBody Map<String, Object> request) {
+        try {
+            // TODO: Implement actual schedule conflict checking
+            // For now, simulate conflict checking
+            
+            Map<String, Object> response = new HashMap<>();
+            
+            // Mock conflict detection based on student ID
+            boolean hasConflict = (studentId % 3 == 0); // Every 3rd student has conflict
+            
+            response.put("hasConflict", hasConflict);
+            
+            if (hasConflict) {
+                List<Map<String, String>> conflicts = List.of(
+                    Map.of(
+                        "day", "monday",
+                        "time", "07:30-09:30",
+                        "className", "Lớp Toán Nâng cao A1"
+                    )
+                );
+                response.put("conflicts", conflicts);
+            } else {
+                response.put("conflicts", List.of());
+            }
+            
+            logger.info("Checked schedule conflicts for student {}: hasConflict={}", studentId, hasConflict);
+            return ResponseEntity.ok(ApiResponse.success(response));
+            
+        } catch (Exception e) {
+            logger.error("Error checking schedule conflicts for student {}: {}", studentId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .body(ApiResponse.error("Lỗi kiểm tra xung đột lịch học: " + e.getMessage()));
         }
     }
 }

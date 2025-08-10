@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,27 +39,122 @@ public class AttendanceVerificationService {
     private final AllowedNetworkRepository networkRepository;
     private final AttendanceVerificationLogRepository verificationLogRepository;
     
+    @Value("${app.attendance.dev-mode:true}")
+    private boolean devMode;
+    
+    @Value("${app.attendance.skip-location-check:true}")
+    private boolean skipLocationCheck;
+    
+    @Value("${app.attendance.skip-network-check:true}")
+    private boolean skipNetworkCheck;
+    
     @Transactional
     public AttendanceCheckInResponseDto processCheckIn(User user, AttendanceVerificationDto dto) {
-        log.info("Processing check-in for user: {}", user.getUsername());
+        log.info("Processing check-in for user: {} (DevMode: {}, SkipLocation: {}, SkipNetwork: {})", 
+                 user.getUsername(), devMode, skipLocationCheck, skipNetworkCheck);
         
-        // 1. Verify location
-        LocationVerificationResult locationResult = verifyLocation(
-            dto.getLatitude(), 
-            dto.getLongitude(), 
-            dto.getAccuracy()
-        );
+        // Development mode - always allow with mock verification
+        if (devMode) {
+            return processCheckInDevMode(user, dto, true);
+        }
         
-        // 2. Verify network/IP
-        NetworkVerificationResult networkResult = verifyNetwork(dto.getPublicIp());
+        // Production mode - full verification
+        return processCheckInProduction(user, dto, true);
+    }
+    
+    @Transactional
+    public AttendanceCheckInResponseDto processCheckOut(User user, AttendanceVerificationDto dto) {
+        log.info("Processing check-out for user: {} (DevMode: {}, SkipLocation: {}, SkipNetwork: {})", 
+                 user.getUsername(), devMode, skipLocationCheck, skipNetworkCheck);
+        
+        if (devMode) {
+            return processCheckInDevMode(user, dto, false);
+        }
+        
+        return processCheckInProduction(user, dto, false);
+    }
+    
+    private AttendanceCheckInResponseDto processCheckInDevMode(User user, AttendanceVerificationDto dto, boolean isCheckIn) {
+        log.info("Development mode: Processing {} for user: {}", isCheckIn ? "check-in" : "check-out", user.getUsername());
+        
+        // Always create attendance log in dev mode
+        StaffAttendanceLog attendanceLog = createOrUpdateAttendanceLog(user, isCheckIn);
+        
+        // Create mock verification results
+        LocationVerificationResult locationResult = LocationVerificationResult.builder()
+            .valid(true)
+            .distance(10)
+            .locationName("Văn phòng chính (Development)")
+            .message("Development Mode - Bỏ qua xác thực vị trí")
+            .build();
+            
+        NetworkVerificationResult networkResult = NetworkVerificationResult.builder()
+            .valid(true)
+            .networkName("Development Network")
+            .message("Development Mode - Bỏ qua xác thực mạng")
+            .build();
+        
+        // Log successful verification
+        logVerificationAttempt(user, dto, locationResult, networkResult,
+            isCheckIn ? AttendanceVerificationLog.VerificationType.CHECK_IN : AttendanceVerificationLog.VerificationType.CHECK_OUT,
+            AttendanceVerificationLog.VerificationStatus.SUCCESS);
+        
+        return AttendanceCheckInResponseDto.builder()
+            .success(true)
+            .message(isCheckIn ? "Check-in thành công (Development Mode)" : "Check-out thành công (Development Mode)")
+            .attendanceLogId(attendanceLog.getId())
+            .checkInTime(isCheckIn ? attendanceLog.getCheckInTime() : null)
+            .checkOutTime(!isCheckIn ? attendanceLog.getCheckOutTime() : null)
+            .locationVerification(AttendanceCheckInResponseDto.LocationVerification.builder()
+                .verified(true)
+                .locationName("Văn phòng chính (Dev)")
+                .distance(10)
+                .status("Development Mode")
+                .build())
+            .networkVerification(AttendanceCheckInResponseDto.NetworkVerification.builder()
+                .verified(true)
+                .networkName("Dev Network")
+                .ipAddress(dto.getPublicIp())
+                .status("Development Mode")
+                .build())
+            .build();
+    }
+    
+    private AttendanceCheckInResponseDto processCheckInProduction(User user, AttendanceVerificationDto dto, boolean isCheckIn) {
+        log.info("Production mode: Processing {} for user: {}", isCheckIn ? "check-in" : "check-out", user.getUsername());
+        
+        // 1. Verify location (skip if configured)
+        LocationVerificationResult locationResult;
+        if (skipLocationCheck) {
+            locationResult = LocationVerificationResult.builder()
+                .valid(true)
+                .distance(0)
+                .locationName("Bỏ qua kiểm tra vị trí")
+                .message("Location check disabled")
+                .build();
+        } else {
+            locationResult = verifyLocation(dto.getLatitude(), dto.getLongitude(), dto.getAccuracy());
+        }
+        
+        // 2. Verify network/IP (skip if configured)
+        NetworkVerificationResult networkResult;
+        if (skipNetworkCheck) {
+            networkResult = NetworkVerificationResult.builder()
+                .valid(true)
+                .networkName("Bỏ qua kiểm tra mạng")
+                .message("Network check disabled")
+                .build();
+        } else {
+            networkResult = verifyNetwork(dto.getPublicIp());
+        }
         
         // 3. Check if both verifications pass
-        boolean canCheckIn = locationResult.isValid() && networkResult.isValid();
+        boolean canProceed = locationResult.isValid() && networkResult.isValid();
         
-        if (!canCheckIn) {
+        if (!canProceed) {
             // Log failed attempt
             logVerificationAttempt(user, dto, locationResult, networkResult, 
-                AttendanceVerificationLog.VerificationType.CHECK_IN,
+                isCheckIn ? AttendanceVerificationLog.VerificationType.CHECK_IN : AttendanceVerificationLog.VerificationType.CHECK_OUT,
                 AttendanceVerificationLog.VerificationStatus.FAILED);
             
             return AttendanceCheckInResponseDto.builder()
@@ -78,80 +174,19 @@ public class AttendanceVerificationService {
         }
         
         // 4. Create attendance log
-        StaffAttendanceLog attendanceLog = createOrUpdateAttendanceLog(user, true);
+        StaffAttendanceLog attendanceLog = createOrUpdateAttendanceLog(user, isCheckIn);
         
         // 5. Log successful verification
         logVerificationAttempt(user, dto, locationResult, networkResult,
-            AttendanceVerificationLog.VerificationType.CHECK_IN,
+            isCheckIn ? AttendanceVerificationLog.VerificationType.CHECK_IN : AttendanceVerificationLog.VerificationType.CHECK_OUT,
             AttendanceVerificationLog.VerificationStatus.SUCCESS);
         
         return AttendanceCheckInResponseDto.builder()
             .success(true)
-            .message("Check-in thành công")
+            .message(isCheckIn ? "Check-in thành công" : "Check-out thành công")
             .attendanceLogId(attendanceLog.getId())
-            .checkInTime(attendanceLog.getCheckInTime())
-            .locationVerification(AttendanceCheckInResponseDto.LocationVerification.builder()
-                .verified(true)
-                .locationName(locationResult.getLocationName())
-                .distance(locationResult.getDistance())
-                .status("Trong phạm vi cho phép")
-                .build())
-            .networkVerification(AttendanceCheckInResponseDto.NetworkVerification.builder()
-                .verified(true)
-                .networkName(networkResult.getNetworkName())
-                .ipAddress(dto.getPublicIp())
-                .status("Mạng công ty")
-                .build())
-            .build();
-    }
-    
-    @Transactional
-    public AttendanceCheckInResponseDto processCheckOut(User user, AttendanceVerificationDto dto) {
-        log.info("Processing check-out for user: {}", user.getUsername());
-        
-        // Similar to check-in but update check-out time
-        LocationVerificationResult locationResult = verifyLocation(
-            dto.getLatitude(), 
-            dto.getLongitude(), 
-            dto.getAccuracy()
-        );
-        
-        NetworkVerificationResult networkResult = verifyNetwork(dto.getPublicIp());
-        
-        boolean canCheckOut = locationResult.isValid() && networkResult.isValid();
-        
-        if (!canCheckOut) {
-            logVerificationAttempt(user, dto, locationResult, networkResult,
-                AttendanceVerificationLog.VerificationType.CHECK_OUT,
-                AttendanceVerificationLog.VerificationStatus.FAILED);
-            
-            return AttendanceCheckInResponseDto.builder()
-                .success(false)
-                .message("Xác thực thất bại")
-                .locationVerification(AttendanceCheckInResponseDto.LocationVerification.builder()
-                    .verified(locationResult.isValid())
-                    .status(locationResult.getMessage())
-                    .build())
-                .networkVerification(AttendanceCheckInResponseDto.NetworkVerification.builder()
-                    .verified(networkResult.isValid())
-                    .status(networkResult.getMessage())
-                    .build())
-                .build();
-        }
-        
-        // Update existing attendance log
-        StaffAttendanceLog attendanceLog = createOrUpdateAttendanceLog(user, false);
-        
-        // Log successful verification
-        logVerificationAttempt(user, dto, locationResult, networkResult,
-            AttendanceVerificationLog.VerificationType.CHECK_OUT,
-            AttendanceVerificationLog.VerificationStatus.SUCCESS);
-        
-        return AttendanceCheckInResponseDto.builder()
-            .success(true)
-            .message("Check-out thành công")
-            .attendanceLogId(attendanceLog.getId())
-            .checkOutTime(attendanceLog.getCheckOutTime())
+            .checkInTime(isCheckIn ? attendanceLog.getCheckInTime() : null)
+            .checkOutTime(!isCheckIn ? attendanceLog.getCheckOutTime() : null)
             .locationVerification(AttendanceCheckInResponseDto.LocationVerification.builder()
                 .verified(true)
                 .locationName(locationResult.getLocationName())
@@ -189,13 +224,54 @@ public class AttendanceVerificationService {
             .hasCheckedOut(log.getCheckOutTime() != null)
             .checkInTime(log.getCheckInTime())
             .checkOutTime(log.getCheckOutTime())
-            .workingHours(log.getWorkingHours())
-            .status(log.getAttendanceStatus())
+            .workingHours(calculateWorkingHours(log))
+            .status(determineAttendanceStatus(log))
             .build();
     }
     
+    private double calculateWorkingHours(StaffAttendanceLog log) {
+        if (log.getCheckInTime() == null || log.getCheckOutTime() == null) {
+            return 0.0;
+        }
+        
+        LocalTime checkIn = log.getCheckInTime();
+        LocalTime checkOut = log.getCheckOutTime();
+        
+        // Calculate hours between check-in and check-out
+        long minutes = java.time.Duration.between(checkIn, checkOut).toMinutes();
+        return minutes / 60.0;
+    }
+    
+    private String determineAttendanceStatus(StaffAttendanceLog log) {
+        if (log.getCheckInTime() == null) {
+            return "Chưa check-in";
+        }
+        
+        if (log.getCheckOutTime() == null) {
+            return "Đang làm việc";
+        }
+        
+        return "Hoàn thành";
+    }
+    
     public List<CompanyLocation> getActiveLocations() {
-        return locationRepository.findByActiveTrue();
+        List<CompanyLocation> locations = locationRepository.findByActiveTrue();
+        
+        // If no locations in production mode, create default
+        if (locations.isEmpty() && !devMode) {
+            log.warn("No active company locations found! Creating default location...");
+            CompanyLocation defaultLocation = new CompanyLocation();
+            defaultLocation.setName("Văn phòng chính (Tự động tạo)");
+            defaultLocation.setAddress("Chưa cập nhật địa chỉ");
+            defaultLocation.setLatitude(10.762622); // Default to HCM City
+            defaultLocation.setLongitude(106.660172);
+            defaultLocation.setAllowedRadius(1000); // 1km radius
+            defaultLocation.setActive(true);
+            defaultLocation = locationRepository.save(defaultLocation);
+            locations = List.of(defaultLocation);
+        }
+        
+        return locations;
     }
     
     public Object getWeeklyStats(User user) {
@@ -205,8 +281,7 @@ public class AttendanceVerificationService {
         List<StaffAttendanceLog> weekLogs = attendanceLogRepository.findByUserAndAttendanceDateBetween(user, startOfWeek, endOfWeek);
         
         double totalHours = weekLogs.stream()
-            .filter(log -> log.getWorkingHours() > 0)
-            .mapToDouble(StaffAttendanceLog::getWorkingHours)
+            .mapToDouble(this::calculateWorkingHours)
             .sum();
         
         int daysWorked = (int) weekLogs.stream()
@@ -237,13 +312,23 @@ public class AttendanceVerificationService {
                 "date", log.getAttendanceDate().toString(),
                 "checkInTime", log.getCheckInTime() != null ? log.getCheckInTime().toString() : null,
                 "checkOutTime", log.getCheckOutTime() != null ? log.getCheckOutTime().toString() : null,
-                "workingHours", log.getWorkingHours(),
-                "status", log.getAttendanceStatus() != null ? log.getAttendanceStatus() : "Unknown"
+                "workingHours", calculateWorkingHours(log),
+                "status", determineAttendanceStatus(log)
             ))
             .toList();
     }
     
     public Object verifyLocationOnly(Double latitude, Double longitude) {
+        if (devMode || skipLocationCheck) {
+            return Map.of(
+                "success", true,
+                "verified", true,
+                "locationName", "Development Mode",
+                "distance", 10,
+                "message", "Development mode - location check skipped"
+            );
+        }
+        
         LocationVerificationResult result = verifyLocation(latitude, longitude, null);
         
         return Map.of(
@@ -282,7 +367,7 @@ public class AttendanceVerificationService {
     }
     
     private LocationVerificationResult verifyLocation(Double latitude, Double longitude, Double accuracy) {
-        List<CompanyLocation> locations = locationRepository.findByActiveTrue();
+        List<CompanyLocation> locations = getActiveLocations(); // Use method that creates default if needed
         
         for (CompanyLocation location : locations) {
             double distance = calculateDistance(
@@ -305,6 +390,7 @@ public class AttendanceVerificationService {
         
         return LocationVerificationResult.builder()
             .valid(false)
+            .distance(-1)
             .message("Ngoài phạm vi văn phòng")
             .build();
     }
@@ -319,6 +405,24 @@ public class AttendanceVerificationService {
         
         List<AllowedNetwork> networks = networkRepository.findByActiveTrue();
         
+        // If no networks configured, allow all in development
+        if (networks.isEmpty()) {
+            if (devMode) {
+                log.warn("No allowed networks configured, allowing all IPs in development mode");
+                return NetworkVerificationResult.builder()
+                    .valid(true)
+                    .networkName("Development - All Networks")
+                    .message("Development mode - no network restrictions")
+                    .build();
+            } else {
+                log.error("No allowed networks configured in production mode!");
+                return NetworkVerificationResult.builder()
+                    .valid(false)
+                    .message("Không có mạng nào được cấu hình")
+                    .build();
+            }
+        }
+        
         for (AllowedNetwork network : networks) {
             if (isIpInRange(publicIp, network.getIpRange())) {
                 return NetworkVerificationResult.builder()
@@ -331,7 +435,7 @@ public class AttendanceVerificationService {
         
         return NetworkVerificationResult.builder()
             .valid(false)
-            .message("IP không thuộc mạng công ty")
+            .message("IP không thuộc mạng công ty: " + publicIp)
             .build();
     }
     
@@ -351,8 +455,10 @@ public class AttendanceVerificationService {
         
         if (isCheckIn) {
             log.setCheckInTime(LocalTime.now());
+            log.setNotes("Check-in via attendance verification system");
         } else {
             log.setCheckOutTime(LocalTime.now());
+            log.setNotes("Check-out via attendance verification system");
         }
         
         return attendanceLogRepository.save(log);
@@ -402,6 +508,11 @@ public class AttendanceVerificationService {
     
     private boolean isIpInRange(String ip, String cidr) {
         try {
+            // Handle simple wildcard case for development
+            if ("0.0.0.0/0".equals(cidr)) {
+                return true;
+            }
+            
             String[] parts = cidr.split("/");
             InetAddress targetAddr = InetAddress.getByName(ip);
             InetAddress rangeAddr = InetAddress.getByName(parts[0]);
@@ -426,7 +537,7 @@ public class AttendanceVerificationService {
             
             return true;
         } catch (Exception e) {
-            log.error("Error checking IP range", e);
+            log.error("Error checking IP range for IP: {} against CIDR: {}", ip, cidr, e);
             return false;
         }
     }

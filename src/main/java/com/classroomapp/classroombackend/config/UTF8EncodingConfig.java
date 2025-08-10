@@ -2,10 +2,8 @@ package com.classroomapp.classroombackend.config;
 
 import java.nio.charset.StandardCharsets;
 
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.filter.CharacterEncodingFilter;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,8 +20,13 @@ public class UTF8EncodingConfig {
     /**
      * Configure UTF-8 character encoding filter
      * This filter ensures all requests and responses use UTF-8 encoding
+     * 
+     * Note: This bean is commented out because Spring Boot already provides
+     * UTF-8 encoding configuration via application.properties
      */
-    @Bean
+    /*
+    @Bean("utf8CharacterEncodingFilter")
+    @Primary
     public FilterRegistrationBean<CharacterEncodingFilter> characterEncodingFilter() {
         log.info("🔧 Configuring UTF-8 character encoding filter for Vietnamese text support");
         
@@ -44,6 +47,7 @@ public class UTF8EncodingConfig {
         
         return registrationBean;
     }
+    */
 
     /**
      * System property configuration for UTF-8 support

@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.classroomapp.classroombackend.dto.StaffAttendanceLogDto;
 import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceRecordDto;
 import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceResultDto;
 import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceSubmitDto;
@@ -39,6 +40,7 @@ import com.classroomapp.classroombackend.repository.attendancemanagement.Attenda
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.AttendanceLogService;
 import com.classroomapp.classroombackend.service.AttendanceService;
+import com.classroomapp.classroombackend.service.StaffAttendanceService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -57,6 +59,9 @@ public class AttendanceController {
     private final AttendanceRepository attendanceRepository; // Needed to fetch user from security context
     @Autowired
     private AttendanceLogService attendanceLogService;
+    
+    @Autowired
+    private StaffAttendanceService staffAttendanceService;
 
     // This controller is now mostly deprecated in favor of AttendanceSessionController.
     // The getAttendanceResult endpoint is kept here as it's a general query
@@ -273,9 +278,9 @@ public ResponseEntity<Map<String, Object>> getDailyAttendanceByShift(
 
     @GetMapping("/all-logs")
     @PreAuthorize("hasAnyRole('MANAGER', 'ACCOUNTANT')")
-    public ResponseEntity<List<AttendanceLog>> getAllStaffAttendanceLogs(
+    public ResponseEntity<List<StaffAttendanceLogDto>> getAllStaffAttendanceLogs(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        List<AttendanceLog> logs = attendanceLogService.getAllStaffAttendanceLogs(date);
+        List<StaffAttendanceLogDto> logs = staffAttendanceService.getAllStaffAttendanceLogsByDate(date);
         return ResponseEntity.ok(logs);
     }
 

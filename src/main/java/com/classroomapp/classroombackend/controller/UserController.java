@@ -165,12 +165,65 @@ public class UserController {
         return ResponseEntity.ok(userService.FindUsersByRole(roleId.intValue()));
     }
 
-    // Removed duplicate endpoint - now handled by FrontendApiBridgeController
-    // @GetMapping("/teachers")
-    // public ResponseEntity<List<UserDto>> getTeachers() {
-    //     // Role 2 corresponds to TEACHER
-    //     return ResponseEntity.ok(userService.FindUsersByRole(2));
-    // }
+    /**
+     * Get all students for enrollment management
+     * @return list of students
+     */
+    @GetMapping("/students")
+    public ResponseEntity<Map<String, Object>> getStudents() {
+        try {
+            // RoleConstants.STUDENT = 1
+            List<UserDto> students = userService.FindUsersByRole(1);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", students);
+            response.put("total", students.size());
+            
+            logger.info("Fetched " + students.size() + " students for enrollment");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.severe("Error fetching students: " + e.getMessage());
+            e.printStackTrace();
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Error fetching students: " + e.getMessage());
+            errorResponse.put("data", new ArrayList<>());
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
+     * Get all teachers for class assignment
+     * @return list of teachers
+     */
+    @GetMapping("/teachers")
+    public ResponseEntity<Map<String, Object>> getTeachers() {
+        try {
+            // RoleConstants.TEACHER = 2
+            List<UserDto> teachers = userService.FindUsersByRole(2);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", teachers);
+            response.put("total", teachers.size());
+            
+            logger.info("Fetched " + teachers.size() + " teachers for class assignment");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.severe("Error fetching teachers: " + e.getMessage());
+            e.printStackTrace();
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Error fetching teachers: " + e.getMessage());
+            errorResponse.put("data", new ArrayList<>());
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
 
     /**
      * Delete user

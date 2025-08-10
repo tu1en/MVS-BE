@@ -18,11 +18,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.classroomapp.classroombackend.constants.RoleConstants;
+import com.classroomapp.classroombackend.entity.Room;
 import com.classroomapp.classroombackend.model.Absence;
 import com.classroomapp.classroombackend.model.Accomplishment;
 import com.classroomapp.classroombackend.model.Announcement;
 import com.classroomapp.classroombackend.model.AttendanceExplanation;
 import com.classroomapp.classroombackend.model.Blog;
+import com.classroomapp.classroombackend.model.Contract;
 import com.classroomapp.classroombackend.model.CourseMaterial;
 import com.classroomapp.classroombackend.model.ExplanationStatus;
 import com.classroomapp.classroombackend.model.JobPosition;
@@ -51,11 +53,13 @@ import com.classroomapp.classroombackend.repository.AccomplishmentRepository;
 import com.classroomapp.classroombackend.repository.AnnouncementRepository;
 import com.classroomapp.classroombackend.repository.AttendanceExplanationRepository;
 import com.classroomapp.classroombackend.repository.BlogRepository;
+import com.classroomapp.classroombackend.repository.ContractRepository;
 import com.classroomapp.classroombackend.repository.CourseMaterialRepository;
 import com.classroomapp.classroombackend.repository.JobPositionRepository;
 import com.classroomapp.classroombackend.repository.LectureRepository;
 import com.classroomapp.classroombackend.repository.RecruitmentApplicationRepository;
 import com.classroomapp.classroombackend.repository.RecruitmentPlanRepository;
+import com.classroomapp.classroombackend.repository.RoomRepository;
 import com.classroomapp.classroombackend.repository.ScheduleRepository;
 import com.classroomapp.classroombackend.repository.StudentMessageRepository;
 import com.classroomapp.classroombackend.repository.StudentProgressRepository;
@@ -72,8 +76,6 @@ import com.classroomapp.classroombackend.repository.hrmanagement.EvidenceTemplat
 import com.classroomapp.classroombackend.repository.requestmanagement.RequestRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.RoleRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
-import com.classroomapp.classroombackend.repository.RoomRepository;
-import com.classroomapp.classroombackend.entity.Room;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -102,6 +104,8 @@ private EvidenceTemplateRepository evidenceTemplateRepository;
     
     @Autowired
     private RoomRepository roomRepository;
+    @Autowired
+    private ContractRepository contractRepository;
     
     @Autowired
     private ClassroomEnrollmentRepository classroomEnrollmentRepository;
@@ -197,8 +201,8 @@ private EvidenceTemplateRepository evidenceTemplateRepository;
             // Seed classrooms
             classrooms = seedClassrooms();
             
-            // Seed classroom enrollments
-            seedClassroomEnrollments();
+            // Comment out automatic enrollment seeding - manager sẽ thêm học viên thủ công
+            // seedClassroomEnrollments();
             
             // Seed schedules
             seedSchedules();
@@ -275,6 +279,9 @@ seedEvidenceTemplates();
         seedComprehensiveGradingData();
         log.info("============== Comprehensive Grading Seeding Complete ==============");
 
+        // Comment out automatic course materials seeding
+        // Tài liệu sẽ được tạo thủ công bởi manager/teacher thay vì tự động
+        /*
         if (courseMaterialRepository.count() == 0) {
             log.info("============== Seeding Course Materials ==============");
             if (classrooms.isEmpty()) {
@@ -286,6 +293,8 @@ seedEvidenceTemplates();
         } else {
             log.info("Course materials already seeded. Skipping.");
         }
+        */
+        log.info("Course materials seeding disabled - materials should be uploaded manually by teachers/managers.");
     
         // Always check and seed absence data after users exist
         if (userRepository.count() > 0 && absenceRepository.count() == 0) {
@@ -606,6 +615,69 @@ seedEvidenceTemplates();
                 extraTeacher2.setLeaveResetDate(LocalDate.now().plusMonths(6));
                 userRepository.save(extraTeacher2);
 
+                // ===== Thêm bộ giáo viên theo chuẩn cấp 3 (Toán, Lý, Hóa, Văn, Anh, Sinh) =====
+                String[][] teacherSeeds = new String[][]{
+                    // username, email, fullName, department
+                    {"toan_gv1","toan1@school.vn","Nguyễn Đức Toàn","Toán"},
+                    {"toan_gv2","toan2@school.vn","Phạm Hải Long","Toán"},
+                    {"toan_gv3","toan3@school.vn","Lê Minh Quân","Toán"},
+                    {"ly_gv1","ly1@school.vn","Trần Quốc Huy","Vật lý"},
+                    {"ly_gv2","ly2@school.vn","Đỗ Thanh Tùng","Vật lý"},
+                    {"ly_gv3","ly3@school.vn","Ngô Nhật Nam","Vật lý"},
+                    {"hoa_gv1","hoa1@school.vn","Vũ Hồng Phúc","Hóa học"},
+                    {"hoa_gv2","hoa2@school.vn","Bùi Thanh Hà","Hóa học"},
+                    {"hoa_gv3","hoa3@school.vn","Phan Anh Dũng","Hóa học"},
+                    {"van_gv1","van1@school.vn","Phạm Thu Hà","Ngữ văn"},
+                    {"van_gv2","van2@school.vn","Nguyễn Thị Hồng","Ngữ văn"},
+                    {"van_gv3","van3@school.vn","Hoàng Thị Trang","Ngữ văn"},
+                    {"anh_gv1","anh1@school.vn","Lê Hồng Sơn","Tiếng Anh"},
+                    {"anh_gv2","anh2@school.vn","Tạ Bích Ngọc","Tiếng Anh"},
+                    {"anh_gv3","anh3@school.vn","Phạm Khánh Linh","Tiếng Anh"},
+                    {"sinh_gv1","sinh1@school.vn","Đặng Quỳnh Chi","Sinh học"},
+                    {"sinh_gv2","sinh2@school.vn","Trịnh Văn Thái","Sinh học"},
+                    {"sinh_gv3","sinh3@school.vn","Nguyễn Tú Anh","Sinh học"}
+                };
+
+                long nextId = 600L; // tránh trùng ID đã dùng ở trên
+                for (String[] t : teacherSeeds) {
+                    User u = new User();
+                    u.setId(nextId++);
+                    u.setUsername(t[0]);
+                    u.setPassword(passwordEncoder.encode("teacher123"));
+                    u.setEmail(t[1]);
+                    u.setFullName(t[2]);
+                    u.setRoleId(RoleConstants.TEACHER);
+                    u.setDepartment(t[3]);
+                    u.setHireDate(LocalDate.now().minusMonths((int)(nextId % 24)));
+                    userRepository.save(u);
+
+                    // Tạo hợp đồng ACTIVE cho giáo viên để đồng bộ bộ lọc môn/ca/cấp
+                    try {
+                        Contract c = new Contract();
+                        c.setUserId(u.getId());
+                        c.setFullName(u.getFullName());
+                        c.setEmail(u.getEmail());
+                        c.setPhoneNumber("09" + (int)(10000000 + Math.random()*89999999));
+                        c.setContractType("TEACHER");
+                        c.setPosition("Giáo viên " + t[3]);
+                        c.setDepartment(t[3]);
+                        c.setSalary(15000000.0 + (int)(Math.random()*6000000));
+                        // ngẫu nhiên ca làm việc
+                        String[] shifts = new String[]{"ca sáng (07:30-09:30)", "ca chiều (13:30-15:30)", "ca tối (18:00-20:00)"};
+                        c.setWorkingHours(shifts[(int)(Math.random()*shifts.length)]);
+                        c.setStartDate(LocalDate.now());
+                        c.setEndDate(LocalDate.now().plusYears(2));
+                        c.setStatus("ACTIVE");
+                        c.setSubject(t[3]);
+                        // phân bổ cấp học 10/11/12
+                        String[] levels = new String[]{"10","11","12"};
+                        c.setEducationLevel(levels[(int)(Math.random()*levels.length)]);
+                        contractRepository.save(c);
+                    } catch (Exception e) {
+                        log.warn("Could not create contract for {}: {}", u.getEmail(), e.getMessage());
+                    }
+                }
+
                 // Create accountant user
                 User accountant = new User();
                 accountant.setId(501L);
@@ -686,64 +758,27 @@ seedEvidenceTemplates();
 
     private void seedRooms() {
         if (roomRepository.count() == 0) {
-            log.info("🏢 Seeding rooms...");
-            
-            // Create sample rooms
-            Room room101 = new Room();
-            room101.setRoomCode("A101");
-            room101.setRoomName("Lecture Hall A101");
-            room101.setCapacity(50);
-            room101.setLocation("Building A, Floor 1");
-            room101.setFacilities("Projector, Whiteboard, Air Conditioning");
-            room101.setIsActive(true);
-            roomRepository.save(room101);
-            
-            Room room102 = new Room();
-            room102.setRoomCode("A102");
-            room102.setRoomName("Seminar Room A102");
-            room102.setCapacity(30);
-            room102.setLocation("Building A, Floor 1");
-            room102.setFacilities("Interactive Whiteboard, Conference Table");
-            room102.setIsActive(true);
-            roomRepository.save(room102);
-            
-            Room room201 = new Room();
-            room201.setRoomCode("B201");
-            room201.setRoomName("Computer Lab B201");
-            room201.setCapacity(40);
-            room201.setLocation("Building B, Floor 2");
-            room201.setFacilities("30 Computers, Projector, Air Conditioning");
-            room201.setIsActive(true);
-            roomRepository.save(room201);
-            
-            Room room202 = new Room();
-            room202.setRoomCode("B202");
-            room202.setRoomName("Science Lab B202");
-            room202.setCapacity(25);
-            room202.setLocation("Building B, Floor 2");
-            room202.setFacilities("Laboratory Equipment, Safety Equipment, Ventilation");
-            room202.setIsActive(true);
-            roomRepository.save(room202);
-            
-            Room room301 = new Room();
-            room301.setRoomCode("C301");
-            room301.setRoomName("Large Auditorium C301");
-            room301.setCapacity(100);
-            room301.setLocation("Building C, Floor 3");
-            room301.setFacilities("Sound System, Large Projector, Stage, Air Conditioning");
-            room301.setIsActive(true);
-            roomRepository.save(room301);
-            
-            Room room302 = new Room();
-            room302.setRoomCode("C302");
-            room302.setRoomName("Meeting Room C302");
-            room302.setCapacity(15);
-            room302.setLocation("Building C, Floor 3");
-            room302.setFacilities("Conference Table, TV Display, Video Conferencing");
-            room302.setIsActive(true);
-            roomRepository.save(room302);
-            
-            log.info("✅ Created 6 sample rooms.");
+            log.info("🏢 Seeding rooms (32 phòng)...");
+            String[] buildings = new String[]{"A","B","C","D"};
+            int[] capacities = new int[]{25,30,35,40,45,50,60,100};
+            List<Room> bulk = new ArrayList<>();
+            for (String b : buildings) {
+                for (int floor = 1; floor <= 4; floor++) {
+                    for (int num = 1; num <= 2; num++) { // mỗi tầng 2 phòng → 32 phòng
+                        String code = b + floor + String.format("%02d", num);
+                        Room r = new Room();
+                        r.setRoomCode(code);
+                        r.setRoomName("Phòng học " + code);
+                        r.setCapacity(capacities[(int)(Math.random()*capacities.length)]);
+                        r.setLocation("Tòa " + b + ", Tầng " + floor);
+                        r.setFacilities(floor % 2 == 0 ? "Projector, Điều hòa" : "Bảng tương tác, Điều hòa");
+                        r.setIsActive(true);
+                        bulk.add(r);
+                    }
+                }
+            }
+            roomRepository.saveAll(bulk);
+            log.info("✅ Created {} rooms.", bulk.size());
         } else {
             log.info("✅ Rooms already seeded.");
         }
@@ -1555,23 +1590,31 @@ seedEvidenceTemplates();
     }
 
     private void seedCourseMaterials(List<Classroom> classrooms) {
+        // ❌ REMOVED: Không tự động tạo tài liệu mẫu khi tạo lớp từ template
+        // Chỉ tạo tài liệu cho các lớp được tạo từ seeder, không phải từ template
         List<User> teachers = userRepository.findByRoleId(RoleConstants.TEACHER);
         for (Classroom classroom : classrooms) {
-            CourseMaterial material = new CourseMaterial();
-            material.setTitle("Course Material for " + classroom.getName());
-            material.setDescription("Essential materials for the course");
-            material.setFilePath("/uploads/materials/" + classroom.getId() + "/course_handbook.pdf");
-            material.setFileName("course_handbook.pdf");
-            material.setFileType("PDF");
-            material.setFileSize(1024000L); // 1MB
-            material.setClassroomId(classroom.getId());
-            material.setUploadedBy(teachers.get(0).getId()); // Use first teacher as uploader
-            material.setIsPublic(true);
-            material.setDownloadCount(0);
-            material.setVersionNumber(1);
-            courseMaterialRepository.save(material);
+            // Chỉ tạo tài liệu mẫu cho các lớp có tên chứa "Demo" hoặc "Sample"
+            if (classroom.getName() != null && 
+                (classroom.getName().contains("Demo") || 
+                 classroom.getName().contains("Sample") ||
+                 classroom.getName().contains("Test"))) {
+                CourseMaterial material = new CourseMaterial();
+                material.setTitle("Demo Material for " + classroom.getName());
+                material.setDescription("Demo materials for testing purposes");
+                material.setFilePath("/uploads/materials/" + classroom.getId() + "/course_handbook.pdf");
+                material.setFileName("course_handbook.pdf");
+                material.setFileType("PDF");
+                material.setFileSize(1024000L); // 1MB
+                material.setClassroomId(classroom.getId());
+                material.setUploadedBy(teachers.get(0).getId()); // Use first teacher as uploader
+                material.setIsPublic(true);
+                material.setDownloadCount(0);
+                material.setVersionNumber(1);
+                courseMaterialRepository.save(material);
+            }
         }
-        log.info("✅ Created course materials for {} classrooms", classrooms.size());
+        log.info("✅ Created demo course materials for demo classrooms only");
     }
 
     private void seedAssignmentTestData() {

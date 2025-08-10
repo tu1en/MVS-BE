@@ -3,6 +3,7 @@ package com.classroomapp.classroombackend.service.impl.hrmanagement;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,6 +96,8 @@ public class AccountantEvidenceServiceImpl implements AccountantEvidenceService 
                 evidence.setDescription(evidence.getDescription() + " [" + category + "]");
             }
             
+            // Track uploader for authorization/reporting
+            evidence.setUploadedBy(accountantId);
             ExplanationEvidence savedEvidence = evidenceRepository.save(evidence);
             
             // Upload file to Firebase Storage
@@ -200,6 +203,11 @@ public class AccountantEvidenceServiceImpl implements AccountantEvidenceService 
         ExplanationEvidence evidence = evidenceRepository.findById(evidenceId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy minh chứng với ID: " + evidenceId));
         
+        // Prevent self-approval: accountant cannot review their own uploads
+        if (accountantId != null && evidence.getUploadedBy() != null && accountantId.equals(evidence.getUploadedBy())) {
+            throw new IllegalArgumentException("Không thể tự duyệt minh chứng do chính bạn tải lên");
+        }
+
         evidence.verify(accountantId);
         
         // Add review note
@@ -323,14 +331,28 @@ public class AccountantEvidenceServiceImpl implements AccountantEvidenceService 
                 
         return result;
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ExplanationEvidenceDto> getReviewedByMe(Long accountantId) {
+        List<ExplanationEvidence> evidenceList = evidenceRepository.findByVerifiedByOrderByVerifiedAtDesc(accountantId);
+        return evidenceList.stream().map(this::convertToDto).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ExplanationEvidenceDto> getAllReviewed() {
+        List<ExplanationEvidence> evidenceList = evidenceRepository.findByIsVerifiedOrderByCreatedAtDesc(true);
+        return evidenceList.stream().map(this::convertToDto).collect(Collectors.toList());
+    }
     
     @Override
     public void deleteAccountantEvidence(Long evidenceId, Long accountantId) {
         ExplanationEvidence evidence = evidenceRepository.findById(evidenceId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy minh chứng với ID: " + evidenceId));
         
-        // Check if this is accountant's evidence
-        if (!isAccountantEvidence(evidence, accountantId)) {
+        // Check if this evidence was uploaded by current accountant
+        if (evidence.getUploadedBy() == null || !accountantId.equals(evidence.getUploadedBy())) {
             throw new IllegalArgumentException("Bạn không có quyền xóa minh chứng này");
         }
         
@@ -349,36 +371,13 @@ public class AccountantEvidenceServiceImpl implements AccountantEvidenceService 
         }
     }
     
-    @Override  
+@Override  
 @Transactional(readOnly = true)
 public List<Map<String, Object>> getEvidenceTemplates() {
-    log.info("Getting evidence templates from database");
-    
-    try {
-        // Get templates from database
-        List<EvidenceTemplate> templates = evidenceTemplateRepository
-            .findByIsActiveTrueOrderBySortOrderAscTemplateNameAsc();
-        
-        List<Map<String, Object>> templateList = templates.stream()
-            .map(this::convertTemplateToMap)
-            .collect(Collectors.toList());
-        
-        // If no templates in database, return mock data
-        if (templateList.isEmpty()) {
-            log.warn("No templates found in database, returning mock data");
-            return getMockTemplates();
-        }
-        
-        log.info("Retrieved {} evidence templates from database", templateList.size());
-        return templateList;
-        
-    } catch (Exception e) {
-        log.error("Error retrieving evidence templates from database: {}", e.getMessage(), e);
-        
-        // Fallback to mock data if database error
-        log.info("Falling back to mock templates due to database error");
-        return getMockTemplates();
-    }
+    // Temporarily disable templates to avoid corrupted Vietnamese text due to DB encoding.
+    // Once DB columns use NVARCHAR and proper collation, remove this early return.
+    log.info("Evidence templates disabled temporarily; returning empty list");
+    return Collections.emptyList();
 }
     
     @Override
@@ -530,11 +529,19 @@ public List<Map<String, Object>> getEvidenceTemplates() {
     }
     
     private boolean needsAccountantAttention(ExplanationEvidence evidence) {
-        // Logic to determine if evidence needs accountant attention
-        return evidence.getDescription() != null && 
-               (evidence.getDescription().contains("PAYROLL") || 
-                evidence.getDescription().contains("CONTRACT") ||
-                evidence.getDescription().contains("SALARY"));
+        // Any unverified evidence should be visible for accountant review.
+        // Keep a broad category check only as a safeguard, but include ATTENDANCE as well.
+        String desc = evidence.getDescription();
+        if (desc == null) {
+            return true;
+        }
+        return desc.contains("PAYROLL") ||
+               desc.contains("CONTRACT") ||
+               desc.contains("SALARY") ||
+               desc.contains("ATTENDANCE") ||
+               desc.contains("VIOLATION") ||
+               desc.contains("EXPLANATION") ||
+               desc.contains("MEDICAL");
     }
     
     private ExplanationEvidence.EvidenceType parseEvidenceType(String evidenceType) {
@@ -645,24 +652,11 @@ public List<Map<String, Object>> getEvidenceTemplates() {
      * Get mock templates as fallback
      */
     private List<Map<String, Object>> getMockTemplates() {
+        // Return empty list instead of mock data with encoding issues
+        // Templates should come from database or be properly configured
         List<Map<String, Object>> templates = new ArrayList<>();
         
-        // Mock data for testing when database is empty
-        templates.add(createMockTemplate(1L, "Biểu mẫu chấm công", "ATTENDANCE", 
-                "Mẫu báo cáo chấm công hàng tháng", "attendance-template.xlsx", "XLSX"));
-        
-        templates.add(createMockTemplate(2L, "Bảng tính lương", "PAYROLL", 
-                "Mẫu tính toán lương và phụ cấp", "payroll-template.xlsx", "XLSX"));
-        
-        templates.add(createMockTemplate(3L, "Hợp đồng lao động", "CONTRACT", 
-                "Mẫu hợp đồng lao động chuẩn", "contract-template.docx", "DOCX"));
-        
-        templates.add(createMockTemplate(4L, "Giấy khám bệnh", "MEDICAL", 
-                "Mẫu giấy khám bệnh cho nghỉ phép", "medical-template.pdf", "PDF"));
-        
-        templates.add(createMockTemplate(5L, "Giải trình vi phạm", "VIOLATION", 
-                "Mẫu đơn giải trình vi phạm kỷ luật", "violation-explanation.docx", "DOCX"));
-        
+        log.info("Returning empty template list - templates should be configured in database");
         return templates;
     }
 
@@ -700,14 +694,14 @@ public List<Map<String, Object>> getEvidenceTemplates() {
      */
     private String getCategoryDisplayName(String category) {
         switch (category) {
-            case "ATTENDANCE": return "Chấm công";
-            case "PAYROLL": return "Lương bổng";
-            case "CONTRACT": return "Hợp đồng";
-            case "MEDICAL": return "Y tế";
-            case "VIOLATION": return "Vi phạm";
-            case "EXPLANATION": return "Giải trình";
-            case "REPORT": return "Báo cáo";
-            default: return "Khác";
+            case "ATTENDANCE": return "Attendance";
+            case "PAYROLL": return "Payroll";
+            case "CONTRACT": return "Contract";
+            case "MEDICAL": return "Medical";
+            case "VIOLATION": return "Violation";
+            case "EXPLANATION": return "Explanation";
+            case "REPORT": return "Report";
+            default: return "Other";
         }
     }
 

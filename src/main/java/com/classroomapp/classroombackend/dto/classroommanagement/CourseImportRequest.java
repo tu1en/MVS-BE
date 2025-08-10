@@ -11,5 +11,7 @@ public class CourseImportRequest {
     private String description;
     private String section;
     private String subject;
-    private Long teacherId;
+    private Long teacherId; // Optional - can be null
+    private Long roomId; // Optional room assignment
+    private String roomName; // Optional room name for reference
 }

@@ -305,19 +305,6 @@ public class SecurityUtils {
         return userId;
     }
     
-    /**
-     * Check if current user can view payroll for specific user
-     * @param targetUserId the user ID to check payroll access for
-     * @return true if current user can view payroll for target user
-     */
-    public boolean canViewPayrollFor(Long targetUserId) {
-        if (canManageSalary()) {
-            return true; // Managers, Admins, Accountants can view all payrolls
-        }
-        
-        Long currentUserId = getCurrentUserId();
-        return currentUserId != null && currentUserId.equals(targetUserId); // Users can view their own payroll
-    }
     
     /**
      * Check if current user can approve attendance explanations
@@ -408,13 +395,6 @@ public class SecurityUtils {
         return isManager() || isAdmin();
     }
     
-    /**
-     * Check if current user can manage salary structures
-     * @return true if user can manage salary structures
-     */
-    public boolean canManageSalaryStructures() {
-        return isAdmin() || (isManager() && hasRole("HR_MANAGER"));
-    }
     
     // ===== ROLE GROUPING METHODS FOR FIXING EMPLOYEE/STAFF REFERENCES =====
     

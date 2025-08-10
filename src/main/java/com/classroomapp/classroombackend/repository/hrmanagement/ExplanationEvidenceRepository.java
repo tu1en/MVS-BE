@@ -58,6 +58,11 @@ public interface ExplanationEvidenceRepository extends JpaRepository<Explanation
      * @return list of verified evidence files
      */
     List<ExplanationEvidence> findByVerifiedByOrderByVerifiedAtDesc(Long verifiedBy);
+
+    /**
+     * Find evidence uploaded by a specific user
+     */
+    List<ExplanationEvidence> findByUploadedByOrderByCreatedAtDesc(Long uploadedBy);
     
     /**
      * Find large files (above certain size)

@@ -15,14 +15,12 @@ import com.classroomapp.classroombackend.model.usermanagement.User;
 public interface CourseTemplateMapper {
     
     // Main mapping methods
-    @Mapping(target = "createdBy", ignore = true)
     CourseTemplateDto toDto(CourseTemplate courseTemplate);
     
     @Mapping(source = "courseTemplate.id", target = "courseTemplateId")
     @Mapping(target = "materials", ignore = true) // Temporarily ignore materials
     LessonTemplateDto lessonToDto(LessonTemplate lessonTemplate);
     
-    @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "lessonTemplates", ignore = true) // Avoid circular reference
     CourseTemplate toEntity(CourseTemplateDto courseTemplateDto);
     

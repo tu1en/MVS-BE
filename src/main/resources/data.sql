@@ -4,7 +4,7 @@
 -- when using spring.jpa.hibernate.ddl-auto=create-drop
 -- =========================================================
 
--- Insert sample public course templates
+-- Insert sample public course templates (đổi sang các môn cấp 3: Toán, Lý, Hóa, Văn, Anh, Sinh)
 INSERT INTO course_templates (
     name, 
     description, 
@@ -19,9 +19,9 @@ INSERT INTO course_templates (
     updated_at
 ) VALUES 
 -- Programming Courses
-('Introduction to Web Development', 
- 'Learn the fundamentals of web development including HTML5, CSS3, and JavaScript. Perfect for beginners who want to start their journey in web development. You will build real projects and learn modern development practices.', 
- 'Programming', 
+('Luyện thi THPT Quốc gia - Toán', 
+ 'Khóa luyện thi môn Toán dành cho học sinh cấp 3, bao quát Đại số, Hình học, Giải tích với hệ thống bài tập theo chuyên đề và đề thi thử.', 
+ 'Toán', 
  12, 
  1, 
  1, 
@@ -31,9 +31,9 @@ INSERT INTO course_templates (
  GETDATE(), 
  GETDATE()),
 
-('React.js for Beginners', 
- 'Master React.js, the most popular JavaScript library for building user interfaces. Learn components, hooks, state management, and build a complete web application from scratch.', 
- 'Programming', 
+('Vật lý Nâng cao 11-12', 
+ 'Ôn tập và nâng cao kiến thức Vật lý cấp 3: Cơ học, Điện học, Quang học, Hạt nhân; bám sát chương trình và luyện đề.', 
+ 'Vật lý', 
  10, 
  1, 
  1, 
@@ -43,9 +43,9 @@ INSERT INTO course_templates (
  GETDATE(), 
  GETDATE()),
 
-('Python Programming Bootcamp', 
- 'Comprehensive Python course covering basics to advanced topics. Learn data structures, OOP, web development with Django, and data analysis. Includes hands-on projects and career guidance.', 
- 'Programming', 
+('Hóa học Hữu cơ - Vô cơ trọng tâm', 
+ 'Hệ thống hóa kiến thức Hóa học 10-12, chú trọng bài tập vô cơ, hữu cơ và các dạng đồ thị, trắc nghiệm tính nhanh.', 
+ 'Hóa học', 
  16, 
  1, 
  1, 
@@ -56,9 +56,9 @@ INSERT INTO course_templates (
  GETDATE()),
 
 -- Business & Marketing Courses
-('Digital Marketing Mastery', 
- 'Complete digital marketing course covering social media marketing, SEO, Google Ads, content marketing, and analytics. Learn to create effective marketing campaigns that drive results.', 
- 'Marketing', 
+('Ngữ văn 10-12 - Đọc hiểu & Nghị luận', 
+ 'Ôn tập tác phẩm trọng tâm, kỹ năng đọc hiểu và nghị luận xã hội/văn học; phương pháp làm bài đạt điểm cao.', 
+ 'Ngữ văn', 
  8, 
  1, 
  1, 
@@ -68,9 +68,9 @@ INSERT INTO course_templates (
  GETDATE(), 
  GETDATE()),
 
-('Data Science with Python', 
- 'Learn data science from scratch using Python. Cover pandas, numpy, matplotlib, machine learning basics, and work with real datasets. Perfect for career transition into data science.', 
- 'Data Science', 
+('Tiếng Anh - Ngữ pháp & Từ vựng', 
+ 'Củng cố ngữ pháp, từ vựng, kỹ năng đọc hiểu/viết/Nghe nói cho học sinh cấp 3, kèm đề thi THPTQG.', 
+ 'Tiếng Anh', 
  14, 
  1, 
  1, 
@@ -81,9 +81,9 @@ INSERT INTO course_templates (
  GETDATE()),
 
 -- Language Courses
-('Business English Communication', 
- 'Improve your English communication skills for professional environments. Focus on business writing, presentations, meetings, and email communication. Includes practice sessions and feedback.', 
- 'Language', 
+('Sinh học - Di truyền và Tiến hóa', 
+ 'Chuyên đề Sinh học 12: Di truyền học, Biến dị, Tiến hóa, Sinh thái; phù hợp ôn thi đại học.', 
+ 'Sinh học', 
  10, 
  1, 
  1, 
@@ -93,9 +93,9 @@ INSERT INTO course_templates (
  GETDATE(), 
  GETDATE()),
 
-('IELTS Preparation Course', 
- 'Comprehensive IELTS preparation covering all four skills: Reading, Writing, Listening, and Speaking. Includes practice tests, strategies, and personalized feedback to achieve your target score.', 
- 'Language', 
+('Tiếng Anh Chuyên đề - Reading & Grammar', 
+ 'Chuyên đề luyện Reading, Grammar dành cho cấp 3, tăng tốc điểm số nhanh trước kỳ thi.', 
+ 'Tiếng Anh', 
  12, 
  1, 
  1, 
@@ -106,9 +106,9 @@ INSERT INTO course_templates (
  GETDATE()),
 
 -- Design & Creative Courses
-('UI/UX Design Fundamentals', 
- 'Learn user interface and user experience design principles. Master Figma, create wireframes, prototypes, and design systems. Build a professional portfolio with real client projects.', 
- 'Design', 
+('Toán Hình học Nâng cao', 
+ 'Chuyên sâu Hình học không gian, tọa độ, vector; mẹo giải nhanh trắc nghiệm.', 
+ 'Toán', 
  11, 
  1, 
  1, 
@@ -118,9 +118,9 @@ INSERT INTO course_templates (
  GETDATE(), 
  GETDATE()),
 
-('Photography for Beginners', 
- 'Master photography basics including composition, lighting, camera settings, and post-processing. Learn to take professional-quality photos with any camera, including smartphones.', 
- 'Photography', 
+('Vật lý - Điện xoay chiều & Dao động', 
+ 'Trọng tâm dao động, sóng, điện xoay chiều; các dạng bài hay gặp trong đề thi.', 
+ 'Vật lý', 
  6, 
  1, 
  1, 
@@ -131,9 +131,9 @@ INSERT INTO course_templates (
  GETDATE()),
 
 -- Free Courses
-('Introduction to Computer Science', 
- 'Free introductory course to computer science concepts. Learn programming logic, algorithms, and basic computer systems. Perfect starting point for anyone interested in technology.', 
- 'Computer Science', 
+('Ôn tập Tổng hợp Toán 12 (Free)', 
+ 'Khóa miễn phí gồm các đề tổng hợp và chữa chi tiết nhằm củng cố toàn bộ kiến thức Toán 12.', 
+ 'Toán', 
  8, 
  1, 
  1, 
@@ -143,9 +143,9 @@ INSERT INTO course_templates (
  GETDATE(), 
  GETDATE()),
 
-('Personal Finance Management', 
- 'Free course on managing personal finances. Learn budgeting, saving, investing basics, and financial planning. Build a solid foundation for financial independence.', 
- 'Finance', 
+('Ôn tập Tiếng Anh 12 (Free)', 
+ 'Tổng hợp chuyên đề Ngữ pháp và Đọc hiểu trọng tâm cho học sinh lớp 12.', 
+ 'Tiếng Anh', 
  6, 
  1, 
  1, 
@@ -156,9 +156,9 @@ INSERT INTO course_templates (
  GETDATE()),
 
 -- Advanced Courses
-('Full-Stack JavaScript Development', 
- 'Advanced course covering both frontend and backend development with JavaScript. Learn Node.js, Express, MongoDB, React, and deploy full-stack applications to the cloud.', 
- 'Programming', 
+('Chuyên đề Hóa vô cơ nâng cao', 
+ 'Các dạng bài vô cơ khó, phương pháp quy đổi, bảo toàn điện tích/khối lượng; luyện đề nâng cao.', 
+ 'Hóa học', 
  20, 
  1, 
  1, 
@@ -168,9 +168,9 @@ INSERT INTO course_templates (
  GETDATE(), 
  GETDATE()),
 
-('Machine Learning with TensorFlow', 
- 'Advanced machine learning course using TensorFlow. Learn neural networks, deep learning, computer vision, and natural language processing. Includes real-world ML projects.', 
- 'Data Science', 
+('Sinh học - Sinh thái học nâng cao', 
+ 'Chuyên sâu hệ sinh thái, quần xã, dòng năng lượng; bài tập tổng hợp.', 
+ 'Sinh học', 
  18, 
  1, 
  1, 
@@ -181,9 +181,9 @@ INSERT INTO course_templates (
  GETDATE()),
 
 -- Professional Development
-('Project Management Professional', 
- 'Comprehensive project management course preparing you for PMP certification. Learn project planning, execution, monitoring, and closure using industry best practices.', 
- 'Management', 
+('Ngữ văn - Tuyển tập nghị luận hay', 
+ 'Tuyển tập đề nghị luận xã hội/văn học có dàn ý và bài mẫu chất lượng.', 
+ 'Ngữ văn', 
  14, 
  1, 
  1, 
@@ -193,9 +193,9 @@ INSERT INTO course_templates (
  GETDATE(), 
  GETDATE()),
 
-('Cybersecurity Fundamentals', 
- 'Essential cybersecurity course covering network security, ethical hacking, risk assessment, and security frameworks. Perfect for IT professionals and career changers.', 
- 'Security', 
+('Tiếng Anh - Luyện đề tổng hợp', 
+ 'Bộ đề tổng hợp theo chuyên đề và theo đề thi chuẩn, kèm chữa chi tiết.', 
+ 'Tiếng Anh', 
  12, 
  1, 
  1, 

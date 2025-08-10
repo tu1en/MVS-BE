@@ -179,7 +179,7 @@ public class UserServiceExtensionImpl implements UserServiceExtension {
             log.error("Error creating user without contract: {}", email, e);
             return false;
         }
-    }
+    } 
     
     @Override
     public boolean hasActiveContract(String email) {

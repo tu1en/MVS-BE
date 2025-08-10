@@ -17,13 +17,18 @@ import com.classroomapp.classroombackend.entity.ClassLesson;
 import com.classroomapp.classroombackend.entity.LessonTemplate;
 import com.classroomapp.classroombackend.entity.Room;
 import com.classroomapp.classroombackend.entity.ScheduleConflict;
+import com.classroomapp.classroombackend.model.Lecture;
+import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.classroommanagement.CourseTemplate;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.ClassLessonRepository;
 import com.classroomapp.classroombackend.repository.ClassRepository;
 import com.classroomapp.classroombackend.repository.CourseTemplateRepository;
+import com.classroomapp.classroombackend.repository.LessonTemplateRepository;
 import com.classroomapp.classroombackend.repository.RoomRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class ClassService {
@@ -51,6 +56,17 @@ public class ClassService {
     // ✅ FIX: Inject WebSocket notification service
     @Autowired
     private WebSocketNotificationService webSocketNotificationService;
+
+    @Autowired
+    private LessonTemplateRepository lessonTemplateRepository;
+    
+    @Autowired
+    private com.classroomapp.classroombackend.repository.LectureRepository lectureRepository;
+    
+    @Autowired  
+    private com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository classroomRepository;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
     
     /**
      * Create a new class from course template
@@ -81,6 +97,25 @@ public class ClassService {
                     .orElseThrow(() -> new RuntimeException("Room not found"));
         }
         
+        // Nếu endDate chưa truyền, tự tính dự kiến dựa vào số bài học và số buổi/tuần đã chọn
+        if (request.getEndDate() == null) {
+            try {
+                long lessonCount = lessonTemplateRepository.countByCourseTemplateId(courseTemplate.getId());
+                int lessons = lessonCount > 0
+                    ? (int) lessonCount
+                    : Math.max(1, courseTemplate.getTotalWeeks());
+                int sessionsPerWeek = 1;
+                if (request.getSchedule() != null) {
+                    JsonNode node = objectMapper.readTree(request.getSchedule());
+                    if (node.has("days") && node.get("days").isArray()) {
+                        sessionsPerWeek = Math.max(1, node.get("days").size());
+                    }
+                }
+                int weeksNeeded = (int) Math.ceil((double) lessons / (double) sessionsPerWeek);
+                request.setEndDate(request.getStartDate().plusWeeks(weeksNeeded - 1));
+            } catch (Exception ignored) {}
+        }
+
         // Check schedule conflicts
         List<ScheduleConflict> conflicts = scheduleConflictService.checkScheduleConflicts(
             request.getRoomId(), 
@@ -250,11 +285,11 @@ public class ClassService {
             throw new RuntimeException("Class name is required");
         }
         
-        if (request.getStartDate() == null || request.getEndDate() == null) {
-            throw new RuntimeException("Start and end dates are required");
+        if (request.getStartDate() == null) {
+            throw new RuntimeException("Start date is required");
         }
         
-        if (request.getStartDate().isAfter(request.getEndDate())) {
+        if (request.getEndDate() != null && request.getStartDate().isAfter(request.getEndDate())) {
             throw new RuntimeException("Start date must be before end date");
         }
         
@@ -278,7 +313,65 @@ public class ClassService {
             classLesson.setLessonTemplate(template);
             classLesson.setStatus(ClassLesson.LessonStatus.SCHEDULED);
             
-            classLessonRepository.save(classLesson);
+            classLesson = classLessonRepository.save(classLesson);
+            
+            // Tự động tạo 1 bài giảng mặc định cho mỗi bài học
+            createDefaultLectureForLesson(classLesson, template);
+        }
+    }
+    
+    private void createDefaultLectureForLesson(ClassLesson classLesson, LessonTemplate template) {
+        try {
+            // ✅ FIXED: Tạo 1 bài giảng mặc định cho mỗi bài học như yêu cầu
+            // Tìm hoặc tạo Classroom tương ứng với ClassEntity này
+            Classroom targetClassroom = findOrCreateClassroomForClass(classLesson.getClassEntity());
+            
+            if (targetClassroom != null) {
+                Lecture lecture = new Lecture();
+                lecture.setTitle(template.getTopicName());
+                lecture.setContent("Nội dung bài giảng: " + template.getTopicName() + "\n\n" + 
+                                 (template.getObjectives() != null ? template.getObjectives() : ""));
+                lecture.setClassroom(targetClassroom);
+                
+                // Sử dụng ngày dự kiến từ classLesson nếu có
+                if (classLesson.getActualDate() != null) {
+                    lecture.setLectureDate(classLesson.getActualDate());
+                }
+                
+                lecture = lectureRepository.save(lecture);
+                logger.info("✅ Created default lecture '{}' for lesson '{}' in classroom '{}'", 
+                    lecture.getTitle(), template.getTopicName(), targetClassroom.getName());
+            } else {
+                logger.warn("❌ Could not find/create classroom for class '{}', skipping lecture creation", 
+                    classLesson.getClassEntity().getClassName());
+            }
+        } catch (Exception e) {
+            logger.warn("❌ Failed to create default lecture for lesson '{}': {}", template.getTopicName(), e.getMessage());
+        }
+    }
+    
+    private Classroom findOrCreateClassroomForClass(ClassEntity classEntity) {
+        try {
+            // Tìm classroom có tên giống với class
+            List<Classroom> existingClassrooms = classroomRepository.findAll();
+            Classroom found = existingClassrooms.stream()
+                .filter(c -> c.getName() != null && c.getName().equals(classEntity.getClassName()))
+                .findFirst()
+                .orElse(null);
+                
+            if (found != null) {
+                return found;
+            }
+            
+            // Tạo mới classroom nếu chưa có
+            Classroom newClassroom = new Classroom();
+            newClassroom.setName(classEntity.getClassName());
+            newClassroom.setDescription("Classroom for " + classEntity.getClassName());
+            
+            return classroomRepository.save(newClassroom);
+        } catch (Exception e) {
+            logger.error("Error finding/creating classroom for class '{}': {}", classEntity.getClassName(), e.getMessage());
+            return null;
         }
     }
     
