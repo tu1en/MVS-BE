@@ -23,7 +23,7 @@ public class ContractController {
     private final ContractStatusSchedulerService contractStatusSchedulerService;
 
     // Lấy tất cả hợp đồng
-    @GetMapping
+    @GetMapping(produces = "application/json;charset=UTF-8")
     public ResponseEntity<List<ContractDto>> getAllContracts() {
         log.info("GET /api/contracts - Fetching all contracts");
         try {
@@ -36,7 +36,7 @@ public class ContractController {
     }
 
     // Lấy hợp đồng theo loại (TEACHER hoặc STAFF)
-    @GetMapping("/type/{contractType}")
+    @GetMapping(value = "/type/{contractType}", produces = "application/json;charset=UTF-8")
     public ResponseEntity<List<ContractDto>> getContractsByType(@PathVariable String contractType) {
         log.info("GET /api/contracts/type/{} - Fetching contracts by type", contractType);
         try {
