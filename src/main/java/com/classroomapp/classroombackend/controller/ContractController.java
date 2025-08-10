@@ -23,7 +23,7 @@ public class ContractController {
     private final ContractStatusSchedulerService contractStatusSchedulerService;
 
     // Lấy tất cả hợp đồng
-    @GetMapping
+    @GetMapping(produces = "application/json;charset=UTF-8")
     public ResponseEntity<List<ContractDto>> getAllContracts() {
         log.info("GET /api/contracts - Fetching all contracts");
         try {
@@ -36,7 +36,7 @@ public class ContractController {
     }
 
     // Lấy hợp đồng theo loại (TEACHER hoặc STAFF)
-    @GetMapping("/type/{contractType}")
+    @GetMapping(value = "/type/{contractType}", produces = "application/json;charset=UTF-8")
     public ResponseEntity<List<ContractDto>> getContractsByType(@PathVariable String contractType) {
         log.info("GET /api/contracts/type/{} - Fetching contracts by type", contractType);
         try {
@@ -123,6 +123,19 @@ public class ContractController {
         } catch (Exception e) {
             log.error("Error fetching candidates ready for contract: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Lấy thông tin offer của ứng viên để tạo hợp đồng
+    @GetMapping("/candidates/{candidateId}/offer")
+    public ResponseEntity<ContractDto> getCandidateOfferData(@PathVariable Long candidateId) {
+        log.info("GET /api/contracts/candidates/{}/offer - Fetching candidate offer data", candidateId);
+        try {
+            ContractDto offerData = contractService.getCandidateOfferData(candidateId);
+            return ResponseEntity.ok(offerData);
+        } catch (Exception e) {
+            log.error("Error fetching candidate offer data for id {}: ", candidateId, e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
 

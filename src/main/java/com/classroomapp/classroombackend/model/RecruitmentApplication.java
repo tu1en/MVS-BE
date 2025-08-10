@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -43,4 +44,7 @@ public class RecruitmentApplication {
 
     @Column(name = "reject_reason", columnDefinition = "NVARCHAR(MAX)")
     private String rejectReason;
+
+    @Column(name = "hourly_rate")
+    private BigDecimal hourlyRate; // Lương theo giờ cho part-time
 } 

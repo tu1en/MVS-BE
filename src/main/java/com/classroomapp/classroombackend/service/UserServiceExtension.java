@@ -24,5 +24,29 @@ public interface UserServiceExtension {
      * @return true if created or updated, false otherwise
      */
     boolean createOrUpdateUser(String email, String fullName, String role);
+    
+    /**
+     * Create user with active status and proper role based on job position
+     * @param email User's email
+     * @param fullName User's full name
+     * @param role User's role (TEACHER, ACCOUNTANT, MANAGER, etc.)
+     * @return true if user created successfully, false otherwise
+     */
+    boolean createUserWithActiveStatus(String email, String fullName, String role);
+    
+    /**
+     * Create a new user with the given role if they don't exist without contract
+     * @param email User's email
+     * @param fullName User's full name
+     * @param role Role to assign
+     * @return true if created or updated, false otherwise
+     */
     boolean createUserWithoutContract(String email, String fullName, String role);
+    
+    /**
+     * Check if user has active contract
+     * @param email User's email
+     * @return true if user has active contract, false otherwise
+     */
+    boolean hasActiveContract(String email);
 } 

@@ -62,6 +62,18 @@ public class RecruitmentApplicationServiceImpl implements RecruitmentApplication
         JobPosition job = jobPositionRepo.findById(jobPositionId)
                 .orElseThrow(() -> new RuntimeException("Job position not found"));
         
+        // Kiểm tra email trùng lặp - không cho phép cùng email nộp đơn ứng tuyển lại
+        boolean emailExists = recruitmentRepo.existsByEmail(email.trim());
+        if (emailExists) {
+            throw new RuntimeException("Email này đã được sử dụng để nộp đơn ứng tuyển trước đó. Mỗi email chỉ được nộp đơn một lần!");
+        }
+        
+        // Kiểm tra số điện thoại trùng lặp - không cho phép cùng số điện thoại nộp đơn ứng tuyển lại
+        boolean phoneExists = recruitmentRepo.existsByPhoneNumber(phoneNumber.trim());
+        if (phoneExists) {
+            throw new RuntimeException("Số điện thoại này đã được sử dụng để nộp đơn ứng tuyển trước đó. Mỗi số điện thoại chỉ được nộp đơn một lần!");
+        }
+        
         // Save CV file to Firebase Storage
         String cvUrl = fileStorageService.save(cvFile, "recruit-cv").getFileUrl();
         

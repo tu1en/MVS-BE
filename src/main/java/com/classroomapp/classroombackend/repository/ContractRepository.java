@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -40,4 +41,11 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
     
     // Tìm hợp đồng theo email
     Optional<Contract> findByEmail(String email);
+    
+    // Đếm số hợp đồng được tạo trong ngày
+    @Query("SELECT COUNT(c) FROM Contract c WHERE c.createdAt >= :startOfDay AND c.createdAt < :endOfDay")
+    Long countByCreatedAtBetween(@Param("startOfDay") LocalDateTime startOfDay, @Param("endOfDay") LocalDateTime endOfDay);
+    
+    // Kiểm tra xem user đã có hợp đồng chưa
+    boolean existsByUserId(Long userId);
 }

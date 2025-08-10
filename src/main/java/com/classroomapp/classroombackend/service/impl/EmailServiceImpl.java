@@ -148,7 +148,46 @@ public class EmailServiceImpl implements EmailService {
         context.setVariable("name", name);
         context.setVariable("jobTitle", jobTitle);
         context.setVariable("offer", offer);
-        String body = templateEngine.process("email/offer-resend", context);
+        
+        // Tính toán chi tiết lương từ offer
+        try {
+            if (offer != null && !offer.trim().isEmpty()) {
+                String cleanOffer = offer.replaceAll("[^0-9]", "");
+                java.math.BigDecimal grossSalary = new java.math.BigDecimal(cleanOffer);
+                com.classroomapp.classroombackend.util.TopCVCalculation.SalaryCalculationResult salaryDetails = 
+                    com.classroomapp.classroombackend.util.TopCVCalculation.calculateFromGrossToNet(grossSalary, 0);
+                context.setVariable("salaryDetails", salaryDetails);
+            }
+        } catch (Exception e) {
+            log.warn("Could not calculate salary details for offer: {}", offer, e);
+        }
+        
+        // Sử dụng template mới với chi tiết lương
+        String body = templateEngine.process("email/offer-resend-with-details", context);
+        sendEmail(to, subject, body);
+    }
+
+    @Override
+    public void sendOfferResendEmailWithDetails(String to, String name, String jobTitle, String offer, Object salaryDetails) {
+        String subject = "Thông Báo Offer Chi Tiết - " + jobTitle;
+        Context context = new Context();
+        context.setVariable("name", name);
+        context.setVariable("jobTitle", jobTitle);
+        context.setVariable("offer", offer);
+        context.setVariable("salaryDetails", salaryDetails);
+        String body = templateEngine.process("email/offer-resend-with-details", context);
+        sendEmail(to, subject, body);
+    }
+
+    @Override
+    public void sendOfferResendPartTimeEmail(String to, String name, String jobTitle, String hourlyRate, String interviewTime) {
+        String subject = "🎉 Chúc mừng! Bạn đã được chọn cho vị trí " + jobTitle + " (Hợp đồng có kỳ hạn)";
+        Context context = new Context();
+        context.setVariable("name", name);
+        context.setVariable("jobTitle", jobTitle);
+        context.setVariable("hourlyRate", hourlyRate);
+        context.setVariable("interviewTime", interviewTime);
+        String body = templateEngine.process("email/offer-resend-part-time", context);
         sendEmail(to, subject, body);
     }
 // Thêm method này vào EmailServiceImpl.java (sau method sendInterviewRejectionEmail)

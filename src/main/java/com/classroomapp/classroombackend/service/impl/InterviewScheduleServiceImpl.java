@@ -85,6 +85,15 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
 
     @Override
     @Transactional
+    public void updateHourlyRate(Long id, String hourlyRate) {
+        InterviewSchedule entity = interviewRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Interview not found"));
+        entity.setHourlyRate(new java.math.BigDecimal(hourlyRate));
+        interviewRepo.save(entity);
+    }
+
+    @Override
+    @Transactional
     public void delete(Long id) {
         interviewRepo.deleteById(id);
     }
@@ -99,17 +108,56 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
 
     @Override
     @Transactional(readOnly = true)
-    public boolean hasConflict(LocalDateTime startTime, LocalDateTime endTime) {
-        // Kiểm tra xem có lịch phỏng vấn nào trùng thời gian không
-        List<InterviewSchedule> existingSchedules = interviewRepo.findAll();
-        
-        for (InterviewSchedule schedule : existingSchedules) {
-            // Kiểm tra overlap: (start1 < end2) && (end1 > start2)
-            if (startTime.isBefore(schedule.getEndTime()) && endTime.isAfter(schedule.getStartTime())) {
-                return true; // Có conflict
+    public boolean hasConflict(LocalDateTime startTime, LocalDateTime endTime, Long excludeApplicationId) {
+        try {
+            // Lấy tất cả các lịch phỏng vấn đã được xếp (SCHEDULED hoặc PENDING)
+            // Không bao gồm COMPLETED vì lịch này có thể bị đè
+            List<InterviewSchedule> existingSchedules = interviewRepo.findAll().stream()
+                .filter(schedule -> "SCHEDULED".equals(schedule.getStatus()) || "PENDING".equals(schedule.getStatus()))
+                .collect(Collectors.toList());
+            
+            for (InterviewSchedule schedule : existingSchedules) {
+                // Bỏ qua nếu là lịch của chính ứng viên đang được kiểm tra
+                if (excludeApplicationId != null && schedule.getApplication() != null 
+                    && excludeApplicationId.equals(schedule.getApplication().getId())) {
+                    continue;
+                }
+                
+                // Kiểm tra overlap theo từng điều kiện:
+                // 1. Thời gian bắt đầu mới nằm trong khoảng thời gian cũ (không bao gồm điểm cuối)
+                boolean startOverlap = (startTime.isAfter(schedule.getStartTime()) && startTime.isBefore(schedule.getEndTime()));
+                
+                // 2. Thời gian kết thúc mới nằm trong khoảng thời gian cũ (không bao gồm điểm đầu)
+                boolean endOverlap = (endTime.isAfter(schedule.getStartTime()) && endTime.isBefore(schedule.getEndTime()));
+                
+                // 3. Thời gian mới bao trọn thời gian cũ
+                boolean containsExisting = startTime.isBefore(schedule.getStartTime()) && endTime.isAfter(schedule.getEndTime());
+                
+                // 4. Thời gian cũ bao trọn thời gian mới
+                boolean isContainedByExisting = schedule.getStartTime().isBefore(startTime) && schedule.getEndTime().isAfter(endTime);
+                
+                if (startOverlap || endOverlap || containsExisting || isContainedByExisting) {
+                    return true; // Có conflict
+                }
             }
+            return false; // Không có conflict
+        } catch (Exception e) {
+            // Log lỗi nếu có
+            System.err.println("Error in hasConflict: " + e.getMessage());
+            e.printStackTrace();
+            return true; // Trả về true để đảm bảo an toàn
         }
-        return false; // Không có conflict
+    }
+
+    @Override
+    @Transactional
+    public InterviewScheduleDto update(Long id, LocalDateTime startTime, LocalDateTime endTime) {
+        InterviewSchedule entity = interviewRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Interview not found"));
+        entity.setStartTime(startTime);
+        entity.setEndTime(endTime);
+        InterviewSchedule saved = interviewRepo.save(entity);
+        return toDto(saved);
     }
 
     @Override
@@ -131,6 +179,7 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
         dto.setResult(entity.getResult());
         dto.setOffer(entity.getOffer());
         dto.setEvaluation(entity.getEvaluation());
+        dto.setHourlyRate(entity.getHourlyRate());
         
         if (entity.getApplication() != null) {
             dto.setApplicationId(entity.getApplication().getId());
@@ -141,6 +190,7 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
             if (entity.getApplication().getJobPosition() != null) {
                 dto.setJobTitle(entity.getApplication().getJobPosition().getTitle());
                 dto.setSalaryRange(entity.getApplication().getJobPosition().getSalaryRange());
+                dto.setContractType(entity.getApplication().getJobPosition().getContractType());
             }
         }
         return dto;

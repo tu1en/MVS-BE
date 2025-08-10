@@ -1,6 +1,7 @@
 package com.classroomapp.classroombackend.controller;
 
 import com.classroomapp.classroombackend.dto.RecruitmentApplicationDto;
+import com.classroomapp.classroombackend.exception.ErrorResponse;
 import com.classroomapp.classroombackend.service.EmailService;
 import com.classroomapp.classroombackend.service.InterviewScheduleService;
 import com.classroomapp.classroombackend.service.RecruitmentApplicationService;
@@ -23,7 +24,7 @@ public class RecruitmentApplicationController {
     private final InterviewScheduleService interviewService;
 
     @PostMapping("/apply")
-    public ResponseEntity<RecruitmentApplicationDto> apply(
+    public ResponseEntity<?> apply(
             @RequestParam Long jobPositionId,
             @RequestParam String fullName,
             @RequestParam String email,
@@ -50,7 +51,16 @@ public class RecruitmentApplicationController {
         } catch (Exception e) {
             log.error("=== APPLICATION CREATION FAILED ===");
             log.error("Error: {}", e.getMessage());
-            throw e;
+            
+            // Trả về error response thay vì throw exception
+            ErrorResponse errorResponse = new ErrorResponse();
+            errorResponse.setTimestamp(LocalDateTime.now());
+            errorResponse.setStatus(400);
+            errorResponse.setError("APPLICATION_ERROR");
+            errorResponse.setMessage(e.getMessage());
+            errorResponse.setPath("/api/recruitment-applications/apply");
+            
+            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
 
