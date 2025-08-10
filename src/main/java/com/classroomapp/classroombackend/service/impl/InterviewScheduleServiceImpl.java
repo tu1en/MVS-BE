@@ -111,26 +111,17 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
     public boolean hasConflict(LocalDateTime startTime, LocalDateTime endTime, Long excludeApplicationId) {
         try {
             // Lấy tất cả các lịch phỏng vấn đã được xếp (SCHEDULED hoặc PENDING)
+            // Không bao gồm COMPLETED vì lịch này có thể bị đè
             List<InterviewSchedule> existingSchedules = interviewRepo.findAll().stream()
                 .filter(schedule -> "SCHEDULED".equals(schedule.getStatus()) || "PENDING".equals(schedule.getStatus()))
                 .collect(Collectors.toList());
-            
-            System.out.println("=== Conflict Check Debug ===");
-            System.out.println("New schedule: " + startTime + " to " + endTime);
-            System.out.println("Exclude application ID: " + excludeApplicationId);
-            System.out.println("Total existing schedules: " + existingSchedules.size());
             
             for (InterviewSchedule schedule : existingSchedules) {
                 // Bỏ qua nếu là lịch của chính ứng viên đang được kiểm tra
                 if (excludeApplicationId != null && schedule.getApplication() != null 
                     && excludeApplicationId.equals(schedule.getApplication().getId())) {
-                    System.out.println("Skipping own schedule: " + schedule.getId());
                     continue;
                 }
-                
-                System.out.println("Checking against schedule: " + schedule.getId() + 
-                    " (" + schedule.getStartTime() + " to " + schedule.getEndTime() + 
-                    ", Application: " + (schedule.getApplication() != null ? schedule.getApplication().getId() : "null") + ")");
                 
                 // Kiểm tra overlap theo từng điều kiện:
                 // 1. Thời gian bắt đầu mới nằm trong khoảng thời gian cũ (không bao gồm điểm cuối)
@@ -145,15 +136,10 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
                 // 4. Thời gian cũ bao trọn thời gian mới
                 boolean isContainedByExisting = schedule.getStartTime().isBefore(startTime) && schedule.getEndTime().isAfter(endTime);
                 
-                System.out.println("  startOverlap: " + startOverlap + ", endOverlap: " + endOverlap + 
-                    ", containsExisting: " + containsExisting + ", isContainedByExisting: " + isContainedByExisting);
-                
                 if (startOverlap || endOverlap || containsExisting || isContainedByExisting) {
-                    System.out.println("  *** CONFLICT DETECTED ***");
                     return true; // Có conflict
                 }
             }
-            System.out.println("  *** NO CONFLICT ***");
             return false; // Không có conflict
         } catch (Exception e) {
             // Log lỗi nếu có

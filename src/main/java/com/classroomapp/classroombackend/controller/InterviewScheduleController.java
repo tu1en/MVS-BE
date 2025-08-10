@@ -287,6 +287,14 @@ public class InterviewScheduleController {
         return ResponseEntity.ok().build();
     }
 
+    @DeleteMapping("/{id}/after-completion")
+    public ResponseEntity<?> deleteAfterCompletion(@PathVariable Long id) {
+        // Xóa lịch phỏng vấn sau khi hoàn tất quá trình tuyển dụng
+        // Chỉ sử dụng khi cần thiết để giải phóng thời gian
+        interviewService.delete(id);
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping("/{id}/check-account")
     public ResponseEntity<?> checkAccount(@PathVariable Long id) {
         InterviewScheduleDto interview = interviewService.getById(id);
@@ -307,22 +315,37 @@ public class InterviewScheduleController {
 
     @PutMapping("/{id}/result")
     public ResponseEntity<?> setResult(@PathVariable Long id, @RequestBody InterviewResultDto body) {
-        interviewService.updateStatus(id, body.getStatus(), body.getResult());
         InterviewScheduleDto interview = interviewService.getAll().stream().filter(i -> i.getId().equals(id)).findFirst().orElse(null);
         if (interview == null) return ResponseEntity.notFound().build();
         
-        // Gửi mail kết quả
-        if ("APPROVED".equals(body.getStatus()) || "ACCEPTED".equals(body.getStatus())) {
-            emailService.sendEmail(interview.getApplicantEmail(), "Kết quả phỏng vấn", "Chúc mừng bạn đã vượt qua phỏng vấn cho vị trí: " + interview.getJobTitle());
-            
-            // Tạo user mới với trạng thái chưa có hợp đồng nếu cần
-            if (body.getCreateAccount() != null && body.getCreateAccount()) {
-                userService.createUserWithoutContract(interview.getApplicantEmail(), interview.getApplicantName(), null);
-            } else {
-                // Tạo user mới với trạng thái chưa có hợp đồng (logic mặc định)
-                userService.createUserWithoutContract(interview.getApplicantEmail(), interview.getApplicantName(), null);
-            }
-        } else if ("REJECTED".equals(body.getStatus())) {
+                                // Gửi mail kết quả
+                        if ("ACCEPTED".equals(body.getStatus())) {
+                            // Tạo user mới với trạng thái chưa có hợp đồng nếu cần
+                            if (body.getCreateAccount() != null && body.getCreateAccount()) {
+                                userService.createUserWithoutContract(interview.getApplicantEmail(), interview.getApplicantName(), null);
+                            } else {
+                                // Tạo user mới với trạng thái chưa có hợp đồng (logic mặc định)
+                                userService.createUserWithoutContract(interview.getApplicantEmail(), interview.getApplicantName(), null);
+                            }
+
+                            // Cập nhật trạng thái thành COMPLETED để ứng viên xuất hiện trong "Quản Lý Offer"
+                            // Lịch phỏng vấn vẫn giữ nguyên để có thể bị đè bởi lịch mới
+                            interviewService.updateStatus(id, "COMPLETED", body.getResult());
+
+                        } else if ("APPROVED".equals(body.getStatus())) {
+                            // Tạo user mới với trạng thái chưa có hợp đồng nếu cần
+                            if (body.getCreateAccount() != null && body.getCreateAccount()) {
+                                userService.createUserWithoutContract(interview.getApplicantEmail(), interview.getApplicantName(), null);
+                            } else {
+                                // Tạo user mới với trạng thái chưa có hợp đồng (logic mặc định)
+                                userService.createUserWithoutContract(interview.getApplicantEmail(), interview.getApplicantName(), null);
+                            }
+
+                            // Cập nhật trạng thái thành APPROVED (không phải COMPLETED)
+                            // Ứng viên sẽ bị ẩn khỏi "Quản Lý Offer" theo logic frontend
+                            interviewService.updateStatus(id, "APPROVED", body.getResult());
+
+                        } else if ("REJECTED".equals(body.getStatus())) {
             // Gửi mail từ chối với evaluation
             InterviewScheduleDto interviewDto = interviewService.getAll().stream().filter(i -> i.getId().equals(id)).findFirst().orElse(null);
             if (interviewDto != null) {
@@ -330,7 +353,17 @@ public class InterviewScheduleController {
             } else {
                 emailService.sendInterviewRejectionEmail(interview.getApplicantEmail(), interview.getApplicantName(), interview.getJobTitle(), body.getResult());
             }
+            
+            // Cập nhật status trước khi xóa
+            interviewService.updateStatus(id, body.getStatus(), body.getResult());
+            
+            // Xóa lịch phỏng vấn sau khi từ chối để giải phóng thời gian
+            interviewService.delete(id);
+        } else {
+            // Cập nhật status cho các trạng thái khác
+            interviewService.updateStatus(id, body.getStatus(), body.getResult());
         }
+        
         return ResponseEntity.ok().build();
     }
 
