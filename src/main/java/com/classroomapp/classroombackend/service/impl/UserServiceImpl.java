@@ -249,120 +249,145 @@ public class UserServiceImpl implements UserService {
             throw new BusinessLogicException("Cannot reset your own password through this method.");
         }
 
-        // Reset password to default '123456789' (properly encoded)
-        String defaultPassword = "123456789";
-        existingUser.setPassword(passwordEncoder.encode(defaultPassword));
-
-        // Save updated user
+        // Reset password to default
+        existingUser.setPassword(passwordEncoder.encode("123456789"));
         userRepository.save(existingUser);
-        // In a real application, notify user via email about the password reset
     }
 
-    private Integer convertRoleToRoleId(String role) {
-        switch (role.toUpperCase()) {
-            case "STUDENT":
-                return RoleConstants.STUDENT;
-            case "TEACHER":
-                return RoleConstants.TEACHER;
-            case "MANAGER":
-                return RoleConstants.MANAGER;
-            case "ACCOUNTANT":
-                return RoleConstants.ACCOUNTANT;
-            case "ADMIN":
-                return RoleConstants.ADMIN;
-            default:
-                return RoleConstants.STUDENT; // Default to STUDENT
+
+
+private Integer convertRoleToRoleId(String role) {
+    switch (role.toUpperCase()) {
+        case "STUDENT":
+            return RoleConstants.STUDENT;
+        case "TEACHER":
+            return RoleConstants.TEACHER;
+        case "MANAGER":
+            return RoleConstants.MANAGER;
+        case "ACCOUNTANT":
+            return RoleConstants.ACCOUNTANT;
+        case "ADMIN":
+            return RoleConstants.ADMIN;
+        default:
+            return RoleConstants.STUDENT; // Default to STUDENT
+    }
+}
+
+@Override
+public boolean IsUsernameExists(String username) {
+    return userRepository.existsByUsername(username);
+}
+
+@Override
+public boolean IsEmailExists(String email) {
+    return userRepository.existsByEmail(email);
+}
+
+@Override
+public List<UserDto> FindUsersByRole(Integer roleId) {
+    // Use the repository method to find users by role ID
+    List<User> users = userRepository.findByRoleId(roleId);
+    return users.stream()
+            .map(this::convertToUserDto)
+            .collect(Collectors.toList());
+}
+
+@Override
+@Transactional
+public UserDto updateUserRoles(Long userId, Set<String> roleNames) {
+    if (roleNames == null || roleNames.isEmpty()) {
+        throw new BusinessLogicException("Roles cannot be empty.");
+    }
+    // The current schema only supports one role per user.
+    // We throw an error if more than one role is provided to make this limitation
+    // clear.
+    if (roleNames.size() > 1) {
+        throw new BusinessLogicException("System currently supports only one role per user.");
+    }
+
+    String newRoleName = roleNames.iterator().next();
+
+    // Handle both ROLE_ prefixed and non-prefixed role names
+    final String roleNameForDatabase = newRoleName.startsWith("ROLE_")
+            ? newRoleName.substring(5) // Remove "ROLE_" prefix
+            : newRoleName;
+
+    User user = userRepository.findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+    Role newRole = roleRepository.findByName(roleNameForDatabase)
+            .orElseThrow(() -> new BusinessLogicException("Role not found: " + roleNameForDatabase));
+
+    // Business rule: Prevent admin from removing their own admin role
+    Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    if (principal instanceof UserDetails) {
+        String currentUsername = ((UserDetails) principal).getUsername();
+        if (user.getEmail().equals(currentUsername) &&
+                user.getRoleId() == RoleConstants.ADMIN &&
+                !newRole.getId().equals(RoleConstants.ADMIN)) {
+            throw new BusinessLogicException("Cannot remove ADMIN role from your own account.");
         }
     }
 
-    @Override
-    public boolean IsUsernameExists(String username) {
-        return userRepository.existsByUsername(username);
+    user.setRoleId(newRole.getId());
+    User updatedUser = userRepository.save(user);
+    return convertToUserDto(updatedUser);
+}
+
+@Override
+public void sendPasswordResetEmail(String email, String resetLink) {
+    MimeMessage message = mailSender.createMimeMessage();
+    try {
+        MimeMessageHelper helper = new MimeMessageHelper(message, true);
+        helper.setTo(email);
+        helper.setSubject("Password Reset");
+        String content = "<p>Please click on the link below to reset your password:</p>"
+                + "<p><a href='" + resetLink + "'>Reset Password</a></p>"
+                + "<br>"
+                + "<p>Ignore this email if you did not request a password reset.</p>";
+        helper.setText(content, true);
+        mailSender.send(message);
+    } catch (MessagingException e) {
+        throw new RuntimeException("Failed to send email", e);
     }
+}
 
-    @Override
-    public boolean IsEmailExists(String email) {
-        return userRepository.existsByEmail(email);
-    }
+@Override
+public User findUserEntityByEmail(String email) {
+    return userRepository.findByEmail(email)
+            .orElse(null);
+}
 
-    @Override
-    public List<UserDto> FindUsersByRole(Integer roleId) {
-        // Use the repository method to find users by role ID
-        List<User> users = userRepository.findByRoleId(roleId);
-        return users.stream()
-                .map(this::convertToUserDto)
-                .collect(Collectors.toList());
-    }
+@Override
+public User findById(Long id) {
+    return userRepository.findById(id)
+            .orElse(null);
+}
 
-    @Override
-    @Transactional
-    public UserDto updateUserRoles(Long userId, Set<String> roleNames) {
-        if (roleNames == null || roleNames.isEmpty()) {
-            throw new BusinessLogicException("Roles cannot be empty.");
-        }
-        // The current schema only supports one role per user.
-        // We throw an error if more than one role is provided to make this limitation
-        // clear.
-        if (roleNames.size() > 1) {
-            throw new BusinessLogicException("System currently supports only one role per user.");
-        }
+@Override
+@Transactional
+public UserDto activateUserAndAssignRole(String email, String contractType) {
+    User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+    
+    // Activate user account
+    user.setStatus("active");
+    
+    // Assign role based on contract type
+    Integer roleId = determineRoleFromContractType(contractType);
+    user.setRoleId(roleId);
+    
+    // Save updated user
+    User savedUser = userRepository.save(user);
+    
+    return convertToUserDto(savedUser);
+}
 
-        String newRoleName = roleNames.iterator().next();
-
-        // Handle both ROLE_ prefixed and non-prefixed role names
-        final String roleNameForDatabase = newRoleName.startsWith("ROLE_")
-                ? newRoleName.substring(5) // Remove "ROLE_" prefix
-                : newRoleName;
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
-
-        Role newRole = roleRepository.findByName(roleNameForDatabase)
-                .orElseThrow(() -> new BusinessLogicException("Role not found: " + roleNameForDatabase));
-
-        // Business rule: Prevent admin from removing their own admin role
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal instanceof UserDetails) {
-            String currentUsername = ((UserDetails) principal).getUsername();
-            if (user.getEmail().equals(currentUsername) &&
-                    user.getRoleId() == RoleConstants.ADMIN &&
-                    !newRole.getId().equals(RoleConstants.ADMIN)) {
-                throw new BusinessLogicException("Cannot remove ADMIN role from your own account.");
-            }
-        }
-
-        user.setRoleId(newRole.getId());
-        User updatedUser = userRepository.save(user);
-        return convertToUserDto(updatedUser);
-    }
-
-    @Override
-    public void sendPasswordResetEmail(String email, String resetLink) {
-        MimeMessage message = mailSender.createMimeMessage();
-        try {
-            MimeMessageHelper helper = new MimeMessageHelper(message, true);
-            helper.setTo(email);
-            helper.setSubject("Password Reset");
-            String content = "<p>Please click on the link below to reset your password:</p>"
-                    + "<p><a href='" + resetLink + "'>Reset Password</a></p>"
-                    + "<br>"
-                    + "<p>Ignore this email if you did not request a password reset.</p>";
-            helper.setText(content, true);
-            mailSender.send(message);
-        } catch (MessagingException e) {
-            throw new RuntimeException("Failed to send email", e);
-        }
-    }
-
-    @Override
-    public User findUserEntityByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .orElse(null);
-    }
-
-    @Override
-    public User findById(Long id) {
-        return userRepository.findById(id)
-                .orElse(null);
-    }
+private Integer determineRoleFromContractType(String contractType) {
+    return switch (contractType) {
+        case "TEACHER" -> 2; // ROLE_TEACHER
+        case "STAFF" -> 5;   // ROLE_ACCOUNTANT (for HR and Accountant staff)
+        default -> 1;       // ROLE_USER (default)
+    };
+}
 }

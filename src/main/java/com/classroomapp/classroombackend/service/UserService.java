@@ -106,4 +106,12 @@ public interface UserService {
     List<UserDto> getAllUsers();
 
     User findByUsername(String username);
+
+    /**
+     * Activate user account and assign role based on contract type
+     * @param email user email
+     * @param contractType contract type (TEACHER or STAFF)
+     * @return updated user DTO
+     */
+    UserDto activateUserAndAssignRole(String email, String contractType);
 }
