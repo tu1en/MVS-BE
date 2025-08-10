@@ -16,6 +16,12 @@ public class AvailableTeachersRequest {
     private String subject;
 
     /**
+     * Cấp học/khối mà lớp thuộc về (ví dụ: "10", "11", "12")
+     * Không bắt buộc. Nếu truyền, BE sẽ ưu tiên lọc theo `Contract.educationLevel` của giáo viên.
+     */
+    private String educationLevel;
+
+    /**
      * Lịch học dạng JSON do FE gửi lên, cùng format với trường `schedule_json` của lớp
      * Ví dụ: {"days":["MON","WED"],"startTime":"18:00","endTime":"20:00"}
      */

@@ -28,7 +28,7 @@ public class CreateClassRequest {
     @NotNull(message = "Start date is required")
     private LocalDate startDate;
     
-    @NotNull(message = "End date is required")
+    // End date có thể để trống; BE sẽ tự tính dựa trên số bài học và lịch học nếu không truyền
     private LocalDate endDate;
     
     private String schedule;

@@ -9,7 +9,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import com.classroomapp.classroombackend.entity.ClassEntity;
-import com.classroomapp.classroombackend.model.classroommanagement.TemplateStatus;
 import com.classroomapp.classroombackend.entity.LessonTemplate;
 
 import jakarta.persistence.CascadeType;
@@ -37,13 +36,13 @@ public class CourseTemplate {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
     private String name;
     
     @Column(columnDefinition = "NTEXT") // Using NTEXT for SQL Server compatibility
     private String description;
     
-    @Column(length = 100)
+    @Column(length = 100, columnDefinition = "NVARCHAR(100)")
     private String subject;
     
     @Column(name = "total_weeks")

@@ -93,6 +93,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/greetings/hello").permitAll() // Only allow hello endpoint for health check
                 .requestMatchers("/api/greetings/hello").permitAll() // Allow greetings endpoint
                 .requestMatchers("/api/role-requests/**").permitAll()
+                // Allow WebSocket handshake endpoints
+                .requestMatchers("/notifications").permitAll()
+                .requestMatchers("/signaling").permitAll()
                 .requestMatchers("/role-requests/**").permitAll() // Allow both with and without /api prefix
                 .requestMatchers(HttpMethod.GET, "/api/job-positions").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/job-positions/all").permitAll() // Allow all job positions for guest

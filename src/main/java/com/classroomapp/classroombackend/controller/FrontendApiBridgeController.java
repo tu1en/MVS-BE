@@ -3,7 +3,6 @@ package com.classroomapp.classroombackend.controller;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -18,9 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.classroomapp.classroombackend.constants.RoleConstants;
 import com.classroomapp.classroombackend.dto.StudentMessageDto;
-import com.classroomapp.classroombackend.dto.UserDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto;
 import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
@@ -31,7 +28,7 @@ import com.classroomapp.classroombackend.service.AssignmentService;
 import com.classroomapp.classroombackend.service.AttendanceService;
 import com.classroomapp.classroombackend.service.ClassroomService;
 import com.classroomapp.classroombackend.service.StudentMessageService;
-import com.classroomapp.classroombackend.service.UserService;
+// import com.classroomapp.classroombackend.service.UserService;
 
 import jakarta.validation.Valid;
 
@@ -54,8 +51,9 @@ public class FrontendApiBridgeController {
     @Autowired
     private StudentMessageService messageService;
     
-    @Autowired
-    private UserService userService;
+    // Removed unused UserService injection
+    // @Autowired
+    // private UserService userService;
     
     @Autowired
     private AttendanceService attendanceService;
@@ -75,54 +73,38 @@ public class FrontendApiBridgeController {
     //     return ResponseEntity.ok(Map.of("status", "success", "message", "Profile updated via bridge."));
     // }
 
-    /**
-     * Bridge endpoint for getting all students
-     * Frontend calls: /api/users/students
-     * Maps to: /api/v1/users/students
-     */
-    @GetMapping("/users/students")
-    public ResponseEntity<List<UserDto>> getAllStudents() {
-        try {
-            return ResponseEntity.ok(userService.FindUsersByRole(1)); // Role 1 = STUDENT
-        } catch (Exception e) {
-            System.err.println("Error fetching students: " + e.getMessage());
-            e.printStackTrace();
-            // Return empty list to prevent frontend crash
-            return ResponseEntity.ok(new ArrayList<>());
-        }
-    }
+    // Removed duplicate endpoint for /users/students 
+    // This endpoint is now handled directly by UserController at /api/users/students
 
-    /**
-     * Bridge endpoint for getting all teachers
-     * Frontend calls: /api/users/teachers
-     */
-    @GetMapping("/users/teachers")
-    public ResponseEntity<List<com.classroomapp.classroombackend.dto.UserDto>> getAllTeachers() {
-        try {
-            // Get teachers directly from repository since service method is broken
-            List<User> teachers = userRepository.findByRoleId(RoleConstants.TEACHER);
-            List<com.classroomapp.classroombackend.dto.UserDto> teacherDtos = teachers.stream()
-                .map(user -> {
-                    com.classroomapp.classroombackend.dto.UserDto dto = new com.classroomapp.classroombackend.dto.UserDto();
-                    dto.setId(user.getId());
-                    dto.setUsername(user.getUsername());
-                    dto.setEmail(user.getEmail());
-                    dto.setFullName(user.getFullName());
-                    dto.setRoleId(user.getRoleId());
-                    dto.setStatus(user.getStatus());
-                    return dto;
-                })
-                .collect(Collectors.toList());
+    // Removed duplicate endpoint for /users/teachers 
+    // This endpoint may conflict with other controllers
+    // @GetMapping("/users/teachers")
+    // public ResponseEntity<List<com.classroomapp.classroombackend.dto.UserDto>> getAllTeachers() {
+    //     try {
+    //         // Get teachers directly from repository since service method is broken
+    //         List<User> teachers = userRepository.findByRoleId(RoleConstants.TEACHER);
+    //         List<com.classroomapp.classroombackend.dto.UserDto> teacherDtos = teachers.stream()
+    //             .map(user -> {
+    //                 com.classroomapp.classroombackend.dto.UserDto dto = new com.classroomapp.classroombackend.dto.UserDto();
+    //                 dto.setId(user.getId());
+    //                 dto.setUsername(user.getUsername());
+    //                 dto.setEmail(user.getEmail());
+    //                 dto.setFullName(user.getFullName());
+    //                 dto.setRoleId(user.getRoleId());
+    //                 dto.setStatus(user.getStatus());
+    //                 return dto;
+    //             })
+    //             .collect(Collectors.toList());
 
-            System.out.println("Found " + teacherDtos.size() + " teachers");
-            return ResponseEntity.ok(teacherDtos);
-        } catch (Exception e) {
-            System.err.println("Error fetching teachers: " + e.getMessage());
-            e.printStackTrace();
-            // Return empty list to prevent frontend crash
-            return ResponseEntity.ok(new ArrayList<>());
-        }
-    }
+    //         System.out.println("Found " + teacherDtos.size() + " teachers");
+    //         return ResponseEntity.ok(teacherDtos);
+    //     } catch (Exception e) {
+    //         System.err.println("Error fetching teachers: " + e.getMessage());
+    //         e.printStackTrace();
+    //         // Return empty list to prevent frontend crash
+    //         return ResponseEntity.ok(new ArrayList<>());
+    //     }
+    // }
     
     // Note: Removed duplicate endpoints for /classrooms/student/{studentId} and /classrooms/teacher/{teacherId}
     // These are already handled by ClassroomController at /api/classrooms/student/{studentId} and /api/classrooms/teacher/{teacherId}

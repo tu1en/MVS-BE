@@ -109,6 +109,16 @@ public interface AccountantEvidenceService {
      * @return list of evidence DTOs
      */
     List<ExplanationEvidenceDto> getEvidenceByCategory(String category);
+
+    /**
+     * Get evidence files reviewed by the current accountant
+     */
+    List<ExplanationEvidenceDto> getReviewedByMe(Long accountantId);
+
+    /**
+     * Get all reviewed evidence files (regardless of reviewer)
+     */
+    List<ExplanationEvidenceDto> getAllReviewed();
     
     /**
      * Delete evidence uploaded by accountant

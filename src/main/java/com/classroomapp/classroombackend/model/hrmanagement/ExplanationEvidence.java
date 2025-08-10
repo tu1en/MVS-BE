@@ -79,6 +79,10 @@ public class ExplanationEvidence {
     @Column(name = "verified_by")
     private Long verifiedBy;
 
+  // Who uploaded this evidence (distinct from who reviewed it)
+  @Column(name = "uploaded_by")
+  private Long uploadedBy;
+
     @Column(name = "upload_ip", length = 45)
     private String uploadIp;
 

@@ -76,7 +76,7 @@ public class CourseTemplateSeeder implements CommandLineRunner {
             
             // Seed data
             seedRooms(); // Create rooms first
-            List<CourseTemplate> courseTemplates = seedCourseTemplates(createdBy);
+            List<CourseTemplate> courseTemplates = seedCourseTemplatesForHighSchool(createdBy);
             seedClasses(courseTemplates, createdBy);
             
             log.info("✅ Course Template Seeder completed successfully!");
@@ -122,35 +122,55 @@ public class CourseTemplateSeeder implements CommandLineRunner {
         log.info("✅ Created {} rooms", roomsData.size());
     }
     
-    private List<CourseTemplate> seedCourseTemplates(Long createdBy) {
-        log.info("🌱 Creating course templates with lesson schedules...");
-        
-        // Create Java Programming Course
-        CourseTemplate javaCourse = createJavaCourse(createdBy);
-        createJavaLessons(javaCourse);
-        
-        // Create Web Development Course  
-        CourseTemplate webCourse = createWebDevelopmentCourse(createdBy);
-        createWebDevelopmentLessons(webCourse);
-        
-        // Create Database Design Course
-        CourseTemplate dbCourse = createDatabaseCourse(createdBy);
-        createDatabaseLessons(dbCourse);
-        
-        // Create Mobile App Development Course
-        CourseTemplate mobileCourse = createMobileCourse(createdBy);
-        createMobileLessons(mobileCourse);
-        
-        // Create Data Structures & Algorithms Course
-        CourseTemplate dsaCourse = createDataStructuresCourse(createdBy);
-        createDataStructuresLessons(dsaCourse);
-        
-        List<CourseTemplate> courseTemplates = Arrays.asList(javaCourse, webCourse, dbCourse, mobileCourse, dsaCourse);
-        log.info("📊 Created {} course templates with lesson schedules", courseTemplates.size());
-        
-        return courseTemplates;
+    private List<CourseTemplate> seedCourseTemplatesForHighSchool(Long createdBy) {
+        log.info("🌱 Creating high-school course templates (Toán/Lý/Hóa/Văn/Anh/Sinh)...");
+        CourseTemplate toan = createSimpleCourse("Toán Nâng cao 10-12", "Toán", 16, createdBy);
+        CourseTemplate ly = createSimpleCourse("Vật lý Chuyên đề", "Vật lý", 14, createdBy);
+        CourseTemplate hoa = createSimpleCourse("Hóa học Trọng tâm", "Hóa học", 14, createdBy);
+        CourseTemplate van = createSimpleCourse("Ngữ văn - Đọc hiểu & Nghị luận", "Ngữ văn", 12, createdBy);
+        CourseTemplate anh = createSimpleCourse("Tiếng Anh - Grammar & Reading", "Tiếng Anh", 12, createdBy);
+        CourseTemplate sinh = createSimpleCourse("Sinh học - Di truyền & Sinh thái", "Sinh học", 12, createdBy);
+
+        // Tạo bài học 120' mỗi tuần
+        for (CourseTemplate ct : Arrays.asList(toan, ly, hoa, van, anh, sinh)) {
+            createWeeklyLessons(ct, ct.getTotalWeeks());
+        }
+        return Arrays.asList(toan, ly, hoa, van, anh, sinh);
+    }
+
+    private CourseTemplate createSimpleCourse(String name, String subject, int weeks, Long createdBy) {
+        CourseTemplate course = new CourseTemplate();
+        course.setName(name);
+        course.setDescription(name + " dành cho học sinh cấp 3, bám sát chương trình và luyện đề.");
+        course.setSubject(subject);
+        course.setTotalWeeks(weeks);
+        course.setCreatedBy(createdBy);
+        course.setStatus(TemplateStatus.ACTIVE);
+        course.setIsActive(true);
+        course.setIsPublic(true);
+        course.setEnrollmentFee(new BigDecimal("0"));
+        course.setMaxStudentsPerTemplate(35);
+        return courseTemplateRepository.save(course);
+    }
+
+    private void createWeeklyLessons(CourseTemplate course, int weeks) {
+        for (int w = 1; w <= weeks; w++) {
+            LessonTemplate lesson = new LessonTemplate();
+            lesson.setCourseTemplate(course);
+            lesson.setWeekNumber(w);
+            lesson.setTopicName("Tuần " + w + " - Bài học chủ đề");
+            lesson.setLessonType("Lý thuyết");
+            lesson.setObjectives("Củng cố kiến thức trọng tâm tuần " + w);
+            lesson.setRequirements("Hoàn thành bài tập tuần " + w);
+            lesson.setPreparations("Ôn lại bài tuần trước");
+            lesson.setDurationMinutes(120);
+            lesson.setSortOrder(w - 1);
+            lessonTemplateRepository.save(lesson);
+        }
     }
     
+    // Legacy methods kept for reference (not used with high-school seeding)
+    @SuppressWarnings("unused")
     private CourseTemplate createJavaCourse(Long createdBy) {
         CourseTemplate course = new CourseTemplate();
         course.setName("Java Programming Fundamentals");
@@ -167,6 +187,7 @@ public class CourseTemplateSeeder implements CommandLineRunner {
         return courseTemplateRepository.save(course);
     }
     
+    @SuppressWarnings("unused")
     private CourseTemplate createWebDevelopmentCourse(Long createdBy) {
         CourseTemplate course = new CourseTemplate();
         course.setName("Full-Stack Web Development");
@@ -183,6 +204,7 @@ public class CourseTemplateSeeder implements CommandLineRunner {
         return courseTemplateRepository.save(course);
     }
     
+    @SuppressWarnings("unused")
     private CourseTemplate createDatabaseCourse(Long createdBy) {
         CourseTemplate course = new CourseTemplate();
         course.setName("Database Design & SQL");
@@ -199,6 +221,7 @@ public class CourseTemplateSeeder implements CommandLineRunner {
         return courseTemplateRepository.save(course);
     }
     
+    @SuppressWarnings("unused")
     private CourseTemplate createMobileCourse(Long createdBy) {
         CourseTemplate course = new CourseTemplate();
         course.setName("Mobile App Development");
@@ -215,6 +238,7 @@ public class CourseTemplateSeeder implements CommandLineRunner {
         return courseTemplateRepository.save(course);
     }
     
+    @SuppressWarnings("unused")
     private CourseTemplate createDataStructuresCourse(Long createdBy) {
         CourseTemplate course = new CourseTemplate();
         course.setName("Data Structures & Algorithms");
@@ -231,6 +255,7 @@ public class CourseTemplateSeeder implements CommandLineRunner {
         return courseTemplateRepository.save(course);
     }
     
+    @SuppressWarnings("unused")
     private void createJavaLessons(CourseTemplate course) {
         List<LessonData> lessons = Arrays.asList(
             new LessonData(1, "Java Introduction & Setup", "Theory", "Introduction to Java programming, JDK installation, IDE setup", "Computer with internet", "Install JDK and IDE", 120),
@@ -254,6 +279,7 @@ public class CourseTemplateSeeder implements CommandLineRunner {
         createLessonsForCourse(course, lessons);
     }
     
+    @SuppressWarnings("unused")
     private void createWebDevelopmentLessons(CourseTemplate course) {
         List<LessonData> lessons = Arrays.asList(
             new LessonData(1, "Web Development Introduction", "Theory", "Web technologies overview, client-server architecture", "Basic computer skills", "Set up development environment", 120),
@@ -281,6 +307,7 @@ public class CourseTemplateSeeder implements CommandLineRunner {
         createLessonsForCourse(course, lessons);
     }
     
+    @SuppressWarnings("unused")
     private void createDatabaseLessons(CourseTemplate course) {
         List<LessonData> lessons = Arrays.asList(
             new LessonData(1, "Database Concepts", "Theory", "DBMS introduction, relational model, ACID properties", "Basic computer skills", "Understand database fundamentals", 120),
@@ -300,6 +327,7 @@ public class CourseTemplateSeeder implements CommandLineRunner {
         createLessonsForCourse(course, lessons);
     }
     
+    @SuppressWarnings("unused")
     private void createMobileLessons(CourseTemplate course) {
         List<LessonData> lessons = Arrays.asList(
             new LessonData(1, "Mobile Development Overview", "Theory", "Mobile platforms, native vs cross-platform", "Programming basics", "Choose development approach", 120),
@@ -325,6 +353,7 @@ public class CourseTemplateSeeder implements CommandLineRunner {
         createLessonsForCourse(course, lessons);
     }
     
+    @SuppressWarnings("unused")
     private void createDataStructuresLessons(CourseTemplate course) {
         List<LessonData> lessons = Arrays.asList(
             new LessonData(1, "Algorithm Analysis", "Theory", "Big O notation, time/space complexity", "Programming basics", "Analyze algorithm efficiency", 120),
@@ -437,7 +466,7 @@ public class CourseTemplateSeeder implements CommandLineRunner {
         }
         
         // Create class lessons based on templates
-        LocalDate currentDate = classEntity.getStartDate();
+        // LocalDate currentDate = classEntity.getStartDate(); // not used
         
         for (LessonTemplate lessonTemplate : lessonTemplates) {
             ClassLesson classLesson = new ClassLesson();
@@ -490,7 +519,6 @@ public class CourseTemplateSeeder implements CommandLineRunner {
     }
     
     private ClassEntity.ClassStatus getRandomClassStatus() {
-        ClassEntity.ClassStatus[] statuses = ClassEntity.ClassStatus.values();
         // Weight towards ACTIVE classes
         if (random.nextDouble() < 0.6) {
             return ClassEntity.ClassStatus.ACTIVE;

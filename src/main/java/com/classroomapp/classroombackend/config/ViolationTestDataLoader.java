@@ -18,6 +18,8 @@ import com.classroomapp.classroombackend.model.hrmanagement.StaffAttendanceLog;
 import com.classroomapp.classroombackend.model.hrmanagement.UserShiftAssignment;
 import com.classroomapp.classroombackend.model.hrmanagement.WorkShift;
 import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.model.Contract;
+import com.classroomapp.classroombackend.repository.ContractRepository;
 import com.classroomapp.classroombackend.repository.hrmanagement.StaffAttendanceLogRepository;
 import com.classroomapp.classroombackend.repository.hrmanagement.UserShiftAssignmentRepository;
 import com.classroomapp.classroombackend.repository.hrmanagement.WorkShiftRepository;
@@ -48,19 +50,20 @@ public class ViolationTestDataLoader implements CommandLineRunner {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private ContractRepository contractRepository;
+
     @Override
     @Transactional
     public void run(String... args) throws Exception {
         logger.info("Starting ViolationTestDataLoader...");
 
-        // Only load if no test data exists
-        if (workShiftRepository.count() > 0) {
-            logger.info("Work shifts already exist, skipping violation test data loading");
-            return;
-        }
+        // Always ensure test users and contracts exist
+        logger.info("Ensuring test users and contracts exist...");
 
         try {
             createTestUsers();
+            ensureContractsExist();
             createWorkShifts();
             createShiftAssignments();
             createAttendanceLogs();
@@ -87,6 +90,9 @@ public class ViolationTestDataLoader implements CommandLineRunner {
             teacher1.setEligibleForShiftAssignment(true);
             userRepository.save(teacher1);
             logger.info("Created teacher: {}", teacher1.getFullName());
+            
+            // Create contract for John Smith
+            createTeacherContract(teacher1, "Mathematics");
         }
 
         if (userRepository.findByEmail("jane.teacher@mvs.edu").isEmpty()) {
@@ -102,6 +108,9 @@ public class ViolationTestDataLoader implements CommandLineRunner {
             teacher2.setEligibleForShiftAssignment(true);
             userRepository.save(teacher2);
             logger.info("Created teacher: {}", teacher2.getFullName());
+            
+            // Create contract for Jane Doe
+            createTeacherContract(teacher2, "Mathematics");
         }
 
         if (userRepository.findByEmail("bob.accountant@mvs.edu").isEmpty()) {
@@ -117,7 +126,44 @@ public class ViolationTestDataLoader implements CommandLineRunner {
             accountant.setEligibleForShiftAssignment(true);
             userRepository.save(accountant);
             logger.info("Created accountant: {}", accountant.getFullName());
+            
+            // Create contract for Bob Wilson
+            createStaffContract(accountant, "Finance", "Accountant");
         }
+    }
+
+    private void ensureContractsExist() {
+        logger.info("Ensuring contracts exist for all test users...");
+        
+        // Check and create contracts for existing users
+        User johnTeacher = userRepository.findByEmail("john.teacher@mvs.edu").orElse(null);
+        if (johnTeacher != null) {
+            boolean hasContract = contractRepository.findActiveContractByUserId(johnTeacher.getId()).isPresent();
+            if (!hasContract) {
+                logger.info("Creating missing contract for: {}", johnTeacher.getFullName());
+                createTeacherContract(johnTeacher, "Mathematics");
+            }
+        }
+        
+        User janeTeacher = userRepository.findByEmail("jane.teacher@mvs.edu").orElse(null);
+        if (janeTeacher != null) {
+            boolean hasContract = contractRepository.findActiveContractByUserId(janeTeacher.getId()).isPresent();
+            if (!hasContract) {
+                logger.info("Creating missing contract for: {}", janeTeacher.getFullName());
+                createTeacherContract(janeTeacher, "Mathematics");
+            }
+        }
+        
+        User bobAccountant = userRepository.findByEmail("bob.accountant@mvs.edu").orElse(null);
+        if (bobAccountant != null) {
+            boolean hasContract = contractRepository.findActiveContractByUserId(bobAccountant.getId()).isPresent();
+            if (!hasContract) {
+                logger.info("Creating missing contract for: {}", bobAccountant.getFullName());
+                createStaffContract(bobAccountant, "Finance", "Accountant");
+            }
+        }
+        
+        logger.info("Contract verification completed.");
     }
 
     private void createWorkShifts() {
@@ -286,5 +332,59 @@ public class ViolationTestDataLoader implements CommandLineRunner {
         logger.info("POST /api/admin/detect-violations?date=2025-08-04");
         logger.info("Or use the service method:");
         logger.info("violationDetectionService.detectDailyViolations(LocalDate.of(2025, 8, 4))");
+    }
+
+    /**
+     * Create a contract for a teacher
+     */
+    private void createTeacherContract(User teacher, String subject) {
+        try {
+            Contract contract = new Contract();
+            contract.setUserId(teacher.getId());
+            contract.setFullName(teacher.getFullName());
+            contract.setEmail(teacher.getEmail());
+            contract.setPhoneNumber("09" + (int)(10000000 + Math.random()*89999999));
+            contract.setContractType("TEACHER");
+            contract.setPosition("Giáo viên " + subject);
+            contract.setDepartment(subject);
+            contract.setSalary(15000000.0 + (int)(Math.random()*6000000)); // 15-21 million VND
+            contract.setWorkingHours("ca sáng (07:30-11:30)");
+            contract.setStartDate(LocalDate.now().minusYears(1));
+            contract.setEndDate(LocalDate.now().plusYears(2));
+            contract.setStatus("ACTIVE");
+            contract.setSubject(subject);
+            contract.setEducationLevel("10,11,12");
+            contractRepository.save(contract);
+            logger.info("Created contract for teacher: {} - Salary: {} VND", teacher.getFullName(), contract.getSalary());
+        } catch (Exception e) {
+            logger.warn("Could not create contract for teacher {}: {}", teacher.getFullName(), e.getMessage());
+        }
+    }
+
+    /**
+     * Create a contract for staff member
+     */
+    private void createStaffContract(User staff, String department, String position) {
+        try {
+            Contract contract = new Contract();
+            contract.setUserId(staff.getId());
+            contract.setFullName(staff.getFullName());
+            contract.setEmail(staff.getEmail());
+            contract.setPhoneNumber("09" + (int)(10000000 + Math.random()*89999999));
+            contract.setContractType("STAFF");
+            contract.setPosition(position);
+            contract.setDepartment(department);
+            contract.setSalary(12000000.0 + (int)(Math.random()*5000000)); // 12-17 million VND
+            contract.setWorkingHours("ca hành chính (08:00-16:00)");
+            contract.setStartDate(LocalDate.now().minusYears(1));
+            contract.setEndDate(LocalDate.now().plusYears(2));
+            contract.setStatus("ACTIVE");
+            contract.setSubject(null); // Staff don't have subjects
+            contract.setEducationLevel(null);
+            contractRepository.save(contract);
+            logger.info("Created contract for staff: {} - Salary: {} VND", staff.getFullName(), contract.getSalary());
+        } catch (Exception e) {
+            logger.warn("Could not create contract for staff {}: {}", staff.getFullName(), e.getMessage());
+        }
     }
 }

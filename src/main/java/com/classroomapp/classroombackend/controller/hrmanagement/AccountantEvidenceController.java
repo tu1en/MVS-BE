@@ -7,12 +7,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,6 +33,13 @@ import lombok.extern.slf4j.Slf4j;
  */
 @RestController
 @RequestMapping("/api/accountant/evidence")
+@CrossOrigin(
+    origins = {"http://localhost:3000", "http://localhost:3001"},
+    allowedHeaders = "*",
+    methods = { RequestMethod.GET, RequestMethod.POST, RequestMethod.PATCH, RequestMethod.DELETE, RequestMethod.OPTIONS },
+    allowCredentials = "true",
+    maxAge = 3600
+)
 @RequiredArgsConstructor
 @Slf4j
 public class AccountantEvidenceController {
@@ -117,6 +126,31 @@ public class AccountantEvidenceController {
         log.info("Getting evidence files pending accountant review");
         
         List<ExplanationEvidenceDto> evidenceList = accountantEvidenceService.getPendingAccountantReview();
+        return ResponseEntity.ok(evidenceList);
+    }
+
+    /**
+     * Get evidence files reviewed by current accountant
+     * GET /api/accountant/evidence/reviewed-by-me
+     */
+    @GetMapping("/reviewed-by-me")
+    @PreAuthorize("hasRole('ACCOUNTANT')")
+    public ResponseEntity<List<ExplanationEvidenceDto>> getReviewedByMe() {
+        Long accountantId = securityUtils.getCurrentUserIdOrDefault();
+        log.info("Getting evidence reviewed by accountant: {}", accountantId);
+        List<ExplanationEvidenceDto> evidenceList = accountantEvidenceService.getReviewedByMe(accountantId);
+        return ResponseEntity.ok(evidenceList);
+    }
+
+    /**
+     * Get all reviewed evidence (read-only overview)
+     * GET /api/accountant/evidence/all-reviewed
+     */
+    @GetMapping("/all-reviewed")
+    @PreAuthorize("hasRole('ACCOUNTANT')")
+    public ResponseEntity<List<ExplanationEvidenceDto>> getAllReviewed() {
+        log.info("Getting all reviewed evidence for accountant overview");
+        List<ExplanationEvidenceDto> evidenceList = accountantEvidenceService.getAllReviewed();
         return ResponseEntity.ok(evidenceList);
     }
     
