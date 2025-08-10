@@ -10,6 +10,7 @@ import com.classroomapp.classroombackend.repository.usermanagement.UserRepositor
 import com.classroomapp.classroombackend.service.ContractService;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
 import com.classroomapp.classroombackend.service.InterviewScheduleService;
+import com.classroomapp.classroombackend.service.UserService;
 import com.classroomapp.classroombackend.util.TopCVCalculation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +35,7 @@ public class ContractServiceImpl implements ContractService {
     private final ContractRepository contractRepository;
     private final UserRepository userRepository;
     private final InterviewScheduleService interviewScheduleService;
+    private final UserService userService;
 
     @Override
     public List<ContractDto> getContractsByType(String contractType) {
@@ -140,6 +142,19 @@ public class ContractServiceImpl implements ContractService {
         
         Contract savedContract = contractRepository.save(contract);
         log.info("Contract created successfully with id: {}", savedContract.getId());
+        
+        // Automatically activate user account and assign role based on contract type
+        try {
+            if (savedContract.getEmail() != null && !savedContract.getEmail().trim().isEmpty()) {
+                userService.activateUserAndAssignRole(savedContract.getEmail(), savedContract.getContractType());
+                log.info("User account activated and role assigned for email: {} with contract type: {}", 
+                        savedContract.getEmail(), savedContract.getContractType());
+            }
+        } catch (Exception e) {
+            log.warn("Failed to activate user account for email: {}. Error: {}", 
+                    savedContract.getEmail(), e.getMessage());
+            // Continue execution - contract creation should not fail if user activation fails
+        }
         
         return convertToDto(savedContract);
     }
