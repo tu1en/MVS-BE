@@ -90,8 +90,10 @@ public class DatabaseEncodingFixer implements CommandLineRunner {
             // Fix users table
             fixTableEncoding(conn, "users", new String[]{"full_name", "email"}, "user_id");
             
+            // Fix contracts table - Vietnamese character encoding
+            fixTableEncoding(conn, "contracts", new String[]{"full_name", "email", "position", "address", "qualification", "subject", "contract_terms", "comments"}, "id");
+            
             // Fix other tables if needed
-            // fixTableEncoding(conn, "contracts", new String[]{"contract_name", "description"}, "contract_id");
             // fixTableEncoding(conn, "employees", new String[]{"employee_name", "position"}, "employee_id");
             
         } catch (SQLException e) {
@@ -218,7 +220,7 @@ public class DatabaseEncodingFixer implements CommandLineRunner {
                         .replace("á»", "ọ")
                         .replace("Ã´", "ô")
                         .replace("á»'", "ố")
-                        .replace("á»"", "ồ")
+                        .replace("á»\"", "ồ")
                         .replace("á»•", "ổ")
                         .replace("á»—", "ỗ")
                         .replace("á»™", "ộ")
