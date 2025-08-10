@@ -28,6 +28,9 @@ public class JobPosition {
     @Column(name = "quantity", nullable = false)
     private Integer quantity = 1;
 
+    @Column(name = "contract_type", columnDefinition = "NVARCHAR(50)")
+    private String contractType = "FULL_TIME"; // FULL_TIME, PART_TIME
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "recruitment_plan_id", nullable = false)
     private RecruitmentPlan recruitmentPlan;

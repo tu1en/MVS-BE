@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 public class ContractDto {
     private Long id;
     private Long userId;
+    private String contractId;
     private String fullName;
     private String email;
     private String phoneNumber;
@@ -29,6 +30,12 @@ public class ContractDto {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String offer; // Thông tin offer từ Quản Lý Offer
+    
+    // --- OFFER MANAGEMENT FIELDS ---
+    private String comments; // Changed from evaluation to comments (Nhận xét từ Quản lý Offer)
+    private Long grossSalary; // Lương GROSS từ Quản lý Offer
+    private Long netSalary; // Lương NET từ Quản lý Offer  
+    private Long hourlySalary; // Lương theo giờ từ Quản lý Offer
 
     // --- CUSTOM FIELDS FOR VIETNAMESE CONTRACT ---
     private LocalDate birthDate;
@@ -36,5 +43,10 @@ public class ContractDto {
     private String address;
     private String qualification;
     private String subject;
-    private String educationLevel;
+    private String classLevel; // Changed from educationLevel to classLevel (Lớp học)
+    
+    // --- NEW WORKING SCHEDULE FIELDS ---
+    private String workSchedule; // Thời gian làm việc (combined schedule description)
+    private String workShifts; // Ca làm việc (morning, afternoon, evening)
+    private String workDays; // Ngày trong tuần (Monday, Tuesday, etc.)
 }

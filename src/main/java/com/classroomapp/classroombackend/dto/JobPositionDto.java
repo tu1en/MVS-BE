@@ -9,6 +9,7 @@ public class JobPositionDto {
     private String description;
     private String salaryRange;
     private Integer quantity;
+    private String contractType;
     private Long recruitmentPlanId;
     private String recruitmentPlanStatus; // Thêm field này để frontend biết trạng thái
 } 

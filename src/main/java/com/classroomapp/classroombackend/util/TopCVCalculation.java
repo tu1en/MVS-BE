@@ -114,6 +114,29 @@ public class TopCVCalculation {
         BigDecimal netSalary = grossSalary.subtract(insuranceDetails.getTotalEmployeeContribution()).subtract(personalIncomeTax);
         result.setNetSalary(netSalary);
         
+        // Round all monetary values to integers for consistency
+        result.setGrossSalary(result.getGrossSalary().setScale(0, RoundingMode.HALF_UP));
+        result.setNetSalary(result.getNetSalary().setScale(0, RoundingMode.HALF_UP));
+        result.setIncomeBeforeTax(result.getIncomeBeforeTax().setScale(0, RoundingMode.HALF_UP));
+        result.setPersonalIncomeTax(result.getPersonalIncomeTax().setScale(0, RoundingMode.HALF_UP));
+        result.setDependentDeductions(result.getDependentDeductions().setScale(0, RoundingMode.HALF_UP));
+        result.setTaxableIncome(result.getTaxableIncome().setScale(0, RoundingMode.HALF_UP));
+        
+        // Round insurance details
+        if (result.getInsuranceDetails() != null) {
+            InsuranceDetails insurance = result.getInsuranceDetails();
+            insurance.setSocialInsuranceEmployee(insurance.getSocialInsuranceEmployee().setScale(0, RoundingMode.HALF_UP));
+            insurance.setHealthInsuranceEmployee(insurance.getHealthInsuranceEmployee().setScale(0, RoundingMode.HALF_UP));
+            insurance.setUnemploymentInsuranceEmployee(insurance.getUnemploymentInsuranceEmployee().setScale(0, RoundingMode.HALF_UP));
+            insurance.setTotalEmployeeContribution(insurance.getTotalEmployeeContribution().setScale(0, RoundingMode.HALF_UP));
+            insurance.setSocialInsuranceEmployer(insurance.getSocialInsuranceEmployer().setScale(0, RoundingMode.HALF_UP));
+            insurance.setHealthInsuranceEmployer(insurance.getHealthInsuranceEmployer().setScale(0, RoundingMode.HALF_UP));
+            insurance.setUnemploymentInsuranceEmployer(insurance.getUnemploymentInsuranceEmployer().setScale(0, RoundingMode.HALF_UP));
+            insurance.setWorkAccidentInsurance(insurance.getWorkAccidentInsurance().setScale(0, RoundingMode.HALF_UP));
+            insurance.setTotalEmployerContribution(insurance.getTotalEmployerContribution().setScale(0, RoundingMode.HALF_UP));
+            insurance.setTotalInsuranceContribution(insurance.getTotalInsuranceContribution().setScale(0, RoundingMode.HALF_UP));
+        }
+        
         return result;
     }
     
@@ -151,35 +174,82 @@ public class TopCVCalculation {
      * @return SalaryCalculationResult with detailed breakdown
      */
     public static SalaryCalculationResult calculateFromNetToGross(BigDecimal netSalary, int numberOfDependents) {
-        // This is a more complex calculation that requires iteration
-        // For simplicity, we'll use an approximation method
+        // Use a more direct calculation approach
+        // Net = Gross - Employee Insurance - Tax
+        // Net = Gross - (Gross * 0.105) - Tax
+        // Net = Gross * (1 - 0.105) - Tax
+        // Net = Gross * 0.895 - Tax
         
-        BigDecimal estimatedGrossSalary = netSalary.multiply(new BigDecimal("1.5")); // Rough estimate
-        BigDecimal tolerance = new BigDecimal("1000"); // 1000 VND tolerance
-        BigDecimal maxIterations = new BigDecimal("100");
-        BigDecimal iteration = BigDecimal.ZERO;
+        // First, estimate gross without tax consideration
+        BigDecimal estimatedGrossWithoutTax = netSalary.divide(new BigDecimal("0.895"), 0, RoundingMode.HALF_UP);
         
-        while (iteration.compareTo(maxIterations) < 0) {
-            SalaryCalculationResult tempResult = calculateFromGrossToNet(estimatedGrossSalary, numberOfDependents);
-            BigDecimal calculatedNet = tempResult.getNetSalary();
-            
-            BigDecimal difference = calculatedNet.subtract(netSalary).abs();
-            if (difference.compareTo(tolerance) <= 0) {
-                return tempResult;
-            }
-            
-            // Adjust gross salary based on difference
-            if (calculatedNet.compareTo(netSalary) > 0) {
-                estimatedGrossSalary = estimatedGrossSalary.subtract(difference.multiply(new BigDecimal("1.2")));
-            } else {
-                estimatedGrossSalary = estimatedGrossSalary.add(difference.multiply(new BigDecimal("1.2")));
-            }
-            
-            iteration = iteration.add(BigDecimal.ONE);
+        // Calculate tax for this estimated gross
+        SalaryCalculationResult tempResult = calculateFromGrossToNet(estimatedGrossWithoutTax, numberOfDependents);
+        BigDecimal calculatedNet = tempResult.getNetSalary();
+        
+        // If the calculated net is close to target net, return the result
+        BigDecimal difference = calculatedNet.subtract(netSalary).abs();
+        if (difference.compareTo(new BigDecimal("10000")) <= 0) {
+            return tempResult;
         }
         
-        // If iteration doesn't converge, return the last calculated result
-        return calculateFromGrossToNet(estimatedGrossSalary, numberOfDependents);
+        // Otherwise, use binary search for more accurate result
+        BigDecimal low = netSalary;
+        BigDecimal high = estimatedGrossWithoutTax.multiply(new BigDecimal("1.5"));
+        BigDecimal bestGross = estimatedGrossWithoutTax;
+        BigDecimal bestDifference = difference;
+        
+        for (int i = 0; i < 20; i++) {
+            BigDecimal mid = low.add(high).divide(new BigDecimal("2"), 0, RoundingMode.HALF_UP);
+            SalaryCalculationResult midResult = calculateFromGrossToNet(mid, numberOfDependents);
+            BigDecimal midNet = midResult.getNetSalary();
+            BigDecimal midDifference = midNet.subtract(netSalary).abs();
+            
+            if (midDifference.compareTo(bestDifference) < 0) {
+                bestDifference = midDifference;
+                bestGross = mid;
+            }
+            
+            if (midNet.compareTo(netSalary) > 0) {
+                high = mid;
+            } else {
+                low = mid;
+            }
+            
+            // If we're close enough, break
+            if (midDifference.compareTo(new BigDecimal("1000")) <= 0) {
+                bestGross = mid;
+                break;
+            }
+        }
+        
+        // Ensure the result has integer values for better user experience
+        SalaryCalculationResult result = calculateFromGrossToNet(bestGross, numberOfDependents);
+        
+        // Round all monetary values to integers
+        result.setGrossSalary(result.getGrossSalary().setScale(0, RoundingMode.HALF_UP));
+        result.setNetSalary(result.getNetSalary().setScale(0, RoundingMode.HALF_UP));
+        result.setIncomeBeforeTax(result.getIncomeBeforeTax().setScale(0, RoundingMode.HALF_UP));
+        result.setPersonalIncomeTax(result.getPersonalIncomeTax().setScale(0, RoundingMode.HALF_UP));
+        result.setDependentDeductions(result.getDependentDeductions().setScale(0, RoundingMode.HALF_UP));
+        result.setTaxableIncome(result.getTaxableIncome().setScale(0, RoundingMode.HALF_UP));
+        
+        // Round insurance details
+        if (result.getInsuranceDetails() != null) {
+            InsuranceDetails insurance = result.getInsuranceDetails();
+            insurance.setSocialInsuranceEmployee(insurance.getSocialInsuranceEmployee().setScale(0, RoundingMode.HALF_UP));
+            insurance.setHealthInsuranceEmployee(insurance.getHealthInsuranceEmployee().setScale(0, RoundingMode.HALF_UP));
+            insurance.setUnemploymentInsuranceEmployee(insurance.getUnemploymentInsuranceEmployee().setScale(0, RoundingMode.HALF_UP));
+            insurance.setTotalEmployeeContribution(insurance.getTotalEmployeeContribution().setScale(0, RoundingMode.HALF_UP));
+            insurance.setSocialInsuranceEmployer(insurance.getSocialInsuranceEmployer().setScale(0, RoundingMode.HALF_UP));
+            insurance.setHealthInsuranceEmployer(insurance.getHealthInsuranceEmployer().setScale(0, RoundingMode.HALF_UP));
+            insurance.setUnemploymentInsuranceEmployer(insurance.getUnemploymentInsuranceEmployer().setScale(0, RoundingMode.HALF_UP));
+            insurance.setWorkAccidentInsurance(insurance.getWorkAccidentInsurance().setScale(0, RoundingMode.HALF_UP));
+            insurance.setTotalEmployerContribution(insurance.getTotalEmployerContribution().setScale(0, RoundingMode.HALF_UP));
+            insurance.setTotalInsuranceContribution(insurance.getTotalInsuranceContribution().setScale(0, RoundingMode.HALF_UP));
+        }
+        
+        return result;
     }
     
     /**

@@ -16,4 +16,8 @@ public interface RecruitmentApplicationRepository extends JpaRepository<Recruitm
     @Modifying
     @Query("DELETE FROM RecruitmentApplication ra WHERE ra.jobPosition.id IN (SELECT jp.id FROM JobPosition jp WHERE jp.recruitmentPlan.id = :recruitmentPlanId)")
     void deleteByJobPosition_RecruitmentPlanId(@Param("recruitmentPlanId") Long recruitmentPlanId);
+    
+    // Kiểm tra email đã tồn tại trong hệ thống
+    boolean existsByEmail(String email);
+    boolean existsByPhoneNumber(String phoneNumber);
 } 

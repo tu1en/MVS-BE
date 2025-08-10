@@ -2,6 +2,7 @@ package com.classroomapp.classroombackend.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -24,4 +25,6 @@ public class InterviewScheduleDto {
     private String result;
     private String offer;
     private String evaluation;
+    private String contractType;
+    private BigDecimal hourlyRate;
 } 
