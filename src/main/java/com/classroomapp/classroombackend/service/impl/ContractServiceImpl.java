@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import java.util.stream.Collectors;
@@ -607,6 +608,9 @@ public class ContractServiceImpl implements ContractService {
     }
 
     private ContractDto convertToDto(Contract contract) {
+        // Auto-update contract status based on end date before converting
+        updateContractStatusBasedOnEndDate(contract);
+        
         ContractDto dto = new ContractDto();
         dto.setId(contract.getId());
         dto.setUserId(contract.getUserId());
@@ -646,6 +650,44 @@ public class ContractServiceImpl implements ContractService {
         dto.setWorkShifts(contract.getWorkShifts());
         dto.setWorkDays(contract.getWorkDays());
         return dto;
+    }
+    
+    /**
+     * Auto-update contract status based on end date
+     * - EXPIRED: past end date
+     * - NEAR_EXPIRY: within 30 days of end date
+     * - ACTIVE: more than 30 days until end date
+     */
+    private void updateContractStatusBasedOnEndDate(Contract contract) {
+        if (contract.getEndDate() == null) {
+            return; // Skip if no end date
+        }
+        
+        LocalDate today = LocalDate.now();
+        LocalDate endDate = contract.getEndDate();
+        long daysUntilExpiry = ChronoUnit.DAYS.between(today, endDate);
+        
+        String currentStatus = contract.getStatus();
+        String newStatus = null;
+        
+        if (daysUntilExpiry < 0) {
+            // Contract has expired
+            newStatus = "EXPIRED";
+        } else if (daysUntilExpiry <= 30) {
+            // Contract is near expiry (30 days or less)
+            newStatus = "NEAR_EXPIRY";
+        } else {
+            // Contract is still active
+            newStatus = "ACTIVE";
+        }
+        
+        // Update status if it has changed
+        if (!newStatus.equals(currentStatus)) {
+            log.info("Auto-updating contract {} status from {} to {} (days until expiry: {})", 
+                    contract.getContractId(), currentStatus, newStatus, daysUntilExpiry);
+            contract.setStatus(newStatus);
+            contractRepository.save(contract);
+        }
     }
 
     @Override
