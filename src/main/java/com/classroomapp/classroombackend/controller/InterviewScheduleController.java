@@ -318,7 +318,7 @@ public class InterviewScheduleController {
                                 userService.createUserWithoutContract(interview.getApplicantEmail(), interview.getApplicantName(), null);
                             }
 
-                            // Cập nhật trạng thái thành APPROVED (không phải COMPLETED)
+                            // Cập nhật trạng thái cuối cùng APPROVED
                             interviewService.updateStatus(id, "APPROVED", body.getResult());
                             try {
                                 // Đánh dấu đơn ứng tuyển là HIRED

@@ -320,8 +320,13 @@ seedEvidenceTemplates();
         seedClassroomEnrollments();
         log.info("============== Classroom Enrollment Seeding Complete ==============");
 
-        // Luôn seed lại JobPosition nếu bảng rỗng
+        // Đảm bảo dữ liệu tuyển dụng luôn sẵn sàng ngay cả khi user đã tồn tại từ trước
+        // 1) Kế hoạch tuyển dụng
+        seedRecruitmentPlans();
+        // 2) Vị trí tuyển dụng (phụ thuộc kế hoạch)
         seedJobPositions();
+        // 3) Đơn ứng tuyển (phụ thuộc vị trí)
+        seedRecruitmentApplications();
 
         // Seed thêm ứng viên nộp CV mẫu nếu chưa có đủ
         if (recruitmentApplicationRepository.count() < 20) {
@@ -1200,7 +1205,8 @@ seedEvidenceTemplates();
                 application.setPhoneNumber(applicants[i][2]);
                 application.setAddress(addresses[i % addresses.length]);
                 application.setCvUrl("/static/sample_cv/cv" + (i + 1) + ".pdf");
-                application.setStatus("PENDING");
+                // Mặc định PENDING; đặt một phần thành APPROVED để hiển thị ở tab "Lên lịch"
+                application.setStatus(i < 5 ? "APPROVED" : (i < 8 ? "PENDING" : "REJECTED"));
                 application.setCreatedAt(LocalDateTime.now().minusDays(i));
                 
                 // Đảm bảo có job position để gán
@@ -1208,7 +1214,7 @@ seedEvidenceTemplates();
                 application.setJobPosition(jobPosition);
                 
                 recruitmentApplicationRepository.save(application);
-                log.info("✅ Created application for {} applying to: {}", applicants[i][0], jobPosition.getTitle());
+                log.info("✅ Created application for {} applying to: {} (status={})", applicants[i][0], jobPosition.getTitle(), application.getStatus());
             }
             log.info("✅ Created {} sample recruitment applications with real names.", applicants.length);
         } else {
