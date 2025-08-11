@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.classroomapp.classroombackend.dto.ContractDto;
 import com.classroomapp.classroombackend.dto.ContractStatsDto;
 import com.classroomapp.classroombackend.dto.InterviewScheduleDto;
+import com.classroomapp.classroombackend.dto.RecruitmentApplicationDto;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
 import com.classroomapp.classroombackend.model.Contract;
 import com.classroomapp.classroombackend.model.usermanagement.User;
@@ -21,6 +22,7 @@ import com.classroomapp.classroombackend.repository.ContractRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.ContractService;
 import com.classroomapp.classroombackend.service.InterviewScheduleService;
+import com.classroomapp.classroombackend.service.RecruitmentApplicationService;
 import com.classroomapp.classroombackend.service.UserService;
 import com.classroomapp.classroombackend.util.TopCVCalculation;
 
@@ -36,6 +38,7 @@ public class ContractServiceImpl implements ContractService {
     private final ContractRepository contractRepository;
     private final UserRepository userRepository;
     private final InterviewScheduleService interviewScheduleService;
+    private final RecruitmentApplicationService recruitmentApplicationService;
     private final UserService userService;
 
     @Override
@@ -272,24 +275,26 @@ public class ContractServiceImpl implements ContractService {
 
     @Override
     public List<ContractDto> getCandidatesReadyForContract() {
-        log.info("Fetching candidates ready for contract creation");
+        log.info("🔧 FIXED: Fetching candidates ready for contract creation from recruitment applications with status HIRED");
         
-        // Lấy danh sách tất cả ứng viên đã được duyệt ở Quản Lý Offer
-        List<InterviewScheduleDto> approvedCandidates = interviewScheduleService.getAll().stream()
-                .filter(interview -> "APPROVED".equals(interview.getStatus()))
+        // 🔧 FIX: Use RecruitmentApplicationService instead of InterviewScheduleService
+        // Interview schedules with status "APPROVED" are deleted immediately after approval
+        // We need to get recruitment applications with status "HIRED" instead
+        List<RecruitmentApplicationDto> hiredCandidates = recruitmentApplicationService.getAllApplications().stream()
+                .filter(application -> "HIRED".equals(application.getStatus()))
                 .collect(Collectors.toList());
         
-        log.info("Found {} approved candidates from Offer Management", approvedCandidates.size());
+        log.info("🔧 FIXED: Found {} hired candidates from recruitment applications", hiredCandidates.size());
         
         // Lấy tất cả hợp đồng hiện tại
         List<Contract> allContracts = contractRepository.findAll();
         log.info("Found {} existing contracts", allContracts.size());
         
         // Lọc những người chưa có hợp đồng
-        List<ContractDto> candidates = approvedCandidates.stream()
-                .filter(interview -> {
+        List<ContractDto> candidates = hiredCandidates.stream()
+                .filter(application -> {
                     // Kiểm tra xem ứng viên đã có hợp đồng chưa
-                    String applicantEmail = interview.getApplicantEmail();
+                    String applicantEmail = application.getEmail();
                     log.info("Checking candidate email: '{}'", applicantEmail);
                     
                     if (applicantEmail == null || applicantEmail.trim().isEmpty()) {
@@ -307,58 +312,43 @@ public class ContractServiceImpl implements ContractService {
                     log.info("Candidate '{}' has contract: {}", applicantEmail, hasContract);
                     return !hasContract; // Chỉ lấy những người chưa có hợp đồng
                 })
-                .map(interview -> {
+                .map(application -> {
                     ContractDto candidate = new ContractDto();
                     
-                    // ✅ FIX: Sử dụng interview ID thay vì auto-generated userId
-                    candidate.setId(interview.getId()); // Interview ID để API có thể tìm đúng interview
-                    candidate.setUserId(interview.getId()); // Cũng set userId để tương thích
+                    // 🔧 FIX: Use recruitment application ID instead of interview ID
+                    candidate.setId(application.getId()); // Recruitment application ID
+                    candidate.setUserId(application.getId()); // Also set userId for compatibility
                     
-                    // Lấy thông tin cơ bản từ interview
-                    candidate.setFullName(interview.getApplicantName());
-                    candidate.setEmail(interview.getApplicantEmail());
-                    candidate.setPhoneNumber(interview.getApplicantPhone() != null ? interview.getApplicantPhone() : "Chưa có");
-                    candidate.setPosition(interview.getJobTitle());
-                    candidate.setOffer(interview.getOffer()); // Lấy thông tin offer
+                    // Lấy thông tin cơ bản từ recruitment application
+                    candidate.setFullName(application.getFullName());
+                    candidate.setEmail(application.getEmail());
+                    candidate.setPhoneNumber(application.getPhoneNumber() != null ? application.getPhoneNumber() : "Chưa có");
+                    candidate.setPosition(application.getJobTitle());
                     
-                    // ✅ FIX: Xác định contract type dựa trên job title thực tế
-                    String jobTitle = interview.getJobTitle() != null ? interview.getJobTitle().toLowerCase() : "";
+                    // 🔧 FIX: Set default salary values since recruitment applications don't store detailed offer info
+                    // Xác định contract type và salary dựa trên job title
+                    String jobTitle = application.getJobTitle() != null ? application.getJobTitle().toLowerCase() : "";
                     if (jobTitle.contains("giáo viên") || jobTitle.contains("teacher")) {
                         candidate.setContractType("TEACHER");
-                        log.info("Set contract type TEACHER for position: {}", interview.getJobTitle());
+                        candidate.setSalary(150000.0 * 80); // 150k VND/hour * 80 hours = 12M VND/month estimated
+                        log.info("Set contract type TEACHER for job title: {}", application.getJobTitle());
                     } else {
                         candidate.setContractType("STAFF");
-                        log.info("Set contract type STAFF for position: {}", interview.getJobTitle());
-                    }
-                    
-                    // Lấy mức lương từ job position (nếu có)
-                    if (interview.getSalaryRange() != null && !interview.getSalaryRange().isEmpty()) {
-                        try {
-                            // Trích xuất số lương từ salary range (ví dụ: "10,000,000 - 15,000,000 VND")
-                            String salaryStr = interview.getSalaryRange().replaceAll("[^0-9]", "");
-                            if (!salaryStr.isEmpty()) {
-                                Double salary = Double.parseDouble(salaryStr.substring(0, Math.min(salaryStr.length(), 8)));
-                                candidate.setSalary(salary);
-                            }
-                        } catch (Exception e) {
-                            log.warn("Could not parse salary from: {}", interview.getSalaryRange());
-                            candidate.setSalary(10000000.0); // Mặc định 10 triệu
-                        }
-                    } else {
-                        candidate.setSalary(10000000.0); // Mặc định 10 triệu
+                        candidate.setSalary(15000000.0); // 15M VND/month for staff
+                        log.info("Set contract type STAFF for job title: {}", application.getJobTitle());
                     }
                     
                     return candidate;
                 })
                 .collect(Collectors.toList());
         
-        log.info("Found {} candidates ready for contract", candidates.size());
+        log.info("🔧 FIXED: Found {} candidates ready for contract from recruitment applications", candidates.size());
         return candidates;
     }
 
     @Override
     public ContractDto getCandidateOfferData(Long candidateId) {
-        log.info("🔄 REWRITTEN: Fetching offer data from editable Offer Management for candidate ID: {}", candidateId);
+        log.info("🔄 REFACTORED: Fetching mutually exclusive salary data for candidate ID: {}", candidateId);
         try {
             // Tìm interview schedule của candidate để lấy dữ liệu offer từ Quản Lý Offer
             InterviewScheduleDto interview = interviewScheduleService.getById(candidateId);
@@ -379,73 +369,53 @@ public class ContractServiceImpl implements ContractService {
             }
             offerData.setComments(evaluation);
             
-            // Xác định loại vị trí để xử lý lương phù hợp
-            String jobTitle = interview.getJobTitle() != null ? interview.getJobTitle().toLowerCase() : "";
-            String contractType = interview.getContractType() != null ? interview.getContractType() : "";
-            boolean isTeacher = jobTitle.contains("giáo viên") || jobTitle.contains("teacher") || "TEACHER".equals(contractType);
+            // 🔄 NEW LOGIC: Xử lý lương dựa trên dữ liệu có sẵn trong offer (mutually exclusive)
+            // Không còn phân biệt theo vị trí, mà theo loại lương có trong offer data
             
-            log.info("🔍 REWRITTEN DEBUG: Processing candidate ID: {} - JobTitle: '{}', ContractType: '{}', IsTeacher: {}", 
-                    candidateId, interview.getJobTitle(), contractType, isTeacher);
+            // Khởi tạo tất cả salary fields về null
+            offerData.setHourlySalary(null);
+            offerData.setGrossSalary(null);
+            offerData.setNetSalary(null);
             
-            // Xử lý lương dựa trên vị trí
-            if (isTeacher) {
-                // ✅ FOR TEACHERS: Lấy "Lương theo giờ" trực tiếp từ Quản Lý Offer
-                log.info("🎓 TEACHER CONTRACT: Fetching hourly salary from editable Offer Management");
-                
-                // Kiểm tra xem có hourly salary được set trực tiếp trong offer không
-                Long directHourlySalary = extractHourlySalaryFromOffer(interview);
-                
-                if (directHourlySalary != null && directHourlySalary > 0) {
-                    // Sử dụng lương theo giờ đã được chỉnh sửa trong Quản Lý Offer
-                    offerData.setHourlySalary(directHourlySalary);
-                    log.info("✅ TEACHER: Using direct hourly salary from Offer Management: {} VND/hour", directHourlySalary);
-                } else {
-                    // Fallback: Tính từ gross salary nếu không có hourly salary trực tiếp
-                    Long calculatedHourly = calculateHourlySalaryFromGross(interview);
-                    offerData.setHourlySalary(calculatedHourly);
-                    log.info("📊 TEACHER: Calculated hourly salary from gross: {} VND/hour", calculatedHourly);
-                }
-                
-                // Cho giáo viên, không set gross/net salary
-                offerData.setGrossSalary(null);
-                offerData.setNetSalary(null);
-                
-            } else {
-                // ✅ FOR STAFF: Tính gross và net salary từ offer amount
-                log.info("👥 STAFF CONTRACT: Calculating gross and net salary from offer amount");
-                
-                if (interview.getOffer() != null && !interview.getOffer().trim().isEmpty()) {
-                    try {
-                        String cleanOffer = interview.getOffer().replaceAll("[^0-9]", "");
-                        if (!cleanOffer.isEmpty()) {
-                            BigDecimal grossSalary = new BigDecimal(cleanOffer);
-                            
-                            // Sử dụng TopCVCalculation để tính net salary
-                            TopCVCalculation.SalaryCalculationResult salaryResult = 
-                                TopCVCalculation.calculateFromGrossToNet(grossSalary, 0);
-                            
-                            offerData.setGrossSalary(salaryResult.getGrossSalary().longValue());
-                            offerData.setNetSalary(salaryResult.getNetSalary().longValue());
-                            
-                            log.info("✅ STAFF: Set gross salary: {} VND, net salary: {} VND", 
-                                    offerData.getGrossSalary(), offerData.getNetSalary());
-                        } else {
-                            setDefaultStaffSalary(offerData);
-                        }
-                    } catch (NumberFormatException e) {
-                        log.warn("Invalid offer amount format for staff candidate ID: {}", candidateId);
-                        setDefaultStaffSalary(offerData);
+            log.info("🔍 PROCESSING: Analyzing offer data for candidate ID: {}", candidateId);
+            
+            // Ưu tiên 1: Kiểm tra xem có lương theo giờ không
+            Long extractedHourly = extractHourlySalaryFromOffer(interview);
+            if (extractedHourly != null && extractedHourly > 0) {
+                // Nếu có lương theo giờ, chỉ set hourly và để gross/net là null
+                offerData.setHourlySalary(extractedHourly);
+                log.info("✅ HOURLY SALARY: Set hourly: {} VND/hour, gross/net remain null", extractedHourly);
+            } else if (interview.getOffer() != null && !interview.getOffer().trim().isEmpty()) {
+                // Ưu tiên 2: Nếu không có lương theo giờ, xử lý gross/net salary
+                try {
+                    String cleanOffer = interview.getOffer().replaceAll("[^0-9]", "");
+                    if (!cleanOffer.isEmpty()) {
+                        BigDecimal grossSalary = new BigDecimal(cleanOffer);
+                        
+                        // Sử dụng TopCVCalculation để tính net salary từ gross
+                        TopCVCalculation.SalaryCalculationResult salaryResult = 
+                            TopCVCalculation.calculateFromGrossToNet(grossSalary, 0);
+                        
+                        // Set gross và net, hourly để null
+                        offerData.setGrossSalary(salaryResult.getGrossSalary().longValue());
+                        offerData.setNetSalary(salaryResult.getNetSalary().longValue());
+                        
+                        log.info("✅ GROSS/NET SALARY: Set gross: {} VND, net: {} VND, hourly remains null", 
+                                offerData.getGrossSalary(), offerData.getNetSalary());
+                    } else {
+                        // Nếu không có dữ liệu offer hợp lệ, để tất cả fields null
+                        log.info("⚠️ NO VALID OFFER: All salary fields remain null");
                     }
-                } else {
-                    setDefaultStaffSalary(offerData);
+                } catch (NumberFormatException e) {
+                    log.warn("Invalid offer amount format for candidate ID: {}, all salary fields remain null", candidateId);
                 }
-                
-                // Cho nhân viên, không set hourly salary
-                offerData.setHourlySalary(null);
+            } else {
+                // Nếu không có offer data, để tất cả fields null
+                log.info("⚠️ NO OFFER DATA: All salary fields remain null");
             }
             
-            log.info("🔄 REWRITTEN: Successfully fetched offer data for candidate ID: {} - IsTeacher: {}, HourlySalary: {}, GrossSalary: {}, NetSalary: {}", 
-                    candidateId, isTeacher, offerData.getHourlySalary(), offerData.getGrossSalary(), offerData.getNetSalary());
+            log.info("🔄 REFACTORED: Mutually exclusive salary data for candidate ID: {} - Hourly: {}, Gross: {}, Net: {}", 
+                    candidateId, offerData.getHourlySalary(), offerData.getGrossSalary(), offerData.getNetSalary());
             return offerData;
         } catch (ResourceNotFoundException e) {
             throw e; // Re-throw ResourceNotFoundException
@@ -547,23 +517,26 @@ public class ContractServiceImpl implements ContractService {
         // Lấy ngày hiện tại
         LocalDate today = LocalDate.now();
         
-        // Tạo start và end của ngày để đếm hợp đồng trong ngày
-        LocalDateTime startOfDay = today.atStartOfDay();
-        LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
+        // Tạo start và end của tháng để đếm hợp đồng trong tháng
+        LocalDate startOfMonth = today.withDayOfMonth(1);
+        LocalDate endOfMonth = startOfMonth.plusMonths(1);
+        LocalDateTime startOfMonthDateTime = startOfMonth.atStartOfDay();
+        LocalDateTime endOfMonthDateTime = endOfMonth.atStartOfDay();
         
-        // Đếm số hợp đồng đã tạo trong ngày hôm nay
-        Long contractsToday = contractRepository.countByCreatedAtBetween(startOfDay, endOfDay);
+        // Đếm số hợp đồng đã tạo trong tháng hiện tại
+        Long contractsThisMonth = contractRepository.countByCreatedAtBetween(startOfMonthDateTime, endOfMonthDateTime);
         
-        // Tạo sequence number (bắt đầu từ 01)
-        String sequence = String.format("%02d", contractsToday + 1);
+        // Tạo sequence number 2 chữ số (bắt đầu từ 01)
+        String sequence = String.format("%02d", contractsThisMonth + 1);
         
-        // Tạo phần ngày tháng năm (MMYY)
+        // Tạo phần tháng năm (MMYY) - 4 chữ số cuối
         String dateFormat = String.format("%02d%02d", today.getMonthValue(), today.getYear() % 100);
         
-        // Kết hợp thành Contract ID: sequence + MMYY
+        // Kết hợp thành Contract ID: sequence(2 digits) + MMYY(4 digits) = 6 digits total
         String contractId = sequence + dateFormat;
         
-        log.info("Generated Contract ID: {} for date: {}", contractId, today);
+        log.info("Generated Contract ID: {} (sequence: {}, month/year: {}) for date: {}", 
+                contractId, sequence, dateFormat, today);
         return contractId;
     }
 
