@@ -40,6 +40,10 @@ public class PayrollResult {
     private BigDecimal netSalary;
     private BigDecimal hourlySalary; // đơn giá theo giờ (cho giáo viên)
     
+    // Contract period (để FE hiển thị ngày bắt đầu/kết thúc HĐ)
+    private LocalDate contractStartDate;
+    private LocalDate contractEndDate;
+    
     // TopCV calculation details
     private TopCVCalculation.SalaryCalculationResult topCVResult;
     

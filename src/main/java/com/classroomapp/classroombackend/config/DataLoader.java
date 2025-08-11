@@ -672,6 +672,7 @@ seedEvidenceTemplates();
                         String[] shifts = new String[]{"ca sáng (07:30-09:30)", "ca chiều (13:30-15:30)", "ca tối (18:00-20:00)"};
                         c.setWorkingHours(shifts[(int)(Math.random()*shifts.length)]);
                         c.setStartDate(LocalDate.now());
+                        // Ngày kết thúc hợp đồng: 2 năm sau theo mặc định
                         c.setEndDate(LocalDate.now().plusYears(2));
                         c.setStatus("ACTIVE");
                         c.setSubject(t[3]);

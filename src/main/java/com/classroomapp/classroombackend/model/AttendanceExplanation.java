@@ -3,6 +3,8 @@ package com.classroomapp.classroombackend.model;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.Nationalized;
+
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
@@ -31,14 +33,16 @@ public class AttendanceExplanation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "submitter_name", nullable = false)
+    @Nationalized
+    @Column(name = "submitter_name", nullable = false, columnDefinition = "NVARCHAR(255)")
     private String submitterName;
 
     @Column(name = "absence_date", nullable = false)
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate absenceDate;
 
-    @Column(name = "reason", nullable = false)
+    @Nationalized
+    @Column(name = "reason", nullable = false, columnDefinition = "NVARCHAR(500)")
     private String reason;
 
     @Column(name = "submitted_at", nullable = false)
@@ -55,12 +59,15 @@ private Long violationId;
     @Column(name = "status", nullable = false)
     private ExplanationStatus status;
 
-    @Column(name = "approver_name")
+    @Nationalized
+    @Column(name = "approver_name", columnDefinition = "NVARCHAR(255)")
     private String approverName;
 
-    @Column(name = "department")
+    @Nationalized
+    @Column(name = "department", columnDefinition = "NVARCHAR(100)")
     private String department;
-    @Column(name = "explanation_text", columnDefinition = "TEXT")
+    @Nationalized
+    @Column(name = "explanation_text", columnDefinition = "NVARCHAR(MAX)")
     private String explanationText;
 
     // ✅ THÊM LIFECYCLE CALLBACKS ĐỂ TỰ ĐỘNG SET TIMESTAMPS
