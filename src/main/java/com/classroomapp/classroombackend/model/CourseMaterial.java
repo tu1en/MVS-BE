@@ -35,7 +35,7 @@ public class CourseMaterial {
     @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
     private String title;
 
-    @Column(columnDefinition = "NTEXT")
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String description;
 
     @Column(name = "file_path", length = 500)

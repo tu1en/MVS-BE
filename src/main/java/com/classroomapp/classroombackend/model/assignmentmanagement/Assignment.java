@@ -42,7 +42,7 @@ public class Assignment {
     private String title;
 
     @Lob
-    @Column(length = 2000, columnDefinition = "NTEXT")
+    @Column(length = 2000, columnDefinition = "NVARCHAR(MAX)")
     private String description;
 
     @NotNull

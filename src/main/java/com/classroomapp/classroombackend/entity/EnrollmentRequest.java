@@ -52,10 +52,10 @@ public class EnrollmentRequest {
     @Column(nullable = false)
     private EnrollmentStatus status = EnrollmentStatus.PENDING;
     
-    @Column(columnDefinition = "NTEXT")
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String message;
     
-    @Column(name = "rejection_reason", columnDefinition = "NTEXT")
+    @Column(name = "rejection_reason", columnDefinition = "NVARCHAR(MAX)")
     private String rejectionReason;
     
     @CreationTimestamp

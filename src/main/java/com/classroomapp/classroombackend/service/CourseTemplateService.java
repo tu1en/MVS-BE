@@ -1,11 +1,9 @@
 package com.classroomapp.classroombackend.service;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.Collections;
-
-import com.classroomapp.classroombackend.dto.response.PublicCourseTemplateDto;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.classroomapp.classroombackend.dto.CourseTemplateDto;
 import com.classroomapp.classroombackend.dto.LessonTemplateDto;
+import com.classroomapp.classroombackend.dto.response.PublicCourseTemplateDto;
 import com.classroomapp.classroombackend.entity.LessonTemplate;
 import com.classroomapp.classroombackend.mapper.CourseTemplateMapper;
 import com.classroomapp.classroombackend.model.classroommanagement.CourseTemplate;
@@ -127,6 +126,16 @@ public class CourseTemplateService {
         existingCourse.setName(courseTemplateDto.getName());
         existingCourse.setDescription(courseTemplateDto.getDescription());
         existingCourse.setSubject(courseTemplateDto.getSubject());
+        // new editable fields
+        if (courseTemplateDto.getIsPublic() != null) {
+            existingCourse.setIsPublic(courseTemplateDto.getIsPublic());
+        }
+        if (courseTemplateDto.getEnrollmentFee() != null) {
+            existingCourse.setEnrollmentFee(courseTemplateDto.getEnrollmentFee());
+        }
+        if (courseTemplateDto.getMaxStudentsPerTemplate() != null) {
+            existingCourse.setMaxStudentsPerTemplate(courseTemplateDto.getMaxStudentsPerTemplate());
+        }
         
         existingCourse = courseTemplateRepository.save(existingCourse);
         logger.info("Updated course template: {}", existingCourse.getName());

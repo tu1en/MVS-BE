@@ -3,6 +3,8 @@ package com.classroomapp.classroombackend.model;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+import org.hibernate.annotations.Nationalized;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -20,19 +22,23 @@ public class AttendanceLog {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(name = "user_name", nullable = false)
+    @Nationalized
+    @Column(name = "user_name", nullable = false, columnDefinition = "NVARCHAR(255)")
     private String userName;
 
-    @Column(name = "role")
+    @Nationalized
+    @Column(name = "role", columnDefinition = "NVARCHAR(100)")
     private String role;
 
-    @Column(name = "department")
+    @Nationalized
+    @Column(name = "department", columnDefinition = "NVARCHAR(100)")
     private String department;
 
 @Column(name = "attendance_date", nullable = false)
     private LocalDate date;
 
-    @Column(name = "shift")
+    @Nationalized
+    @Column(name = "shift", columnDefinition = "NVARCHAR(50)")
     private String shift;
 
     @Column(name = "check_in")
@@ -41,7 +47,8 @@ public class AttendanceLog {
     @Column(name = "check_out")
     private LocalTime checkOut;
 
-    @Column(name = "status")
+    @Nationalized
+    @Column(name = "status", columnDefinition = "NVARCHAR(50)")
     private String status;
 
     // Constructors

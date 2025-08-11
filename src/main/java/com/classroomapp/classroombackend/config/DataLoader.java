@@ -654,6 +654,7 @@ seedEvidenceTemplates();
                     // Tạo hợp đồng ACTIVE cho giáo viên để đồng bộ bộ lọc môn/ca/cấp
                     try {
                         Contract c = new Contract();
+                        c.setContractId("CT" + u.getId() + "_" + System.currentTimeMillis()); // Tạo mã hợp đồng duy nhất
                         c.setUserId(u.getId());
                         c.setFullName(u.getFullName());
                         c.setEmail(u.getEmail());
@@ -662,6 +663,11 @@ seedEvidenceTemplates();
                         c.setPosition("Giáo viên " + t[3]);
                         c.setDepartment(t[3]);
                         c.setSalary(15000000.0 + (int)(Math.random()*6000000));
+                        // Giáo viên: thêm đơn giá theo giờ để phục vụ tính lương theo giờ
+                        try {
+                            long hourly = 120_000L + (long)(Math.random() * 100_000L); // 120k - 220k VND/giờ
+                            c.setHourlySalary(hourly);
+                        } catch (Exception ignored) {}
                         // ngẫu nhiên ca làm việc
                         String[] shifts = new String[]{"ca sáng (07:30-09:30)", "ca chiều (13:30-15:30)", "ca tối (18:00-20:00)"};
                         c.setWorkingHours(shifts[(int)(Math.random()*shifts.length)]);
@@ -671,7 +677,7 @@ seedEvidenceTemplates();
                         c.setSubject(t[3]);
                         // phân bổ cấp học 10/11/12
                         String[] levels = new String[]{"10","11","12"};
-                        c.setEducationLevel(levels[(int)(Math.random()*levels.length)]);
+                        c.setClassLevel(levels[(int)(Math.random()*levels.length)]);
                         contractRepository.save(c);
                     } catch (Exception e) {
                         log.warn("Could not create contract for {}: {}", u.getEmail(), e.getMessage());
@@ -1260,8 +1266,6 @@ seedEvidenceTemplates();
 
     private void seedBlogs() {
         if (blogRepository.count() == 0) {
-            List<User> users = userRepository.findAll();
-            
             // Tạo danh sách tin tức giáo dục thực tế
             String[][] blogData = {
                 {

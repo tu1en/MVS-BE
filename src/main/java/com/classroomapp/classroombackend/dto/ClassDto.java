@@ -1,5 +1,6 @@
 package com.classroomapp.classroombackend.dto;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,6 +32,10 @@ public class ClassDto {
     private Long createdBy;
     private LocalDateTime createdAt;
     private List<ClassLessonDto> classLessons;
+
+    // Công khai và học phí ở cấp Lớp học
+    private Boolean isPublic;
+    private BigDecimal tuitionFee;
 }
 
 

@@ -1,5 +1,6 @@
 package com.classroomapp.classroombackend.entity;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -43,10 +44,10 @@ public class ClassEntity {
     @JoinColumn(name = "course_template_id", nullable = false)
     private CourseTemplate courseTemplate;
     
-    @Column(name = "class_name", nullable = false, unique = true)
+    @Column(name = "class_name", nullable = false, unique = true, columnDefinition = "NVARCHAR(255)")
     private String className;
     
-    @Column(columnDefinition = "NTEXT")
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String description;
     
     @ManyToOne(fetch = FetchType.LAZY)
@@ -89,9 +90,14 @@ public class ClassEntity {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-    
 
-    
+    // Public visibility and tuition fee for the class
+    @Column(name = "is_public")
+    private Boolean isPublic = false;
+
+    @Column(name = "tuition_fee", precision = 10, scale = 2)
+    private BigDecimal tuitionFee = BigDecimal.ZERO;
+
     public enum ClassStatus {
         PLANNING, ACTIVE, COMPLETED, CANCELLED
     }

@@ -1,13 +1,14 @@
 package com.classroomapp.classroombackend.model.hrmanagement;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-import com.classroomapp.classroombackend.util.TopCVCalculation;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
+
+import com.classroomapp.classroombackend.util.TopCVCalculation;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * Simple payroll result model using TopCV calculations
@@ -27,6 +28,8 @@ public class PayrollResult {
     private Integer totalWorkingDays;
     private Integer actualWorkingDays;
     private Integer absentDays;
+    private Integer actualWorkingHours; // tổng giờ làm thực tế (ước lượng)
+    private Integer standardMonthlyHours; // tổng giờ công chuẩn trong tháng
     
     // Original contract salary
     private BigDecimal contractSalary;
@@ -35,6 +38,7 @@ public class PayrollResult {
     // Calculated salary (prorated based on attendance)
     private BigDecimal proratedGrossSalary;
     private BigDecimal netSalary;
+    private BigDecimal hourlySalary; // đơn giá theo giờ (cho giáo viên)
     
     // TopCV calculation details
     private TopCVCalculation.SalaryCalculationResult topCVResult;
@@ -60,5 +64,8 @@ public class PayrollResult {
         this.topCVResult = details;
         this.status = "CALCULATED";
         this.calculatedAt = LocalDate.now();
+        // Giờ công mặc định (8h/ngày)
+        this.actualWorkingHours = actualDays != null ? actualDays * 8 : null;
+        this.standardMonthlyHours = totalDays != null ? totalDays * 8 : null;
     }
 }

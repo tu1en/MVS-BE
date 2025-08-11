@@ -1,5 +1,6 @@
 package com.classroomapp.classroombackend.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -57,4 +58,10 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
     // Tìm hợp đồng ACTIVE theo userId (method được SalaryController sử dụng)
     @Query("SELECT c FROM Contract c WHERE c.userId = :userId AND UPPER(c.status) = 'ACTIVE' ORDER BY c.updatedAt DESC")
     Optional<Contract> findActiveContractByUserId(@Param("userId") Long userId);
+    
+    // Kiểm tra xem user đã có hợp đồng chưa
+    boolean existsByUserId(Long userId);
+    
+    // Đếm số hợp đồng được tạo trong khoảng thời gian
+    Long countByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
 }

@@ -1,7 +1,6 @@
 package com.classroomapp.classroombackend.config;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -14,11 +13,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.classroomapp.classroombackend.model.Contract;
 import com.classroomapp.classroombackend.model.hrmanagement.StaffAttendanceLog;
 import com.classroomapp.classroombackend.model.hrmanagement.UserShiftAssignment;
 import com.classroomapp.classroombackend.model.hrmanagement.WorkShift;
 import com.classroomapp.classroombackend.model.usermanagement.User;
-import com.classroomapp.classroombackend.model.Contract;
 import com.classroomapp.classroombackend.repository.ContractRepository;
 import com.classroomapp.classroombackend.repository.hrmanagement.StaffAttendanceLogRepository;
 import com.classroomapp.classroombackend.repository.hrmanagement.UserShiftAssignmentRepository;
@@ -340,6 +339,7 @@ public class ViolationTestDataLoader implements CommandLineRunner {
     private void createTeacherContract(User teacher, String subject) {
         try {
             Contract contract = new Contract();
+            contract.setContractId("CT" + teacher.getId() + "_" + System.currentTimeMillis()); // Tạo mã hợp đồng duy nhất
             contract.setUserId(teacher.getId());
             contract.setFullName(teacher.getFullName());
             contract.setEmail(teacher.getEmail());
@@ -347,13 +347,15 @@ public class ViolationTestDataLoader implements CommandLineRunner {
             contract.setContractType("TEACHER");
             contract.setPosition("Giáo viên " + subject);
             contract.setDepartment(subject);
-            contract.setSalary(15000000.0 + (int)(Math.random()*6000000)); // 15-21 million VND
+            contract.setSalary(15000000.0 + (int)(Math.random()*6000000)); // 15-21 million VND (không dùng cho giáo viên)
+            // Giáo viên: lương theo giờ
+            contract.setHourlySalary(150_000L + (long)(Math.random()*80_000L)); // 150k - 230k VND/giờ
             contract.setWorkingHours("ca sáng (07:30-11:30)");
             contract.setStartDate(LocalDate.now().minusYears(1));
             contract.setEndDate(LocalDate.now().plusYears(2));
             contract.setStatus("ACTIVE");
             contract.setSubject(subject);
-            contract.setEducationLevel("10,11,12");
+            contract.setClassLevel("10,11,12");
             contractRepository.save(contract);
             logger.info("Created contract for teacher: {} - Salary: {} VND", teacher.getFullName(), contract.getSalary());
         } catch (Exception e) {
@@ -367,6 +369,7 @@ public class ViolationTestDataLoader implements CommandLineRunner {
     private void createStaffContract(User staff, String department, String position) {
         try {
             Contract contract = new Contract();
+            contract.setContractId("CT" + staff.getId() + "_" + System.currentTimeMillis()); // Tạo mã hợp đồng duy nhất
             contract.setUserId(staff.getId());
             contract.setFullName(staff.getFullName());
             contract.setEmail(staff.getEmail());
@@ -380,9 +383,9 @@ public class ViolationTestDataLoader implements CommandLineRunner {
             contract.setEndDate(LocalDate.now().plusYears(2));
             contract.setStatus("ACTIVE");
             contract.setSubject(null); // Staff don't have subjects
-            contract.setEducationLevel(null);
+            contract.setClassLevel(null);
             contractRepository.save(contract);
-            logger.info("Created contract for staff: {} - Salary: {} VND", staff.getFullName(), contract.getSalary());
+            logger.info("Created contract for staff {}: {} VND", staff.getFullName(), contract.getSalary());
         } catch (Exception e) {
             logger.warn("Could not create contract for staff {}: {}", staff.getFullName(), e.getMessage());
         }

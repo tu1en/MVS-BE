@@ -39,7 +39,7 @@ public class CourseTemplate {
     @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
     private String name;
     
-    @Column(columnDefinition = "NTEXT") // Using NTEXT for SQL Server compatibility
+    @Column(columnDefinition = "NVARCHAR(MAX)") // Using NVARCHAR(MAX) for better Unicode support
     private String description;
     
     @Column(length = 100, columnDefinition = "NVARCHAR(100)")

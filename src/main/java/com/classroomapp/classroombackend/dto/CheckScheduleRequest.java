@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CheckScheduleRequest {
+    private Long classId;
     private Long roomId;
     private Long teacherId;
     private String schedule; // Changed from Schedule object to String

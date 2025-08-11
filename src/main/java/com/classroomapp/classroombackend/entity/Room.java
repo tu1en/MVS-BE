@@ -1,16 +1,23 @@
 package com.classroomapp.classroombackend.entity;
 
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.hibernate.annotations.CreationTimestamp;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Entity
@@ -26,16 +33,16 @@ public class Room {
     @Column(name = "room_code", unique = true)
     private String roomCode;
     
-    @Column(name = "room_name")
+    @Column(name = "room_name", columnDefinition = "NVARCHAR(MAX)")
     private String roomName;
     
     @Column(name="capacity")
     private Integer capacity = 30;
     
-    @Column(name = "location")
+    @Column(name = "location", columnDefinition = "NVARCHAR(255)")
     private String location;
     
-    @Column(columnDefinition = "NTEXT")
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String facilities;
     
     @Column(name = "is_active")

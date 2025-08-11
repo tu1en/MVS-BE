@@ -71,6 +71,15 @@ public class PayrollGenerationServiceImpl implements PayrollGenerationService {
             boolean isTeacherHourly = contract.getContractType() != null &&
                     "TEACHER".equalsIgnoreCase(contract.getContractType());
 
+            // Nếu là giáo viên và có hourlySalary thì override contractSalary theo giờ × giờ công
+            if (isTeacherHourly && contract.getHourlySalary() != null && contract.getHourlySalary() > 0) {
+                // Ước lượng tổng giờ công chuẩn = totalWorkingDays * 8; giờ thực tế = actualWorkingDays * 8
+                BigDecimal hourlyRate = new BigDecimal(contract.getHourlySalary());
+                BigDecimal actualHours = new BigDecimal(actualWorkingDays).multiply(new BigDecimal(8));
+                BigDecimal grossByHour = hourlyRate.multiply(actualHours);
+                proratedGrossSalary = grossByHour.setScale(0, RoundingMode.HALF_UP);
+            }
+
             TopCVCalculation.SalaryCalculationResult calculationResult;
             BigDecimal netSalary;
 
@@ -100,6 +109,10 @@ public class PayrollGenerationServiceImpl implements PayrollGenerationService {
             payrollResult.setUserEmail(user.getEmail());
             payrollResult.setContractType(contract.getContractType());
             payrollResult.setContractOffer(contract.getOffer());
+            // Bổ sung đơn giá theo giờ nếu có trong hợp đồng (giúp FE hiển thị)
+            if (contract.getHourlySalary() != null && contract.getHourlySalary() > 0) {
+                payrollResult.setHourlySalary(new BigDecimal(contract.getHourlySalary()));
+            }
             
             log.info("Successfully generated payroll for user {} - Net Salary: {}",
                     user.getFullName(), netSalary);

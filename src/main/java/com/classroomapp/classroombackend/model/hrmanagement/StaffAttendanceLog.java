@@ -4,6 +4,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+import org.hibernate.annotations.Nationalized;
+
 import com.classroomapp.classroombackend.model.usermanagement.User;
 
 import jakarta.persistence.Column;
@@ -61,15 +63,18 @@ public class StaffAttendanceLog {
     private AttendanceType attendanceType = AttendanceType.NORMAL;
 
     @Column(name = "notes", columnDefinition = "NVARCHAR(1000)")
+    @Nationalized
     private String notes;
 
     @Column(name = "location_info", columnDefinition = "NVARCHAR(500)")
+    @Nationalized
     private String locationInfo;
 
     @Column(name = "ip_address", length = 45)
     private String ipAddress;
 
     @Column(name = "device_info", columnDefinition = "NVARCHAR(500)")
+    @Nationalized
     private String deviceInfo;
 
     @Column(name = "created_at")

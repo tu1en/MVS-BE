@@ -41,19 +41,19 @@ public class LessonTemplate {
     @Column(name = "week_number", nullable = false)
     private Integer weekNumber;
     
-    @Column(name = "topic_name", nullable = false, length = 500)
+    @Column(name = "topic_name", nullable = false, columnDefinition = "NVARCHAR(500)")
     private String topicName;
     
     @Column(name = "lesson_type", length = 100)
     private String lessonType;
     
-    @Column(columnDefinition = "NTEXT")
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String objectives;
     
-    @Column(columnDefinition = "NTEXT")
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String requirements;
     
-    @Column(columnDefinition = "NTEXT")
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String preparations;
     
     @Column(name = "duration_minutes")

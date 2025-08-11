@@ -45,7 +45,7 @@ public class ScheduleConflict {
     @Column(name = "conflict_type", nullable = false)
     private ConflictType conflictType;
     
-    @Column(name = "details", columnDefinition = "NTEXT")
+    @Column(name = "details", columnDefinition = "NVARCHAR(MAX)")
     private String details;
     
     @Column(name = "start_date")
@@ -63,7 +63,7 @@ public class ScheduleConflict {
     @Column(name = "resolved_at")
     private LocalDateTime resolvedAt;
     
-    @Column(name = "resolution_notes", columnDefinition = "NTEXT")
+    @Column(name = "resolution_notes", columnDefinition = "NVARCHAR(MAX)")
     private String resolutionNotes;
     
     // Convenience fields for display (không lưu trong DB)

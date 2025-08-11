@@ -42,7 +42,7 @@ public class Announcement {
     private String title;
 
     @NotBlank
-    @Column(nullable = false, columnDefinition = "NTEXT")
+    @Column(nullable = false, columnDefinition = "NVARCHAR(MAX)")
     private String content;
 
     @Column(name = "classroom_id")

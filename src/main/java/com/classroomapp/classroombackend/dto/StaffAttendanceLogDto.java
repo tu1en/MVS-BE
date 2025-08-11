@@ -3,6 +3,8 @@ package com.classroomapp.classroombackend.dto;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+import org.hibernate.annotations.Nationalized;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,8 +18,11 @@ import lombok.NoArgsConstructor;
 public class StaffAttendanceLogDto {
     private Long id;
     private Long userId;
+    @Nationalized
     private String userName;
+    @Nationalized
     private String role;
+    @Nationalized
     private String department;
     private LocalDate date;
     private String shift;

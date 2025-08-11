@@ -13,8 +13,8 @@ CREATE TABLE enrollment_requests (
     course_template_id BIGINT NOT NULL,
     student_id BIGINT NOT NULL,
     status NVARCHAR(20) DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
-    message NTEXT NULL, -- Student's message
-    rejection_reason NTEXT NULL, -- Manager's rejection reason
+    message NVARCHAR(MAX) NULL, -- Student's message
+    rejection_reason NVARCHAR(MAX) NULL, -- Manager's rejection reason
     created_at DATETIME2 DEFAULT GETDATE(),
     updated_at DATETIME2 DEFAULT GETDATE(),
     processed_by BIGINT NULL, -- Manager who processed the request

@@ -1,30 +1,31 @@
 package com.classroomapp.classroombackend.service.impl;
 
-import com.classroomapp.classroombackend.dto.ContractDto;
-import com.classroomapp.classroombackend.dto.ContractStatsDto;
-import com.classroomapp.classroombackend.dto.InterviewScheduleDto;
-import com.classroomapp.classroombackend.model.Contract;
-import com.classroomapp.classroombackend.model.usermanagement.User;
-import com.classroomapp.classroombackend.repository.ContractRepository;
-import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
-import com.classroomapp.classroombackend.service.ContractService;
-import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
-import com.classroomapp.classroombackend.service.InterviewScheduleService;
-import com.classroomapp.classroombackend.service.UserService;
-import com.classroomapp.classroombackend.util.TopCVCalculation;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-
 import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.classroomapp.classroombackend.dto.ContractDto;
+import com.classroomapp.classroombackend.dto.ContractStatsDto;
+import com.classroomapp.classroombackend.dto.InterviewScheduleDto;
+import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
+import com.classroomapp.classroombackend.model.Contract;
+import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.ContractRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.classroomapp.classroombackend.service.ContractService;
+import com.classroomapp.classroombackend.service.InterviewScheduleService;
+import com.classroomapp.classroombackend.service.UserService;
+import com.classroomapp.classroombackend.util.TopCVCalculation;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
@@ -471,8 +472,8 @@ public class ContractServiceImpl implements ContractService {
         // Kiểm tra xem có trường hourly salary riêng biệt trong interview không
         // Giả sử có trường hourlySalary trong InterviewScheduleDto (cần được thêm vào)
         try {
-            // TODO: Cần thêm trường hourlySalary vào InterviewScheduleDto
-            // Hiện tại sử dụng offer field để parse hourly salary
+                    // Lưu ý: Cần thêm trường hourlySalary vào InterviewScheduleDto để tối ưu hóa
+        // Hiện tại sử dụng offer field để parse hourly salary
             
             if (interview.getOffer() != null && !interview.getOffer().trim().isEmpty()) {
                 String offer = interview.getOffer().toLowerCase();

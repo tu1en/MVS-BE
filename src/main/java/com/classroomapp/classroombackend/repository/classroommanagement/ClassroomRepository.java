@@ -53,4 +53,8 @@ public interface ClassroomRepository extends JpaRepository<Classroom, Long> {
     // Find active classrooms by course template ID
     @Query("SELECT c FROM Classroom c WHERE c.courseId = :courseId")
     List<Classroom> findActiveByCourseId(@Param("courseId") Long courseId);
+
+    // Find classroom by exact name (mapping from ClassEntity.className)
+    @Query("SELECT c FROM Classroom c WHERE c.name = :name")
+    Optional<Classroom> findByName(@Param("name") String name);
 }

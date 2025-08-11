@@ -26,8 +26,10 @@ import com.classroomapp.classroombackend.dto.CheckScheduleRequest;
 import com.classroomapp.classroombackend.dto.ClassDto;
 import com.classroomapp.classroombackend.dto.CloneClassRequest;
 import com.classroomapp.classroombackend.dto.CreateClassRequest;
+import com.classroomapp.classroombackend.dto.RescheduleRequest;
 import com.classroomapp.classroombackend.entity.ScheduleConflict;
 import com.classroomapp.classroombackend.service.ClassService;
+import com.classroomapp.classroombackend.service.ClassStatusSchedulerService;
 import com.classroomapp.classroombackend.service.ScheduleConflictService;
 
 import jakarta.validation.Valid;  // Changed from javax.validation
@@ -142,6 +144,25 @@ public class ClassController {
     }
     
     /**
+     * Cập nhật thông tin lớp (dùng cho toggle công khai/học phí đơn giản)
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<ClassDto>> updateClass(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
+        try {
+            // Cho phép cập nhật nhẹ isPublic và tuitionFee (xử lý bên service)
+            ClassDto updated = classService.updateClassPartial(id, payload);
+            return ResponseEntity.ok(ApiResponse.success(updated, "Cập nhật lớp thành công"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND.value())
+                    .body(ApiResponse.error("Không tìm thấy lớp học"));
+        } catch (Exception e) {
+            logger.error("Error updating class: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST.value())
+                    .body(ApiResponse.error("Lỗi cập nhật lớp học: " + e.getMessage()));
+        }
+    }
+    
+    /**
      * Get classes by course template
      */
     @GetMapping("/template/{templateId}")
@@ -215,6 +236,22 @@ public class ClassController {
                     .body(ApiResponse.error("Lỗi cập nhật trạng thái: " + e.getMessage()));
         }
     }
+
+    /**
+     * Trigger thủ công job cập nhật trạng thái lớp (hữu ích khi test hoặc cần đồng bộ ngay)
+     */
+    @PutMapping("/sync-statuses")
+    public ResponseEntity<ApiResponse<String>> syncClassStatuses(
+            ClassStatusSchedulerService schedulerService) {
+        try {
+            schedulerService.updateClassStatuses();
+            return ResponseEntity.ok(ApiResponse.success("OK", "Đã chạy đồng bộ trạng thái lớp"));
+        } catch (Exception e) {
+            logger.error("Error syncing class statuses: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .body(ApiResponse.error("Lỗi chạy đồng bộ trạng thái: " + e.getMessage()));
+        }
+    }
     
     /**
      * Check schedule conflicts
@@ -222,13 +259,22 @@ public class ClassController {
     @PostMapping("/check-schedule-conflicts")
     public ResponseEntity<ApiResponse<List<ScheduleConflict>>> checkScheduleConflicts(@Valid @RequestBody CheckScheduleRequest request) {
         try {
-            List<ScheduleConflict> conflicts = scheduleConflictService.checkScheduleConflicts(
-                    request.getRoomId(),
-                    request.getTeacherId(),
-                    request.getSchedule(),
-                    request.getStartDate(),
-                    request.getEndDate()
-            );
+            List<ScheduleConflict> conflicts = (request.getClassId() != null)
+                    ? scheduleConflictService.checkScheduleConflicts(
+                        request.getClassId(),
+                        request.getRoomId(),
+                        request.getTeacherId(),
+                        request.getSchedule(),
+                        request.getStartDate(),
+                        request.getEndDate()
+                    )
+                    : scheduleConflictService.checkScheduleConflicts(
+                        request.getRoomId(),
+                        request.getTeacherId(),
+                        request.getSchedule(),
+                        request.getStartDate(),
+                        request.getEndDate()
+                    );
             
             if (conflicts.isEmpty()) {
                 return ResponseEntity.ok(ApiResponse.success(conflicts, "Không có xung đột nào phát hiện"));
@@ -240,6 +286,70 @@ public class ClassController {
             logger.error("Error checking schedule conflicts: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                     .body(ApiResponse.error("Lỗi kiểm tra xung đột lịch: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Get lessons of a class (class_lessons)
+     */
+    @GetMapping("/{id}/lessons")
+    public ResponseEntity<ApiResponse<List<com.classroomapp.classroombackend.dto.ClassLessonDto>>> getClassLessons(@PathVariable Long id) {
+        try {
+            List<com.classroomapp.classroombackend.dto.ClassLessonDto> lessons = classService.getClassLessons(id);
+            return ResponseEntity.ok(ApiResponse.success(lessons));
+        } catch (Exception e) {
+            logger.error("Error getting class lessons: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .body(ApiResponse.error("Lỗi lấy danh sách buổi học: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Danh sách phòng trống theo khoảng ngày/giờ/ngày trong tuần
+     */
+    @GetMapping("/free-rooms")
+    public ResponseEntity<ApiResponse<List<com.classroomapp.classroombackend.dto.RoomDto>>> getFreeRooms(
+            @RequestParam String startDate,
+            @RequestParam String endDate,
+            @RequestParam String startTime,
+            @RequestParam String endTime,
+            @RequestParam(name = "days") List<String> days) {
+        try {
+            List<com.classroomapp.classroombackend.dto.RoomDto> rooms = classService.findFreeRooms(
+                    java.time.LocalDate.parse(startDate),
+                    java.time.LocalDate.parse(endDate),
+                    java.time.LocalTime.parse(startTime),
+                    java.time.LocalTime.parse(endTime),
+                    days
+            );
+            return ResponseEntity.ok(ApiResponse.success(rooms));
+        } catch (Exception e) {
+            logger.error("Error finding free rooms: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST.value())
+                    .body(ApiResponse.error("Lỗi tìm phòng trống: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Đổi lịch lớp học, có thể tự động gán phòng trống
+     */
+    @PutMapping("/{id}/reschedule")
+    public ResponseEntity<ApiResponse<ClassDto>> rescheduleClass(
+            @PathVariable Long id,
+            @Valid @RequestBody RescheduleRequest request) {
+        try {
+            ClassDto dto = classService.rescheduleClass(id, request);
+            return ResponseEntity.ok(ApiResponse.success(dto, "Đổi lịch thành công"));
+        } catch (com.classroomapp.classroombackend.service.ClassService.ScheduleConflictException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT.value())
+                    .body(ApiResponse.error("Có xung đột lịch học", null));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST.value())
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error rescheduling class: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .body(ApiResponse.error("Lỗi đổi lịch: " + e.getMessage()));
         }
     }
     

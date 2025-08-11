@@ -119,7 +119,9 @@ public class AttendanceServiceImpl implements AttendanceService {
 
             attendance.setSession(session);
             attendance.setStudent(student);
-            attendance.setStatus(AttendanceStatus.valueOf(recordDto.getStatus().toUpperCase())); // Convert string to enum
+            attendance.setStatus(AttendanceStatus.valueOf(recordDto.getStatus().toUpperCase()));
+            // Lưu ghi chú nếu có
+            attendance.setNote(recordDto.getNote());
 
             attendanceRepository.save(attendance);
         }
@@ -251,7 +253,7 @@ public List<AttendanceResultDto> getSessionResults(Long sessionId) {
 
         if (sessionOpt.isEmpty()) {
             return studentsInClass.stream()
-                    .map(student -> new AttendanceRecordDto(student.getId(), student.getFullName(), student.getEmail(), null))
+                    .map(student -> new AttendanceRecordDto(student.getId(), student.getFullName(), student.getEmail(), null, null))
                     .collect(Collectors.toList());
         }
 
@@ -263,7 +265,13 @@ public List<AttendanceResultDto> getSessionResults(Long sessionId) {
         return studentsInClass.stream()
                 .map(student -> {
                     AttendanceStatus status = statusMap.get(student.getId());
-                    return new AttendanceRecordDto(student.getId(), student.getFullName(), student.getEmail(), status);
+                    // Tìm note nếu có
+                    String note = records.stream()
+                        .filter(r -> r.getStudent().getId().equals(student.getId()))
+                        .map(Attendance::getNote)
+                        .findFirst()
+                        .orElse(null);
+                    return new AttendanceRecordDto(student.getId(), student.getFullName(), student.getEmail(), status, note);
                 })
                 .collect(Collectors.toList());
     }

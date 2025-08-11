@@ -3,6 +3,8 @@ package com.classroomapp.classroombackend.model.usermanagement;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.Nationalized;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -35,14 +37,15 @@ public class User {
     private String username;
 
     @NotBlank
-    @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
+    @Column(nullable = false)
     private String password;
 
     @NotBlank
     @Email
-    @Column(nullable = false, columnDefinition = "NVARCHAR(255)", unique = true)
+    @Column(nullable = false, unique = true)
     private String email;
 
+    @Nationalized
     @Column(name = "full_name", columnDefinition = "NVARCHAR(255)")
     private String fullName;
 
@@ -55,6 +58,7 @@ public class User {
     @Column(name = "hire_date")
     private LocalDate hireDate;
 
+    @Nationalized
     @Column(columnDefinition = "NVARCHAR(100)")
     private String department;
 
@@ -70,6 +74,7 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Nationalized
     @Column(columnDefinition = "NVARCHAR(32) default 'active'")
     private String status = "active";
 

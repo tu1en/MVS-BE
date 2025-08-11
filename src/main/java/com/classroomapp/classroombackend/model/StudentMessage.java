@@ -37,7 +37,7 @@ public class StudentMessage {
       @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
     private String subject;
     
-    @Column(columnDefinition = "NTEXT", nullable = false)
+    @Column(columnDefinition = "NVARCHAR(MAX)", nullable = false)
     private String content;
     
     @Column(length = 50)
@@ -54,7 +54,7 @@ public class StudentMessage {
     
     @Column
     private LocalDateTime readAt;
-      @Column(columnDefinition = "NTEXT")
+      @Column(columnDefinition = "NVARCHAR(MAX)")
     private String reply;
     
     @Column

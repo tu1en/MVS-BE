@@ -416,10 +416,11 @@ public class CourseTemplateSeeder implements CommandLineRunner {
         log.info("✅ Created classes and schedules for {} course templates", courseTemplates.size());
     }
     
+    private int statusRoundRobinIndex = 0;
+
     private void createClassesForCourseTemplate(CourseTemplate courseTemplate, List<Room> rooms, List<User> teachers, Long createdBy) {
-        // Create 2-3 classes per course template
-        int classCount = random.nextInt(2) + 2; // 2 or 3 classes
-        
+        // Tạo 4 lớp mỗi template để phân bổ trạng thái đồng đều
+        int classCount = 4;
         for (int i = 1; i <= classCount; i++) {
             ClassEntity classEntity = createClassEntity(courseTemplate, rooms, teachers, createdBy, i);
             createClassSchedule(classEntity);
@@ -439,15 +440,28 @@ public class CourseTemplateSeeder implements CommandLineRunner {
         classEntity.setTeacher(teachers.get(random.nextInt(teachers.size())));
         classEntity.setRoom(rooms.get(random.nextInt(rooms.size())));
         
-        // Set dates
-        LocalDate startDate = getRandomStartDate();
+        // Trạng thái phân bổ đồng đều theo vòng lặp
+        ClassEntity.ClassStatus status = getEvenlyDistributedStatus();
+
+        // Set dates phù hợp với trạng thái để job auto không đảo ngược sai
+        LocalDate today = LocalDate.now();
+        LocalDate startDate;
+        if (status == ClassEntity.ClassStatus.PLANNING) {
+            startDate = today.plusDays(1 + random.nextInt(20)); // tương lai gần
+        } else if (status == ClassEntity.ClassStatus.ACTIVE) {
+            startDate = today.minusDays(7 + random.nextInt(7)); // đã bắt đầu trong quá khứ gần
+        } else if (status == ClassEntity.ClassStatus.COMPLETED) {
+            startDate = today.minusWeeks(6 + random.nextInt(4)); // quá khứ xa
+        } else { // CANCELLED
+            startDate = today.minusDays(random.nextInt(15));
+        }
         classEntity.setStartDate(startDate);
-        classEntity.setEndDate(startDate.plusWeeks(courseTemplate.getTotalWeeks()));
-        
+        classEntity.setEndDate(startDate.plusWeeks(Math.max(1, courseTemplate.getTotalWeeks())));
+
         // Set other properties
         classEntity.setMaxStudents(25 + random.nextInt(15)); // 25-40 students
         classEntity.setCurrentStudents(15 + random.nextInt(20)); // 15-35 current students
-        classEntity.setStatus(getRandomClassStatus());
+        classEntity.setStatus(status);
         classEntity.setCreatedBy(createdBy);
         
         return classRepository.save(classEntity);
@@ -511,24 +525,18 @@ public class CourseTemplateSeeder implements CommandLineRunner {
         }
     }
     
-    private LocalDate getRandomStartDate() {
-        LocalDate now = LocalDate.now();
-        // Random start date between 1 month ago and 2 months from now
-        int daysOffset = random.nextInt(90) - 30; // -30 to +60 days
-        return now.plusDays(daysOffset);
-    }
+    // (removed unused getRandomStartDate helper)
     
-    private ClassEntity.ClassStatus getRandomClassStatus() {
-        // Weight towards ACTIVE classes
-        if (random.nextDouble() < 0.6) {
-            return ClassEntity.ClassStatus.ACTIVE;
-        } else if (random.nextDouble() < 0.8) {
-            return ClassEntity.ClassStatus.PLANNING;
-        } else if (random.nextDouble() < 0.95) {
-            return ClassEntity.ClassStatus.COMPLETED;
-        } else {
-            return ClassEntity.ClassStatus.CANCELLED;
-        }
+    private ClassEntity.ClassStatus getEvenlyDistributedStatus() {
+        ClassEntity.ClassStatus[] order = new ClassEntity.ClassStatus[] {
+            ClassEntity.ClassStatus.PLANNING,
+            ClassEntity.ClassStatus.ACTIVE,
+            ClassEntity.ClassStatus.COMPLETED,
+            ClassEntity.ClassStatus.CANCELLED
+        };
+        ClassEntity.ClassStatus status = order[statusRoundRobinIndex % order.length];
+        statusRoundRobinIndex++;
+        return status;
     }
     
     private TimeSlot getRandomTimeSlot() {

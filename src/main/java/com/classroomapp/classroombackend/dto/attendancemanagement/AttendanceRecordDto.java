@@ -17,4 +17,5 @@ public class AttendanceRecordDto {
     private String studentEmail;
     @NotNull
     private AttendanceStatus status;
+    private String note; // ghi chú từ giáo viên nếu có
 } 

@@ -21,7 +21,7 @@ BEGIN
         start_date DATE NOT NULL,
         end_date DATE NOT NULL,
         status NVARCHAR(50) DEFAULT 'ACTIVE', -- 'ACTIVE', 'NEAR_EXPIRY', 'EXPIRED', 'TERMINATED'
-        terms_and_conditions NTEXT,
+        terms_and_conditions NVARCHAR(MAX),
         created_at DATETIME2 DEFAULT GETDATE(),
         updated_at DATETIME2 DEFAULT GETDATE(),
         created_by BIGINT,

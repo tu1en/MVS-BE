@@ -1,11 +1,12 @@
 package com.classroomapp.classroombackend.dto;
 
-import lombok.Data;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
@@ -20,5 +21,11 @@ public class CourseTemplateDto {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private Boolean isActive;
+
+    // New fields for public catalog and pricing
+    private Boolean isPublic;
+    private BigDecimal enrollmentFee;
+    private Integer maxStudentsPerTemplate;
+
     private List<LessonTemplateDto> lessonTemplates;
 }

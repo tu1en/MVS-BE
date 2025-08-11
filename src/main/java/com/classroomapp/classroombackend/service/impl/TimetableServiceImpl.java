@@ -6,12 +6,14 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.classroomapp.classroombackend.dto.CreateEventDto;
 import com.classroomapp.classroombackend.dto.TimetableEventDto;
 import com.classroomapp.classroombackend.model.TimetableEvent;
 import com.classroomapp.classroombackend.repository.TimetableEventRepository;
+import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 import com.classroomapp.classroombackend.service.TimetableService;
 
 import lombok.RequiredArgsConstructor;
@@ -21,9 +23,10 @@ import lombok.RequiredArgsConstructor;
 public class TimetableServiceImpl implements TimetableService {
 
     private final TimetableEventRepository timetableEventRepository;
+    private final ClassroomRepository classroomRepository;
 
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public TimetableEventDto createEvent(CreateEventDto createDto, Long createdBy) {
         TimetableEvent event = new TimetableEvent();
         event.setTitle(createDto.getTitle());
@@ -278,14 +281,33 @@ public class TimetableServiceImpl implements TimetableService {
         System.out.println("📅 TimetableServiceImpl.getEventsForUser: Getting events for user " + userId);
         System.out.println("   Date range: " + startDate + " to " + endDate);
 
-        // For now, return all events in the date range
-        // TODO: In a real implementation, we would:
-        // 1. Get classrooms where user is enrolled (for students) or teaching (for teachers)
-        // 2. Get events only for those classrooms
-        // 3. Filter by user permissions
+        // Lấy lớp do user dạy
+        var classroomsByTeacher = classroomRepository.findByTeacherId(userId);
+        var teacherClassroomIds = classroomsByTeacher.stream()
+                .map(c -> c.getId())
+                .collect(Collectors.toList());
 
-        List<TimetableEvent> events = timetableEventRepository.findEventsByDateRange(startDate, endDate);
-        System.out.println("📅 TimetableServiceImpl.getEventsForUser: Found " + events.size() + " events");
+        // Lấy lớp user đang học (nếu có)
+        var studentClassroomIds = classroomRepository.findClassroomsIdsByStudentId(userId);
+
+        // Gộp và loại trùng
+        List<Long> classroomIds = new ArrayList<>();
+        if (teacherClassroomIds != null) classroomIds.addAll(teacherClassroomIds);
+        if (studentClassroomIds != null) {
+            for (Long id : studentClassroomIds) {
+                if (!classroomIds.contains(id)) classroomIds.add(id);
+            }
+        }
+
+        if (classroomIds.isEmpty()) {
+            System.out.println("📅 TimetableServiceImpl.getEventsForUser: User has no related classrooms; returning empty list");
+            return List.of();
+        }
+
+        // Lọc sự kiện theo danh sách lớp của user trong khoảng ngày
+        List<TimetableEvent> events = timetableEventRepository.findByClassroomsAndDateRange(
+                classroomIds, startDate, endDate);
+        System.out.println("📅 TimetableServiceImpl.getEventsForUser: Found " + events.size() + " events after filtering by classrooms");
 
         return events.stream()
                 .map(this::convertToDto)

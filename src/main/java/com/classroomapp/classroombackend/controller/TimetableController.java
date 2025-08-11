@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.classroomapp.classroombackend.dto.CreateEventDto;
 import com.classroomapp.classroombackend.dto.TimetableEventDto;
+import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.TimetableService;
 
 import jakarta.validation.Valid;
@@ -30,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 public class TimetableController {
 
     private final TimetableService timetableService;
+    private final UserRepository userRepository;
 
     // Root endpoint for timetable view
     @GetMapping
@@ -92,9 +95,14 @@ public class TimetableController {
             String username = authentication.getName();
             System.out.println("📅 TimetableController.getMyTimetable: Username from auth: " + username);
 
-            // For now, use a default user ID since we don't have UserRepository injected
-            // TODO: Inject UserRepository and get actual user ID
-            Long userId = 1L; // Default to student user
+            // Resolve real user from authentication
+            User currentUser = userRepository.findByUsername(username)
+                    .orElseGet(() -> userRepository.findByEmail(username).orElse(null));
+            if (currentUser == null) {
+                System.out.println("❌ TimetableController.getMyTimetable: Cannot resolve user from authentication");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            Long userId = currentUser.getId();
 
             LocalDate start = startDate != null ? LocalDate.parse(startDate) : LocalDate.now().withDayOfMonth(1);
             LocalDate end = endDate != null ? LocalDate.parse(endDate) : start.plusMonths(1).minusDays(1);
