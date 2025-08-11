@@ -58,6 +58,9 @@ public class RecruitmentPlanService {
             throw new IllegalArgumentException("End date must be after start date");
         }
         
+        // Không được chồng chéo với bất kỳ kế hoạch nào khác
+        validateNoOverlap(plan.getStartDate(), plan.getEndDate(), null);
+        
         // Tự động tính totalQuantity từ các vị trí (ban đầu = 0)
         plan.setTotalQuantity(0);
         
@@ -85,6 +88,9 @@ public class RecruitmentPlanService {
             throw new IllegalArgumentException("End date must be after start date");
         }
         
+        // Không được chồng chéo với bất kỳ kế hoạch nào khác (bỏ qua chính nó)
+        validateNoOverlap(plan.getStartDate(), plan.getEndDate(), id);
+        
         existingPlan.setTitle(plan.getTitle());
         existingPlan.setStartDate(plan.getStartDate());
         existingPlan.setEndDate(plan.getEndDate());
@@ -100,6 +106,19 @@ public class RecruitmentPlanService {
         existingPlan.setTotalQuantity(calculateTotalQuantity(id));
         
         return recruitmentPlanRepository.save(existingPlan);
+    }
+    
+    private void validateNoOverlap(LocalDate newStart, LocalDate newEnd, Long excludeId) {
+        List<RecruitmentPlan> all = recruitmentPlanRepository.findAll();
+        for (RecruitmentPlan p : all) {
+            if (excludeId != null && p.getId().equals(excludeId)) continue;
+            LocalDate s = p.getStartDate();
+            LocalDate e = p.getEndDate();
+            boolean overlaps = !(newEnd.isBefore(s) || newStart.isAfter(e));
+            if (overlaps) {
+                throw new IllegalArgumentException("Recruitment plan dates overlap with existing plan: " + p.getTitle());
+            }
+        }
     }
     
     public void deleteRecruitmentPlan(Long id) {

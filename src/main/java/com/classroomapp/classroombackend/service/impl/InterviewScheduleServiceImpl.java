@@ -29,6 +29,13 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
     public InterviewScheduleDto create(Long applicationId, LocalDateTime startTime, LocalDateTime endTime) {
         RecruitmentApplication app = appRepo.findById(applicationId)
                 .orElseThrow(() -> new RuntimeException("Application not found"));
+        // Validate within recruitment plan window
+        if (app.getJobPosition() != null && app.getJobPosition().getRecruitmentPlan() != null) {
+            var plan = app.getJobPosition().getRecruitmentPlan();
+            if (startTime.toLocalDate().isBefore(plan.getStartDate()) || endTime.toLocalDate().isAfter(plan.getEndDate())) {
+                throw new IllegalArgumentException("Thời gian phỏng vấn phải nằm trong khoảng thời gian của kế hoạch tuyển dụng");
+            }
+        }
         InterviewSchedule entity = new InterviewSchedule();
         entity.setApplication(app);
         entity.setStartTime(startTime);
@@ -157,6 +164,14 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
     public InterviewScheduleDto update(Long id, LocalDateTime startTime, LocalDateTime endTime) {
         InterviewSchedule entity = interviewRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Interview not found"));
+        // Validate within recruitment plan window
+        RecruitmentApplication app = entity.getApplication();
+        if (app != null && app.getJobPosition() != null && app.getJobPosition().getRecruitmentPlan() != null) {
+            var plan = app.getJobPosition().getRecruitmentPlan();
+            if (startTime.toLocalDate().isBefore(plan.getStartDate()) || endTime.toLocalDate().isAfter(plan.getEndDate())) {
+                throw new IllegalArgumentException("Thời gian phỏng vấn phải nằm trong khoảng thời gian của kế hoạch tuyển dụng");
+            }
+        }
         entity.setStartTime(startTime);
         entity.setEndTime(endTime);
         InterviewSchedule saved = interviewRepo.save(entity);

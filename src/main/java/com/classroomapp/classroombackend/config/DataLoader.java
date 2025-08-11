@@ -990,25 +990,25 @@ seedEvidenceTemplates();
         if (recruitmentPlanRepository.count() == 0) {
             // Tạo kế hoạch tuyển dụng với tên mới và nhiều vị trí hơn
             RecruitmentPlan plan1 = new RecruitmentPlan();
-            plan1.setTitle("Kế hoạch tuyển sinh đợt thứ nhất");
-            plan1.setStartDate(LocalDate.now().minusDays(10));
-            plan1.setEndDate(LocalDate.now().plusDays(30));
+            plan1.setTitle("Kế hoạch tuyển dụng Q1");
+            plan1.setStartDate(LocalDate.now().minusDays(40));
+            plan1.setEndDate(LocalDate.now().minusDays(10));
             plan1.setTotalQuantity(5);
             plan1.setStatus(RecruitmentPlan.Status.OPEN);
             recruitmentPlanRepository.save(plan1);
             
             RecruitmentPlan plan2 = new RecruitmentPlan();
-            plan2.setTitle("Kế hoạch tuyển sinh đợt thứ hai");
-            plan2.setStartDate(LocalDate.now().minusDays(5));
-            plan2.setEndDate(LocalDate.now().plusDays(35));
+            plan2.setTitle("Kế hoạch tuyển dụng Q2");
+            plan2.setStartDate(LocalDate.now());
+            plan2.setEndDate(LocalDate.now().plusDays(30));
             plan2.setTotalQuantity(4);
             plan2.setStatus(RecruitmentPlan.Status.OPEN);
             recruitmentPlanRepository.save(plan2);
             
             RecruitmentPlan plan3 = new RecruitmentPlan();
-            plan3.setTitle("Kế hoạch tuyển sinh đợt thứ ba");
-            plan3.setStartDate(LocalDate.now().minusDays(2));
-            plan3.setEndDate(LocalDate.now().plusDays(40));
+            plan3.setTitle("Kế hoạch tuyển dụng Q3");
+            plan3.setStartDate(LocalDate.now().plusDays(40));
+            plan3.setEndDate(LocalDate.now().plusDays(70));
             plan3.setTotalQuantity(5);
             plan3.setStatus(RecruitmentPlan.Status.OPEN);
             recruitmentPlanRepository.save(plan3);
@@ -1030,7 +1030,7 @@ seedEvidenceTemplates();
                 job1.setSalaryRange("15-25 triệu");
                 job1.setContractType("FULL_TIME");
                 job1.setQuantity(2);
-                job1.setRecruitmentPlan(plans.get(0));
+                job1.setRecruitmentPlan(plans.get(0)); // Q1 window
                 jobPositionRepository.save(job1);
                 
                 JobPosition job2 = new JobPosition();
@@ -1039,7 +1039,7 @@ seedEvidenceTemplates();
                 job2.setSalaryRange("12-20 triệu");
                 job2.setContractType("FULL_TIME");
                 job2.setQuantity(1);
-                job2.setRecruitmentPlan(plans.get(0));
+                job2.setRecruitmentPlan(plans.get(0)); // Q1 window
                 jobPositionRepository.save(job2);
                 
                 JobPosition job3 = new JobPosition();
@@ -1048,7 +1048,7 @@ seedEvidenceTemplates();
                 job3.setSalaryRange("500,000-800,000 VNĐ/giờ");
                 job3.setContractType("PART_TIME");
                 job3.setQuantity(1);
-                job3.setRecruitmentPlan(plans.get(0));
+                job3.setRecruitmentPlan(plans.get(0)); // Q1 window
                 jobPositionRepository.save(job3);
                 
                 JobPosition job4 = new JobPosition();
@@ -1057,7 +1057,7 @@ seedEvidenceTemplates();
                 job4.setSalaryRange("600,000-900,000 VNĐ/giờ");
                 job4.setContractType("PART_TIME");
                 job4.setQuantity(1);
-                job4.setRecruitmentPlan(plans.get(0));
+                job4.setRecruitmentPlan(plans.get(0)); // Q1 window
                 jobPositionRepository.save(job4);
                 
                 // Kế hoạch 2: Đợt thứ hai - 4 vị trí (4 PART_TIME - Giáo viên)
@@ -1067,7 +1067,7 @@ seedEvidenceTemplates();
                 job5.setSalaryRange("600,000-900,000 VNĐ/giờ");
                 job5.setContractType("PART_TIME");
                 job5.setQuantity(1);
-                job5.setRecruitmentPlan(plans.get(1));
+                job5.setRecruitmentPlan(plans.get(1)); // Q2 window
                 jobPositionRepository.save(job5);
                 
                 JobPosition job6 = new JobPosition();
@@ -1076,7 +1076,7 @@ seedEvidenceTemplates();
                 job6.setSalaryRange("700,000-1,000,000 VNĐ/giờ");
                 job6.setContractType("PART_TIME");
                 job6.setQuantity(1);
-                job6.setRecruitmentPlan(plans.get(1));
+                job6.setRecruitmentPlan(plans.get(1)); // Q2 window
                 jobPositionRepository.save(job6);
                 
                 JobPosition job7 = new JobPosition();
@@ -1085,7 +1085,7 @@ seedEvidenceTemplates();
                 job7.setSalaryRange("800,000-1,200,000 VNĐ/giờ");
                 job7.setContractType("PART_TIME");
                 job7.setQuantity(1);
-                job7.setRecruitmentPlan(plans.get(1));
+                job7.setRecruitmentPlan(plans.get(1)); // Q2 window
                 jobPositionRepository.save(job7);
                 
                 JobPosition job8 = new JobPosition();
@@ -1094,7 +1094,7 @@ seedEvidenceTemplates();
                 job8.setSalaryRange("800,000-1,200,000 VNĐ/giờ");
                 job8.setContractType("PART_TIME");
                 job8.setQuantity(1);
-                job8.setRecruitmentPlan(plans.get(1));
+                job8.setRecruitmentPlan(plans.get(1)); // Q2 window
                 jobPositionRepository.save(job8);
                 
                 // Kế hoạch 3: Đợt thứ ba - 5 vị trí (5 PART_TIME - Giáo viên)
@@ -1105,7 +1105,7 @@ seedEvidenceTemplates();
                 job9.setSalaryRange("600,000-900,000 VNĐ/giờ");
                 job9.setContractType("PART_TIME");
                 job9.setQuantity(1);
-                job9.setRecruitmentPlan(plans.get(2));
+                job9.setRecruitmentPlan(plans.get(2)); // Q3 window
                 jobPositionRepository.save(job9);
                 
                 JobPosition job10 = new JobPosition();
@@ -1114,7 +1114,7 @@ seedEvidenceTemplates();
                 job10.setSalaryRange("700,000-1,000,000 VNĐ/giờ");
                 job10.setContractType("PART_TIME");
                 job10.setQuantity(1);
-                job10.setRecruitmentPlan(plans.get(2));
+                job10.setRecruitmentPlan(plans.get(2)); // Q3 window
                 jobPositionRepository.save(job10);
                 
                 JobPosition job11 = new JobPosition();
@@ -1123,7 +1123,7 @@ seedEvidenceTemplates();
                 job11.setSalaryRange("800,000-1,200,000 VNĐ/giờ");
                 job11.setContractType("PART_TIME");
                 job11.setQuantity(1);
-                job11.setRecruitmentPlan(plans.get(2));
+                job11.setRecruitmentPlan(plans.get(2)); // Q3 window
                 jobPositionRepository.save(job11);
                 
                 JobPosition job12 = new JobPosition();
@@ -1132,7 +1132,7 @@ seedEvidenceTemplates();
                 job12.setSalaryRange("600,000-900,000 VNĐ/giờ");
                 job12.setContractType("PART_TIME");
                 job12.setQuantity(1);
-                job12.setRecruitmentPlan(plans.get(2));
+                job12.setRecruitmentPlan(plans.get(2)); // Q3 window
                 jobPositionRepository.save(job12);
                 
                 JobPosition job13 = new JobPosition();
@@ -1141,7 +1141,7 @@ seedEvidenceTemplates();
                 job13.setSalaryRange("700,000-1,000,000 VNĐ/giờ");
                 job13.setContractType("PART_TIME");
                 job13.setQuantity(1);
-                job13.setRecruitmentPlan(plans.get(2));
+                job13.setRecruitmentPlan(plans.get(2)); // Q3 window
                 jobPositionRepository.save(job13);
                 
                 log.info("✅ Created 13 job positions across 3 recruitment plans");
