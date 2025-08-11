@@ -31,6 +31,7 @@ public class InterviewScheduleController {
     private final InterviewScheduleService interviewService;
     private final EmailService emailService;
     private final UserServiceExtension userService;
+    private final com.classroomapp.classroombackend.service.RecruitmentApplicationService recruitmentService;
 
     // Custom error response class
     public static class ErrorResponse {
@@ -294,18 +295,47 @@ public class InterviewScheduleController {
         InterviewScheduleDto interview = interviewService.getAll().stream().filter(i -> i.getId().equals(id)).findFirst().orElse(null);
         if (interview == null) return ResponseEntity.notFound().build();
         
-        // Gửi mail kết quả
-        if ("APPROVED".equals(body.getStatus()) || "ACCEPTED".equals(body.getStatus())) {
-            emailService.sendEmail(interview.getApplicantEmail(), "Kết quả phỏng vấn", "Chúc mừng bạn đã vượt qua phỏng vấn cho vị trí: " + interview.getJobTitle());
-            
-            // Tạo user mới với trạng thái chưa có hợp đồng nếu cần
-            if (body.getCreateAccount() != null && body.getCreateAccount()) {
-                userService.createUserWithoutContract(interview.getApplicantEmail(), interview.getApplicantName(), "TEACHER");
-            } else {
-                // Tạo user mới với trạng thái chưa có hợp đồng (logic mặc định)
-                userService.createUserWithoutContract(interview.getApplicantEmail(), interview.getApplicantName(), "TEACHER");
-            }
-        } else if ("REJECTED".equals(body.getStatus())) {
+                                // Gửi mail kết quả
+                        if ("ACCEPTED".equals(body.getStatus())) {
+                            // Tạo user mới với trạng thái chưa có hợp đồng nếu cần
+                            if (body.getCreateAccount() != null && body.getCreateAccount()) {
+                                userService.createUserWithoutContract(interview.getApplicantEmail(), interview.getApplicantName(), null);
+                            } else {
+                                // Tạo user mới với trạng thái chưa có hợp đồng (logic mặc định)
+                                userService.createUserWithoutContract(interview.getApplicantEmail(), interview.getApplicantName(), null);
+                            }
+
+                            // Cập nhật trạng thái thành COMPLETED để ứng viên xuất hiện trong "Quản Lý Offer"
+                            // Lịch phỏng vấn vẫn giữ nguyên để có thể bị đè bởi lịch mới
+                            interviewService.updateStatus(id, "COMPLETED", body.getResult());
+
+                        } else if ("APPROVED".equals(body.getStatus())) {
+                            // Tạo user mới với trạng thái chưa có hợp đồng nếu cần
+                            if (body.getCreateAccount() != null && body.getCreateAccount()) {
+                                userService.createUserWithoutContract(interview.getApplicantEmail(), interview.getApplicantName(), null);
+                            } else {
+                                // Tạo user mới với trạng thái chưa có hợp đồng (logic mặc định)
+                                userService.createUserWithoutContract(interview.getApplicantEmail(), interview.getApplicantName(), null);
+                            }
+
+                            // Cập nhật trạng thái thành APPROVED (không phải COMPLETED)
+                            interviewService.updateStatus(id, "APPROVED", body.getResult());
+                            try {
+                                // Đánh dấu đơn ứng tuyển là HIRED
+                                if (interview.getApplicationId() != null) {
+                                    recruitmentService.updateStatus(interview.getApplicationId(), "HIRED", null);
+                                }
+                            } catch (Exception ignored) {}
+
+                            // Xóa lịch phỏng vấn sau khi duyệt ứng viên để không còn xuất hiện trong tab "Lên lịch"
+                            // và để ngăn việc chỉnh sửa lịch sau khi đã duyệt
+                            try {
+                                interviewService.delete(id);
+                            } catch (Exception ex) {
+                                // Ignore deletion errors to avoid blocking approval flow
+                            }
+
+                        } else if ("REJECTED".equals(body.getStatus())) {
             // Gửi mail từ chối với evaluation
             InterviewScheduleDto interviewDto = interviewService.getAll().stream().filter(i -> i.getId().equals(id)).findFirst().orElse(null);
             if (interviewDto != null) {
@@ -341,9 +371,16 @@ public class InterviewScheduleController {
                 return ResponseEntity.badRequest().body(null);
             }
             
+            // Only apply dependent deduction for FULL_TIME contracts
+            int appliedDependents = numberOfDependents;
+            String contractType = interview.getContractType();
+            if (contractType == null || !"FULL_TIME".equalsIgnoreCase(contractType)) {
+                appliedDependents = 0;
+            }
+
             // Calculate salary details using TopCVCalculation
             TopCVCalculation.SalaryCalculationResult result = 
-                TopCVCalculation.calculateFromGrossToNet(grossSalary, numberOfDependents);
+                TopCVCalculation.calculateFromGrossToNet(grossSalary, appliedDependents);
             
             return ResponseEntity.ok(result);
         } catch (Exception e) {
@@ -362,7 +399,15 @@ public class InterviewScheduleController {
             }
             
             BigDecimal netSalary = new BigDecimal(request.getNetSalary());
-            TopCVCalculation.SalaryCalculationResult result = TopCVCalculation.calculateFromNetToGross(netSalary, request.getNumberOfDependents());
+
+            // Only apply dependent deduction for FULL_TIME contracts
+            int appliedDependents = request.getNumberOfDependents();
+            String contractType = interview.getContractType();
+            if (contractType == null || !"FULL_TIME".equalsIgnoreCase(contractType)) {
+                appliedDependents = 0;
+            }
+
+            TopCVCalculation.SalaryCalculationResult result = TopCVCalculation.calculateFromNetToGross(netSalary, appliedDependents);
             
             return ResponseEntity.ok(result);
         } catch (Exception e) {

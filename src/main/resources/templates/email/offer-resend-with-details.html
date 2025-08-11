@@ -163,6 +163,11 @@
                         <div class="salary-value" th:text="${salaryDetails.netSalary != null ? #numbers.formatDecimal(salaryDetails.netSalary, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : 'N/A'}">0 VNĐ</div>
                     </div>
                 </div>
+                <div class="note" th:if="${salaryDetails.numberOfDependents != null}">
+                    <strong>Giảm trừ gia cảnh:</strong>
+                    <span th:text="${salaryDetails.numberOfDependents}">0</span> người phụ thuộc
+                    (áp dụng theo Nghị quyết 954/2020/UBTVQH14, chỉ cho hợp đồng Full-time)
+                </div>
             </div>
 
             <div class="salary-details">

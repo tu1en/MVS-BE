@@ -54,11 +54,13 @@ public class TopCVCalculationTest {
         TopCVCalculation.SalaryCalculationResult result1 = TopCVCalculation.calculateFromGrossToNet(grossSalary, 1);
         BigDecimal expectedDeduction1 = new BigDecimal("4400000");
         assertEquals(expectedDeduction1, result1.getDependentDeductions());
+        assertEquals(1, result1.getNumberOfDependents());
         
         // Test with 2 dependents
         TopCVCalculation.SalaryCalculationResult result2 = TopCVCalculation.calculateFromGrossToNet(grossSalary, 2);
         BigDecimal expectedDeduction2 = new BigDecimal("8800000");
         assertEquals(expectedDeduction2, result2.getDependentDeductions());
+        assertEquals(2, result2.getNumberOfDependents());
         
         // Net salary with dependents should be higher
         assertTrue(result1.getNetSalary().compareTo(result0.getNetSalary()) > 0);

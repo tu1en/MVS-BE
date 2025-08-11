@@ -45,6 +45,7 @@ public class TopCVCalculation {
         private BigDecimal taxableIncome;
         private List<TaxBracket> taxBrackets;
         private String calculationType; // "GROSS_TO_NET" or "NET_TO_GROSS"
+        private Integer numberOfDependents;
     }
     
     @Data
@@ -86,6 +87,7 @@ public class TopCVCalculation {
         SalaryCalculationResult result = new SalaryCalculationResult();
         result.setGrossSalary(grossSalary);
         result.setCalculationType("GROSS_TO_NET");
+        result.setNumberOfDependents(numberOfDependents);
         
         // Calculate detailed insurance contributions
         InsuranceDetails insuranceDetails = calculateInsuranceDetails(grossSalary);
