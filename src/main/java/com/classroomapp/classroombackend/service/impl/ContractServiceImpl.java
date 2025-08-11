@@ -161,17 +161,22 @@ public class ContractServiceImpl implements ContractService {
         Contract savedContract = contractRepository.save(contract);
         log.info("Contract created successfully with id: {}", savedContract.getId());
         
-        // Automatically activate user account and assign role based on contract type
+        // Automatically unlock user account ONLY. Do NOT assign role here.
         try {
-            if (savedContract.getEmail() != null && !savedContract.getEmail().trim().isEmpty()) {
-                userService.activateUserAndAssignRole(savedContract.getEmail(), savedContract.getContractType());
-                log.info("User account activated and role assigned for email: {} with contract type: {}", 
-                        savedContract.getEmail(), savedContract.getContractType());
+            String email = savedContract.getEmail();
+            if (email != null && !email.trim().isEmpty()) {
+                User unlockedUser = userRepository.findByEmail(email).orElse(null);
+                if (unlockedUser != null) {
+                    // Mark account as active/unlocked without changing role
+                    unlockedUser.setStatus("active");
+                    userRepository.save(unlockedUser);
+                    log.info("User account unlocked (no role changes) for email: {}", email);
+                }
             }
         } catch (Exception e) {
-            log.warn("Failed to activate user account for email: {}. Error: {}", 
+            log.warn("Failed to unlock user account for email: {}. Error: {}", 
                     savedContract.getEmail(), e.getMessage());
-            // Continue execution - contract creation should not fail if user activation fails
+            // Continue execution - contract creation should not fail if unlocking fails
         }
         
         return convertToDto(savedContract);
