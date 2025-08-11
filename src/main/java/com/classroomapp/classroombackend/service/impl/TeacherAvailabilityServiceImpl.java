@@ -79,20 +79,9 @@ public class TeacherAvailabilityServiceImpl implements com.classroomapp.classroo
         }
 
         List<AvailableTeacherDto> result = new ArrayList<>();
-        // Luôn thêm tài khoản đặc biệt 'teacher' nếu tồn tại (bỏ qua mọi kiểm tra)
-        try {
-            User special = userRepository.findByUsername("teacher")
-                .orElseGet(() -> userRepository.findByEmail("teacher@test.com").orElse(null));
-            if (special != null) {
-                result.add(new AvailableTeacherDto(
-                    special.getId(),
-                    special.getFullName() != null ? special.getFullName() : "Teacher",
-                    special.getEmail(),
-                    special.getDepartment()
-                ));
-            }
-        } catch (Exception ignored) {}
+        // Gỡ ưu tiên teacher đặc biệt trong demo để không chiếm danh sách
         List<Contract> candidatesNoShift = new ArrayList<>();
+        List<Contract> fallbackLoose = new ArrayList<>(); // subject ok, no conflict, but level/shift failed
         for (Contract contract : activeTeacherContracts) {
             System.out.println("\n--- Checking contract: " + contract.getFullName() + " (" + contract.getEmail() + ") ---");
             System.out.println("Contract data - Subject: [" + contract.getSubject() + "], Level: [" + contract.getClassLevel() + "], Hours: [" + contract.getWorkingHours() + "]");
@@ -130,6 +119,21 @@ public class TeacherAvailabilityServiceImpl implements com.classroomapp.classroo
                 String sub = normalizeNoAccent(contract.getSubject());
                 System.out.println("Subject check - Requested: [" + rq + "], Teacher dept: [" + dep + "], Contract subject: [" + sub + "]");
                 boolean subjectMatch = matchesSubject(rq, dep, sub);
+
+                // Soft fallback for demo data: if not matched by dept/subject, try email username hint (e.g., toan1@...)
+                if (!subjectMatch) {
+                    try {
+                        String email = contract.getEmail();
+                        if (email != null) {
+                            String emailNorm = normalizeNoAccent(email);
+                            String key = canonicalSubject(sanitize(rq));
+                            if (emailNorm != null && key != null && !key.isBlank() && emailNorm.contains(key)) {
+                                subjectMatch = true;
+                                System.out.println("Subject fallback matched by email: " + email);
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                }
                 System.out.println("Subject match result: " + subjectMatch);
                 if (!subjectMatch) {
                     System.out.println("❌ Subject filter failed");
@@ -179,17 +183,86 @@ public class TeacherAvailabilityServiceImpl implements com.classroomapp.classroo
                     System.out.println("⚠️ Teacher passed level but failed shift: " + contract.getFullName());
                     // lưu ứng viên bỏ qua ca làm việc để fallback mềm
                     candidatesNoShift.add(contract);
+                    fallbackLoose.add(contract);
                 } else {
                     System.out.println("❌ Teacher rejected (level/shift): " + contract.getFullName());
+                    // Vẫn cho vào fallback lỏng nếu subject ok và không xung đột để demo có nhiều lựa chọn
+                    fallbackLoose.add(contract);
                 }
             } else {
                 System.out.println("❌ Teacher has time conflict: " + contract.getFullName());
             }
         }
+        // Nếu kết quả quá ít → nới lỏng: thêm các ứng viên fallback (ưu tiên đúng ca trước)
+        int MIN_TARGET = 6;
+        if (result.size() < MIN_TARGET) {
+            Set<Long> picked = new java.util.HashSet<>();
+            for (AvailableTeacherDto dto : result) picked.add(dto.getId());
+
+            // Ưu tiên những người chỉ sai ca làm việc
+            for (Contract c : candidatesNoShift) {
+                if (picked.contains(c.getUserId())) continue;
+                try {
+                    User t = userRepository.findById(c.getUserId()).orElse(null);
+                    if (t != null) {
+                        result.add(new AvailableTeacherDto(t.getId(), c.getFullName(), c.getEmail(), t.getDepartment()));
+                        picked.add(t.getId());
+                        if (result.size() >= MIN_TARGET) break;
+                    }
+                } catch (Exception ignored) {}
+            }
+
+            // Nếu vẫn thiếu, thêm tiếp danh sách lỏng (sai level/ca) nhưng đúng môn và không trùng lịch
+            for (Contract c : fallbackLoose) {
+                if (result.size() >= MIN_TARGET) break;
+                if (picked.contains(c.getUserId())) continue;
+                try {
+                    User t = userRepository.findById(c.getUserId()).orElse(null);
+                    if (t != null) {
+                        result.add(new AvailableTeacherDto(t.getId(), c.getFullName(), c.getEmail(), t.getDepartment()));
+                        picked.add(t.getId());
+                    }
+                } catch (Exception ignored) {}
+            }
+        }
+
+        // Nếu vẫn không có ai (hoặc rất ít) → trả về danh sách mặc định theo môn, bỏ qua level/ca và cả conflict (phục vụ demo)
+        if (result.isEmpty()) {
+            Set<Long> picked = new java.util.HashSet<>();
+            // 1) Lấy theo môn học (subject/department/email) bất kể level/ca
+            for (Contract c : activeTeacherContracts) {
+                try {
+                    String rq = normalizeNoAccent(request.getSubject());
+                    User t = userRepository.findById(c.getUserId()).orElse(null);
+                    if (t == null) continue;
+                    String dep = normalizeNoAccent(t.getDepartment());
+                    String sub = normalizeNoAccent(c.getSubject());
+                    boolean ok = matchesSubject(rq, dep, sub);
+                    if (ok && !picked.contains(t.getId())) {
+                        result.add(new AvailableTeacherDto(t.getId(), c.getFullName(), c.getEmail(), t.getDepartment()));
+                        picked.add(t.getId());
+                    }
+                    if (result.size() >= MIN_TARGET) break;
+                } catch (Exception ignored) {}
+            }
+
+            // 2) Nếu vẫn trống, trả về vài giáo viên bất kỳ để dropdown không rỗng
+            if (result.isEmpty()) {
+                for (Contract c : activeTeacherContracts) {
+                    try {
+                        User t = userRepository.findById(c.getUserId()).orElse(null);
+                        if (t == null || picked.contains(t.getId())) continue;
+                        result.add(new AvailableTeacherDto(t.getId(), c.getFullName(), c.getEmail(), t.getDepartment()));
+                        picked.add(t.getId());
+                        if (result.size() >= MIN_TARGET) break;
+                    } catch (Exception ignored) {}
+                }
+            }
+        }
+
         System.out.println("\n=== FINAL RESULT ===");
-        System.out.println("Accepted teachers: " + result.size());
-        System.out.println("Fallback candidates: " + candidatesNoShift.size());
-        return result; // Strict: chỉ trả GV khớp môn, khối (nếu có), không trùng lịch và ĐÚNG ca làm việc
+        System.out.println("Accepted+Fallback teachers sent: " + result.size());
+        return result;
     }
 
     private String determineShift(LocalTime startTime) {

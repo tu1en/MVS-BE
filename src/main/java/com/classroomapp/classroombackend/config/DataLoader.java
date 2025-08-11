@@ -261,6 +261,9 @@ seedEvidenceTemplates();
             classrooms = classroomRepository.findAll();
         }
 
+        // Ensure there are enough teachers for demo even when DB already has data
+        ensureMinimumTeachers(24);
+
         // Always verify database state
         verifyDatabaseState();
         verifyUserRoleAssignments();
@@ -1689,6 +1692,101 @@ seedEvidenceTemplates();
 
         log.info("============== User Role Verification Complete ==============");
     }
+
+    /**
+     * Ensure the system has at least a minimum number of TEACHER users for demo.
+     * If not, seed additional teachers with contracts so that availability filters work.
+     */
+    private void ensureMinimumTeachers(int minTeachers) {
+        try {
+            List<User> existingTeachers = userRepository.findByRoleId(RoleConstants.TEACHER);
+            int current = existingTeachers != null ? existingTeachers.size() : 0;
+            if (current >= minTeachers) {
+                log.info("✅ Teacher count sufficient ({} >= {}), no top-up needed.", current, minTeachers);
+                return;
+            }
+
+            log.info("🔧 Teacher count is {} < {}, seeding additional teachers for demo...", current, minTeachers);
+
+            // Seed pool covering common subjects so /classes/available-teachers works well
+            String[][] seedPool = new String[][]{
+                {"toan_demo1","toan_demo1@school.vn","Nguyễn Đức Toàn (Demo)","Toán"},
+                {"toan_demo2","toan_demo2@school.vn","Phạm Hải Long (Demo)","Toán"},
+                {"ly_demo1","ly_demo1@school.vn","Trần Quốc Huy (Demo)","Vật lý"},
+                {"ly_demo2","ly_demo2@school.vn","Đỗ Thanh Tùng (Demo)","Vật lý"},
+                {"hoa_demo1","hoa_demo1@school.vn","Vũ Hồng Phúc (Demo)","Hóa học"},
+                {"hoa_demo2","hoa_demo2@school.vn","Bùi Thanh Hà (Demo)","Hóa học"},
+                {"van_demo1","van_demo1@school.vn","Phạm Thu Hà (Demo)","Ngữ văn"},
+                {"van_demo2","van_demo2@school.vn","Nguyễn Thị Hồng (Demo)","Ngữ văn"},
+                {"anh_demo1","anh_demo1@school.vn","Lê Hồng Sơn (Demo)","Tiếng Anh"},
+                {"anh_demo2","anh_demo2@school.vn","Tạ Bích Ngọc (Demo)","Tiếng Anh"},
+                {"sinh_demo1","sinh_demo1@school.vn","Đặng Quỳnh Chi (Demo)","Sinh học"},
+                {"sinh_demo2","sinh_demo2@school.vn","Trịnh Văn Thái (Demo)","Sinh học"}
+            };
+
+            int needed = minTeachers - current;
+            int created = 0;
+            int idx = 0;
+            while (created < needed) {
+                String[] seed = seedPool[idx % seedPool.length];
+                String username = seed[0] + (idx / seedPool.length); // ensure unique when wrapping
+                String email = seed[1].replace("@", "+" + (idx / seedPool.length) + "@");
+                String fullName = seed[2].replace("(Demo)", "(Demo " + (idx / seedPool.length + 1) + ")");
+                String department = seed[3];
+
+                if (userRepository.findByEmail(email).isPresent()) {
+                    idx++;
+                    continue;
+                }
+
+                User u = new User();
+                u.setUsername(username);
+                u.setPassword(passwordEncoder.encode("teacher123"));
+                u.setEmail(email);
+                u.setFullName(fullName);
+                u.setRoleId(RoleConstants.TEACHER);
+                u.setDepartment(department);
+                u.setHireDate(LocalDate.now().minusMonths((idx % 24) + 1));
+                User saved = userRepository.save(u);
+
+                // Also create an ACTIVE contract so teacher appears in availability filters
+                try {
+                    Contract c = new Contract();
+                    c.setContractId("CT" + saved.getId() + "_" + System.currentTimeMillis());
+                    c.setUserId(saved.getId());
+                    c.setFullName(saved.getFullName());
+                    c.setEmail(saved.getEmail());
+                    c.setPhoneNumber("09" + (int)(10_000_000 + Math.random() * 89_999_999));
+                    c.setContractType("TEACHER");
+                    c.setPosition("Giáo viên " + department);
+                    c.setDepartment(department);
+                    c.setSalary(15_000_000.0 + (int)(Math.random() * 6_000_000));
+                    long hourly = 120_000L + (long)(Math.random() * 100_000L);
+                    try { c.setHourlySalary(hourly); } catch (Exception ignored) {}
+                    String[] shifts = new String[]{
+                        "ca sáng (07:30-09:30)", "ca chiều (13:30-15:30)", "ca tối (18:00-20:00)"
+                    };
+                    c.setWorkingHours(shifts[(int)(Math.random() * shifts.length)]);
+                    c.setStartDate(LocalDate.now());
+                    c.setEndDate(LocalDate.now().plusYears(2));
+                    c.setStatus("ACTIVE");
+                    c.setSubject(department);
+                    String[] levels = new String[]{"10","11","12"};
+                    c.setClassLevel(levels[(int)(Math.random() * levels.length)]);
+                    contractRepository.save(c);
+                } catch (Exception e) {
+                    log.warn("Could not create contract for {}: {}", email, e.getMessage());
+                }
+
+                created++;
+                idx++;
+            }
+
+            log.info("✅ Seeded {} additional teachers for demo (target: {}, now: {}).", created, minTeachers, current + created);
+        } catch (Exception e) {
+            log.error("❌ Error ensuring minimum teachers: {}", e.getMessage(), e);
+        }
+    }
     // Thêm method này vào cuối class DataLoader
 private void seedEvidenceTemplates() {
     if (evidenceTemplateRepository.count() == 0) {
@@ -1805,13 +1903,15 @@ private void createEvidenceTemplate(String name, String code, String description
     evidenceTemplateRepository.save(template);
 }
 
-private void createAttendanceExplanationsData() {
+    private void createAttendanceExplanationsData() {
     log.info("============== Creating Attendance Explanations Test Data ==============");
     
     if (attendanceExplanationRepository.count() > 0) {
         log.info("AttendanceExplanations already exist, skipping creation");
         return;
     }
+
+    
     
     // Get staff users (teachers, accountant, manager)
     String[] staffEmails = {

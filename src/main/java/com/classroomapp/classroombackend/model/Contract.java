@@ -1,12 +1,19 @@
 package com.classroomapp.classroombackend.model;
 
-import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "contracts")
@@ -21,25 +28,25 @@ public class Contract {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(name = "contract_id", unique = true, nullable = false)
+    @Column(name = "contract_id", unique = true, nullable = false, columnDefinition = "NVARCHAR(100)")
     private String contractId;
 
-    @Column(name = "full_name", nullable = false)
+    @Column(name = "full_name", nullable = false, columnDefinition = "NVARCHAR(255)")
     private String fullName;
 
-    @Column(name = "email", nullable = false)
+    @Column(name = "email", nullable = false, columnDefinition = "NVARCHAR(255)")
     private String email;
 
-    @Column(name = "phone_number")
+    @Column(name = "phone_number", columnDefinition = "NVARCHAR(50)")
     private String phoneNumber;
 
-    @Column(name = "contract_type", nullable = false)
+    @Column(name = "contract_type", nullable = false, columnDefinition = "NVARCHAR(50)")
     private String contractType; // "TEACHER", "ACCOUNTANT"
 
-    @Column(name = "position", nullable = false)
+    @Column(name = "position", nullable = false, columnDefinition = "NVARCHAR(255)")
     private String position;
 
-    @Column(name = "department")
+    @Column(name = "department", columnDefinition = "NVARCHAR(255)")
     private String department;
 
     @Column(name = "salary", nullable = false)
@@ -55,7 +62,7 @@ public class Contract {
     @Column(name = "hourly_salary")
     private Long hourlySalary; // Lương theo giờ từ Quản lý Offer
 
-    @Column(name = "working_hours")
+    @Column(name = "working_hours", columnDefinition = "NVARCHAR(255)")
     private String workingHours;
 
     @Column(name = "start_date", nullable = false)
@@ -64,10 +71,10 @@ public class Contract {
     @Column(name = "end_date")
     private LocalDate endDate;
 
-    @Column(name = "status", nullable = false)
+    @Column(name = "status", nullable = false, columnDefinition = "NVARCHAR(50)")
     private String status; // "ACTIVE", "EXPIRED", "TERMINATED"
 
-    @Column(name = "contract_terms", columnDefinition = "TEXT")
+    @Column(name = "contract_terms", columnDefinition = "NVARCHAR(MAX)")
     private String contractTerms;
 
     @Column(name = "created_by")
