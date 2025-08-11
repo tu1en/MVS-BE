@@ -127,17 +127,31 @@ public class ContractServiceImpl implements ContractService {
             throw new IllegalArgumentException("Position is required");
         }
         
-        // Validate salary based on contract type
-        if ("TEACHER".equals(contract.getContractType())) {
-            // For teachers, validate hourly salary
-            if (contract.getHourlySalary() == null || contract.getHourlySalary() <= 0) {
-                throw new IllegalArgumentException("Valid hourly salary is required for teachers");
-            }
-        } else {
-            // For staff, validate regular salary
-            if (contract.getSalary() == null || contract.getSalary() <= 0) {
-                throw new IllegalArgumentException("Valid salary is required for staff");
-            }
+        // Validate mutually exclusive salary logic
+        boolean hasHourly = contract.getHourlySalary() != null && contract.getHourlySalary() > 0;
+        boolean hasGross = contract.getGrossSalary() != null && contract.getGrossSalary() > 0;
+        boolean hasNet = contract.getNetSalary() != null && contract.getNetSalary() > 0;
+        boolean hasGrossNet = hasGross || hasNet;
+        
+        // Ensure exactly one salary type is provided
+        if (!hasHourly && !hasGrossNet) {
+            throw new IllegalArgumentException("Either hourly salary or gross/net salary must be provided");
+        }
+        
+        if (hasHourly && hasGrossNet) {
+            throw new IllegalArgumentException("Cannot have both hourly salary and gross/net salary. They are mutually exclusive");
+        }
+        
+        // If gross/net is provided, both should be provided (they go together)
+        if (hasGrossNet && (!hasGross || !hasNet)) {
+            throw new IllegalArgumentException("Both gross and net salary must be provided together");
+        }
+        
+        // Set the legacy salary field for backward compatibility
+        if (hasHourly) {
+            contract.setSalary(contract.getHourlySalary().doubleValue());
+        } else if (hasGross) {
+            contract.setSalary(contract.getGrossSalary().doubleValue());
         }
         
         if (contract.getStartDate() == null) {
@@ -325,18 +339,10 @@ public class ContractServiceImpl implements ContractService {
                     candidate.setPhoneNumber(application.getPhoneNumber() != null ? application.getPhoneNumber() : "Chưa có");
                     candidate.setPosition(application.getJobTitle());
                     
-                    // 🔧 FIX: Set default salary values since recruitment applications don't store detailed offer info
-                    // Xác định contract type và salary dựa trên job title
-                    String jobTitle = application.getJobTitle() != null ? application.getJobTitle().toLowerCase() : "";
-                    if (jobTitle.contains("giáo viên") || jobTitle.contains("teacher")) {
-                        candidate.setContractType("TEACHER");
-                        candidate.setSalary(150000.0 * 80); // 150k VND/hour * 80 hours = 12M VND/month estimated
-                        log.info("Set contract type TEACHER for job title: {}", application.getJobTitle());
-                    } else {
-                        candidate.setContractType("STAFF");
-                        candidate.setSalary(15000000.0); // 15M VND/month for staff
-                        log.info("Set contract type STAFF for job title: {}", application.getJobTitle());
-                    }
+                    // Không tự động gán loại hợp đồng hay lương mặc định nữa.
+                    // FE sẽ cho phép người dùng chọn loại hợp đồng (TEACHER/STAFF) và lương lấy từ Offer API khi mở modal.
+                    candidate.setContractType(null);
+                    candidate.setSalary(null);
                     
                     return candidate;
                 })
@@ -348,72 +354,96 @@ public class ContractServiceImpl implements ContractService {
 
     @Override
     public ContractDto getCandidateOfferData(Long candidateId) {
-        log.info("🔄 REFACTORED: Fetching mutually exclusive salary data for candidate ID: {}", candidateId);
+        log.info("🔍 DEBUG: Starting getCandidateOfferData for recruitment application ID: {}", candidateId);
         try {
-            // Tìm interview schedule của candidate để lấy dữ liệu offer từ Quản Lý Offer
-            InterviewScheduleDto interview = interviewScheduleService.getById(candidateId);
-            if (interview == null) {
-                log.warn("Interview not found for candidate ID: {}", candidateId);
-                throw new ResourceNotFoundException("Interview not found for candidate ID: " + candidateId);
+            // 🔧 FIX: candidateId is actually a recruitment application ID, not interview ID
+            // First get the recruitment application to get candidate email
+            log.info("🔍 DEBUG: Fetching recruitment application with ID: {}", candidateId);
+            RecruitmentApplicationDto application = recruitmentApplicationService.getApplication(candidateId);
+            if (application == null) {
+                log.error("❌ ERROR: Recruitment application not found for ID: {}", candidateId);
+                throw new ResourceNotFoundException("Recruitment application not found for ID: " + candidateId);
             }
             
+            log.info("✅ DEBUG: Found recruitment application - ID: {}, Email: {}, Name: {}", 
+                    application.getId(), application.getEmail(), application.getFullName());
+            
+            // Tìm interview bằng applicationId thay vì email và không giới hạn trạng thái
+            log.info("🔍 DEBUG: Fetching interviews by applicationId: {}", application.getId());
+            List<InterviewScheduleDto> interviewsByApp = interviewScheduleService.getByApplication(application.getId());
+            log.info("🔍 DEBUG: Total interviews found for application {}: {}", application.getId(), interviewsByApp.size());
+
+            // Chọn interview mới nhất (ưu tiên id lớn nhất nếu không có sort)
+            InterviewScheduleDto interview = interviewsByApp.stream()
+                    .max((a, b) -> Long.compare(a.getId(), b.getId()))
+                    .orElse(null);
+            
+            // Chuẩn bị offerData mặc định với mutually exclusive salary fields = null
             ContractDto offerData = new ContractDto();
-            
-            // Lấy đánh giá từ interview evaluation field
-            String evaluation = "Chưa có đánh giá";
-            if ("APPROVED".equals(interview.getStatus())) {
-                evaluation = "Đạt yêu cầu - Được phê duyệt";
-                if (interview.getEvaluation() != null && !interview.getEvaluation().trim().isEmpty()) {
-                    evaluation = interview.getEvaluation();
-                }
-            }
-            offerData.setComments(evaluation);
-            
-            // 🔄 NEW LOGIC: Xử lý lương dựa trên dữ liệu có sẵn trong offer (mutually exclusive)
-            // Không còn phân biệt theo vị trí, mà theo loại lương có trong offer data
-            
-            // Khởi tạo tất cả salary fields về null
+            offerData.setComments("Chưa có đánh giá");
             offerData.setHourlySalary(null);
             offerData.setGrossSalary(null);
             offerData.setNetSalary(null);
-            
-            log.info("🔍 PROCESSING: Analyzing offer data for candidate ID: {}", candidateId);
-            
-            // Ưu tiên 1: Kiểm tra xem có lương theo giờ không
+
+            if (interview == null) {
+                // KHÔNG NÊN THROW: Interview APPROVED đã bị xóa sau duyệt. Trả về dữ liệu mặc định để FE mở modal.
+                log.warn("⚠️ No approved/hired interview found for email {}. Returning default offer payload with null salaries.", application.getEmail());
+                return offerData;
+            }
+
+            log.info("✅ DEBUG: Found matching interview - ID: {}, Status: {}, Offer: {}", 
+                    interview.getId(), interview.getStatus(), interview.getOffer());
+
+            // Lấy đánh giá từ interview evaluation field (nếu có)
+            String evaluation = "Chưa có đánh giá";
+            if ("APPROVED".equals(interview.getStatus())) {
+                evaluation = "Đạt yêu cầu - Được phê duyệt";
+            }
+            if (interview.getEvaluation() != null && !interview.getEvaluation().trim().isEmpty()) {
+                evaluation = interview.getEvaluation();
+            }
+            offerData.setComments(evaluation);
+
+             log.info("🔍 PROCESSING: Analyzing offer data for candidate ID: {}", candidateId);
+
+              String jobTitleLower = application.getJobTitle() != null ? application.getJobTitle().toLowerCase() : "";
+            boolean isTeacher = jobTitleLower.contains("giáo viên") || jobTitleLower.contains("teacher");
+
             Long extractedHourly = extractHourlySalaryFromOffer(interview);
             if (extractedHourly != null && extractedHourly > 0) {
-                // Nếu có lương theo giờ, chỉ set hourly và để gross/net là null
                 offerData.setHourlySalary(extractedHourly);
                 log.info("✅ HOURLY SALARY: Set hourly: {} VND/hour, gross/net remain null", extractedHourly);
             } else if (interview.getOffer() != null && !interview.getOffer().trim().isEmpty()) {
-                // Ưu tiên 2: Nếu không có lương theo giờ, xử lý gross/net salary
-                try {
-                    String cleanOffer = interview.getOffer().replaceAll("[^0-9]", "");
-                    if (!cleanOffer.isEmpty()) {
-                        BigDecimal grossSalary = new BigDecimal(cleanOffer);
-                        
-                        // Sử dụng TopCVCalculation để tính net salary từ gross
-                        TopCVCalculation.SalaryCalculationResult salaryResult = 
-                            TopCVCalculation.calculateFromGrossToNet(grossSalary, 0);
-                        
-                        // Set gross và net, hourly để null
-                        offerData.setGrossSalary(salaryResult.getGrossSalary().longValue());
-                        offerData.setNetSalary(salaryResult.getNetSalary().longValue());
-                        
-                        log.info("✅ GROSS/NET SALARY: Set gross: {} VND, net: {} VND, hourly remains null", 
-                                offerData.getGrossSalary(), offerData.getNetSalary());
+                if (isTeacher) {
+                    Long hourlyFromGross = calculateHourlySalaryFromGross(interview);
+                    if (hourlyFromGross != null && hourlyFromGross > 0) {
+                        offerData.setHourlySalary(hourlyFromGross);
+                        log.info("✅ HOURLY FROM GROSS: Set hourly: {} VND/hour for teacher, keep gross/net null", hourlyFromGross);
                     } else {
-                        // Nếu không có dữ liệu offer hợp lệ, để tất cả fields null
-                        log.info("⚠️ NO VALID OFFER: All salary fields remain null");
+                        log.info("⚠️ TEACHER: Could not compute hourly from gross; leaving all salaries null");
                     }
-                } catch (NumberFormatException e) {
-                    log.warn("Invalid offer amount format for candidate ID: {}, all salary fields remain null", candidateId);
+                } else {
+                     try {
+                        String cleanOffer = interview.getOffer().replaceAll("[^0-9]", "");
+                        if (!cleanOffer.isEmpty()) {
+                            BigDecimal grossSalary = new BigDecimal(cleanOffer);
+                            TopCVCalculation.SalaryCalculationResult salaryResult = 
+                                TopCVCalculation.calculateFromGrossToNet(grossSalary, 0);
+                            offerData.setGrossSalary(salaryResult.getGrossSalary().longValue());
+                            offerData.setNetSalary(salaryResult.getNetSalary().longValue());
+                            log.info("✅ GROSS/NET SALARY: Set gross: {} VND, net: {} VND, hourly remains null", 
+                                    offerData.getGrossSalary(), offerData.getNetSalary());
+                        } else {
+                            log.info("⚠️ NO VALID OFFER: All salary fields remain null");
+                        }
+                    } catch (NumberFormatException e) {
+                        log.warn("Invalid offer amount format for candidate ID: {}, all salary fields remain null", candidateId);
+                    }
                 }
             } else {
-                // Nếu không có offer data, để tất cả fields null
                 log.info("⚠️ NO OFFER DATA: All salary fields remain null");
             }
-            
+
             log.info("🔄 REFACTORED: Mutually exclusive salary data for candidate ID: {} - Hourly: {}, Gross: {}, Net: {}", 
                     candidateId, offerData.getHourlySalary(), offerData.getGrossSalary(), offerData.getNetSalary());
             return offerData;
@@ -432,20 +462,18 @@ public class ContractServiceImpl implements ContractService {
         offerData.setHourlySalary(0L);
     }
     
-    /**
-     * 🔄 REWRITTEN: Trích xuất lương theo giờ trực tiếp từ Quản Lý Offer cho giáo viên
-     * Phương thức này sẽ tìm kiếm lương theo giờ đã được chỉnh sửa trong hệ thống Quản Lý Offer
-     */
     private Long extractHourlySalaryFromOffer(InterviewScheduleDto interview) {
         log.info("🔍 EXTRACTING: Hourly salary from Offer Management for interview: {}", interview.getId());
         
-        // Kiểm tra xem có trường hourly salary riêng biệt trong interview không
-        // Giả sử có trường hourlySalary trong InterviewScheduleDto (cần được thêm vào)
+        // Ưu tiên dùng trường hourlyRate nếu có trong InterviewScheduleDto
         try {
-                    // Lưu ý: Cần thêm trường hourlySalary vào InterviewScheduleDto để tối ưu hóa
-        // Hiện tại sử dụng offer field để parse hourly salary
-            
-            if (interview.getOffer() != null && !interview.getOffer().trim().isEmpty()) {
+            if (interview.getHourlyRate() != null && interview.getHourlyRate().longValue() > 0) {
+                Long hourly = interview.getHourlyRate().setScale(0, RoundingMode.HALF_UP).longValue();
+                log.info("✅ EXTRACTED: Hourly salary from hourlyRate field: {} VND/hour", hourly);
+                return hourly;
+            }
+
+           if (interview.getOffer() != null && !interview.getOffer().trim().isEmpty()) {
                 String offer = interview.getOffer().toLowerCase();
                 
                 // Tìm kiếm pattern "xxx/giờ" hoặc "xxx/hour" trong offer string
@@ -471,10 +499,7 @@ public class ContractServiceImpl implements ContractService {
         }
     }
     
-    /**
-     * 🔄 REWRITTEN: Tính lương theo giờ từ gross salary cho giáo viên (fallback method)
-     */
-    private Long calculateHourlySalaryFromGross(InterviewScheduleDto interview) {
+     private Long calculateHourlySalaryFromGross(InterviewScheduleDto interview) {
         log.info("📊 CALCULATING: Hourly salary from gross for interview: {}", interview.getId());
         
         try {
@@ -483,8 +508,7 @@ public class ContractServiceImpl implements ContractService {
                 if (!cleanOffer.isEmpty()) {
                     BigDecimal grossSalary = new BigDecimal(cleanOffer);
                     
-                    // Tính lương theo giờ: Gross salary / 176 giờ/tháng (8 giờ/ngày × 22 ngày/tháng)
-                    BigDecimal hourlyRate = grossSalary.divide(new BigDecimal("176"), 0, RoundingMode.HALF_UP);
+                     BigDecimal hourlyRate = grossSalary.divide(new BigDecimal("176"), 0, RoundingMode.HALF_UP);
                     Long hourlySalary = hourlyRate.longValue();
                     
                     log.info("📊 CALCULATED: Hourly salary from gross {} VND -> {} VND/hour", grossSalary, hourlySalary);
@@ -503,10 +527,7 @@ public class ContractServiceImpl implements ContractService {
         }
     }
     
-    /**
-     * 🔄 REWRITTEN: Set default salary cho nhân viên
-     */
-    private void setDefaultStaffSalary(ContractDto offerData) {
+     private void setDefaultStaffSalary(ContractDto offerData) {
         log.info("⚠️ SETTING: Default staff salary");
         offerData.setGrossSalary(15000000L); // 15 triệu VND gross
         offerData.setNetSalary(12000000L);   // 12 triệu VND net

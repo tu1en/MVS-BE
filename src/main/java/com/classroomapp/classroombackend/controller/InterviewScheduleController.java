@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +22,7 @@ import com.classroomapp.classroombackend.dto.InterviewScheduleDto;
 import com.classroomapp.classroombackend.service.EmailService;
 import com.classroomapp.classroombackend.service.InterviewScheduleService;
 import com.classroomapp.classroombackend.service.UserServiceExtension;
+import com.classroomapp.classroombackend.service.RecruitmentApplicationService;
 import com.classroomapp.classroombackend.util.TopCVCalculation;
 
 import lombok.RequiredArgsConstructor;
@@ -28,10 +31,11 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/interview-schedules")
 @RequiredArgsConstructor
 public class InterviewScheduleController {
+    private static final Logger log = LoggerFactory.getLogger(InterviewScheduleController.class);
     private final InterviewScheduleService interviewService;
     private final EmailService emailService;
     private final UserServiceExtension userService;
-    private final com.classroomapp.classroombackend.service.RecruitmentApplicationService recruitmentService;
+    private final RecruitmentApplicationService recruitmentService;
 
     // Custom error response class
     public static class ErrorResponse {
@@ -248,6 +252,16 @@ public class InterviewScheduleController {
         return ResponseEntity.ok().build();
     }
 
+    @PutMapping("/{id}/hourly-rate")
+    public ResponseEntity<?> updateHourlyRate(@PathVariable Long id, @RequestBody HourlyRateUpdateRequest request) {
+        try {
+            interviewService.updateHourlyRate(id, request.getHourlyRate().toString());
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new ErrorResponse("UPDATE_FAILED", "Không thể cập nhật lương theo giờ"));
+        }
+    }
+
     @PostMapping("/{id}/resend-offer")
     public ResponseEntity<?> resendOffer(@PathVariable Long id, @RequestBody OfferUpdateRequest request) {
         // Lấy thông tin interview để gửi email (không cập nhật offer trong database)
@@ -327,13 +341,9 @@ public class InterviewScheduleController {
                                 }
                             } catch (Exception ignored) {}
 
-                            // Xóa lịch phỏng vấn sau khi duyệt ứng viên để không còn xuất hiện trong tab "Lên lịch"
-                            // và để ngăn việc chỉnh sửa lịch sau khi đã duyệt
-                            try {
-                                interviewService.delete(id);
-                            } catch (Exception ex) {
-                                // Ignore deletion errors to avoid blocking approval flow
-                            }
+                            // KHÔNG XÓA lịch phỏng vấn sau khi duyệt
+                            // Lý do: Cần giữ lại dữ liệu Offer/Evaluation/Hourly Rate để module Tạo Hợp Đồng có thể đọc
+                            log.info("Keeping interview {} after APPROVAL to preserve offer/evaluation data for contract creation", id);
 
                         } else if ("REJECTED".equals(body.getStatus())) {
             // Gửi mail từ chối với evaluation
@@ -444,6 +454,12 @@ class EvaluationUpdateRequest {
     private String evaluation;
     public String getEvaluation() { return evaluation; }
     public void setEvaluation(String evaluation) { this.evaluation = evaluation; }
+}
+
+class HourlyRateUpdateRequest {
+    private Integer hourlyRate;
+    public Integer getHourlyRate() { return hourlyRate; }
+    public void setHourlyRate(Integer hourlyRate) { this.hourlyRate = hourlyRate; }
 }
 
 class NetToGrossRequest {
