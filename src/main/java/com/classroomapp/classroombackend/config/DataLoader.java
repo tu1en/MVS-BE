@@ -356,7 +356,25 @@ seedEvidenceTemplates();
                     app.setJobPosition(positions.get(i % positions.size()));
                     app.setStatus("PENDING");
                     app.setCvUrl("/static/sample_materials/sample.pdf");
-                    app.setCreatedAt(LocalDateTime.now().minusDays(i + 1));
+                    // Đặt createdAt nằm trong khoảng thời gian của kế hoạch của vị trí tương ứng
+                    try {
+                        JobPosition job = positions.get(i % positions.size());
+                        LocalDate planStart = job.getRecruitmentPlan().getStartDate();
+                        LocalDate planEnd = job.getRecruitmentPlan().getEndDate();
+                        LocalDate today = LocalDate.now();
+                        LocalDate effectiveEnd = planEnd.isAfter(today) ? today : planEnd;
+                        if (effectiveEnd.isBefore(planStart)) {
+                            effectiveEnd = planStart;
+                        }
+                        long days = java.time.temporal.ChronoUnit.DAYS.between(planStart, effectiveEnd);
+                        long safeDays = Math.max(0, days);
+                        long offset = (safeDays == 0) ? 0 : (i % (safeDays + 1));
+                        LocalDate chosen = planStart.plusDays(offset);
+                        if (chosen.isAfter(effectiveEnd)) chosen = effectiveEnd;
+                        app.setCreatedAt(chosen.atTime(9 + (i % 8), 0));
+                    } catch (Exception ex) {
+                        app.setCreatedAt(LocalDateTime.now().minusDays(i + 1));
+                    }
                     recruitmentApplicationRepository.save(app);
                     log.info("✅ Created test application for {} applying to: {}", testApplicants[i], positions.get(i % positions.size()).getTitle());
                 }
@@ -1027,7 +1045,7 @@ seedEvidenceTemplates();
                 JobPosition job1 = new JobPosition();
                 job1.setTitle("Kế toán viên");
                 job1.setDescription("Phụ trách công tác kế toán, báo cáo tài chính, quản lý sổ sách kế toán theo quy định. Yêu cầu: Tốt nghiệp đại học chuyên ngành Kế toán, có kinh nghiệm 2-3 năm, thành thạo Excel và phần mềm kế toán.");
-                job1.setSalaryRange("15-25 triệu");
+                job1.setSalaryRange("15"); // FE sẽ hiển thị đuôi 'triệu'
                 job1.setContractType("FULL_TIME");
                 job1.setQuantity(2);
                 job1.setRecruitmentPlan(plans.get(0)); // Q1 window
@@ -1036,7 +1054,7 @@ seedEvidenceTemplates();
                 JobPosition job2 = new JobPosition();
                 job2.setTitle("Nhân viên HR");
                 job2.setDescription("Phụ trách tuyển dụng, đào tạo, quản lý nhân sự, chấm công, lương thưởng. Yêu cầu: Tốt nghiệp đại học chuyên ngành Quản trị nhân lực hoặc liên quan, có kinh nghiệm 1-2 năm, kỹ năng giao tiếp tốt.");
-                job2.setSalaryRange("12-20 triệu");
+                job2.setSalaryRange("12"); // FE sẽ hiển thị đuôi 'triệu'
                 job2.setContractType("FULL_TIME");
                 job2.setQuantity(1);
                 job2.setRecruitmentPlan(plans.get(0)); // Q1 window
@@ -1045,7 +1063,7 @@ seedEvidenceTemplates();
                 JobPosition job3 = new JobPosition();
                 job3.setTitle("Giáo viên Toán lớp 10");
                 job3.setDescription("Dạy Toán cho học sinh lớp 10, luyện thi đại học. Yêu cầu: Tốt nghiệp đại học chuyên ngành Toán hoặc Sư phạm Toán, có kinh nghiệm giảng dạy, nhiệt tình, tận tâm với học sinh.");
-                job3.setSalaryRange("500,000-800,000 VNĐ/giờ");
+                job3.setSalaryRange("500000"); // FE sẽ hiển thị đuôi 'VNĐ/giờ'
                 job3.setContractType("PART_TIME");
                 job3.setQuantity(1);
                 job3.setRecruitmentPlan(plans.get(0)); // Q1 window
@@ -1054,7 +1072,7 @@ seedEvidenceTemplates();
                 JobPosition job4 = new JobPosition();
                 job4.setTitle("Giáo viên Lý lớp 11");
                 job4.setDescription("Dạy Vật lý cho học sinh lớp 11, chuẩn bị kiến thức cho kỳ thi THPT. Yêu cầu: Tốt nghiệp đại học chuyên ngành Vật lý hoặc Sư phạm Vật lý, có phương pháp giảng dạy hiệu quả, khả năng truyền đạt tốt.");
-                job4.setSalaryRange("600,000-900,000 VNĐ/giờ");
+                job4.setSalaryRange("600000");
                 job4.setContractType("PART_TIME");
                 job4.setQuantity(1);
                 job4.setRecruitmentPlan(plans.get(0)); // Q1 window
@@ -1064,7 +1082,7 @@ seedEvidenceTemplates();
                 JobPosition job5 = new JobPosition();
                 job5.setTitle("Giáo viên Hóa lớp 10");
                 job5.setDescription("Dạy Hóa học cho học sinh lớp 10, giúp học sinh nắm vững kiến thức cơ bản và chuẩn bị cho các năm học tiếp theo. Yêu cầu: Tốt nghiệp đại học chuyên ngành Hóa học hoặc Sư phạm Hóa học, có kinh nghiệm giảng dạy, nhiệt tình, tận tâm với học sinh.");
-                job5.setSalaryRange("600,000-900,000 VNĐ/giờ");
+                job5.setSalaryRange("600000");
                 job5.setContractType("PART_TIME");
                 job5.setQuantity(1);
                 job5.setRecruitmentPlan(plans.get(1)); // Q2 window
@@ -1073,7 +1091,7 @@ seedEvidenceTemplates();
                 JobPosition job6 = new JobPosition();
                 job6.setTitle("Giáo viên Hóa lớp 11");
                 job6.setDescription("Dạy Hóa học cho học sinh lớp 11, giúp học sinh hiểu sâu các khái niệm hóa học và chuẩn bị kiến thức cho lớp 12. Yêu cầu: Tốt nghiệp đại học chuyên ngành Hóa học hoặc Sư phạm Hóa học, có phương pháp giảng dạy hiệu quả, khả năng truyền đạt tốt.");
-                job6.setSalaryRange("700,000-1,000,000 VNĐ/giờ");
+                job6.setSalaryRange("700000");
                 job6.setContractType("PART_TIME");
                 job6.setQuantity(1);
                 job6.setRecruitmentPlan(plans.get(1)); // Q2 window
@@ -1082,7 +1100,7 @@ seedEvidenceTemplates();
                 JobPosition job7 = new JobPosition();
                 job7.setTitle("Giáo viên Hóa lớp 12");
                 job7.setDescription("Dạy Hóa học cho học sinh lớp 12, giúp học sinh hoàn thiện kiến thức và chuẩn bị tốt cho kỳ thi tốt nghiệp THPT. Yêu cầu: Tốt nghiệp đại học chuyên ngành Hóa học hoặc Sư phạm Hóa học, có kinh nghiệm giảng dạy, kiến thức chuyên môn vững vàng.");
-                job7.setSalaryRange("800,000-1,200,000 VNĐ/giờ");
+                job7.setSalaryRange("800000");
                 job7.setContractType("PART_TIME");
                 job7.setQuantity(1);
                 job7.setRecruitmentPlan(plans.get(1)); // Q2 window
@@ -1091,7 +1109,7 @@ seedEvidenceTemplates();
                 JobPosition job8 = new JobPosition();
                 job8.setTitle("Giáo viên Tiếng Anh");
                 job8.setDescription("Dạy Tiếng Anh cho học sinh các cấp từ lớp 10-12, giúp học sinh phát triển kỹ năng nghe, nói, đọc, viết. Yêu cầu: Tốt nghiệp đại học chuyên ngành Tiếng Anh hoặc Sư phạm Tiếng Anh, có chứng chỉ IELTS 7.0+, có kinh nghiệm giảng dạy.");
-                job8.setSalaryRange("800,000-1,200,000 VNĐ/giờ");
+                job8.setSalaryRange("800000");
                 job8.setContractType("PART_TIME");
                 job8.setQuantity(1);
                 job8.setRecruitmentPlan(plans.get(1)); // Q2 window
@@ -1206,12 +1224,29 @@ seedEvidenceTemplates();
                 application.setAddress(addresses[i % addresses.length]);
                 application.setCvUrl("/static/sample_cv/cv" + (i + 1) + ".pdf");
                 // Mặc định PENDING; đặt một phần thành APPROVED để hiển thị ở tab "Lên lịch"
-                application.setStatus(i < 5 ? "APPROVED" : (i < 8 ? "PENDING" : "REJECTED"));
-                application.setCreatedAt(LocalDateTime.now().minusDays(i));
-                
-                // Đảm bảo có job position để gán
+                application.setStatus("PENDING");
+                // Đặt createdAt nằm trong khoảng thời gian của kế hoạch tuyển dụng tương ứng
                 JobPosition jobPosition = jobPositions.get(i % jobPositions.size());
                 application.setJobPosition(jobPosition);
+                try {
+                    LocalDate planStart = jobPosition.getRecruitmentPlan().getStartDate();
+                    LocalDate planEnd = jobPosition.getRecruitmentPlan().getEndDate();
+                    LocalDate today = LocalDate.now();
+                    LocalDate effectiveEnd = planEnd.isAfter(today) ? today : planEnd;
+                    if (effectiveEnd.isBefore(planStart)) {
+                        effectiveEnd = planStart; // nếu kế hoạch ở tương lai, lấy ngày bắt đầu
+                    }
+                    long days = java.time.temporal.ChronoUnit.DAYS.between(planStart, effectiveEnd);
+                    long safeDays = Math.max(0, days);
+                    long offset = (safeDays == 0) ? 0 : (i % (safeDays + 1));
+                    LocalDate chosen = planStart.plusDays(offset);
+                    if (chosen.isAfter(effectiveEnd)) {
+                        chosen = effectiveEnd;
+                    }
+                    application.setCreatedAt(chosen.atTime(9 + (i % 8), 0));
+                } catch (Exception ex) {
+                    application.setCreatedAt(LocalDateTime.now().minusDays(i));
+                }
                 
                 recruitmentApplicationRepository.save(application);
                 log.info("✅ Created application for {} applying to: {} (status={})", applicants[i][0], jobPosition.getTitle(), application.getStatus());

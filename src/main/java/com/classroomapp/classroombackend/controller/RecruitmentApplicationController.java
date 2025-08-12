@@ -43,6 +43,14 @@ public class RecruitmentApplicationController {
         log.info("CV File Type: {}", cvFile != null ? cvFile.getContentType() : "null");
         
         try {
+            // Validate length constraints
+            if (fullName != null && fullName.length() > 50) {
+                return ResponseEntity.badRequest().body("Họ và tên tối đa 50 ký tự!");
+            }
+            if (address != null && address.length() > 100) {
+                return ResponseEntity.badRequest().body("Địa chỉ tối đa 100 ký tự!");
+            }
+            
             RecruitmentApplicationDto dto = recruitmentService.apply(jobPositionId, fullName, email, phoneNumber, address, cvFile);
             log.info("=== APPLICATION CREATED SUCCESSFULLY ===");
             log.info("Application ID: {}", dto.getId());

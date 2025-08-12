@@ -28,29 +28,29 @@ public class RecruitmentApplicationServiceImpl implements RecruitmentApplication
     public RecruitmentApplicationDto apply(Long jobPositionId, String fullName, String email, String phoneNumber, String address, MultipartFile cvFile) {
         // Validation
         if (jobPositionId == null) {
-            throw new RuntimeException("Job position ID is required");
+            throw new RuntimeException("Thiếu mã vị trí tuyển dụng");
         }
         if (fullName == null || fullName.trim().isEmpty()) {
-            throw new RuntimeException("Full name is required");
+            throw new RuntimeException("Vui lòng nhập họ và tên");
         }
         if (email == null || email.trim().isEmpty()) {
-            throw new RuntimeException("Email is required");
+            throw new RuntimeException("Vui lòng nhập email");
         }
         if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
-            throw new RuntimeException("Phone number is required");
+            throw new RuntimeException("Vui lòng nhập số điện thoại");
         }
         if (address == null || address.trim().isEmpty()) {
-            throw new RuntimeException("Address is required");
+            throw new RuntimeException("Vui lòng nhập địa chỉ");
         }
         
         // Validate CV file is required
         if (cvFile == null || cvFile.isEmpty()) {
-            throw new RuntimeException("CV file is required");
+            throw new RuntimeException("Vui lòng tải lên CV (PDF)");
         }
         
         // Validate file size
         if (cvFile.getSize() > 10 * 1024 * 1024) { // 10MB limit
-            throw new RuntimeException("CV file size must be less than 10MB");
+            throw new RuntimeException("File CV không được lớn hơn 10MB!");
         }
         
         // Validate file format
@@ -60,7 +60,7 @@ public class RecruitmentApplicationServiceImpl implements RecruitmentApplication
         }
         
         JobPosition job = jobPositionRepo.findById(jobPositionId)
-                .orElseThrow(() -> new RuntimeException("Job position not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy vị trí tuyển dụng"));
         
         // Kiểm tra email trùng lặp - không cho phép cùng email nộp đơn ứng tuyển lại
         boolean emailExists = recruitmentRepo.existsByEmail(email.trim());
@@ -86,6 +86,7 @@ public class RecruitmentApplicationServiceImpl implements RecruitmentApplication
         entity.setCvUrl(cvUrl);
         entity.setStatus("PENDING");
         
+        entity.setCreatedAt(java.time.LocalDateTime.now());
         RecruitmentApplication saved = recruitmentRepo.save(entity);
         RecruitmentApplicationDto dto = modelMapper.map(saved, RecruitmentApplicationDto.class);
         dto.setJobPositionId(job.getId());
@@ -121,14 +122,14 @@ public class RecruitmentApplicationServiceImpl implements RecruitmentApplication
     @Transactional(readOnly = true)
     public RecruitmentApplicationDto getApplication(Long id) {
         return recruitmentRepo.findById(id).map(this::toDto)
-                .orElseThrow(() -> new RuntimeException("Application not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn ứng tuyển"));
     }
 
     @Override
     @Transactional
     public void updateStatus(Long id, String status, String rejectReason) {
         RecruitmentApplication app = recruitmentRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Application not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn ứng tuyển"));
         app.setStatus(status);
         app.setRejectReason(rejectReason);
         recruitmentRepo.save(app);
@@ -138,7 +139,7 @@ public class RecruitmentApplicationServiceImpl implements RecruitmentApplication
     @Transactional
     public void deleteApplication(Long id) {
         if (!recruitmentRepo.existsById(id)) {
-            throw new RuntimeException("Application not found");
+            throw new RuntimeException("Không tìm thấy đơn ứng tuyển");
         }
         recruitmentRepo.deleteById(id);
     }

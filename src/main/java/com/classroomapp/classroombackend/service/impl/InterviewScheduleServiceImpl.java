@@ -79,7 +79,7 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
     @Transactional
     public void updateOffer(Long id, String offer) {
         InterviewSchedule entity = interviewRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Interview not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy lịch phỏng vấn"));
         entity.setOffer(offer);
         interviewRepo.save(entity);
     }
@@ -88,7 +88,10 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
     @Transactional
     public void updateEvaluation(Long id, String evaluation) {
         InterviewSchedule entity = interviewRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Interview not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy lịch phỏng vấn"));
+        if (evaluation != null && evaluation.length() > 200) {
+            throw new IllegalArgumentException("Đánh giá tối đa 200 ký tự!");
+        }
         entity.setEvaluation(evaluation);
         interviewRepo.save(entity);
     }
@@ -97,7 +100,7 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
     @Transactional
     public void updateHourlyRate(Long id, String hourlyRate) {
         InterviewSchedule entity = interviewRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Interview not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy lịch phỏng vấn"));
         entity.setHourlyRate(new java.math.BigDecimal(hourlyRate));
         interviewRepo.save(entity);
     }
@@ -112,7 +115,7 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
     @Transactional(readOnly = true)
     public InterviewScheduleDto getById(Long id) {
         InterviewSchedule entity = interviewRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Interview not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy lịch phỏng vấn"));
         return toDto(entity);
     }
 
