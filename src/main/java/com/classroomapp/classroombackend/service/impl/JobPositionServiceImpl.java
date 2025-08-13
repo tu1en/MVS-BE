@@ -40,13 +40,20 @@ public class JobPositionServiceImpl implements JobPositionService {
             throw new IllegalArgumentException("Số lượng tối đa là 50");
         }
         
-        // Chuẩn hoá salaryRange: chỉ nhận số tối đa 50 ký tự
+        // Chuẩn hoá salaryRange: chỉ nhận số tối đa 50 ký tự và validate chỉ số
         if (dto.getSalaryRange() != null) {
             String digits = dto.getSalaryRange().replaceAll("[^0-9]", "");
             if (digits.length() > 50) {
                 digits = digits.substring(0, 50);
             }
+            if (!dto.getSalaryRange().isEmpty() && digits.isEmpty()) {
+                throw new IllegalArgumentException("Mức lương chỉ được chứa số");
+            }
             dto.setSalaryRange(digits);
+        }
+        // Mặc định contractType nếu trống
+        if (dto.getContractType() == null || dto.getContractType().trim().isEmpty()) {
+            dto.setContractType("FULL_TIME");
         }
         JobPosition entity = modelMapper.map(dto, JobPosition.class);
         JobPosition saved = jobPositionRepository.save(entity);
@@ -96,11 +103,17 @@ public class JobPositionServiceImpl implements JobPositionService {
             if (digits.length() > 50) {
                 digits = digits.substring(0, 50);
             }
+            if (!dto.getSalaryRange().isEmpty() && digits.isEmpty()) {
+                throw new IllegalArgumentException("Mức lương chỉ được chứa số");
+            }
             entity.setSalaryRange(digits);
         } else {
             entity.setSalaryRange(null);
         }
         entity.setQuantity(dto.getQuantity());
+        if (dto.getContractType() != null && !dto.getContractType().trim().isEmpty()) {
+            entity.setContractType(dto.getContractType());
+        }
         JobPosition saved = jobPositionRepository.save(entity);
         
         // Cập nhật totalQuantity của kế hoạch cũ (nếu có)
