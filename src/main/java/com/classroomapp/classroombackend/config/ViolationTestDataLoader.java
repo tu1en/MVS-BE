@@ -169,40 +169,52 @@ public class ViolationTestDataLoader implements CommandLineRunner {
         logger.info("Creating work shifts...");
 
         // Morning Teaching Shift
-        WorkShift morningShift = new WorkShift();
-        morningShift.setName("Morning Teaching Shift");
-        morningShift.setStartTime(LocalTime.of(7, 30)); // 7:30 AM
-        morningShift.setEndTime(LocalTime.of(11, 30)); // 11:30 AM
-        morningShift.setBreakHours(0.5); // 30 minute break
-        morningShift.setDescription("Morning classes for primary students");
-        morningShift.setIsActive(true);
-        morningShift.setCreatedBy(1L);
-        workShiftRepository.save(morningShift);
-        logger.info("Created work shift: {}", morningShift.getName());
+        if (!workShiftRepository.existsByNameIgnoreCase("Morning Teaching Shift")) {
+            WorkShift morningShift = new WorkShift();
+            morningShift.setName("Morning Teaching Shift");
+            morningShift.setStartTime(LocalTime.of(7, 30)); // 7:30 AM
+            morningShift.setEndTime(LocalTime.of(11, 30)); // 11:30 AM
+            morningShift.setBreakHours(0.5); // 30 minute break
+            morningShift.setDescription("Morning classes for primary students");
+            morningShift.setIsActive(true);
+            morningShift.setCreatedBy(1L);
+            workShiftRepository.save(morningShift);
+            logger.info("Created work shift: {}", morningShift.getName());
+        } else {
+            logger.info("Work shift already exists: Morning Teaching Shift");
+        }
 
         // Afternoon Teaching Shift
-        WorkShift afternoonShift = new WorkShift();
-        afternoonShift.setName("Afternoon Teaching Shift");
-        afternoonShift.setStartTime(LocalTime.of(13, 0)); // 1:00 PM
-        afternoonShift.setEndTime(LocalTime.of(17, 0)); // 5:00 PM
-        afternoonShift.setBreakHours(0.5); // 30 minute break
-        afternoonShift.setDescription("Afternoon classes for secondary students");
-        afternoonShift.setIsActive(true);
-        afternoonShift.setCreatedBy(1L);
-        workShiftRepository.save(afternoonShift);
-        logger.info("Created work shift: {}", afternoonShift.getName());
+        if (!workShiftRepository.existsByNameIgnoreCase("Afternoon Teaching Shift")) {
+            WorkShift afternoonShift = new WorkShift();
+            afternoonShift.setName("Afternoon Teaching Shift");
+            afternoonShift.setStartTime(LocalTime.of(13, 0)); // 1:00 PM
+            afternoonShift.setEndTime(LocalTime.of(17, 0)); // 5:00 PM
+            afternoonShift.setBreakHours(0.5); // 30 minute break
+            afternoonShift.setDescription("Afternoon classes for secondary students");
+            afternoonShift.setIsActive(true);
+            afternoonShift.setCreatedBy(1L);
+            workShiftRepository.save(afternoonShift);
+            logger.info("Created work shift: {}", afternoonShift.getName());
+        } else {
+            logger.info("Work shift already exists: Afternoon Teaching Shift");
+        }
 
         // Office Hours
-        WorkShift officeShift = new WorkShift();
-        officeShift.setName("Administrative Office Hours");
-        officeShift.setStartTime(LocalTime.of(8, 0)); // 8:00 AM
-        officeShift.setEndTime(LocalTime.of(16, 0)); // 4:00 PM
-        officeShift.setBreakHours(1.0); // 1 hour lunch break
-        officeShift.setDescription("Regular office hours for administrative staff");
-        officeShift.setIsActive(true);
-        officeShift.setCreatedBy(1L);
-        workShiftRepository.save(officeShift);
-        logger.info("Created work shift: {}", officeShift.getName());
+        if (!workShiftRepository.existsByNameIgnoreCase("Administrative Office Hours")) {
+            WorkShift officeShift = new WorkShift();
+            officeShift.setName("Administrative Office Hours");
+            officeShift.setStartTime(LocalTime.of(8, 0)); // 8:00 AM
+            officeShift.setEndTime(LocalTime.of(16, 0)); // 4:00 PM
+            officeShift.setBreakHours(1.0); // 1 hour lunch break
+            officeShift.setDescription("Regular office hours for administrative staff");
+            officeShift.setIsActive(true);
+            officeShift.setCreatedBy(1L);
+            workShiftRepository.save(officeShift);
+            logger.info("Created work shift: {}", officeShift.getName());
+        } else {
+            logger.info("Work shift already exists: Administrative Office Hours");
+        }
     }
 
     private void createShiftAssignments() {
@@ -229,44 +241,65 @@ public class ViolationTestDataLoader implements CommandLineRunner {
 
         // Assign John to morning shift
         if (johnTeacher != null && morningShift != null) {
-            UserShiftAssignment assignment1 = new UserShiftAssignment();
-            assignment1.setUser(johnTeacher);
-            assignment1.setWorkShift(morningShift);
-            assignment1.setStartDate(testDate);
-            assignment1.setEndDate(endDate);
-            assignment1.setNotes("Test assignment for violation detection");
-            assignment1.setIsActive(true);
-            assignment1.setCreatedBy(1L);
-            userShiftAssignmentRepository.save(assignment1);
-            logger.info("Assigned {} to {}", johnTeacher.getFullName(), morningShift.getName());
+            boolean exists = userShiftAssignmentRepository
+                .existsByUser_IdAndWorkShift_IdAndStartDateAndEndDateAndIsActiveTrue(
+                    johnTeacher.getId(), morningShift.getId(), testDate, endDate);
+            if (!exists) {
+                UserShiftAssignment assignment1 = new UserShiftAssignment();
+                assignment1.setUser(johnTeacher);
+                assignment1.setWorkShift(morningShift);
+                assignment1.setStartDate(testDate);
+                assignment1.setEndDate(endDate);
+                assignment1.setNotes("Test assignment for violation detection");
+                assignment1.setIsActive(true);
+                assignment1.setCreatedBy(1L);
+                userShiftAssignmentRepository.save(assignment1);
+                logger.info("Assigned {} to {}", johnTeacher.getFullName(), morningShift.getName());
+            } else {
+                logger.info("Assignment already exists for {} on {}-{} to shift {}", johnTeacher.getFullName(), testDate, endDate, morningShift.getName());
+            }
         }
 
         // Assign Jane to afternoon shift
         if (janeTeacher != null && afternoonShift != null) {
-            UserShiftAssignment assignment2 = new UserShiftAssignment();
-            assignment2.setUser(janeTeacher);
-            assignment2.setWorkShift(afternoonShift);
-            assignment2.setStartDate(testDate);
-            assignment2.setEndDate(endDate);
-            assignment2.setNotes("Test assignment for violation detection");
-            assignment2.setIsActive(true);
-            assignment2.setCreatedBy(1L);
-            userShiftAssignmentRepository.save(assignment2);
-            logger.info("Assigned {} to {}", janeTeacher.getFullName(), afternoonShift.getName());
+            boolean exists = userShiftAssignmentRepository
+                .existsByUser_IdAndWorkShift_IdAndStartDateAndEndDateAndIsActiveTrue(
+                    janeTeacher.getId(), afternoonShift.getId(), testDate, endDate);
+            if (!exists) {
+                UserShiftAssignment assignment2 = new UserShiftAssignment();
+                assignment2.setUser(janeTeacher);
+                assignment2.setWorkShift(afternoonShift);
+                assignment2.setStartDate(testDate);
+                assignment2.setEndDate(endDate);
+                assignment2.setNotes("Test assignment for violation detection");
+                assignment2.setIsActive(true);
+                assignment2.setCreatedBy(1L);
+                userShiftAssignmentRepository.save(assignment2);
+                logger.info("Assigned {} to {}", janeTeacher.getFullName(), afternoonShift.getName());
+            } else {
+                logger.info("Assignment already exists for {} on {}-{} to shift {}", janeTeacher.getFullName(), testDate, endDate, afternoonShift.getName());
+            }
         }
 
         // Assign Bob to office hours
         if (bobAccountant != null && officeShift != null) {
-            UserShiftAssignment assignment3 = new UserShiftAssignment();
-            assignment3.setUser(bobAccountant);
-            assignment3.setWorkShift(officeShift);
-            assignment3.setStartDate(testDate);
-            assignment3.setEndDate(endDate);
-            assignment3.setNotes("Test assignment for violation detection");
-            assignment3.setIsActive(true);
-            assignment3.setCreatedBy(1L);
-            userShiftAssignmentRepository.save(assignment3);
-            logger.info("Assigned {} to {}", bobAccountant.getFullName(), officeShift.getName());
+            boolean exists = userShiftAssignmentRepository
+                .existsByUser_IdAndWorkShift_IdAndStartDateAndEndDateAndIsActiveTrue(
+                    bobAccountant.getId(), officeShift.getId(), testDate, endDate);
+            if (!exists) {
+                UserShiftAssignment assignment3 = new UserShiftAssignment();
+                assignment3.setUser(bobAccountant);
+                assignment3.setWorkShift(officeShift);
+                assignment3.setStartDate(testDate);
+                assignment3.setEndDate(endDate);
+                assignment3.setNotes("Test assignment for violation detection");
+                assignment3.setIsActive(true);
+                assignment3.setCreatedBy(1L);
+                userShiftAssignmentRepository.save(assignment3);
+                logger.info("Assigned {} to {}", bobAccountant.getFullName(), officeShift.getName());
+            } else {
+                logger.info("Assignment already exists for {} on {}-{} to shift {}", bobAccountant.getFullName(), testDate, endDate, officeShift.getName());
+            }
         }
     }
 
