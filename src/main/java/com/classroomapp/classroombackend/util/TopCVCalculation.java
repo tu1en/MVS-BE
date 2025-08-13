@@ -47,7 +47,7 @@ public class TopCVCalculation {
         private String calculationType; // "GROSS_TO_NET" or "NET_TO_GROSS"
         private Integer numberOfDependents;
     }
-    
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

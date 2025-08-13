@@ -10,6 +10,8 @@ public class RoleConstants {
     public static final int MANAGER = 3;
     public static final int ADMIN = 4;
     public static final int ACCOUNTANT = 5;
+    public static final int TEACHING_ASSISTANT = 6;
+    public static final int PARENT = 7; // NEW: Parent role
     
     // Role name constants
     public static final String ROLE_STUDENT = "STUDENT";
@@ -17,12 +19,18 @@ public class RoleConstants {
     public static final String ROLE_MANAGER = "MANAGER";
     public static final String ROLE_ADMIN = "ADMIN";
     public static final String ROLE_ACCOUNTANT = "ACCOUNTANT";
+    public static final String ROLE_TEACHING_ASSISTANT = "TEACHING_ASSISTANT";
+    public static final String ROLE_PARENT = "PARENT"; // NEW: Parent role name
     
     // Role groupings (logical groups to replace EMPLOYEE/STAFF references)
-    public static final List<Integer> STAFF_ROLES = Arrays.asList(TEACHER, MANAGER, ADMIN, ACCOUNTANT);
+    public static final List<Integer> STAFF_ROLES = Arrays.asList(TEACHER, MANAGER, ADMIN, ACCOUNTANT, TEACHING_ASSISTANT);
     public static final List<Integer> ADMIN_STAFF_ROLES = Arrays.asList(MANAGER, ADMIN, ACCOUNTANT);
     public static final List<Integer> HR_STAFF_ROLES = Arrays.asList(MANAGER, ADMIN);
-    public static final List<String> STAFF_ROLE_NAMES = Arrays.asList(ROLE_TEACHER, ROLE_MANAGER, ROLE_ADMIN, ROLE_ACCOUNTANT);
+    public static final List<String> STAFF_ROLE_NAMES = Arrays.asList(ROLE_TEACHER, ROLE_MANAGER, ROLE_ADMIN, ROLE_ACCOUNTANT, ROLE_TEACHING_ASSISTANT);
+    
+    // NEW: Parent-specific role groupings
+    public static final List<Integer> EXTERNAL_ROLES = Arrays.asList(STUDENT, PARENT);
+    public static final List<String> EXTERNAL_ROLE_NAMES = Arrays.asList(ROLE_STUDENT, ROLE_PARENT);
     
     /**
      * Check if role ID represents staff (replaces EMPLOYEE checks)
@@ -50,5 +58,33 @@ public class RoleConstants {
      */
     public static boolean isHRStaffRole(int roleId) {
         return HR_STAFF_ROLES.contains(roleId);
+    }
+    
+    /**
+     * NEW: Check if role represents external user (student/parent)
+     */
+    public static boolean isExternalRole(int roleId) {
+        return EXTERNAL_ROLES.contains(roleId);
+    }
+    
+    /**
+     * NEW: Check if role name represents external user (student/parent)
+     */
+    public static boolean isExternalRole(String roleName) {
+        return EXTERNAL_ROLE_NAMES.contains(roleName);
+    }
+    
+    /**
+     * NEW: Check if role is parent
+     */
+    public static boolean isParentRole(int roleId) {
+        return roleId == PARENT;
+    }
+    
+    /**
+     * NEW: Check if role name is parent
+     */
+    public static boolean isParentRole(String roleName) {
+        return ROLE_PARENT.equals(roleName);
     }
 }

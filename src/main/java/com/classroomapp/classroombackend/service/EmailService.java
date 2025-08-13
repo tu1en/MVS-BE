@@ -166,4 +166,12 @@ public interface EmailService {
     void sendEnrollmentRejectionNotification(String to, String studentName, String courseName,
                                             String courseSubject, String rejectionReason,
                                             String reviewedBy, String coursesUrl, String contactUrl);
+
+    /**
+     * Send payroll confirmation with breakdown to employee
+     * @param to Employee email
+     * @param fullName Employee full name
+     * @param payrollResult Calculated payroll result for the period
+     */
+    void sendPayrollConfirmationEmail(String to, String fullName, com.classroomapp.classroombackend.model.hrmanagement.PayrollResult payrollResult);
 }

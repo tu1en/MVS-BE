@@ -30,6 +30,9 @@ public class PayrollResult {
     private Integer absentDays;
     private Integer actualWorkingHours; // tổng giờ làm thực tế (ước lượng)
     private Integer standardMonthlyHours; // tổng giờ công chuẩn trong tháng
+    private Integer weekendWorkingDays; // số ngày làm cuối tuần
+    private Integer weekendWorkingHours; // tổng giờ làm cuối tuần
+    private Integer weekdayWorkingHours; // tổng giờ làm ngày thường
     
     // Original contract salary
     private BigDecimal contractSalary;
@@ -39,6 +42,9 @@ public class PayrollResult {
     private BigDecimal proratedGrossSalary;
     private BigDecimal netSalary;
     private BigDecimal hourlySalary; // đơn giá theo giờ (cho giáo viên)
+    private BigDecimal weekendPay; // tiền cộng thêm do làm cuối tuần (2x)
+    private BigDecimal overtimePay; // dự phòng: tăng ca (1.5x)
+    private BigDecimal holidayPay; // dự phòng: ngày lễ (3x)
     
     // Contract period (để FE hiển thị ngày bắt đầu/kết thúc HĐ)
     private LocalDate contractStartDate;
@@ -51,6 +57,7 @@ public class PayrollResult {
     private String status; // "CALCULATED", "APPROVED", "PAID"
     private LocalDate calculatedAt;
     private Long calculatedBy; // Accountant user ID
+    private Boolean insuranceApplicable; // đủ công để DN đóng 21.5%
     
     public PayrollResult(Long userId, String userName, YearMonth period, 
                         Integer totalDays, Integer actualDays,

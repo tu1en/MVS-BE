@@ -32,18 +32,30 @@ public class FirebaseStorageServiceImpl implements FirebaseStorageService {
             String fileName = generateFileName(file.getOriginalFilename());
             String filePath = folder + "/" + fileName;
             
-            Storage storage = StorageClient.getInstance(FirebaseApp.getInstance("classroom-management")).bucket().getStorage();
-            BlobId blobId = BlobId.of(bucketName, filePath);
+            var firebaseApp = FirebaseApp.getInstance("classroom-management");
+            var bucket = StorageClient.getInstance(firebaseApp).bucket();
+            Storage storage = bucket.getStorage();
+            // Prefer the bucket name provided by the initialized FirebaseApp to avoid mismatch
+            String effectiveBucketName = bucket.getName();
+            BlobId blobId = BlobId.of(effectiveBucketName, filePath);
+            // Set Firebase download token in metadata to enable tokenized downloads without ACLs
+            String downloadToken = java.util.UUID.randomUUID().toString();
+            java.util.Map<String, String> metadata = new java.util.HashMap<>();
+            metadata.put("firebaseStorageDownloadTokens", downloadToken);
+
             BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
                     .setContentType(file.getContentType())
+                    .setMetadata(metadata)
                     .build();
-            
-            Blob blob = storage.create(blobInfo, file.getBytes());
-            
-            // Make the blob publicly accessible
-            blob.createAcl(com.google.cloud.storage.Acl.of(com.google.cloud.storage.Acl.User.ofAllUsers(), com.google.cloud.storage.Acl.Role.READER));
-            
-            String downloadUrl = String.format("https://firebasestorage.googleapis.com/v0/b/%s/o/%s?alt=media", bucketName, java.net.URLEncoder.encode(filePath, "UTF-8"));
+
+            storage.create(blobInfo, file.getBytes());
+
+            String downloadUrl = String.format(
+                    "https://firebasestorage.googleapis.com/v0/b/%s/o/%s?alt=media&token=%s",
+                    effectiveBucketName,
+                    java.net.URLEncoder.encode(filePath, "UTF-8"),
+                    downloadToken
+            );
             
             return FileUploadResponse.builder()
                     .filename(fileName)

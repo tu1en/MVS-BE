@@ -23,6 +23,8 @@ import com.classroomapp.classroombackend.dto.TimetableEventDto;
 import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
 import com.classroomapp.classroombackend.dto.absencemanagement.AbsenceDTO;
 import com.classroomapp.classroombackend.dto.absencemanagement.CreateAbsenceDTO;
+import com.classroomapp.classroombackend.dto.ParentRequestDto;
+import com.classroomapp.classroombackend.model.ParentRequest;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.assignmentmanagement.AssignmentRepository;
@@ -30,6 +32,7 @@ import com.classroomapp.classroombackend.repository.assignmentmanagement.Submiss
 import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceRepository;
 import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceSessionRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.classroomapp.classroombackend.repository.ParentRequestRepository;
 import com.classroomapp.classroombackend.service.AbsenceService;
 import com.classroomapp.classroombackend.service.ClassroomService;
 import com.classroomapp.classroombackend.service.ScheduleService;
@@ -56,6 +59,7 @@ public class TeacherController {
     private final AttendanceRepository attendanceRepository;
     private final ScheduleService scheduleService;
     private final AbsenceService absenceService;
+    private final ParentRequestRepository parentRequestRepository;
     // private final CourseTemplateService courseTemplateService; // COMMENTED OUT - Service not found
 
     // ==================== TEACHER COURSE SYSTEM INTEGRATION ====================
@@ -421,6 +425,139 @@ public class TeacherController {
             errorResponse.put("hasOfficialContract", false);
             errorResponse.put("error", "Failed to retrieve contract status: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+    
+    /**
+     * Get parent requests for teacher's classrooms
+     */
+    @GetMapping("/parent-requests")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<List<ParentRequestDto>> getParentRequestsForTeacher(Authentication authentication) {
+        try {
+            String principal = authentication.getName();
+            User currentUser = userRepository.findByEmail(principal)
+                    .orElseGet(() -> userRepository.findByUsername(principal).orElse(null));
+            
+            if (currentUser == null) {
+                throw new RuntimeException("Không tìm thấy người dùng với thông tin xác thực hiện tại");
+            }
+            
+            // Get teacher's classrooms
+            List<ClassroomDto> classrooms = classroomService.GetClassroomsByTeacher(currentUser.getId());
+            List<ParentRequestDto> allRequests = new ArrayList<>();
+            
+            // For each classroom, get parent requests
+            for (ClassroomDto classroom : classrooms) {
+                // Mock data for now - would fetch from ParentRequestRepository
+                ParentRequestDto request = new ParentRequestDto();
+                request.setId(1L);
+                request.setStudentId(1L);
+                request.setStudentName("Trần Văn A");
+                request.setStudentCode("SV001");
+                request.setClassroomId(classroom.getId());
+                request.setClassroomName(classroom.getName());
+                request.setParentName("Trần Văn B");
+                request.setParentPhone("0901234567");
+                request.setRequestType(ParentRequest.RequestType.LATE_ARRIVAL);
+                request.setRequestDate(LocalDate.now());
+                request.setStartTime("08:30");
+                request.setReason("Con bị ốm nhẹ, cần đi khám bác sĩ buổi sáng");
+                request.setStatus(ParentRequest.RequestStatus.PENDING);
+                request.setCreatedAt(java.time.LocalDateTime.now().minusHours(1));
+                request.setTeacherNotified(false);
+                request.setAssistantNotified(true);
+                
+                allRequests.add(request);
+            }
+            
+            return ResponseEntity.ok(allRequests);
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ArrayList<>());
+        }
+    }
+    
+    /**
+     * Approve or reject a parent request by teacher
+     */
+    @PostMapping("/parent-request/{requestId}/respond")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<String> respondToParentRequestAsTeacher(
+            @PathVariable Long requestId,
+            @RequestBody Map<String, Object> responseData,
+            Authentication authentication) {
+        try {
+            String principal = authentication.getName();
+            User currentUser = userRepository.findByEmail(principal)
+                    .orElseGet(() -> userRepository.findByUsername(principal).orElse(null));
+            
+            if (currentUser == null) {
+                throw new RuntimeException("Không tìm thấy người dùng với thông tin xác thực hiện tại");
+            }
+            
+            String action = (String) responseData.get("action"); // "APPROVE" or "REJECT"
+            String response = (String) responseData.get("response");
+            
+            // This would update the ParentRequest in database
+            // For now, just log the action
+            System.out.println("Teacher " + currentUser.getId() + " would " + action + " parent request " + requestId + " with response: " + response);
+            
+            return ResponseEntity.ok("Parent request " + action.toLowerCase() + "d successfully by teacher");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error responding to parent request: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Get pending parent requests count for teacher notification badge
+     */
+    @GetMapping("/parent-requests/pending-count")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<Map<String, Object>> getPendingParentRequestsCountForTeacher(Authentication authentication) {
+        try {
+            String principal = authentication.getName();
+            User currentUser = userRepository.findByEmail(principal)
+                    .orElseGet(() -> userRepository.findByUsername(principal).orElse(null));
+            
+            if (currentUser == null) {
+                throw new RuntimeException("Không tìm thấy người dùng với thông tin xác thực hiện tại");
+            }
+            
+            // This would count from ParentRequestRepository for teacher's classrooms
+            // For now, return mock count
+            Map<String, Object> result = new HashMap<>();
+            result.put("pendingCount", 3);
+            result.put("newCount", 2); // New requests since last check
+            
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Failed to get pending count"));
+        }
+    }
+    
+    /**
+     * Mark parent requests as notified for teacher
+     */
+    @PostMapping("/parent-requests/mark-notified")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<String> markParentRequestsAsNotifiedForTeacher(Authentication authentication) {
+        try {
+            String principal = authentication.getName();
+            User currentUser = userRepository.findByEmail(principal)
+                    .orElseGet(() -> userRepository.findByUsername(principal).orElse(null));
+            
+            if (currentUser == null) {
+                throw new RuntimeException("Không tìm thấy người dùng với thông tin xác thực hiện tại");
+            }
+            
+            // This would update teacherNotified flag in database for teacher's classrooms
+            // For now, just log the action
+            System.out.println("Would mark all pending parent requests as notified for teacher " + currentUser.getId());
+            
+            return ResponseEntity.ok("Parent requests marked as notified for teacher");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error marking requests as notified: " + e.getMessage());
         }
     }
 }

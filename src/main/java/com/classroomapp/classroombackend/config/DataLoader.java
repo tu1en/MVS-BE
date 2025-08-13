@@ -35,6 +35,7 @@ import com.classroomapp.classroombackend.model.Request;
 import com.classroomapp.classroombackend.model.Schedule;
 import com.classroomapp.classroombackend.model.StudentMessage;
 import com.classroomapp.classroombackend.model.StudentProgress;
+import com.classroomapp.classroombackend.model.TeacherEvaluation;
 import com.classroomapp.classroombackend.model.TimetableEvent;
 import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
 import com.classroomapp.classroombackend.model.assignmentmanagement.Submission;
@@ -91,6 +92,9 @@ public class DataLoader implements CommandLineRunner {
     
     @Autowired
     private UserRepository userRepository;
+    
+    @Autowired
+    private com.classroomapp.classroombackend.repository.TeacherEvaluationRepository teacherEvaluationRepository;
     @Autowired
 private EvidenceTemplateRepository evidenceTemplateRepository;
     @Autowired
@@ -251,6 +255,9 @@ private EvidenceTemplateRepository evidenceTemplateRepository;
             seedMessages();
             
 seedEvidenceTemplates();
+            
+            // Seed teacher evaluations
+            seedTeacherEvaluations();
             
             // Seed student progress
             seedStudentProgress();
@@ -466,6 +473,8 @@ seedEvidenceTemplates();
                 student.setEmail("student@test.com");
                 student.setFullName("Student User");
                 student.setRoleId(RoleConstants.STUDENT);
+                student.setParentPhone("+84901234567");
+                student.setParentName("Phụ huynh Student");
                 userRepository.save(student);
                 log.info("✅ Created student user with ID: " + student.getId());
 
@@ -556,6 +565,8 @@ seedEvidenceTemplates();
                 student1.setEmail("student1@test.com");
                 student1.setFullName("Phạm Văn Nam");
                 student1.setRoleId(RoleConstants.STUDENT);
+                student1.setParentPhone("+84987654321");
+                student1.setParentName("Phạm Thị Hoa");
                 userRepository.save(student1);
 
                 User student2 = new User();
@@ -565,6 +576,8 @@ seedEvidenceTemplates();
                 student2.setEmail("student2@test.com");
                 student2.setFullName("Alice Johnson");
                 student2.setRoleId(RoleConstants.STUDENT);
+                student2.setParentPhone("+84976543210");
+                student2.setParentName("Mrs. Johnson");
                 userRepository.save(student2);
 
                 User student3 = new User();
@@ -574,6 +587,8 @@ seedEvidenceTemplates();
                 student3.setEmail("student3@test.com");
                 student3.setFullName("Bob Wilson");
                 student3.setRoleId(RoleConstants.STUDENT);
+                student3.setParentPhone("+84965432109");
+                student3.setParentName("Mr. Wilson");
                 userRepository.save(student3);
 
                 User student4 = new User();
@@ -583,6 +598,8 @@ seedEvidenceTemplates();
                 student4.setEmail("student4@test.com");
                 student4.setFullName("Carol Davis");
                 student4.setRoleId(RoleConstants.STUDENT);
+                student4.setParentPhone("+84954321098");
+                student4.setParentName("Mrs. Davis");
                 userRepository.save(student4);
 
                 User student5 = new User();
@@ -592,6 +609,8 @@ seedEvidenceTemplates();
                 student5.setEmail("student5@test.com");
                 student5.setFullName("David Chen");
                 student5.setRoleId(RoleConstants.STUDENT);
+                student5.setParentPhone("+84943210987");
+                student5.setParentName("Mr. Chen");
                 userRepository.save(student5);
 
                 // Additional teachers
@@ -707,6 +726,33 @@ seedEvidenceTemplates();
                 userRepository.save(accountant);
 
                 log.info("✅ Created accountant user with ID: " + accountant.getId());
+
+                // Create Teaching Assistant users
+                User teachingAssistant1 = new User();
+                teachingAssistant1.setId(8L);
+                teachingAssistant1.setUsername("ta1");
+                teachingAssistant1.setPassword(passwordEncoder.encode("ta123"));
+                teachingAssistant1.setEmail("ta1@test.com");
+                teachingAssistant1.setFullName("Nguyễn Thị Hỗ Trợ");
+                teachingAssistant1.setRoleId(RoleConstants.TEACHING_ASSISTANT);
+                teachingAssistant1.setPhoneNumber("0912345689");
+                teachingAssistant1.setDepartment("Trợ giảng Toán");
+                teachingAssistant1.setHireDate(LocalDate.now().minusMonths(6));
+                userRepository.save(teachingAssistant1);
+
+                User teachingAssistant2 = new User();
+                teachingAssistant2.setId(9L);
+                teachingAssistant2.setUsername("ta2");
+                teachingAssistant2.setPassword(passwordEncoder.encode("ta123"));
+                teachingAssistant2.setEmail("ta2@test.com");
+                teachingAssistant2.setFullName("Trần Văn Hỗ Trợ");
+                teachingAssistant2.setRoleId(RoleConstants.TEACHING_ASSISTANT);
+                teachingAssistant2.setPhoneNumber("0987654322");
+                teachingAssistant2.setDepartment("Trợ giảng Văn");
+                teachingAssistant2.setHireDate(LocalDate.now().minusMonths(3));
+                userRepository.save(teachingAssistant2);
+
+                log.info("✅ Created Teaching Assistant users");
 
                 log.info("✅ Created users with standardized, explicit IDs.");
 
@@ -1974,4 +2020,79 @@ private void createEvidenceTemplate(String name, String code, String description
             explanations.size(), staffUsers.size());
     log.info("============== Attendance Explanations Creation Complete ==============");
 }
+
+    /**
+     * Seed sample teacher evaluations for demo purposes
+     */
+    private void seedTeacherEvaluations() {
+        if (teacherEvaluationRepository.count() > 0) {
+            log.info("Teacher evaluations already exist, skipping seeding");
+            return;
+        }
+
+        try {
+            log.info("============== Seeding Teacher Evaluations ==============");
+
+            // Get teaching assistants and teachers
+            List<User> teachingAssistants = userRepository.findByRoleId(RoleConstants.TEACHING_ASSISTANT);
+            List<User> teachers = userRepository.findByRoleId(RoleConstants.TEACHER);
+
+            if (teachingAssistants.isEmpty() || teachers.isEmpty()) {
+                log.warn("No teaching assistants or teachers found, skipping evaluation seeding");
+                return;
+            }
+
+            List<TeacherEvaluation> evaluations = new ArrayList<>();
+            LocalDateTime baseTime = LocalDateTime.now().minusDays(30);
+
+            // Create evaluations for each teacher by different teaching assistants
+            int evalCount = 0;
+            for (User teacher : teachers) {
+                for (int i = 0; i < Math.min(teachingAssistants.size(), 3); i++) { // Max 3 evaluations per teacher
+                    User evaluator = teachingAssistants.get(i % teachingAssistants.size());
+                    
+                    TeacherEvaluation evaluation = new TeacherEvaluation();
+                    evaluation.setTeacher(teacher);
+                    evaluation.setEvaluator(evaluator);
+                    evaluation.setEvaluationDate(baseTime.plusDays(evalCount * 2));
+                    evaluation.setClassSessionId(1L + (evalCount % 5)); // Mock class session IDs
+                    
+                    // Generate random but realistic scores (3-5 to simulate good teachers)
+                    int teachingQuality = 3 + (int)(Math.random() * 3); // 3-5
+                    int studentInteraction = 3 + (int)(Math.random() * 3); // 3-5  
+                    int punctuality = 4 + (int)(Math.random() * 2); // 4-5 (most teachers are punctual)
+                    
+                    evaluation.setTeachingQualityScore(teachingQuality);
+                    evaluation.setStudentInteractionScore(studentInteraction);
+                    evaluation.setPunctualityScore(punctuality);
+                    
+                    // Calculate overall score (average)
+                    int overallScore = Math.round((teachingQuality + studentInteraction + punctuality) / 3.0f);
+                    evaluation.setOverallScore(overallScore);
+                    
+                    // Add sample comments
+                    String[] comments = {
+                        "Giảng viên giảng dạy rất tốt, học sinh tương tác tích cực.",
+                        "Phương pháp giảng dạy hiệu quả, cần cải thiện thêm về tương tác.",
+                        "Giảng viên nhiệt tình, đúng giờ, học sinh hài lòng.",
+                        "Cần cải thiện cách truyền đạt kiến thức cho dễ hiểu hơn.",
+                        "Rất tốt! Học sinh học được nhiều kiến thức bổ ích.",
+                        "Giảng viên chuẩn bị bài kỹ, giải thích rõ ràng."
+                    };
+                    evaluation.setComments(comments[evalCount % comments.length]);
+                    
+                    evaluations.add(evaluation);
+                    evalCount++;
+                }
+            }
+
+            teacherEvaluationRepository.saveAll(evaluations);
+            log.info("✅ Created {} teacher evaluations for {} teachers by {} teaching assistants", 
+                    evaluations.size(), teachers.size(), teachingAssistants.size());
+            log.info("============== Teacher Evaluations Seeding Complete ==============");
+
+        } catch (Exception e) {
+            log.error("❌ Error seeding teacher evaluations: {}", e.getMessage(), e);
+        }
+    }
 } 

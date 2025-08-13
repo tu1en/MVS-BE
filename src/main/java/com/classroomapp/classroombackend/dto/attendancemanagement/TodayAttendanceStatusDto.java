@@ -1,8 +1,9 @@
 package com.classroomapp.classroombackend.dto.attendancemanagement;
 
+import java.time.LocalTime;
+
 import lombok.Builder;
 import lombok.Data;
-import java.time.LocalTime;
 
 @Data
 @Builder
@@ -18,4 +19,8 @@ public class TodayAttendanceStatusDto {
     private Integer lateCount;
     private Integer remainingLeaves;
     private String status;
+    // Audit/notes for detailed log
+    private String notes;
+    private String attendanceType; // NORMAL/OVERTIME/WEEKEND/HOLIDAY...
+    private Integer overtimeMinutes;
 }

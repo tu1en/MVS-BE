@@ -84,6 +84,14 @@ public class User {
     @Column(name = "leave_reset_date", nullable = true)
     private LocalDate leaveResetDate;
 
+    // Parent information (for students)
+    @Column(name = "parent_phone", length = 20)
+    private String parentPhone;
+
+    @Nationalized
+    @Column(name = "parent_name", columnDefinition = "NVARCHAR(255)")
+    private String parentName;
+
     /**
      * Get the role name as String based on the roleId
      */
@@ -95,6 +103,7 @@ public class User {
             case 3 -> "MANAGER";
             case 4 -> "ADMIN";
             case 5 -> "ACCOUNTANT";
+            case 6 -> "TEACHING_ASSISTANT";
             default -> "USER";
         };
     }

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import com.classroomapp.classroombackend.model.hrmanagement.PayrollResult;
 import com.classroomapp.classroombackend.service.EmailService;
 
 import jakarta.mail.internet.MimeMessage;
@@ -250,5 +251,38 @@ public void sendEnrollmentRejectionNotification(String to, String studentName, S
     String body = templateEngine.process("email/enrollment-rejection", context);
     sendEmail(to, subject, body);
 }
+
+    @Override
+    public void sendPayrollConfirmationEmail(String to, String fullName, PayrollResult payrollResult) {
+        String subject = "Xác nhận bảng lương tháng " + (payrollResult.getPayrollPeriod() != null ? payrollResult.getPayrollPeriod() : "");
+        Context context = new Context();
+        context.setVariable("fullName", fullName);
+        context.setVariable("period", payrollResult.getPayrollPeriod() != null ? payrollResult.getPayrollPeriod().toString() : "");
+        context.setVariable("contractType", payrollResult.getContractType());
+        context.setVariable("grossSalary", payrollResult.getProratedGrossSalary());
+        context.setVariable("netSalary", payrollResult.getNetSalary());
+        java.math.BigDecimal pit = java.math.BigDecimal.ZERO;
+        java.math.BigDecimal si = java.math.BigDecimal.ZERO;
+        if (payrollResult.getTopCVResult() != null) {
+            if (payrollResult.getTopCVResult().getPersonalIncomeTax() != null) {
+                pit = payrollResult.getTopCVResult().getPersonalIncomeTax();
+            }
+            if (payrollResult.getTopCVResult().getInsuranceDetails() != null &&
+                payrollResult.getTopCVResult().getInsuranceDetails().getTotalEmployeeContribution() != null) {
+                si = payrollResult.getTopCVResult().getInsuranceDetails().getTotalEmployeeContribution();
+            }
+        }
+        context.setVariable("personalIncomeTax", pit);
+        context.setVariable("employeeInsurance", si);
+        context.setVariable("totalDeductions", pit.add(si));
+        context.setVariable("totalWorkingDays", payrollResult.getTotalWorkingDays());
+        context.setVariable("actualWorkingDays", payrollResult.getActualWorkingDays());
+        context.setVariable("weekendWorkingHours", payrollResult.getWeekendWorkingHours());
+        context.setVariable("weekdayWorkingHours", payrollResult.getWeekdayWorkingHours());
+        context.setVariable("hourlySalary", payrollResult.getHourlySalary());
+        context.setVariable("weekendPay", payrollResult.getWeekendPay());
+        String body = templateEngine.process("email/payroll-confirmation", context);
+        sendEmail(to, subject, body);
+    }
 
 } 

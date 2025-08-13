@@ -92,6 +92,8 @@ public class ViolationTestDataLoader implements CommandLineRunner {
             
             // Create contract for John Smith
             createTeacherContract(teacher1, "Mathematics");
+            // Seed representative teaching hours in target period for payroll demo
+            seedTeacherHourlyAttendance(teacher1, 2025, 8, 24 * 2, 6 * 2); // 24h weekday, 6h weekend
         }
 
         if (userRepository.findByEmail("jane.teacher@mvs.edu").isEmpty()) {
@@ -110,14 +112,14 @@ public class ViolationTestDataLoader implements CommandLineRunner {
             
             // Create contract for Jane Doe
             createTeacherContract(teacher2, "Mathematics");
+            seedTeacherHourlyAttendance(teacher2, 2025, 8, 32 * 2, 0); // 32h weekday, 0 weekend
         }
-
-        if (userRepository.findByEmail("bob.accountant@mvs.edu").isEmpty()) {
+        if (userRepository.findByEmail("ank89353@gmail.com").isEmpty()) {
             User accountant = new User();
-            accountant.setUsername("bob.accountant");
-            accountant.setEmail("bob.accountant@mvs.edu");
+            accountant.setUsername("ank89353");
+            accountant.setEmail("ank89353@gmail.com");
             accountant.setPassword(passwordEncoder.encode("password123"));
-            accountant.setFullName("Bob Wilson");
+            accountant.setFullName("Lê Long Vũ");
             accountant.setRoleId(5); // ACCOUNTANT
             accountant.setDepartmentId(2L);
             accountant.setDepartment("Finance");
@@ -126,8 +128,10 @@ public class ViolationTestDataLoader implements CommandLineRunner {
             userRepository.save(accountant);
             logger.info("Created accountant: {}", accountant.getFullName());
             
-            // Create contract for Bob Wilson
+            // Create contract for accountant
             createStaffContract(accountant, "Finance", "Accountant");
+            // Seed attendance for August 2025 (Mon-Fri 8h/day)
+            seedMonthlyAttendanceForStaff(accountant, 2025, 8);
         }
     }
 
@@ -377,8 +381,26 @@ public class ViolationTestDataLoader implements CommandLineRunner {
             contract.setContractType("STAFF");
             contract.setPosition(position);
             contract.setDepartment(department);
-            contract.setSalary(12000000.0 + (int)(Math.random()*5000000)); // 12-17 million VND
-            contract.setWorkingHours("ca hành chính (08:00-16:00)");
+            // Thiết lập dữ liệu chuẩn cho nhân viên kế toán mẫu
+            if ("ank89353@gmail.com".equalsIgnoreCase(staff.getEmail())) {
+                // Lương GROSS cố định để tính thuế/BH theo luật
+                contract.setSalary(17_000_000.0);
+                contract.setGrossSalary(17_000_000L);
+                contract.setNetSalary(null);
+                contract.setHourlySalary(null);
+                // Offer có số để Payroll lấy GROSS từ offer trước
+                contract.setOffer("Lương GROSS: 17000000 VND");
+                // Ngày làm việc chuẩn (thứ 2 - thứ 6)
+                contract.setWorkDays("MON,TUE,WED,THU,FRI");
+                contract.setWorkShifts("08:00-16:00");
+                contract.setWorkingHours("ca hành chính (08:00-16:00)");
+            } else {
+                // Mặc định: 12-17 triệu
+                contract.setSalary(12000000.0 + (int)(Math.random()*5000000));
+                contract.setWorkingHours("ca hành chính (08:00-16:00)");
+                contract.setWorkDays("MON,TUE,WED,THU,FRI");
+                contract.setWorkShifts("08:00-16:00");
+            }
             contract.setStartDate(LocalDate.now().minusYears(1));
             contract.setEndDate(LocalDate.now().plusYears(2));
             contract.setStatus("ACTIVE");
@@ -389,5 +411,65 @@ public class ViolationTestDataLoader implements CommandLineRunner {
         } catch (Exception e) {
             logger.warn("Could not create contract for staff {}: {}", staff.getFullName(), e.getMessage());
         }
+    }
+
+    /**
+     * Seed attendance logs for a specific user and month with Mon-Fri 8h/day
+     */
+    private void seedMonthlyAttendanceForStaff(User staff, int year, int month) {
+        java.time.YearMonth ym = java.time.YearMonth.of(year, month);
+        java.time.LocalDate start = ym.atDay(1);
+        java.time.LocalDate end = ym.atEndOfMonth();
+        java.time.LocalTime in = java.time.LocalTime.of(8, 0);
+        java.time.LocalTime out = java.time.LocalTime.of(16, 0);
+        for (java.time.LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
+            java.time.DayOfWeek dow = d.getDayOfWeek();
+            if (dow.getValue() >= 6) continue; // skip weekend
+            StaffAttendanceLog log = new StaffAttendanceLog();
+            log.setUser(staff);
+            log.setAttendanceDate(d);
+            log.setCheckInTime(in);
+            log.setCheckOutTime(out);
+            log.setAttendanceType(StaffAttendanceLog.AttendanceType.NORMAL);
+            staffAttendanceLogRepository.save(log);
+        }
+        logger.info("Seeded monthly attendance for {}: {}/{} (Mon-Fri 8h/day)", staff.getFullName(), month, year);
+    }
+
+    /**
+     * Seed hourly attendance summary for teacher payroll demo
+     * Creates simplified logs representing weekday vs weekend teaching hours.
+     */
+    private void seedTeacherHourlyAttendance(User teacher, int year, int month, int weekdayHours, int weekendHours) {
+        java.time.YearMonth ym = java.time.YearMonth.of(year, month);
+        java.time.LocalDate start = ym.atDay(1);
+        java.time.LocalDate end = ym.atEndOfMonth();
+        int remainingWeekday = Math.max(0, weekdayHours);
+        int remainingWeekend = Math.max(0, weekendHours);
+
+        for (java.time.LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
+            boolean isWeekend = d.getDayOfWeek().getValue() >= 6;
+            if (isWeekend && remainingWeekend <= 0) continue;
+            if (!isWeekend && remainingWeekday <= 0) continue;
+
+            int hours = Math.min(3, isWeekend ? remainingWeekend : remainingWeekday);
+            java.time.LocalTime in = isWeekend ? java.time.LocalTime.of(8, 0) : java.time.LocalTime.of(7, 30);
+            java.time.LocalTime out = in.plusHours(hours);
+
+            StaffAttendanceLog log = new StaffAttendanceLog();
+            log.setUser(teacher);
+            log.setAttendanceDate(d);
+            log.setCheckInTime(in);
+            log.setCheckOutTime(out);
+            log.setAttendanceType(StaffAttendanceLog.AttendanceType.NORMAL);
+            staffAttendanceLogRepository.save(log);
+
+            if (isWeekend) remainingWeekend -= hours; else remainingWeekday -= hours;
+
+            if (remainingWeekend <= 0 && remainingWeekday <= 0) break;
+        }
+
+        logger.info("Seeded teacher hourly attendance for {}: {} weekday hours, {} weekend hours in {}/{}",
+                teacher.getFullName(), weekdayHours, weekendHours, month, year);
     }
 }

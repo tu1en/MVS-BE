@@ -3,6 +3,7 @@ package com.classroomapp.classroombackend.service.impl;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
+import com.classroomapp.classroombackend.model.hrmanagement.PayrollResult;
 import com.classroomapp.classroombackend.service.EmailService;
 
 import lombok.extern.slf4j.Slf4j;
@@ -134,5 +135,14 @@ public class EmailServiceDummyImpl implements EmailService {
                                                    String reviewedBy, String coursesUrl, String contactUrl) {
         log.info("DUMMY EMAIL SERVICE: Would send enrollment rejection notification to {} ({}) - Course: {}, Reason: {}, Reviewed by: {}",
                 to, studentName, courseName, rejectionReason, reviewedBy);
+    }
+
+    @Override
+    public void sendPayrollConfirmationEmail(String to, String fullName, PayrollResult payrollResult) {
+        log.info("DUMMY EMAIL SERVICE: Would send payroll confirmation to {} ({}) - Period: {}, Gross: {}, Net: {}",
+                to, fullName,
+                payrollResult.getPayrollPeriod(),
+                payrollResult.getProratedGrossSalary(),
+                payrollResult.getNetSalary());
     }
 }

@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.classroomapp.classroombackend.model.hrmanagement.PayrollResult;
+import com.classroomapp.classroombackend.service.EmailService;
 import com.classroomapp.classroombackend.service.hrmanagement.PayrollGenerationService;
 import com.classroomapp.classroombackend.util.TopCVCalculation;
 
@@ -37,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 public class PayrollGenerationController {
     
     private final PayrollGenerationService payrollGenerationService;
+    private final EmailService emailService;
     
     /**
      * Generate payroll for a specific user
@@ -60,6 +62,56 @@ public class PayrollGenerationController {
         }
     }
     
+    /**
+     * Send payroll confirmation email to a specific user for a period
+     */
+    @PostMapping("/send-confirmation/user/{userId}")
+    @PreAuthorize("hasRole('ACCOUNTANT') or hasRole('MANAGER') or hasRole('ADMIN')")
+    @Operation(summary = "Send payroll confirmation email to user for period")
+    public ResponseEntity<?> sendPayrollConfirmationToUser(
+            @Parameter(description = "User ID") @PathVariable Long userId,
+            @Parameter(description = "Payroll period (YYYY-MM)")
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM") YearMonth period) {
+        try {
+            PayrollResult result = payrollGenerationService.generatePayrollForUser(userId, period);
+            if (result.getUserEmail() == null || result.getUserEmail().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("message", "User has no email"));
+            }
+            emailService.sendPayrollConfirmationEmail(result.getUserEmail(), result.getUserName(), result);
+            return ResponseEntity.ok(Map.of("status", "SENT"));
+        } catch (Exception e) {
+            log.error("Failed to send payroll confirmation: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    /**
+     * Send payroll confirmations to all employees for period
+     */
+    @PostMapping("/send-confirmation/all")
+    @PreAuthorize("hasRole('ACCOUNTANT') or hasRole('MANAGER') or hasRole('ADMIN')")
+    @Operation(summary = "Send payroll confirmation emails to all employees for period")
+    public ResponseEntity<Map<String, Object>> sendPayrollConfirmationToAll(
+            @Parameter(description = "Payroll period (YYYY-MM)")
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM") YearMonth period) {
+        List<PayrollResult> results = payrollGenerationService.generatePayrollForAllEmployees(period);
+        int sent = 0;
+        for (PayrollResult r : results) {
+            try {
+                if (r.getUserEmail() != null && !r.getUserEmail().isEmpty()) {
+                    emailService.sendPayrollConfirmationEmail(r.getUserEmail(), r.getUserName(), r);
+                    sent++;
+                }
+            } catch (Exception ex) {
+                log.warn("Could not send payroll confirmation to {}: {}", r.getUserEmail(), ex.getMessage());
+            }
+        }
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("period", period.toString());
+        resp.put("totalEmployees", results.size());
+        resp.put("emailsSent", sent);
+        return ResponseEntity.ok(resp);
+    }
     /**
      * Generate payroll for all employees
      */

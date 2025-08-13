@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Xác nhận bảng lương</title>
+  <style>
+    body { font-family: Arial, sans-serif; color: #333; }
+    .container { max-width: 640px; margin: 0 auto; padding: 16px; }
+    .header { background: #1890ff; color: #fff; padding: 12px 16px; border-radius: 6px; }
+    .section { margin-top: 16px; padding: 12px 16px; border: 1px solid #eee; border-radius: 6px; }
+    .row { display: flex; justify-content: space-between; margin: 6px 0; }
+    .label { color: #888; }
+    .value { font-weight: bold; }
+  </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h2>Xác nhận bảng lương kỳ [[${period}]]</h2>
+      </div>
+      <p>Xin chào [[${fullName}]],</p>
+      <p>Đây là thông tin tổng hợp lương của bạn trong kỳ [[${period}]]:</p>
+
+      <div class="section">
+        <div class="row"><span class="label">Loại hợp đồng:</span> <span class="value">[[${contractType}]]</span></div>
+        <div class="row"><span class="label">Lương gộp (Gross):</span> <span class="value">[[${grossSalary}]]</span></div>
+        <div class="row"><span class="label">Thuế TNCN:</span> <span class="value">[[${personalIncomeTax}]]</span></div>
+        <div class="row"><span class="label">BH người lao động:</span> <span class="value">[[${employeeInsurance}]]</span></div>
+        <div class="row"><span class="label">Tổng khấu trừ:</span> <span class="value">[[${totalDeductions}]]</span></div>
+        <div class="row"><span class="label">Lương thực nhận (Net):</span> <span class="value">[[${netSalary}]]</span></div>
+      </div>
+
+      <div class="section">
+        <div class="row"><span class="label">Ngày công chuẩn:</span> <span class="value">[[${totalWorkingDays}]]</span></div>
+        <div class="row"><span class="label">Ngày công thực tế:</span> <span class="value">[[${actualWorkingDays}]]</span></div>
+        <div class="row"><span class="label">Giờ thường:</span> <span class="value">[[${weekdayWorkingHours}]]</span></div>
+        <div class="row"><span class="label">Giờ cuối tuần:</span> <span class="value">[[${weekendWorkingHours}]]</span></div>
+        <div class="row"><span class="label">Đơn giá giờ:</span> <span class="value">[[${hourlySalary}]]</span></div>
+        <div class="row"><span class="label">Tiền cuối tuần:</span> <span class="value">[[${weekendPay}]]</span></div>
+      </div>
+
+      <p>
+        Bạn có thể xem chi tiết và xác nhận đã xem tại trang phù hợp với vai trò (ví dụ Teacher):
+        <a th:href="@{'http://localhost:3000/teacher/my/payroll'(period=${period})}">Lương của tôi</a>
+      </p>
+      <p>Nếu có thắc mắc, bạn có thể phản hồi lại email này hoặc liên hệ bộ phận kế toán.</p>
+      <p>Trân trọng,</p>
+      <p>Phòng Kế Toán</p>
+    </div>
+  </body>
+  </html>
+
+

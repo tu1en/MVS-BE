@@ -20,11 +20,14 @@ import com.classroomapp.classroombackend.model.hrmanagement.AllowedNetwork;
 import com.classroomapp.classroombackend.model.hrmanagement.AttendanceVerificationLog;
 import com.classroomapp.classroombackend.model.hrmanagement.CompanyLocation;
 import com.classroomapp.classroombackend.model.hrmanagement.StaffAttendanceLog;
+import com.classroomapp.classroombackend.model.hrmanagement.UserShiftAssignment;
+import com.classroomapp.classroombackend.model.hrmanagement.WorkShift;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.hrmanagement.AllowedNetworkRepository;
 import com.classroomapp.classroombackend.repository.hrmanagement.AttendanceVerificationLogRepository;
 import com.classroomapp.classroombackend.repository.hrmanagement.CompanyLocationRepository;
 import com.classroomapp.classroombackend.repository.hrmanagement.StaffAttendanceLogRepository;
+import com.classroomapp.classroombackend.repository.hrmanagement.UserShiftAssignmentRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +41,7 @@ public class AttendanceVerificationService {
     private final CompanyLocationRepository locationRepository;
     private final AllowedNetworkRepository networkRepository;
     private final AttendanceVerificationLogRepository verificationLogRepository;
+    private final UserShiftAssignmentRepository userShiftAssignmentRepository;
     
     @Value("${app.attendance.dev-mode:true}")
     private boolean devMode;
@@ -47,6 +51,12 @@ public class AttendanceVerificationService {
     
     @Value("${app.attendance.skip-network-check:true}")
     private boolean skipNetworkCheck;
+
+    @Value("${app.attendance.late-grace-minutes:10}")
+    private int lateGraceMinutes;
+
+    @Value("${app.attendance.early-grace-minutes:10}")
+    private int earlyGraceMinutes;
     
     @Transactional
     public AttendanceCheckInResponseDto processCheckIn(User user, AttendanceVerificationDto dto) {
@@ -173,10 +183,43 @@ public class AttendanceVerificationService {
                 .build();
         }
         
-        // 4. Create attendance log
+        // 4. Determine shift window (production only) but do not block; we only flag late/early and compute OT
+        LocalDate today = LocalDate.now();
+        ShiftWindow window = determineShiftWindow(user, today);
+
+        // 5. Create attendance log
         StaffAttendanceLog attendanceLog = createOrUpdateAttendanceLog(user, isCheckIn);
+
+        // 5.1 Flag late or early in notes (no blocking)
+        if (window != null && window.startTime != null && window.endTime != null) {
+            if (isCheckIn && attendanceLog.getCheckInTime() != null) {
+                if (attendanceLog.getCheckInTime().isAfter(window.startTime.plusMinutes(lateGraceMinutes))) {
+                    String note = (attendanceLog.getNotes() == null ? "" : attendanceLog.getNotes() + "; ");
+                    attendanceLog.setNotes(note + "Late check-in");
+                }
+            }
+            if (!isCheckIn && attendanceLog.getCheckOutTime() != null) {
+                if (attendanceLog.getCheckOutTime().isBefore(window.endTime.minusMinutes(earlyGraceMinutes))) {
+                    String note = (attendanceLog.getNotes() == null ? "" : attendanceLog.getNotes() + "; ");
+                    attendanceLog.setNotes(note + "Early check-out");
+                }
+            }
+        }
+
+        // 5.2 Compute OT for non-teachers when check-out is after shift end
+        if (!isCheckIn && window != null && window.endTime != null && attendanceLog.getCheckOutTime() != null && !isTeacher(user)) {
+            if (attendanceLog.getCheckOutTime().isAfter(window.endTime)) {
+                long otMinutes = java.time.Duration.between(window.endTime, attendanceLog.getCheckOutTime()).toMinutes();
+                String note = (attendanceLog.getNotes() == null ? "" : attendanceLog.getNotes() + "; ");
+                attendanceLog.setNotes(note + "OT=" + otMinutes + "m");
+                attendanceLog.setAttendanceType(StaffAttendanceLog.AttendanceType.OVERTIME);
+            }
+        }
+
+        // Persist any note/type changes
+        attendanceLogRepository.save(attendanceLog);
         
-        // 5. Log successful verification
+        // 6. Log successful verification
         logVerificationAttempt(user, dto, locationResult, networkResult,
             isCheckIn ? AttendanceVerificationLog.VerificationType.CHECK_IN : AttendanceVerificationLog.VerificationType.CHECK_OUT,
             AttendanceVerificationLog.VerificationStatus.SUCCESS);
@@ -201,6 +244,45 @@ public class AttendanceVerificationService {
                 .build())
             .build();
     }
+
+    // Determine expected shift window for the user on the given date
+    private ShiftWindow determineShiftWindow(User user, LocalDate date) {
+        try {
+            // First, try to find an active user shift assignment for the date
+            java.util.Optional<UserShiftAssignment> assignmentOpt = userShiftAssignmentRepository.findUserAssignmentForDate(user.getId(), date);
+            if (assignmentOpt.isPresent()) {
+                WorkShift shift = assignmentOpt.get().getWorkShift();
+                if (shift != null && Boolean.TRUE.equals(shift.getIsActive()) && shift.isValidTimeRange()) {
+                    return new ShiftWindow(shift.getStartTime(), shift.getEndTime());
+                }
+            }
+
+            // If teacher without assignment: use teaching window 07:30 to 20:30, max 8h guarded elsewhere
+            if (user.getRole() != null && user.getRole().toString().toUpperCase().contains("TEACHER")) {
+                return new ShiftWindow(LocalTime.of(7, 30), LocalTime.of(20, 30));
+            }
+
+            // Default administrative window 08:30 - 17:30
+            return new ShiftWindow(LocalTime.of(8, 30), LocalTime.of(17, 30));
+        } catch (Exception e) {
+            log.warn("Could not determine shift window for user {} on {}: {}", user.getId(), date, e.getMessage());
+            return null;
+        }
+    }
+
+    private record ShiftWindow(LocalTime startTime, LocalTime endTime) {}
+
+    private boolean isTeacher(User user) {
+        try {
+            if (user.getRole() != null) {
+                return user.getRole().toString().toUpperCase().contains("TEACHER");
+            }
+            if (user.getRoleId() != null) {
+                return user.getRoleId() == 2; // assuming 2 = TEACHER
+            }
+        } catch (Exception ignored) {}
+        return false;
+    }
     
     public TodayAttendanceStatusDto getTodayStatus(User user) {
         LocalDate today = LocalDate.now();
@@ -214,11 +296,24 @@ public class AttendanceVerificationService {
                 .hasCheckedOut(false)
                 .status("Chưa chấm công")
                 .workingHours(0.0)
+                .attendanceType("ABSENT")
                 .build();
         }
         
         StaffAttendanceLog log = todayLog.get();
         
+        // Parse OT minutes from notes if present (format OT=xxm)
+        Integer otMinutes = null;
+        if (log.getNotes() != null && log.getNotes().contains("OT=")) {
+            try {
+                String[] parts = log.getNotes().split("OT=");
+                if (parts.length > 1) {
+                    String num = parts[1].split("m")[0].trim();
+                    otMinutes = Integer.parseInt(num);
+                }
+            } catch (Exception ignored) {}
+        }
+
         return TodayAttendanceStatusDto.builder()
             .hasCheckedIn(log.getCheckInTime() != null)
             .hasCheckedOut(log.getCheckOutTime() != null)
@@ -226,6 +321,9 @@ public class AttendanceVerificationService {
             .checkOutTime(log.getCheckOutTime())
             .workingHours(calculateWorkingHours(log))
             .status(determineAttendanceStatus(log))
+            .attendanceType(log.getAttendanceType() != null ? log.getAttendanceType().name() : null)
+            .notes(log.getNotes())
+            .overtimeMinutes(otMinutes)
             .build();
     }
     
