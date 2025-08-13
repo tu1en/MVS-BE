@@ -141,6 +141,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/assignments/**").authenticated()
                 .requestMatchers("/api/timetable/**").authenticated()
 
+                // Contracts - manager only
+                .requestMatchers("/api/contracts/**").hasRole("MANAGER")
+
                 // Role-based endpoints
                 .requestMatchers("/api/manager/requests/**").hasRole("MANAGER")
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
