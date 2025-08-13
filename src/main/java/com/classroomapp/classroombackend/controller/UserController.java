@@ -1,9 +1,11 @@
 package com.classroomapp.classroombackend.controller;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +29,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.classroomapp.classroombackend.dto.UserDto;
 import com.classroomapp.classroombackend.dto.usermanagement.UserMapper;
+import com.classroomapp.classroombackend.model.Contract;
 import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.ContractRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.security.CustomUserDetails;
 import com.classroomapp.classroombackend.service.UserService;
 
@@ -38,10 +43,14 @@ public class UserController {
     
     private static final Logger logger = Logger.getLogger(UserController.class.getName());
     private final UserService userService;
+    private final UserRepository userRepository;
+    private final ContractRepository contractRepository;
 
     @Autowired
-    public UserController(UserService userService) {
+    public UserController(UserService userService, UserRepository userRepository, ContractRepository contractRepository) {
         this.userService = userService;
+        this.userRepository = userRepository;
+        this.contractRepository = contractRepository;
     }
 
     /**
@@ -68,6 +77,9 @@ public class UserController {
                 User user = userDetails.getUser();
                 logger.info("Fetching profile for current user (CustomUserDetails): " + user.getEmail());
                 UserDto userDto = UserMapper.toDto(user);
+                // enrich with birthDate from active contract if available
+                Optional<Contract> active = contractRepository.findActiveContractByUserId(user.getId());
+                active.ifPresent(c -> userDto.setBirthDate(c.getBirthDate()));
                 return ResponseEntity.ok(userDto);
             } else if (principal instanceof UserDetails) {
                 // Handle standard UserDetails - the username is actually the email in our system
@@ -82,6 +94,8 @@ public class UserController {
                 }
                 
                 UserDto userDto = UserMapper.toDto(user);
+                Optional<Contract> active = contractRepository.findActiveContractByUserId(user.getId());
+                active.ifPresent(c -> userDto.setBirthDate(c.getBirthDate()));
                 return ResponseEntity.ok(userDto);
             } else {
                 // Fallback to string representation
@@ -109,19 +123,113 @@ public class UserController {
     }
     
     /**
-     * Update current user profile (mock implementation)
-     * @param profileData updated profile data
-     * @return updated profile response
+     * Update current user profile
+     * Editable: email, phoneNumber, gender, birthDate (or birthYear)
+     * Non-editable: username, fullName, department
      */
     @PutMapping("/me")
     public ResponseEntity<Map<String, Object>> updateCurrentUser(@RequestBody Map<String, Object> profileData) {
         try {
-            // Mock update - in real implementation, you would update the actual user
+            Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (!(principal instanceof UserDetails) && !(principal instanceof CustomUserDetails)) {
+                Map<String, Object> error = new HashMap<>();
+                error.put("success", false);
+                error.put("message", "Unauthorized");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+            }
+
+            // Resolve current user entity
+            String emailOrUsername = principal instanceof UserDetails
+                    ? ((UserDetails) principal).getUsername()
+                    : ((CustomUserDetails) principal).getUsername();
+
+            User user = userService.findUserEntityByEmail(emailOrUsername);
+            if (user == null) {
+                // try by username as fallback
+                user = userRepository.findByUsername(emailOrUsername).orElse(null);
+            }
+            if (user == null) {
+                Map<String, Object> error = new HashMap<>();
+                error.put("success", false);
+                error.put("message", "User not found");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+            }
+
+            // Extract editable fields
+            String newEmail = (String) profileData.getOrDefault("email", user.getEmail());
+            String newPhone = (String) profileData.getOrDefault("phoneNumber", user.getPhoneNumber());
+            String newGender = (String) profileData.getOrDefault("gender", user.getGender());
+
+            // Basic validations
+            if (newEmail == null || !newEmail.contains("@")) {
+                Map<String, Object> error = new HashMap<>();
+                error.put("success", false);
+                error.put("message", "Invalid email");
+                return ResponseEntity.badRequest().body(error);
+            }
+            if (!newEmail.equalsIgnoreCase(user.getEmail()) && userRepository.existsByEmail(newEmail)) {
+                Map<String, Object> error = new HashMap<>();
+                error.put("success", false);
+                error.put("message", "Email already in use");
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+            }
+            if (newPhone != null && newPhone.length() > 20) {
+                Map<String, Object> error = new HashMap<>();
+                error.put("success", false);
+                error.put("message", "Phone number too long");
+                return ResponseEntity.badRequest().body(error);
+            }
+            if (newGender != null) {
+                String g = newGender.toUpperCase();
+                if (!(g.equals("MALE") || g.equals("FEMALE") || g.equals("OTHER"))) {
+                    Map<String, Object> error = new HashMap<>();
+                    error.put("success", false);
+                    error.put("message", "Invalid gender value");
+                    return ResponseEntity.badRequest().body(error);
+                }
+            }
+
+            // Apply updates to User entity
+            user.setEmail(newEmail);
+            user.setPhoneNumber(newPhone);
+            user.setGender(newGender);
+            userRepository.save(user);
+
+            // Update birth date on active contract if provided
+            LocalDate birthDate = null;
+            if (profileData.containsKey("birthDate") && profileData.get("birthDate") instanceof String) {
+                birthDate = LocalDate.parse((String) profileData.get("birthDate"));
+            } else if (profileData.containsKey("birthYear")) {
+                Object yearObj = profileData.get("birthYear");
+                try {
+                    int year = yearObj instanceof Number ? ((Number) yearObj).intValue() : Integer.parseInt(yearObj.toString());
+                    if (year > 1900 && year < LocalDate.now().getYear() + 1) {
+                        birthDate = LocalDate.of(year, 1, 1);
+                    }
+                } catch (Exception ignored) {}
+            }
+
+            if (birthDate != null) {
+                Optional<Contract> active = contractRepository.findActiveContractByUserId(user.getId());
+                if (active.isPresent()) {
+                    Contract contract = active.get();
+                    contract.setBirthDate(birthDate);
+                    contractRepository.save(contract);
+                }
+            }
+
+            // Build response with updated data
+            UserDto userDto = UserMapper.toDto(user);
+            if (birthDate == null) {
+                contractRepository.findActiveContractByUserId(user.getId()).ifPresent(c -> userDto.setBirthDate(c.getBirthDate()));
+            } else {
+                userDto.setBirthDate(birthDate);
+            }
+
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("data", profileData);
+            response.put("data", userDto);
             response.put("message", "Profile updated successfully");
-            
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             Map<String, Object> errorResponse = new HashMap<>();

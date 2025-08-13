@@ -1,5 +1,6 @@
 package com.classroomapp.classroombackend.dto;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Set;
 
@@ -36,6 +37,11 @@ public class UserDto {
     // Alternative name field for compatibility with usermanagement version
     private String name;
 
+    // Contact and personal info
+    private String phoneNumber;
+    private String gender; // MALE, FEMALE, OTHER
+    private LocalDate birthDate; // from active contract if available
+
     private Integer roleId;
 
     // Role names as Set<String> for compatibility with usermanagement version
@@ -70,20 +76,25 @@ public class UserDto {
         this.enabled = enabled;
         this.roles = roles;
     }
-// Constructor từ entity User
-public UserDto(User user) {
-    this.id = user.getId();
-    this.username = user.getUsername();
-    this.email = user.getEmail();
-    this.fullName = user.getFullName();
-    this.name = user.getFullName(); // fallback cho name
-    this.roleId = user.getRoleId();
-    this.createdAt = user.getCreatedAt();
-    this.status = user.getStatus();
-    this.enabled = true; // bạn có thể map từ status nếu cần: status.equals("active")
-    // Nếu cần map role dạng Set<String> thì bổ sung:
-    this.roles = Set.of(user.getRole()); // ví dụ: ["TEACHER"]
-}
+
+    // Constructor từ entity User
+    public UserDto(User user) {
+        this.id = user.getId();
+        this.username = user.getUsername();
+        this.email = user.getEmail();
+        this.fullName = user.getFullName();
+        this.name = user.getFullName(); // fallback cho name
+        this.roleId = user.getRoleId();
+        this.createdAt = user.getCreatedAt();
+        this.status = user.getStatus();
+        this.enabled = true; // bạn có thể map từ status nếu cần: status.equals("active")
+        this.phoneNumber = user.getPhoneNumber();
+        this.gender = user.getGender();
+        // birthDate không thể map trực tiếp từ User (nằm trong Contract)
+        // sẽ được điền ở tầng controller/service khi cần
+        // Nếu cần map role dạng Set<String> thì bổ sung:
+        this.roles = Set.of(user.getRole()); // ví dụ: ["TEACHER"]
+    }
 
     // Helper method to get name (prioritizes fullName, falls back to name)
     public String getDisplayName() {

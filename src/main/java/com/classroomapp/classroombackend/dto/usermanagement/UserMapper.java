@@ -22,6 +22,8 @@ public class UserMapper {
         dto.setEmail(user.getEmail());
         dto.setFullName(user.getFullName());
         dto.setName(user.getFullName()); // Map fullName to name for compatibility
+        dto.setPhoneNumber(user.getPhoneNumber());
+        dto.setGender(user.getGender());
         dto.setRoleId(user.getRoleId());
         dto.setEnabled("active".equalsIgnoreCase(user.getStatus()));
         dto.setStatus(user.getStatus());
