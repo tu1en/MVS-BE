@@ -268,6 +268,8 @@ private Integer convertRoleToRoleId(String role) {
             return RoleConstants.ACCOUNTANT;
         case "ADMIN":
             return RoleConstants.ADMIN;
+        case "PARENT":
+            return RoleConstants.PARENT;
         default:
             return RoleConstants.STUDENT; // Default to STUDENT
     }

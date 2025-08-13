@@ -264,6 +264,7 @@ seedEvidenceTemplates();
         // Always verify database state
         verifyDatabaseState();
         verifyUserRoleAssignments();
+        ensureParentRoleAndUser();
         
         // Always create attendance explanations test data
         createAttendanceExplanationsData();
@@ -455,7 +456,11 @@ seedEvidenceTemplates();
                 accountant.setId(5);
                 roleRepository.save(accountant);
 
-                log.info("✅ Created roles with explicit IDs (including ACCOUNTANT).");
+                Role parent = new Role("PARENT");
+                parent.setId(6);
+                roleRepository.save(parent);
+
+                log.info("✅ Created roles with explicit IDs (including ACCOUNTANT, PARENT).");
 
             } finally {
                 entityManager.createNativeQuery("SET IDENTITY_INSERT roles OFF").executeUpdate();
@@ -519,6 +524,16 @@ seedEvidenceTemplates();
                 admin.setFullName("Administrator");
                 admin.setRoleId(RoleConstants.ADMIN);
                 userRepository.save(admin);
+
+                // Create parent user
+                User parent = new User();
+                parent.setId(601L);
+                parent.setUsername("parent");
+                parent.setPassword(passwordEncoder.encode("parent123"));
+                parent.setEmail("parent@test.com");
+                parent.setFullName("Parent User");
+                parent.setRoleId(RoleConstants.PARENT);
+                userRepository.save(parent);
 
                 // Create subject-specific teachers
                 User mathTeacher = new User();
@@ -747,6 +762,35 @@ seedEvidenceTemplates();
             }
         } else {
             log.info("✅ Users already seeded.");
+        }
+    }
+
+    /**
+     * Ensure PARENT role and a default parent user exist when DB is not empty.
+     */
+    private void ensureParentRoleAndUser() {
+        try {
+            // Ensure role exists
+            if (!roleRepository.findByName("PARENT").isPresent()) {
+                Role parentRole = new Role("PARENT");
+                parentRole.setId(RoleConstants.PARENT);
+                roleRepository.save(parentRole);
+                log.info("✅ Ensured PARENT role exists.");
+            }
+
+            // Ensure default parent user exists
+            if (!userRepository.existsByUsername("parent")) {
+                User parent = new User();
+                parent.setUsername("parent");
+                parent.setPassword(passwordEncoder.encode("parent123"));
+                parent.setEmail("parent@test.com");
+                parent.setFullName("Parent User");
+                parent.setRoleId(RoleConstants.PARENT);
+                userRepository.save(parent);
+                log.info("✅ Ensured default parent user exists.");
+            }
+        } catch (Exception e) {
+            log.warn("⚠️ Could not ensure PARENT role/user: {}", e.getMessage());
         }
     }
 

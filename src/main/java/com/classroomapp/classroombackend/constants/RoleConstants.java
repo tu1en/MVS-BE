@@ -10,6 +10,7 @@ public class RoleConstants {
     public static final int MANAGER = 3;
     public static final int ADMIN = 4;
     public static final int ACCOUNTANT = 5;
+    public static final int PARENT = 6;
     
     // Role name constants
     public static final String ROLE_STUDENT = "STUDENT";
@@ -17,6 +18,7 @@ public class RoleConstants {
     public static final String ROLE_MANAGER = "MANAGER";
     public static final String ROLE_ADMIN = "ADMIN";
     public static final String ROLE_ACCOUNTANT = "ACCOUNTANT";
+    public static final String ROLE_PARENT = "PARENT";
     
     // Role groupings (logical groups to replace EMPLOYEE/STAFF references)
     public static final List<Integer> STAFF_ROLES = Arrays.asList(TEACHER, MANAGER, ADMIN, ACCOUNTANT);

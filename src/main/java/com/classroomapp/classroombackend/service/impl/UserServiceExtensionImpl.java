@@ -209,6 +209,7 @@ public class UserServiceExtensionImpl implements UserServiceExtension {
             case "MANAGER": return "Manager";
             case "ACCOUNTANT": return "Accountant";
             case "ADMIN": return "Administrator";
+            case "PARENT": return "Parent";
             default: return role;
         }
     }
@@ -226,6 +227,8 @@ public class UserServiceExtensionImpl implements UserServiceExtension {
                 return 4;
             case "ACCOUNTANT":
                 return 5; // New role for accountant
+            case "PARENT":
+                return 6; // New role for parent
             default:
                 return 1; // Default to STUDENT
         }
