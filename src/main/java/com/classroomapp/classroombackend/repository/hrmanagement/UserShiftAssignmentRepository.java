@@ -146,4 +146,13 @@ public interface UserShiftAssignmentRepository extends JpaRepository<UserShiftAs
      * @return list of assignments created by the user
      */
     List<UserShiftAssignment> findByCreatedByOrderByCreatedAtDesc(Long createdBy);
+    
+    /**
+     * Check if an identical active assignment already exists
+     * (same user, same shift, same date range)
+     */
+    boolean existsByUser_IdAndWorkShift_IdAndStartDateAndEndDateAndIsActiveTrue(Long userId,
+                                                                                 Long workShiftId,
+                                                                                 LocalDate startDate,
+                                                                                 LocalDate endDate);
 }

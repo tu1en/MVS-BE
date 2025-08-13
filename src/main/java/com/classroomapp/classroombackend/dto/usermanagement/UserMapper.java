@@ -29,6 +29,9 @@ public class UserMapper {
         dto.setStatus(user.getStatus());
         dto.setRoles(Collections.singleton(user.getRole()));
         dto.setCreatedAt(user.getCreatedAt());
+        // Map department details
+        dto.setDepartment(user.getDepartment());
+        dto.setDepartmentId(user.getDepartmentId());
 
         return dto;
     }

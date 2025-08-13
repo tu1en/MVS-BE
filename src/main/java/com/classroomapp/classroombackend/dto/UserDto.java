@@ -51,6 +51,10 @@ public class UserDto {
 
     private String status;
 
+    // Department info (for display in teacher profile)
+    private String department;
+    private Long departmentId;
+
     // Enabled flag for compatibility with usermanagement version
     private boolean enabled;
 
