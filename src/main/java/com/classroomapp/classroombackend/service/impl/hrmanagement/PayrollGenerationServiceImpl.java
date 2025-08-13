@@ -45,7 +45,7 @@ public class PayrollGenerationServiceImpl implements PayrollGenerationService {
         try {
             // Get user
             User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng với ID: " + userId));
             
             // Get active contract
             Contract contract = contractRepository.findActiveContractByUserId(userId)
@@ -122,8 +122,8 @@ public class PayrollGenerationServiceImpl implements PayrollGenerationService {
             return payrollResult;
             
         } catch (Exception e) {
-            log.error("Error generating payroll for user {} and period {}", userId, period, e);
-            throw new RuntimeException("Error generating payroll: " + e.getMessage(), e);
+            log.error("Lỗi khi tạo bảng lương cho người dùng {} và kỳ {}", userId, period, e);
+            throw new RuntimeException("Lỗi khi tạo bảng lương: " + e.getMessage(), e);
         }
     }
     
@@ -142,7 +142,7 @@ public class PayrollGenerationServiceImpl implements PayrollGenerationService {
                     results.add(result);
                 }
             } catch (Exception e) {
-                log.error("Failed to generate payroll for user {}: {}", user.getFullName(), e.getMessage());
+                log.error("Tạo bảng lương thất bại cho người dùng {}: {}", user.getFullName(), e.getMessage());
             }
         }
         
@@ -162,7 +162,7 @@ public class PayrollGenerationServiceImpl implements PayrollGenerationService {
                 PayrollResult result = generatePayrollForUser(contract.getUserId(), period);
                 results.add(result);
             } catch (Exception e) {
-                log.error("Failed to generate payroll for contract {}: {}", contract.getId(), e.getMessage());
+                log.error("Tạo bảng lương thất bại cho hợp đồng {}: {}", contract.getId(), e.getMessage());
             }
         }
         

@@ -96,7 +96,7 @@ public class AnnouncementServiceImpl implements AnnouncementService {
     @Transactional
     public AnnouncementDto updateAnnouncement(Long announcementId, CreateAnnouncementDto updateDto) {
         Announcement existingAnnouncement = announcementRepository.findById(announcementId)
-                .orElseThrow(() -> new ResourceNotFoundException("Announcement not found with id: " + announcementId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông báo với id: " + announcementId));
 
         // Update fields
         existingAnnouncement.setTitle(updateDto.getTitle());
@@ -112,7 +112,7 @@ public class AnnouncementServiceImpl implements AnnouncementService {
     @Transactional
     public void deleteAnnouncement(Long announcementId) {
         if (!announcementRepository.existsById(announcementId)) {
-            throw new ResourceNotFoundException("Announcement not found with id: " + announcementId);
+            throw new ResourceNotFoundException("Không tìm thấy thông báo với id: " + announcementId);
         }
         announcementRepository.deleteById(announcementId);
     }
@@ -120,7 +120,7 @@ public class AnnouncementServiceImpl implements AnnouncementService {
     @Override
     public AnnouncementDto getAnnouncementById(Long announcementId) {
         Announcement announcement = announcementRepository.findById(announcementId)
-                .orElseThrow(() -> new ResourceNotFoundException("Announcement not found with id: " + announcementId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông báo với id: " + announcementId));
         return convertToDto(announcement);
     }
     

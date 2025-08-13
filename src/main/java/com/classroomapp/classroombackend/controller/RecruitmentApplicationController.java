@@ -32,7 +32,7 @@ public class RecruitmentApplicationController {
             @RequestParam String address,
             @RequestParam(value = "cv", required = true) MultipartFile cvFile
     ) {
-        log.info("=== RECEIVED APPLICATION REQUEST ===");
+        log.info("=== NHẬN YÊU CẦU ỨNG TUYỂN ===");
         log.info("JobPositionId: {}", jobPositionId);
         log.info("FullName: {}", fullName);
         log.info("Email: {}", email);
@@ -52,19 +52,19 @@ public class RecruitmentApplicationController {
             }
             
             RecruitmentApplicationDto dto = recruitmentService.apply(jobPositionId, fullName, email, phoneNumber, address, cvFile);
-            log.info("=== APPLICATION CREATED SUCCESSFULLY ===");
+            log.info("=== TẠO ĐƠN ỨNG TUYỂN THÀNH CÔNG ===");
             log.info("Application ID: {}", dto.getId());
             log.info("CV URL: {}", dto.getCvUrl());
             return ResponseEntity.ok(dto);
         } catch (Exception e) {
-            log.error("=== APPLICATION CREATION FAILED ===");
-            log.error("Error: {}", e.getMessage());
+            log.error("=== TẠO ĐƠN ỨNG TUYỂN THẤT BẠI ===");
+            log.error("Lỗi: {}", e.getMessage());
             
             // Trả về error response thay vì throw exception
             ErrorResponse errorResponse = new ErrorResponse();
             errorResponse.setTimestamp(LocalDateTime.now());
             errorResponse.setStatus(400);
-            errorResponse.setError("APPLICATION_ERROR");
+            errorResponse.setError("LỖI_ĐƠN_ỨNG_TUYỂN");
             errorResponse.setMessage(e.getMessage());
             errorResponse.setPath("/api/recruitment-applications/apply");
             
@@ -131,7 +131,7 @@ public class RecruitmentApplicationController {
         try {
             emailService.sendInterviewInvitationEmail(app.getEmail(), app.getFullName(), app.getJobTitle());
         } catch (Exception e) {
-            log.error("Failed to send approval email for application {}: {}", id, e.getMessage());
+            log.error("Gửi email phê duyệt cho đơn ứng tuyển {} thất bại: {}", id, e.getMessage());
         }
         return ResponseEntity.ok().build();
     }

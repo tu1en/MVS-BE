@@ -100,7 +100,7 @@ public class ClassroomServiceImpl implements ClassroomService {
     @Override
     public ClassroomDto getClassroomById(Long id) {
         Classroom classroom = classroomRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Classroom not found with id: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy lớp học với id: " + id));
         return mapClassroomToDto(classroom);
     }
 
@@ -112,7 +112,7 @@ public class ClassroomServiceImpl implements ClassroomService {
     @Override
     public ClassroomDetailsDto createClassroom(CreateClassroomDto dto) {
         User teacher = userRepository.findById(dto.getTeacherId())
-                .orElseThrow(() -> new EntityNotFoundException("Teacher not found with id: " + dto.getTeacherId()));
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy giáo viên với id: " + dto.getTeacherId()));
         Classroom classroom = new Classroom();
         classroom.setName(dto.getName());
         classroom.setDescription(dto.getDescription());
@@ -127,10 +127,10 @@ public class ClassroomServiceImpl implements ClassroomService {
     public ClassroomDto UpdateClassroom(Long id, UpdateClassroomDto updateClassroomDto, UserDetails userDetails) {
         // 1. Tìm classroom
         Classroom classroom = classroomRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Classroom not found with id: " + id));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học với id: " + id));
 
         if (!(userDetails instanceof CustomUserDetails)) {
-            throw new InsufficientAuthenticationException("User details not of expected type");
+            throw new InsufficientAuthenticationException("Thông tin người dùng không đúng kiểu mong đợi");
         }
         CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
         User currentUser = customUserDetails.getUser();
@@ -140,7 +140,7 @@ public class ClassroomServiceImpl implements ClassroomService {
         
         // Người dùng phải là Admin, Manager, hoặc là giáo viên của chính lớp đó
         if (!isAdminOrManager && (classroom.getTeacher() == null || !classroom.getTeacher().getId().equals(currentUser.getId()))) {
-            throw new BusinessLogicException("You are not authorized to update this classroom.");
+            throw new BusinessLogicException("Bạn không có quyền cập nhật lớp học này.");
         }
     
         // 3. Cập nhật các trường được phép
@@ -196,10 +196,10 @@ public class ClassroomServiceImpl implements ClassroomService {
     @Override
     public void EnrollStudent(Long classroomId, Long studentId) {
         Classroom classroom = classroomRepository.findById(classroomId)
-                .orElseThrow(() -> new EntityNotFoundException("Classroom not found with id: " + classroomId));
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy lớp học với id: " + classroomId));
         
         User student = userRepository.findById(studentId)
-                .orElseThrow(() -> new EntityNotFoundException("Student not found with id: " + studentId));
+                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy học sinh với id: " + studentId));
         
         // Check if student is already enrolled
         ClassroomEnrollmentId enrollmentId = new ClassroomEnrollmentId(classroomId, studentId);
@@ -273,7 +273,7 @@ public class ClassroomServiceImpl implements ClassroomService {
             return dto;
             
         } catch (Exception e) {
-            log.error("Error in GetCourseDetails for classroom {}: {}", classroomId, e.getMessage(), e);
+            log.error("Lỗi trong GetCourseDetails cho lớp học {}: {}", classroomId, e.getMessage(), e);
             throw e;
         }
     }
@@ -319,7 +319,7 @@ public class ClassroomServiceImpl implements ClassroomService {
             
             return classrooms;
         } catch (Exception e) {
-            log.error("GetClassroomsByCurrentTeacher: Error getting classrooms for current teacher", e);
+            log.error("GetClassroomsByCurrentTeacher: Lỗi khi lấy danh sách lớp cho giáo viên hiện tại", e);
             return new ArrayList<>();
         }
     }
@@ -342,7 +342,7 @@ public class ClassroomServiceImpl implements ClassroomService {
     @Override
     public ClassroomDetailsDto findClassroomDetailsById(Long classroomId) {
         Classroom classroom = classroomRepository.findDetailsById(classroomId)
-                .orElseThrow(() -> new ResourceNotFoundException("Classroom not found with id: " + classroomId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học với id: " + classroomId));
         return convertToClassroomDetailsDto(classroom);
     }
 

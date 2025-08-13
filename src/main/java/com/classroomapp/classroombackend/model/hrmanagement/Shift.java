@@ -123,7 +123,7 @@ public class Shift {
     @PreUpdate
     private void validateShift() {
         if (!isValidShift()) {
-            throw new IllegalStateException("Shift end time must be after start time");
+            throw new IllegalStateException("Giờ kết thúc ca phải sau giờ bắt đầu");
         }
     }
 }

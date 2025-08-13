@@ -46,11 +46,11 @@ public class LectureServiceImpl implements LectureService {
     @Transactional
     public LectureDto createLecture(Long classroomId, CreateLectureDto createLectureDto, String userEmail) {
         Classroom classroom = classroomRepository.findById(classroomId)
-                .orElseThrow(() -> new ResourceNotFoundException("Classroom not found with id: " + classroomId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học với id: " + classroomId));
 
         // Authorization Check: Ensure the user is the teacher of the classroom
         if (!classroom.getTeacher().getEmail().equals(userEmail)) {
-            throw new UnauthorizedException("User is not authorized to add lectures to this classroom.");
+            throw new UnauthorizedException("Bạn không có quyền thêm bài giảng cho lớp học này.");
         }
 
         Lecture lecture = new Lecture();
@@ -87,8 +87,8 @@ public class LectureServiceImpl implements LectureService {
         System.out.println("📚 LectureService: Getting lectures for classroomId: " + classroomId);
 
         if (!classroomRepository.existsById(classroomId)) {
-            System.out.println("❌ LectureService: Classroom not found with id: " + classroomId);
-            throw new ResourceNotFoundException("Classroom not found with id: " + classroomId);
+            System.out.println("❌ LectureService: Không tìm thấy lớp học với id: " + classroomId);
+            throw new ResourceNotFoundException("Không tìm thấy lớp học với id: " + classroomId);
         }
 
         System.out.println("✅ LectureService: Classroom exists, fetching lectures...");
@@ -110,10 +110,10 @@ public class LectureServiceImpl implements LectureService {
     @Override
     public LectureDetailsDto getLectureById(Long lectureId, Principal principal) {
         Lecture lecture = lectureRepository.findById(lectureId)
-                .orElseThrow(() -> new ResourceNotFoundException("Lecture not found with id: " + lectureId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài giảng với id: " + lectureId));
 
         if (!classroomSecurityService.isMember(lecture.getClassroom().getId(), principal)) {
-            throw new AccessDeniedException("User is not a member of the classroom for this lecture.");
+            throw new AccessDeniedException("Bạn không phải là thành viên của lớp học cho bài giảng này.");
         }
 
         return modelMapper.map(lecture, LectureDetailsDto.class);
@@ -122,10 +122,10 @@ public class LectureServiceImpl implements LectureService {
     @Override
     public LectureDto updateLecture(Long lectureId, UpdateLectureDto updateLectureDto, String userEmail) {
         Lecture lecture = lectureRepository.findById(lectureId)
-                .orElseThrow(() -> new ResourceNotFoundException("Lecture not found with id: " + lectureId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài giảng với id: " + lectureId));
 
         if (!lecture.getClassroom().getTeacher().getEmail().equals(userEmail)) {
-            throw new UnauthorizedException("User is not authorized to update this lecture.");
+            throw new UnauthorizedException("Bạn không có quyền cập nhật bài giảng này.");
         }
 
         lecture.setTitle(updateLectureDto.getTitle());
@@ -138,10 +138,10 @@ public class LectureServiceImpl implements LectureService {
     @Override
     public void deleteLecture(Long lectureId, String userEmail) {
         Lecture lecture = lectureRepository.findById(lectureId)
-                .orElseThrow(() -> new ResourceNotFoundException("Lecture not found with id: " + lectureId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài giảng với id: " + lectureId));
         
         if (!lecture.getClassroom().getTeacher().getEmail().equals(userEmail)) {
-            throw new UnauthorizedException("User is not authorized to delete this lecture.");
+            throw new UnauthorizedException("Bạn không có quyền xóa bài giảng này.");
         }
 
         lectureRepository.delete(lecture);
@@ -151,13 +151,13 @@ public class LectureServiceImpl implements LectureService {
     @Transactional
     public List<LectureMaterialDto> addMaterials(Long lectureId, List<FileUploadResponse> files, String teacherUsername) {
         Lecture lecture = lectureRepository.findById(lectureId)
-                .orElseThrow(() -> new ResourceNotFoundException("Lecture not found with id: " + lectureId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài giảng với id: " + lectureId));
 
         User teacher = userRepository.findByEmail(teacherUsername)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", teacherUsername));
 
         if (!classroomSecurityService.isTeacherOfClassroom(teacher, lecture.getClassroom().getId())) {
-            throw new AccessDeniedException("User is not the teacher of the class for this lecture.");
+            throw new AccessDeniedException("Bạn không phải là giáo viên của lớp cho bài giảng này.");
         }
 
         List<LectureMaterial> newMaterials = new ArrayList<>();
@@ -179,7 +179,7 @@ public class LectureServiceImpl implements LectureService {
     @Override
     public LectureDto addMaterialToLecture(Long lectureId, LectureMaterialDto materialDto) {
         Lecture lecture = lectureRepository.findById(lectureId)
-                .orElseThrow(() -> new ResourceNotFoundException("Lecture not found with id: " + lectureId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài giảng với id: " + lectureId));
 
         LectureMaterial material = modelMapper.map(materialDto, LectureMaterial.class);
         lecture.getLectureMaterials().add(material);

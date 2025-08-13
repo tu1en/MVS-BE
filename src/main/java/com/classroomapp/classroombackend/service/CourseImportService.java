@@ -36,17 +36,17 @@ public class CourseImportService {
                 throw new IllegalArgumentException("Import request cannot be null");
             }
             if (request.getFile() == null || request.getFile().isEmpty()) {
-                throw new IllegalArgumentException("Excel file is required");
+            throw new IllegalArgumentException("Cần cung cấp file Excel");
             }
             if (request.getCourseName() == null || request.getCourseName().trim().isEmpty()) {
-                throw new IllegalArgumentException("Course name is required");
+            throw new IllegalArgumentException("Cần cung cấp tên khóa học");
             }
             
             // Teacher is optional - can be assigned later
             User teacher = null;
             if (request.getTeacherId() != null) {
                 teacher = userRepository.findById(request.getTeacherId())
-                    .orElseThrow(() -> new RuntimeException("Teacher not found with ID: " + request.getTeacherId()));
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy giáo viên với ID: " + request.getTeacherId()));
             }
 
             // Create course DTO
@@ -70,7 +70,7 @@ public class CourseImportService {
             return courseService.createCourseWithStudents(courseDto, new ArrayList<>());
 
         } catch (Exception e) {
-            throw new IOException("Failed to import course from Excel: " + e.getMessage(), e);
+            throw new IOException("Nhập dữ liệu khóa học từ Excel thất bại: " + e.getMessage(), e);
         }
     }
 }

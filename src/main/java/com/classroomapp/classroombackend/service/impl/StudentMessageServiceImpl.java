@@ -67,7 +67,7 @@ public class StudentMessageServiceImpl implements StudentMessageService {
     @Transactional(readOnly = true)
     public List<StudentMessageDto> getReceivedMessages(Long recipientId) {
         User recipient = userRepository.findById(recipientId)
-                .orElseThrow(() -> new RuntimeException("Recipient not found with id: " + recipientId));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người nhận với id: " + recipientId));
         List<StudentMessage> messages = messageRepository.findByRecipientOrderByCreatedAtDesc(recipient);
         return messages.stream().map(this::convertToDto).collect(Collectors.toList());
     }
@@ -76,9 +76,9 @@ public class StudentMessageServiceImpl implements StudentMessageService {
     @Transactional(readOnly = true)
     public List<StudentMessageDto> getConversation(Long user1Id, Long user2Id) {
         User user1 = userRepository.findById(user1Id)
-                .orElseThrow(() -> new RuntimeException("User1 not found with id: " + user1Id));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng 1 với id: " + user1Id));
         User user2 = userRepository.findById(user2Id)
-                .orElseThrow(() -> new RuntimeException("User2 not found with id: " + user2Id));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng 2 với id: " + user2Id));
 
         List<StudentMessage> messages = messageRepository.findConversation(user1, user2);
         
@@ -91,7 +91,7 @@ public class StudentMessageServiceImpl implements StudentMessageService {
     @Transactional(readOnly = true)
     public List<StudentMessageDto> getUnreadMessages(Long recipientId) {
         User recipient = userRepository.findById(recipientId)
-                .orElseThrow(() -> new RuntimeException("Recipient not found with id: " + recipientId));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người nhận với id: " + recipientId));
         List<StudentMessage> messages = messageRepository.findByRecipientAndIsReadFalseOrderByCreatedAtDesc(recipient);
         return messages.stream().map(this::convertToDto).collect(Collectors.toList());
     }
@@ -121,7 +121,7 @@ public class StudentMessageServiceImpl implements StudentMessageService {
     @Transactional(readOnly = true)
     public List<StudentMessageDto> getUrgentMessages(Long recipientId) {
         User recipient = userRepository.findById(recipientId)
-                .orElseThrow(() -> new RuntimeException("Recipient not found with id: " + recipientId));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người nhận với id: " + recipientId));
         List<StudentMessage> messages = messageRepository.findUrgentMessages(recipient);
         return messages.stream().map(this::convertToDto).collect(Collectors.toList());
     }

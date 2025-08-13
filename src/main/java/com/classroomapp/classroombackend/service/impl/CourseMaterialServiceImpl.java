@@ -49,8 +49,8 @@ public class CourseMaterialServiceImpl implements CourseMaterialService {
             CourseMaterial savedMaterial = courseMaterialRepository.save(material);
             return convertToDto(savedMaterial);
         } catch (Exception e) {
-            log.error("Error uploading material: {}", e.getMessage());
-            throw new RuntimeException("Failed to upload material", e);
+            log.error("Lỗi khi tải lên tài liệu: {}", e.getMessage());
+            throw new RuntimeException("Tải lên tài liệu thất bại", e);
         }
     }
 
@@ -76,14 +76,14 @@ public class CourseMaterialServiceImpl implements CourseMaterialService {
     @Transactional(readOnly = true)
     public CourseMaterialDto getMaterialById(Long materialId) {
         CourseMaterial material = courseMaterialRepository.findById(materialId)
-                .orElseThrow(() -> new RuntimeException("Material not found with id: " + materialId));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài liệu với id: " + materialId));
         return convertToDto(material);
     }
 
     @Override
     public CourseMaterialDto updateMaterial(Long materialId, UploadMaterialDto updateDto) {
         CourseMaterial material = courseMaterialRepository.findById(materialId)
-                .orElseThrow(() -> new RuntimeException("Material not found with id: " + materialId));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài liệu với id: " + materialId));
 
         material.setTitle(updateDto.getTitle());
         material.setDescription(updateDto.getDescription());
@@ -98,17 +98,17 @@ public class CourseMaterialServiceImpl implements CourseMaterialService {
     @Override
     public void deleteMaterial(Long materialId) {
         CourseMaterial material = courseMaterialRepository.findById(materialId)
-                .orElseThrow(() -> new RuntimeException("Material not found with id: " + materialId));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài liệu với id: " + materialId));
 
         try {
             if (material.getFilePath() != null) {
                 fileStorageService.delete(material.getFileName());
             }
             courseMaterialRepository.delete(material);
-            log.info("Material deleted successfully: {}", materialId);
+            log.info("Xóa tài liệu thành công: {}", materialId);
         } catch (Exception e) {
-            log.error("Error deleting material file: {}", e.getMessage());
-            throw new RuntimeException("Failed to delete material file", e);
+            log.error("Lỗi khi xóa file tài liệu: {}", e.getMessage());
+            throw new RuntimeException("Xóa file tài liệu thất bại", e);
         }
     }
 
@@ -116,12 +116,12 @@ public class CourseMaterialServiceImpl implements CourseMaterialService {
     @Transactional(readOnly = true)
     public byte[] downloadMaterial(Long materialId) {
         CourseMaterial material = courseMaterialRepository.findById(materialId)
-                .orElseThrow(() -> new RuntimeException("Material not found with id: " + materialId));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài liệu với id: " + materialId));
 
         try {
             // TODO: Implement actual file download logic
             // For now, increment download count and return empty byte array
-            log.warn("Downloading from URL is not implemented. Returning empty byte array for materialId: {}", materialId);
+            log.warn("Tải xuống từ URL chưa được triển khai. Trả về mảng byte rỗng cho materialId: {}", materialId);
             material.setDownloadCount(material.getDownloadCount() + 1);
             courseMaterialRepository.save(material);
             
@@ -130,8 +130,8 @@ public class CourseMaterialServiceImpl implements CourseMaterialService {
             // return Files.readAllBytes(filePath);
             return new byte[0];
         } catch (Exception e) {
-            log.error("Error downloading material: {}", e.getMessage());
-            throw new RuntimeException("Failed to download material", e);
+            log.error("Lỗi khi tải xuống tài liệu: {}", e.getMessage());
+            throw new RuntimeException("Tải xuống tài liệu thất bại", e);
         }
     }
 

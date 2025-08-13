@@ -61,7 +61,7 @@ public class FirebaseClassroomService {
                 log.debug("ðŸ”¥ Synced classroom {} to Firebase", classroom.getId());
 
             } catch (Exception e) {
-                log.error("ðŸ”¥ Failed to sync classroom {} to Firebase", classroom.getId(), e);
+                log.error("Lỗi đồng bộ classroom {} lên Firebase", classroom.getId(), e);
             }
         });
     }
@@ -98,7 +98,7 @@ public class FirebaseClassroomService {
                 log.debug("ðŸ”¥ Synced session {} to Firebase", session.getId());
 
             } catch (Exception e) {
-                log.error("ðŸ”¥ Failed to sync session {} to Firebase", session.getId(), e);
+                log.error("Lỗi đồng bộ phiên {} lên Firebase", session.getId(), e);
             }
         });
     }
@@ -137,7 +137,7 @@ public class FirebaseClassroomService {
                 log.debug("ðŸ”¥ Synced slot {} to Firebase", slot.getId());
 
             } catch (Exception e) {
-                log.error("ðŸ”¥ Failed to sync slot {} to Firebase", slot.getId(), e);
+                log.error("Lỗi đồng bộ slot {} lên Firebase", slot.getId(), e);
             }
         });
     }
@@ -166,7 +166,7 @@ public class FirebaseClassroomService {
                 log.debug("ðŸ”¥ Removed classroom {} from Firebase", classroomId);
 
             } catch (Exception e) {
-                log.error("ðŸ”¥ Failed to remove classroom {} from Firebase", classroomId, e);
+                log.error("Lỗi xóa classroom {} khỏi Firebase", classroomId, e);
             }
         });
     }
@@ -195,7 +195,7 @@ public class FirebaseClassroomService {
                 log.debug("ðŸ”¥ Removed session {} from Firebase", sessionId);
 
             } catch (Exception e) {
-                log.error("ðŸ”¥ Failed to remove session {} from Firebase", sessionId, e);
+                log.error("Lỗi xóa phiên {} khỏi Firebase", sessionId, e);
             }
         });
     }
@@ -224,7 +224,7 @@ public class FirebaseClassroomService {
                 log.debug("ðŸ”¥ Removed slot {} from Firebase", slotId);
 
             } catch (Exception e) {
-                log.error("ðŸ”¥ Failed to remove slot {} from Firebase", slotId, e);
+                log.error("Lỗi xóa slot {} khỏi Firebase", slotId, e);
             }
         });
     }
@@ -258,7 +258,7 @@ public class FirebaseClassroomService {
                 log.debug("ðŸ”¥ Sent live update: {}", type);
 
             } catch (Exception e) {
-                log.error("ðŸ”¥ Failed to send live update: {}", type, e);
+                log.error("Lỗi gửi live update: {}", type, e);
             }
         });
     }

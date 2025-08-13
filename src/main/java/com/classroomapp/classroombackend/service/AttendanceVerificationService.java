@@ -537,7 +537,7 @@ public class AttendanceVerificationService {
             
             return true;
         } catch (Exception e) {
-            log.error("Error checking IP range for IP: {} against CIDR: {}", ip, cidr, e);
+            log.error("Lỗi kiểm tra IP range cho IP: {} với CIDR: {}", ip, cidr, e);
             return false;
         }
     }

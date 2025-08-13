@@ -39,7 +39,7 @@ public class EmailServiceImpl implements EmailService {
             helper.setFrom(fromEmail);
             mailSender.send(message);
         } catch (Exception e) {
-            log.error("Failed to send email to {}: {}", to, e.getMessage(), e);
+            log.error("Gửi email tới {} thất bại: {}", to, e.getMessage(), e);
         }
     }
 

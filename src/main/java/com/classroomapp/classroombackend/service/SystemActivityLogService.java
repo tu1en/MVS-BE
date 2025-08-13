@@ -51,7 +51,7 @@ public class SystemActivityLogService {
             logRepository.save(activityLog);
             log.debug("Activity logged: {} by user {}", action, username);
         } catch (Exception e) {
-            log.error("Failed to log activity: {}", e.getMessage(), e);
+            log.error("Ghi log hoạt động thất bại: {}", e.getMessage(), e);
         }
     }
     

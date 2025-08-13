@@ -100,7 +100,7 @@ public class AcademicPerformanceController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("Error calculating student academic performance", e);
-            return ResponseEntity.status(500).body(Map.of("error", "An internal error occurred: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("error", "Đã xảy ra lỗi nội bộ: " + e.getMessage()));
         }
     }
     

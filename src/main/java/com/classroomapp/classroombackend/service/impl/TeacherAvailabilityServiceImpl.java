@@ -104,7 +104,7 @@ public class TeacherAvailabilityServiceImpl implements com.classroomapp.classroo
                 if (userOpt.isPresent()) {
                     teacher = userOpt.get();
                 } else {
-                    System.out.println("User not found for contract user_id: " + contract.getUserId());
+                    System.out.println("Không tìm thấy người dùng cho hợp đồng user_id: " + contract.getUserId());
                     continue;
                 }
             } catch (Exception e) {

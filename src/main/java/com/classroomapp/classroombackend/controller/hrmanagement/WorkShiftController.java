@@ -65,7 +65,7 @@ public class WorkShiftController {
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
             
         } catch (IllegalArgumentException e) {
-            log.error("Error creating work shift: {}", e.getMessage());
+            log.error("Lỗi khi tạo ca làm việc: {}", e.getMessage());
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", e.getMessage());
@@ -100,7 +100,7 @@ public class WorkShiftController {
             return ResponseEntity.ok(response);
             
         } catch (IllegalArgumentException e) {
-            log.error("Error updating work shift: {}", e.getMessage());
+            log.error("Lỗi khi cập nhật ca làm việc: {}", e.getMessage());
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", e.getMessage());
@@ -137,7 +137,7 @@ public class WorkShiftController {
             return ResponseEntity.notFound().build();
             
         } catch (Exception e) {
-            log.error("Error getting work shift by ID: {}", id, e);
+            log.error("Lỗi khi lấy ca làm việc theo ID: {}", id, e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "CÃ³ lá»—i xáº£y ra khi láº¥y thÃ´ng tin ca lÃ m viá»‡c");
@@ -181,7 +181,7 @@ public class WorkShiftController {
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
-            log.error("Error getting work shifts", e);
+            log.error("Lỗi khi lấy danh sách ca làm việc", e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "CÃ³ lá»—i xáº£y ra khi láº¥y danh sÃ¡ch ca lÃ m viá»‡c");
@@ -205,7 +205,7 @@ public class WorkShiftController {
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
-            log.error("Error getting active work shifts", e);
+            log.error("Lỗi khi lấy danh sách ca làm việc đang hoạt động", e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "CÃ³ lá»—i xáº£y ra khi láº¥y danh sÃ¡ch ca lÃ m viá»‡c");
@@ -241,7 +241,7 @@ public class WorkShiftController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
             
         } catch (Exception e) {
-            log.error("Error deleting work shift", e);
+            log.error("Lỗi khi xóa ca làm việc", e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "CÃ³ lá»—i xáº£y ra khi xÃ³a ca lÃ m viá»‡c");
@@ -273,7 +273,7 @@ public class WorkShiftController {
             return ResponseEntity.badRequest().body(response);
             
         } catch (Exception e) {
-            log.error("Error toggling shift status", e);
+            log.error("Lỗi khi chuyển trạng thái ca làm việc", e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "CÃ³ lá»—i xáº£y ra khi thay Ä‘á»•i tráº¡ng thÃ¡i ca lÃ m viá»‡c");
@@ -299,7 +299,7 @@ public class WorkShiftController {
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
-            log.error("Error checking shift name availability", e);
+            log.error("Lỗi khi kiểm tra tên ca làm việc đã tồn tại", e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "CÃ³ lá»—i xáº£y ra khi kiá»ƒm tra tÃªn ca lÃ m viá»‡c");

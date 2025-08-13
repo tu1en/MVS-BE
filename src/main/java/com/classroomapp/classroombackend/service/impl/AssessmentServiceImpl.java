@@ -32,10 +32,10 @@ public class AssessmentServiceImpl implements AssessmentService {
     @Override
     public AssessmentDto createAssessment(Long lectureId, CreateAssessmentDto createAssessmentDto, String userEmail) {
         Lecture lecture = lectureRepository.findById(lectureId)
-                .orElseThrow(() -> new ResourceNotFoundException("Lecture not found with id: " + lectureId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài giảng với id: " + lectureId));
 
         if (!lecture.getClassroom().getTeacher().getEmail().equals(userEmail)) {
-            throw new UnauthorizedException("User is not authorized to create assessments for this lecture.");
+            throw new UnauthorizedException("Bạn không có quyền tạo bài đánh giá cho bài giảng này.");
         }
 
         Assessment assessment = modelMapper.map(createAssessmentDto, Assessment.class);
@@ -48,7 +48,7 @@ public class AssessmentServiceImpl implements AssessmentService {
     @Override
     public List<AssessmentDto> getAssessmentsByLectureId(Long lectureId) {
         if (!lectureRepository.existsById(lectureId)) {
-            throw new ResourceNotFoundException("Lecture not found with id: " + lectureId);
+            throw new ResourceNotFoundException("Không tìm thấy bài giảng với id: " + lectureId);
         }
         List<Assessment> assessments = assessmentRepository.findByLectureId(lectureId);
         return assessments.stream()
@@ -59,17 +59,17 @@ public class AssessmentServiceImpl implements AssessmentService {
     @Override
     public AssessmentDto getAssessmentById(Long assessmentId) {
         Assessment assessment = assessmentRepository.findById(assessmentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Assessment not found with id: " + assessmentId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài đánh giá với id: " + assessmentId));
         return modelMapper.map(assessment, AssessmentDto.class);
     }
 
     @Override
     public void deleteAssessment(Long assessmentId, String userEmail) {
         Assessment assessment = assessmentRepository.findById(assessmentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Assessment not found with id: " + assessmentId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài đánh giá với id: " + assessmentId));
 
         if (!assessment.getLecture().getClassroom().getTeacher().getEmail().equals(userEmail)) {
-            throw new UnauthorizedException("User is not authorized to delete this assessment.");
+            throw new UnauthorizedException("Bạn không có quyền xóa bài đánh giá này.");
         }
 
         assessmentRepository.delete(assessment);

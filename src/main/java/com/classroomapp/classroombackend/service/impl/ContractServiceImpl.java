@@ -63,7 +63,7 @@ public class ContractServiceImpl implements ContractService {
     public ContractDto getContractById(Long id) {
         log.info("Fetching contract by id: {}", id);
         Contract contract = contractRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Contract not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hợp đồng với ID: " + id));
         return convertToDto(contract);
     }
 
@@ -80,11 +80,11 @@ public class ContractServiceImpl implements ContractService {
                 if (user != null) {
                     // Check if user already has a contract
                     if (contractRepository.existsByUserId(contractDto.getUserId())) {
-                        throw new IllegalArgumentException("User already has a contract. Each user can only have one contract.");
+                        throw new IllegalArgumentException("Người dùng đã có hợp đồng. Mỗi người dùng chỉ có một hợp đồng.");
                     }
                 }
             } catch (Exception e) {
-                log.warn("Could not find user with id: {}, proceeding with manual contract creation", contractDto.getUserId());
+            log.warn("Không thể tìm thấy người dùng với ID: {}, tiếp tục tạo hợp đồng thủ công", contractDto.getUserId());
                 user = null;
             }
         }
@@ -101,7 +101,7 @@ public class ContractServiceImpl implements ContractService {
         } else if (user != null) {
             contract.setFullName(user.getFullName());
         } else {
-            throw new IllegalArgumentException("Full name is required for contract creation");
+            throw new IllegalArgumentException("Yêu cầu họ và tên để tạo hợp đồng");
         }
         
         if (contractDto.getEmail() != null && !contractDto.getEmail().trim().isEmpty()) {
@@ -109,7 +109,7 @@ public class ContractServiceImpl implements ContractService {
         } else if (user != null) {
             contract.setEmail(user.getEmail());
         } else {
-            throw new IllegalArgumentException("Email is required for contract creation");
+            throw new IllegalArgumentException("Yêu cầu email để tạo hợp đồng");
         }
         
         if (contractDto.getPhoneNumber() != null && !contractDto.getPhoneNumber().trim().isEmpty()) {
@@ -120,11 +120,11 @@ public class ContractServiceImpl implements ContractService {
         
         // Ensure required fields are set
         if (contract.getContractType() == null || contract.getContractType().trim().isEmpty()) {
-            throw new IllegalArgumentException("Contract type is required");
+            throw new IllegalArgumentException("Yêu cầu loại hợp đồng");
         }
         
         if (contract.getPosition() == null || contract.getPosition().trim().isEmpty()) {
-            throw new IllegalArgumentException("Position is required");
+            throw new IllegalArgumentException("Yêu cầu vị trí");
         }
         
         // Validate mutually exclusive salary logic
@@ -135,16 +135,16 @@ public class ContractServiceImpl implements ContractService {
         
         // Ensure exactly one salary type is provided
         if (!hasHourly && !hasGrossNet) {
-            throw new IllegalArgumentException("Either hourly salary or gross/net salary must be provided");
+            throw new IllegalArgumentException("Phải cung cấp lương theo giờ hoặc lương gross/net");
         }
         
         if (hasHourly && hasGrossNet) {
-            throw new IllegalArgumentException("Cannot have both hourly salary and gross/net salary. They are mutually exclusive");
+            throw new IllegalArgumentException("Không thể đồng thời có lương theo giờ và lương gross/net. Chúng loại trừ nhau");
         }
         
         // If gross/net is provided, both should be provided (they go together)
         if (hasGrossNet && (!hasGross || !hasNet)) {
-            throw new IllegalArgumentException("Both gross and net salary must be provided together");
+            throw new IllegalArgumentException("Phải cung cấp cả lương gross và net cùng nhau");
         }
         
         // Set the legacy salary field for backward compatibility
@@ -155,7 +155,7 @@ public class ContractServiceImpl implements ContractService {
         }
         
         if (contract.getStartDate() == null) {
-            throw new IllegalArgumentException("Start date is required");
+            throw new IllegalArgumentException("Yêu cầu ngày bắt đầu");
         }
         
         Contract savedContract = contractRepository.save(contract);
@@ -174,7 +174,7 @@ public class ContractServiceImpl implements ContractService {
                 }
             }
         } catch (Exception e) {
-            log.warn("Failed to unlock user account for email: {}. Error: {}", 
+            log.warn("Mở khóa tài khoản người dùng thất bại cho email: {}. Lỗi: {}", 
                     savedContract.getEmail(), e.getMessage());
             // Continue execution - contract creation should not fail if unlocking fails
         }
@@ -187,11 +187,11 @@ public class ContractServiceImpl implements ContractService {
         log.info("Updating contract with id: {}", id);
         
         Contract existingContract = contractRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Contract not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hợp đồng với ID: " + id));
         
         // Validate required editable fields only
         if (contractDto.getStartDate() == null) {
-            throw new IllegalArgumentException("Start date is required for contract update");
+            throw new IllegalArgumentException("Yêu cầu ngày bắt đầu khi cập nhật hợp đồng");
         }
         
         // Log which fields are being restricted from update
@@ -267,7 +267,7 @@ public class ContractServiceImpl implements ContractService {
         // - offer, evaluation (read-only in frontend)
         
         Contract updatedContract = contractRepository.save(existingContract);
-        log.info("Contract updated successfully with id: {} - Only editable fields updated, read-only fields preserved", updatedContract.getId());
+        log.info("Cập nhật hợp đồng thành công với id: {} - Chỉ cập nhật trường được phép, giữ nguyên trường chỉ đọc", updatedContract.getId());
         
         return convertToDto(updatedContract);
     }
@@ -277,7 +277,7 @@ public class ContractServiceImpl implements ContractService {
         log.info("Deleting contract with id: {}", id);
         
         Contract contract = contractRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Contract not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hợp đồng với ID: " + id));
         
         contractRepository.delete(contract);
         log.info("Contract deleted successfully with id: {}", id);
@@ -366,7 +366,7 @@ public class ContractServiceImpl implements ContractService {
             log.info("🔍 DEBUG: Fetching recruitment application with ID: {}", candidateId);
             RecruitmentApplicationDto application = recruitmentApplicationService.getApplication(candidateId);
             if (application == null) {
-                log.error("❌ ERROR: Recruitment application not found for ID: {}", candidateId);
+            log.error("❌ LỖI: Không tìm thấy đơn ứng tuyển với ID: {}", candidateId);
                 throw new ResourceNotFoundException("Recruitment application not found for ID: " + candidateId);
             }
             
@@ -442,11 +442,11 @@ public class ContractServiceImpl implements ContractService {
                             log.info("⚠️ NO VALID OFFER: All salary fields remain null");
                         }
                     } catch (NumberFormatException e) {
-                        log.warn("Invalid offer amount format for candidate ID: {}, all salary fields remain null", candidateId);
+            log.warn("Định dạng số tiền offer không hợp lệ cho ứng viên ID: {}, để trống tất cả trường lương", candidateId);
                     }
                 }
             } else {
-                log.info("⚠️ NO OFFER DATA: All salary fields remain null");
+            log.info("⚠️ KHÔNG CÓ DỮ LIỆU OFFER: Để trống tất cả trường lương");
             }
 
             log.info("🔄 REFACTORED: Mutually exclusive salary data for candidate ID: {} - Hourly: {}, Gross: {}, Net: {}", 
@@ -455,8 +455,8 @@ public class ContractServiceImpl implements ContractService {
         } catch (ResourceNotFoundException e) {
             throw e; // Re-throw ResourceNotFoundException
         } catch (Exception e) {
-            log.error("Error fetching offer data for candidate ID {}: ", candidateId, e);
-            throw new RuntimeException("Failed to fetch offer data for candidate ID: " + candidateId, e);
+            log.error("Lỗi khi lấy dữ liệu offer cho ứng viên ID {}: ", candidateId, e);
+            throw new RuntimeException("Lấy dữ liệu offer thất bại cho ứng viên ID: " + candidateId, e);
         }
     }
     

@@ -53,8 +53,8 @@ public class FirebaseStorageServiceImpl implements FirebaseStorageService {
                     .build();
                     
         } catch (IOException e) {
-            log.error("Error uploading file to Firebase Storage: {}", e.getMessage());
-            throw new RuntimeException("Failed to upload file", e);
+            log.error("Lỗi khi tải lên file lên Firebase Storage: {}", e.getMessage());
+            throw new RuntimeException("Tải lên file thất bại", e);
         }
     }
 
@@ -65,7 +65,7 @@ public class FirebaseStorageServiceImpl implements FirebaseStorageService {
             BlobId blobId = BlobId.of(bucketName, filePath);
             return storage.delete(blobId);
         } catch (Exception e) {
-            log.error("Error deleting file from Firebase Storage: {}", e.getMessage());
+            log.error("Lỗi khi xóa file khỏi Firebase Storage: {}", e.getMessage());
             return false;
         }
     }
@@ -82,7 +82,7 @@ public class FirebaseStorageServiceImpl implements FirebaseStorageService {
             }
             return null;
         } catch (Exception e) {
-            log.error("Error getting download URL: {}", e.getMessage());
+            log.error("Lỗi khi lấy URL tải xuống: {}", e.getMessage());
             return null;
         }
     }
@@ -95,7 +95,7 @@ public class FirebaseStorageServiceImpl implements FirebaseStorageService {
             Blob blob = storage.get(blobId);
             return blob != null && blob.exists();
         } catch (Exception e) {
-            log.error("Error checking file existence: {}", e.getMessage());
+            log.error("Lỗi khi kiểm tra sự tồn tại của file: {}", e.getMessage());
             return false;
         }
     }
@@ -114,7 +114,7 @@ public class FirebaseStorageServiceImpl implements FirebaseStorageService {
             }
             return null;
         } catch (Exception e) {
-            log.error("Error generating signed URL: {}", e.getMessage());
+            log.error("Lỗi khi tạo signed URL: {}", e.getMessage());
             return null;
         }
     }

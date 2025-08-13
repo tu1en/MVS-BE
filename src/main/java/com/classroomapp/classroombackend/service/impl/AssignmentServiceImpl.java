@@ -93,7 +93,7 @@ public class AssignmentServiceImpl implements AssignmentService {
 
         try {
             Classroom classroom = classroomRepository.findById(createAssignmentDto.getClassroomId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Classroom not found with id: " + createAssignmentDto.getClassroomId()));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học với id: " + createAssignmentDto.getClassroomId()));
             log.info("Found classroom: id={}, name={}", classroom.getId(), classroom.getName());
 
             // Handle authentication - if teacherUsername is null, get from security context
@@ -110,14 +110,14 @@ public class AssignmentServiceImpl implements AssignmentService {
                     teacher = userRepository.findByEmail(currentUserEmail)
                             .orElseThrow(() -> new ResourceNotFoundException("User", "email", currentUserEmail));
                 } else {
-                    throw new AccessDeniedException("No authenticated user found");
+                    throw new AccessDeniedException("Không tìm thấy người dùng đã xác thực");
                 }
             }
             log.info("Found teacher: id={}, username={}, email={}", teacher.getId(), teacher.getUsername(), teacher.getEmail());
 
             if (!classroomSecurityService.isTeacherOfClassroom(teacher, classroom.getId())) {
                 log.error("Access denied: User {} is not the teacher of classroom {}", teacher.getUsername(), classroom.getId());
-                throw new AccessDeniedException("User is not the teacher of this classroom.");
+                throw new AccessDeniedException("Bạn không phải là giáo viên của lớp học này.");
             }
             log.info("Security check passed: User {} is authorized to create assignments in classroom {}",
                     teacher.getUsername(), classroom.getId());
@@ -174,7 +174,7 @@ public class AssignmentServiceImpl implements AssignmentService {
     
     @Override
     public List<AssignmentDto> GetAssignmentsByClassroom(Long classroomId) {
-        Classroom classroom = classroomRepository.findById(classroomId).orElseThrow(() -> new EntityNotFoundException("Classroom with ID " + classroomId + " not found"));
+        Classroom classroom = classroomRepository.findById(classroomId).orElseThrow(() -> new EntityNotFoundException("Không tìm thấy lớp học với ID: " + classroomId));
         return assignmentRepository.findByClassroomOrderByDueDateAsc(classroom).stream()
                 .map(assignment -> modelMapper.map(assignment, AssignmentDto.class))
                 .collect(Collectors.toList());
@@ -237,7 +237,7 @@ public class AssignmentServiceImpl implements AssignmentService {
     public List<AssignmentDto> getAssignmentsByTeacher(Long teacherId) {
         // Kiểm tra xem giáo viên có tồn tại không
         if (!userRepository.existsById(teacherId)) {
-            throw new EntityNotFoundException("Teacher not found with ID: " + teacherId);
+            throw new EntityNotFoundException("Không tìm thấy giáo viên với ID: " + teacherId);
         }
         // Gọi phương thức repository mới với truy vấn đã được định nghĩa rõ ràng
         return assignmentRepository.findByTeacherId(teacherId).stream()
@@ -245,13 +245,13 @@ public class AssignmentServiceImpl implements AssignmentService {
                 .collect(Collectors.toList());
     }    @Override
     public List<AssignmentDto> GetUpcomingAssignmentsByClassroom(Long classroomId) {
-        Classroom classroom = classroomRepository.findById(classroomId).orElseThrow(() -> new EntityNotFoundException("Classroom with ID " + classroomId + " not found"));
+        Classroom classroom = classroomRepository.findById(classroomId).orElseThrow(() -> new EntityNotFoundException("Không tìm thấy lớp học với ID: " + classroomId));
         return assignmentRepository.findByClassroomAndDueDateAfter(classroom, LocalDateTime.now()).stream()
                 .map(assignment -> modelMapper.map(assignment, AssignmentDto.class))
                 .collect(Collectors.toList());
     }    @Override
     public List<AssignmentDto> GetPastAssignmentsByClassroom(Long classroomId) {
-        Classroom classroom = classroomRepository.findById(classroomId).orElseThrow(() -> new EntityNotFoundException("Classroom with ID " + classroomId + " not found"));
+        Classroom classroom = classroomRepository.findById(classroomId).orElseThrow(() -> new EntityNotFoundException("Không tìm thấy lớp học với ID: " + classroomId));
         return assignmentRepository.findByClassroomAndDueDateBefore(classroom, LocalDateTime.now()).stream()
                 .map(assignment -> modelMapper.map(assignment, AssignmentDto.class))
                 .collect(Collectors.toList());
@@ -343,13 +343,13 @@ public class AssignmentServiceImpl implements AssignmentService {
 
         // Optional: Verify the submission belongs to the assignment
         if (!submission.getAssignment().getId().equals(assignmentId)) {
-            throw new IllegalArgumentException("Submission with id " + submissionId + " does not belong to assignment with id " + assignmentId);
+            throw new IllegalArgumentException("Bài nộp với id " + submissionId + " không thuộc bài tập với id " + assignmentId);
         }
 
         // Get the current authenticated user (the grader)
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated() || !(authentication.getPrincipal() instanceof CustomUserDetails)) {
-            throw new InsufficientAuthenticationException("User must be authenticated to grade a submission.");
+            throw new InsufficientAuthenticationException("Người dùng phải được xác thực để chấm bài nộp.");
         }
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
         User grader = userRepository.findById(userDetails.getId())
@@ -405,7 +405,7 @@ public class AssignmentServiceImpl implements AssignmentService {
         log.info("getAssignmentsByCurrentStudent: Getting assignments for current student");
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !(authentication.getPrincipal() instanceof CustomUserDetails)) {
-            throw new InsufficientAuthenticationException("User is not properly authenticated");
+            throw new InsufficientAuthenticationException("Người dùng chưa được xác thực đúng cách");
         }
         
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();

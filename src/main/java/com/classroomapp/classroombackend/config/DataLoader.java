@@ -304,7 +304,7 @@ seedEvidenceTemplates();
                 seedAbsences();
                 log.info("============== Absence Seeding Complete ==============");
             } catch (Exception e) {
-                log.error("Error seeding absence data: {}", e.getMessage(), e);
+                log.error("Lỗi khi seed dữ liệu vắng mặt: {}", e.getMessage(), e);
             }
         } else if (absenceRepository.count() > 0) {
             log.info("Absence data already exists. Count: {}", absenceRepository.count());
@@ -427,7 +427,7 @@ seedEvidenceTemplates();
             }
             
         } catch (Exception e) {
-            log.error("❌ Error during duplicate cleanup: {}", e.getMessage(), e);
+            log.error("❌ Lỗi trong quá trình dọn dẹp bản ghi trùng lặp: {}", e.getMessage(), e);
         }
     }
 
@@ -1044,7 +1044,7 @@ seedEvidenceTemplates();
 
             log.info("✅ Created 5 sample role requests.");
         } catch (Exception e) {
-            log.error("❌ Error creating sample requests: {}", e.getMessage());
+            log.error("❌ Lỗi khi tạo dữ liệu yêu cầu mẫu: {}", e.getMessage());
         }
     }
 
@@ -1208,7 +1208,7 @@ seedEvidenceTemplates();
                 
                 log.info("✅ Created 13 job positions across 3 recruitment plans");
             } else {
-                log.error("❌ Not enough recruitment plans found for job positions");
+                log.error("❌ Không đủ kế hoạch tuyển dụng cho việc tạo vị trí công việc");
             }
         } else {
             log.info("✅ Job positions already seeded.");
@@ -1743,7 +1743,7 @@ seedEvidenceTemplates();
             log.info("✅ Student User: ID={}, Email={}, Role={}, RoleId={}",
                 student.getId(), student.getEmail(), student.getRole(), student.getRoleId());
         } else {
-            log.error("❌ Student user not found!");
+            log.error("❌ Không tìm thấy người dùng STUDENT!");
         }
 
         // Check teacher user
@@ -1752,7 +1752,7 @@ seedEvidenceTemplates();
             log.info("✅ Teacher User: ID={}, Email={}, Role={}, RoleId={}",
                 teacher.getId(), teacher.getEmail(), teacher.getRole(), teacher.getRoleId());
         } else {
-            log.error("❌ Teacher user not found!");
+            log.error("❌ Không tìm thấy người dùng TEACHER!");
         }
 
         // Check classrooms and their teacher assignments
@@ -1859,7 +1859,7 @@ private void seedEvidenceTemplates() {
             log.info("✅ Created {} evidence templates", evidenceTemplateRepository.count());
             
         } catch (Exception e) {
-            log.error("❌ Error seeding evidence templates: {}", e.getMessage(), e);
+            log.error("❌ Lỗi khi seed mẫu minh chứng: {}", e.getMessage(), e);
         }
     } else {
         log.info("✅ Evidence templates already seeded. Count: {}", evidenceTemplateRepository.count());

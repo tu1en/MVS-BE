@@ -75,14 +75,14 @@ public class UserServiceImpl implements UserService {
     // Thêm method này vào UserServiceImpl
     public User findByUsername(String username) {
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với tên đăng nhập: " + username));
     }
 
     @Transactional
     @Override
     public UserDto updateUserStatus(Long userId, boolean enabled) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với ID: " + userId));
 
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String currentUsername = "";
@@ -93,7 +93,7 @@ public class UserServiceImpl implements UserService {
         }
 
         if (user.getEmail().equals(currentUsername)) {
-            throw new BusinessLogicException("Cannot disable your own account.");
+            throw new BusinessLogicException("Không thể tự vô hiệu hóa tài khoản của chính bạn.");
         }
 
         user.setStatus(enabled ? "active" : "disabled");
@@ -113,7 +113,7 @@ public class UserServiceImpl implements UserService {
     public UserDto FindUserById(Long id) {
         // Find user by ID or throw exception if not found
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với ID: " + id));
 
         return this.convertToUserDto(user);
     }
@@ -122,7 +122,7 @@ public class UserServiceImpl implements UserService {
     public UserDto FindUserByUsername(String username) {
         // Find user by username or throw exception if not found
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với tên đăng nhập: " + username));
 
         return this.convertToUserDto(user);
     }
@@ -132,12 +132,12 @@ public class UserServiceImpl implements UserService {
     public UserDto createUser(UserDto userDto) {
         // Check if email already exists
         if (userRepository.existsByEmail(userDto.getEmail())) {
-            throw new IllegalArgumentException("Email already registered");
+            throw new IllegalArgumentException("Email đã được đăng ký");
         }
 
         // Check if username already exists
         if (userRepository.existsByUsername(userDto.getUsername())) {
-            throw new IllegalArgumentException("Username already exists");
+            throw new IllegalArgumentException("Tên đăng nhập đã tồn tại");
         }
 
         // Convert DTO to entity
@@ -174,12 +174,12 @@ public class UserServiceImpl implements UserService {
     public UserDto updateUser(Long id, UserDto userDto) {
         // Check if user exists
         User existingUser = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với ID: " + id));
 
         // Check if email is being changed and is already taken by another user
         if (!existingUser.getEmail().equals(userDto.getEmail()) &&
                 userRepository.existsByEmail(userDto.getEmail())) {
-            throw new IllegalArgumentException("Email already registered");
+            throw new IllegalArgumentException("Email đã được đăng ký");
         }
 
         // Update fields
@@ -208,7 +208,7 @@ public class UserServiceImpl implements UserService {
     public void deleteUser(Long id) {
         // Check if user exists
         if (!userRepository.existsById(id)) {
-            throw new ResourceNotFoundException("User not found with id: " + id);
+            throw new ResourceNotFoundException("Không tìm thấy người dùng với ID: " + id);
         }
 
         // Prevent self-deletion
@@ -222,7 +222,7 @@ public class UserServiceImpl implements UserService {
 
         User user = userRepository.findById(id).get();
         if (user.getEmail().equals(currentUsername)) {
-            throw new BusinessLogicException("Cannot delete your own account.");
+            throw new BusinessLogicException("Không thể tự xóa tài khoản của chính bạn.");
         }
 
         // Delete user
@@ -234,7 +234,7 @@ public class UserServiceImpl implements UserService {
     public void resetPassword(Long id) {
         // Check if user exists
         User existingUser = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với ID: " + id));
 
         // Check if admin is trying to reset their own password
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -246,7 +246,7 @@ public class UserServiceImpl implements UserService {
         }
 
         if (existingUser.getEmail().equals(currentUsername)) {
-            throw new BusinessLogicException("Cannot reset your own password through this method.");
+            throw new BusinessLogicException("Không thể tự đặt lại mật khẩu bằng phương thức này.");
         }
 
         // Reset password to default
@@ -298,13 +298,13 @@ public List<UserDto> FindUsersByRole(Integer roleId) {
 @Transactional
 public UserDto updateUserRoles(Long userId, Set<String> roleNames) {
     if (roleNames == null || roleNames.isEmpty()) {
-        throw new BusinessLogicException("Roles cannot be empty.");
+        throw new BusinessLogicException("Vai trò không được để trống.");
     }
     // The current schema only supports one role per user.
     // We throw an error if more than one role is provided to make this limitation
     // clear.
     if (roleNames.size() > 1) {
-        throw new BusinessLogicException("System currently supports only one role per user.");
+        throw new BusinessLogicException("Hệ thống hiện chỉ hỗ trợ một vai trò cho mỗi người dùng.");
     }
 
     String newRoleName = roleNames.iterator().next();
@@ -315,10 +315,10 @@ public UserDto updateUserRoles(Long userId, Set<String> roleNames) {
             : newRoleName;
 
     User user = userRepository.findById(userId)
-            .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với ID: " + userId));
 
     Role newRole = roleRepository.findByName(roleNameForDatabase)
-            .orElseThrow(() -> new BusinessLogicException("Role not found: " + roleNameForDatabase));
+            .orElseThrow(() -> new BusinessLogicException("Không tìm thấy vai trò: " + roleNameForDatabase));
 
     // Business rule: Prevent admin from removing their own admin role
     Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -327,7 +327,7 @@ public UserDto updateUserRoles(Long userId, Set<String> roleNames) {
         if (user.getEmail().equals(currentUsername) &&
                 user.getRoleId() == RoleConstants.ADMIN &&
                 !newRole.getId().equals(RoleConstants.ADMIN)) {
-            throw new BusinessLogicException("Cannot remove ADMIN role from your own account.");
+            throw new BusinessLogicException("Không thể tự gỡ vai trò ADMIN khỏi tài khoản của bạn.");
         }
     }
 
@@ -342,15 +342,15 @@ public void sendPasswordResetEmail(String email, String resetLink) {
     try {
         MimeMessageHelper helper = new MimeMessageHelper(message, true);
         helper.setTo(email);
-        helper.setSubject("Password Reset");
-        String content = "<p>Please click on the link below to reset your password:</p>"
-                + "<p><a href='" + resetLink + "'>Reset Password</a></p>"
+        helper.setSubject("Đặt lại mật khẩu");
+        String content = "<p>Vui lòng nhấp vào liên kết bên dưới để đặt lại mật khẩu:</p>"
+                + "<p><a href='" + resetLink + "'>Đặt lại mật khẩu</a></p>"
                 + "<br>"
-                + "<p>Ignore this email if you did not request a password reset.</p>";
+                + "<p>Bỏ qua email này nếu bạn không yêu cầu đặt lại mật khẩu.</p>";
         helper.setText(content, true);
         mailSender.send(message);
     } catch (MessagingException e) {
-        throw new RuntimeException("Failed to send email", e);
+        throw new RuntimeException("Gửi email thất bại", e);
     }
 }
 
@@ -370,7 +370,7 @@ public User findById(Long id) {
 @Transactional
 public UserDto activateUserAndAssignRole(String email, String contractType) {
     User user = userRepository.findByEmail(email)
-            .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với email: " + email));
     
     // Activate user account
     user.setStatus("active");

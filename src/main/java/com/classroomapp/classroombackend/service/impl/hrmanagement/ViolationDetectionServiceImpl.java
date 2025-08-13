@@ -254,7 +254,7 @@ public class ViolationDetectionServiceImpl implements ViolationDetectionService 
     @Override
     public void escalateViolation(Long violationId, long escalatedBy, String escalationReason) {
         AttendanceViolation violation = violationRepository.findById(violationId)
-                .orElseThrow(() -> new IllegalArgumentException("Violation not found with id: " + violationId));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy vi phạm với id: " + violationId));
         violation.setEscalationLevel(escalatedBy);
         violation.setEscalationReason(escalationReason);
         violation.setStatus(AttendanceViolation.ViolationStatus.ESCALATED);
@@ -326,12 +326,12 @@ public class ViolationDetectionServiceImpl implements ViolationDetectionService 
                         notifyViolationDetected(savedViolation);
                         notificationsSent++;
                     } catch (Exception e) {
-                        log.warn("Failed to send notification for violation {}: {}", 
+                        log.warn("Gửi thông báo cho vi phạm {} thất bại: {}", 
                             savedViolation.getId(), e.getMessage());
                     }
                     
                 } catch (Exception e) {
-                    log.error("Error processing violation for user {} on {}: {}", 
+                    log.error("Lỗi xử lý vi phạm cho người dùng {} vào ngày {}: {}", 
                         violation.getUser().getId(), date, e.getMessage(), e);
                     // Continue processing other violations
                 }
@@ -345,8 +345,8 @@ public class ViolationDetectionServiceImpl implements ViolationDetectionService 
                 date, newViolations, explanationsCreated, notificationsSent, summary.getDuplicatesSkipped(), processingTime);
                 
         } catch (Exception e) {
-            log.error("Fatal error during daily violation detection for {}: {}", date, e.getMessage(), e);
-            throw new RuntimeException("Daily violation detection failed for date: " + date, e);
+            log.error("Lỗi nghiêm trọng khi chạy phát hiện vi phạm hàng ngày cho {}: {}", date, e.getMessage(), e);
+            throw new RuntimeException("Phát hiện vi phạm hàng ngày thất bại cho ngày: " + date, e);
         }
         
         return summary;

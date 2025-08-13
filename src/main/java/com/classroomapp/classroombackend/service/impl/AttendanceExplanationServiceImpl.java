@@ -55,7 +55,7 @@ public class AttendanceExplanationServiceImpl implements AttendanceExplanationSe
     @Override
     public AttendanceExplanation approveExplanation(Long id, String approverName) {
         AttendanceExplanation explanation = repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Explanation not found with id: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giải trình với id: " + id));
         explanation.setStatus(ExplanationStatus.APPROVED);
         explanation.setApproverName(approverName);
         return repository.save(explanation);
@@ -64,7 +64,7 @@ public class AttendanceExplanationServiceImpl implements AttendanceExplanationSe
     @Override
     public AttendanceExplanation rejectExplanation(Long id, String approverName) {
         AttendanceExplanation explanation = repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Explanation not found with id: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giải trình với id: " + id));
         explanation.setStatus(ExplanationStatus.REJECTED);
         explanation.setApproverName(approverName);
         return repository.save(explanation);

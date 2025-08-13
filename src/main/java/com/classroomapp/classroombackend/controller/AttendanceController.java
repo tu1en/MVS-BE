@@ -101,7 +101,7 @@ public class AttendanceController {
             System.out.println("User from security context: " + userDetails.getUsername());
             
             User currentUser = userRepository.findByEmail(userDetails.getUsername())
-                    .orElseThrow(() -> new RuntimeException("User not found from security context: " + userDetails.getUsername()));
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng từ security context: " + userDetails.getUsername()));
             
             System.out.println("Found user: " + currentUser.getId() + " - " + currentUser.getEmail());
             System.out.println("Requesting attendance history for classroom: " + classroomId);
@@ -129,7 +129,7 @@ public class AttendanceController {
             System.out.println("User from security context: " + userDetails.getUsername());
             
             User currentUser = userRepository.findByEmail(userDetails.getUsername())
-                    .orElseThrow(() -> new RuntimeException("User not found from security context: " + userDetails.getUsername()));
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng từ security context: " + userDetails.getUsername()));
             
             System.out.println("Found user: " + currentUser.getId() + " - " + currentUser.getEmail());
             System.out.println("Requesting attendance history for classroom: " + classroomId);
@@ -194,7 +194,7 @@ public ResponseEntity<Map<String, Object>> getPersonalAttendanceHistory(
         System.out.println("Teaching history request from user: " + userDetails.getUsername());
         
         User currentUser = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found from security context"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng từ security context"));
         
         System.out.println("Current user ID: " + currentUser.getId() + ", Role: " + currentUser.getRole());
         
@@ -309,7 +309,7 @@ public ResponseEntity<Map<String, Object>> getDailyAttendanceByShift(
         try {
             UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             User currentUser = userRepository.findByEmail(userDetails.getUsername())
-                    .orElseThrow(() -> new RuntimeException("User not found from security context"));
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng từ security context"));
             
             // Get all sessions for classrooms where this user is the teacher
             List<AttendanceSession> sessions = attendanceSessionRepository.findByClassroom_TeacherId(currentUser.getId());
@@ -349,7 +349,7 @@ public ResponseEntity<Map<String, Object>> getDailyAttendanceByShift(
         try {
             UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             User currentUser = userRepository.findByEmail(userDetails.getUsername())
-                    .orElseThrow(() -> new RuntimeException("User not found from security context"));
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng từ security context"));
             
             // Get all attendance records from sessions in classrooms where this user is the teacher
             List<Attendance> attendanceRecords = attendanceRepository.findBySession_Classroom_TeacherId(currentUser.getId());
@@ -387,7 +387,7 @@ public ResponseEntity<Map<String, Object>> getDailyAttendanceByShift(
         try {
             UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             User currentUser = userRepository.findByEmail(userDetails.getUsername())
-                    .orElseThrow(() -> new RuntimeException("User not found from security context"));
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng từ security context"));
             
             // Extract data from the request
             Long classroomId = Long.valueOf(sessionData.get("classroomId").toString());
@@ -423,7 +423,7 @@ public ResponseEntity<Map<String, Object>> getDailyAttendanceByShift(
         } catch (Exception e) {
             System.err.println("Error in createAttendanceSession: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of("error", "Failed to create attendance session"));
+            return ResponseEntity.status(500).body(Map.of("error", "Tạo phiên điểm danh thất bại"));
         }
     }
 
@@ -441,7 +441,7 @@ public ResponseEntity<Map<String, Object>> getDailyAttendanceByShift(
             } else if ("ACTIVE".equals(newStatus)) {
                 // Reopen session logic if needed
                 AttendanceSession session = attendanceSessionRepository.findById(sessionId)
-                        .orElseThrow(() -> new RuntimeException("Session not found"));
+                        .orElseThrow(() -> new RuntimeException("Không tìm thấy phiên điểm danh"));
                 session.setIsOpen(true);
                 session.setExpiresAt(LocalDateTime.now().plusHours(1));
                 attendanceSessionRepository.save(session);
@@ -453,7 +453,7 @@ public ResponseEntity<Map<String, Object>> getDailyAttendanceByShift(
         } catch (Exception e) {
             System.err.println("Error in updateSessionStatus: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of("error", "Failed to update session status"));
+            return ResponseEntity.status(500).body(Map.of("error", "Cập nhật trạng thái phiên thất bại"));
         }
     }
 }

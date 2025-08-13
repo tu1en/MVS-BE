@@ -42,12 +42,12 @@ public class AbsenceServiceImpl implements AbsenceService {
         
         // Validate user exists and is a teacher or accountant
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với id: " + userId));
         
         // Lấy ngày reset nghỉ phép từ hireDate
         LocalDate leaveResetDate = user.getHireDate();
         if (leaveResetDate == null) {
-            throw new BusinessLogicException("User does not have a hire date set.");
+            throw new BusinessLogicException("Người dùng chưa có ngày bắt đầu làm việc.");
         }
 
         if (user.getRoleId() != RoleConstants.TEACHER && user.getRoleId() != RoleConstants.ACCOUNTANT) {
@@ -56,11 +56,11 @@ public class AbsenceServiceImpl implements AbsenceService {
         
         // Validate dates
         if (createDto.getStartDate().isAfter(createDto.getEndDate())) {
-            throw new BusinessLogicException("Start date cannot be after end date");
+            throw new BusinessLogicException("Ngày bắt đầu không thể sau ngày kết thúc");
         }
         
         if (createDto.getStartDate().isBefore(LocalDate.now())) {
-            throw new BusinessLogicException("Cannot request leave for past dates");
+            throw new BusinessLogicException("Không thể yêu cầu nghỉ phép cho ngày đã qua");
         }
         
         // Calculate actual number of days (excluding weekends)
@@ -120,11 +120,11 @@ public class AbsenceServiceImpl implements AbsenceService {
     @Override
     public AbsenceDTO getAbsenceById(Long absenceId, Long userId) {
         Absence absence = absenceRepository.findById(absenceId)
-            .orElseThrow(() -> new ResourceNotFoundException("Absence not found with id: " + absenceId));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn nghỉ phép với id: " + absenceId));
         
         // Ensure user can only access their own absence requests
         if (!absence.getUserId().equals(userId)) {
-            throw new BusinessLogicException("You can only access your own absence requests");
+            throw new BusinessLogicException("Bạn chỉ có thể truy cập đơn nghỉ phép của chính mình");
         }
         
         return convertToDto(absence);
@@ -182,7 +182,7 @@ public class AbsenceServiceImpl implements AbsenceService {
             .orElseThrow(() -> new ResourceNotFoundException("Absence not found with id: " + absenceId));
         
         if (!"PENDING".equals(absence.getStatus())) {
-            throw new BusinessLogicException("Only pending absence requests can be approved");
+            throw new BusinessLogicException("Chỉ có thể phê duyệt các đơn nghỉ phép đang chờ xử lý");
         }
         
         // Update absence status
@@ -223,7 +223,7 @@ public class AbsenceServiceImpl implements AbsenceService {
             .orElseThrow(() -> new ResourceNotFoundException("Absence not found with id: " + absenceId));
         
         if (!"PENDING".equals(absence.getStatus())) {
-            throw new BusinessLogicException("Only pending absence requests can be rejected");
+            throw new BusinessLogicException("Chỉ có thể từ chối các đơn nghỉ phép đang chờ xử lý");
         }
         
         absence.setStatus("REJECTED");

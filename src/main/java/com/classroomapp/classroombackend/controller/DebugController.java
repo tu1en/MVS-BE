@@ -89,7 +89,7 @@ public class DebugController {
     public ResponseEntity<?> getTeacher() {
         User teacher = userRepository.findByUsername("teacher").orElse(null);
         if (teacher == null) {
-            return ResponseEntity.ok("Teacher not found");
+            return ResponseEntity.ok("Không tìm thấy giáo viên");
         }
 
         List<Schedule> schedules = scheduleRepository.findByTeacherId(teacher.getId());
@@ -108,7 +108,7 @@ public class DebugController {
     public ResponseEntity<?> testScheduleApi() {
         User teacher = userRepository.findByUsername("teacher").orElse(null);
         if (teacher == null) {
-            return ResponseEntity.badRequest().body("Teacher not found");
+            return ResponseEntity.badRequest().body("Không tìm thấy giáo viên");
         }
 
         // Test the same logic as the ScheduleController
@@ -145,12 +145,12 @@ public class DebugController {
     public ResponseEntity<?> createSchedulesForTeacher() {
         User teacher = userRepository.findByUsername("teacher").orElse(null);
         if (teacher == null) {
-            return ResponseEntity.badRequest().body("Teacher not found");
+            return ResponseEntity.badRequest().body("Không tìm thấy giáo viên");
         }
 
         List<Classroom> classrooms = classroomRepository.findAll();
         if (classrooms.isEmpty()) {
-            return ResponseEntity.badRequest().body("No classrooms found");
+            return ResponseEntity.badRequest().body("Không tìm thấy lớp học nào");
         }
 
         // Clear existing schedules for this teacher
@@ -305,7 +305,7 @@ public class DebugController {
 
             return ResponseEntity.ok(result.toString());
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error: " + e.getMessage());
+            return ResponseEntity.status(500).body("Lỗi: " + e.getMessage());
         }
     }
 }
