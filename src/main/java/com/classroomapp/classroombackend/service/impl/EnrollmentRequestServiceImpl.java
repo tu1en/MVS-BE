@@ -49,28 +49,28 @@ public class EnrollmentRequestServiceImpl implements EnrollmentRequestService {
         
         // Validate course template exists and is public
         CourseTemplate courseTemplate = courseTemplateRepository.findById(dto.getCourseTemplateId())
-            .orElseThrow(() -> new ResourceNotFoundException("Course template not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy mẫu khóa học"));
             
         if (!Boolean.TRUE.equals(courseTemplate.getIsPublic())) {
-            throw new BusinessLogicException("Course template is not available for public enrollment");
+            throw new BusinessLogicException("Mẫu khóa học không mở đăng ký công khai");
         }
         
         // Validate user is student
         User student = userRepository.findById(studentId)
-            .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy học sinh"));
             
         if (student.getRoleId() != 1) { // 1 = STUDENT role
-            throw new UnauthorizedException("Only students can enroll in courses");
+            throw new UnauthorizedException("Chỉ học sinh mới được đăng ký khóa học");
         }
         
         // Check for existing request
         if (enrollmentRequestRepository.existsByStudentAndCourseTemplate(student, courseTemplate)) {
-            throw new BusinessLogicException("You have already requested enrollment for this course");
+            throw new BusinessLogicException("Bạn đã gửi yêu cầu đăng ký cho khóa học này rồi");
         }
         
         // Check if already enrolled in any classroom for this course template
         if (isAlreadyEnrolled(student, courseTemplate)) {
-            throw new BusinessLogicException("You are already enrolled in a class for this course");
+            throw new BusinessLogicException("Bạn đã được ghi danh vào một lớp của khóa học này");
         }
         
         // Create enrollment request
@@ -97,11 +97,11 @@ public class EnrollmentRequestServiceImpl implements EnrollmentRequestService {
         EnrollmentRequest request = findRequestById(requestId);
         
         if (request.getStatus() != EnrollmentStatus.PENDING) {
-            throw new BusinessLogicException("Request has already been processed");
+            throw new BusinessLogicException("Yêu cầu đã được xử lý");
         }
         
         User manager = userRepository.findById(managerId)
-            .orElseThrow(() -> new ResourceNotFoundException("Manager not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy quản lý"));
         
         // Update request status
         request.setStatus(EnrollmentStatus.APPROVED);
@@ -127,11 +127,11 @@ public class EnrollmentRequestServiceImpl implements EnrollmentRequestService {
         EnrollmentRequest request = findRequestById(requestId);
         
         if (request.getStatus() != EnrollmentStatus.PENDING) {
-            throw new BusinessLogicException("Request has already been processed");
+            throw new BusinessLogicException("Yêu cầu đã được xử lý");
         }
         
         User manager = userRepository.findById(managerId)
-            .orElseThrow(() -> new ResourceNotFoundException("Manager not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy quản lý"));
         
         request.setStatus(EnrollmentStatus.REJECTED);
         request.setRejectionReason(reason);
@@ -176,9 +176,9 @@ public class EnrollmentRequestServiceImpl implements EnrollmentRequestService {
     @Transactional(readOnly = true)
     public boolean hasExistingRequest(Long studentId, Long courseTemplateId) {
         User student = userRepository.findById(studentId)
-            .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy học sinh"));
         CourseTemplate courseTemplate = courseTemplateRepository.findById(courseTemplateId)
-            .orElseThrow(() -> new ResourceNotFoundException("Course template not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy mẫu khóa học"));
             
         return enrollmentRequestRepository.existsByStudentAndCourseTemplate(student, courseTemplate);
     }
@@ -187,7 +187,7 @@ public class EnrollmentRequestServiceImpl implements EnrollmentRequestService {
     
     private EnrollmentRequest findRequestById(Long requestId) {
         return enrollmentRequestRepository.findById(requestId)
-            .orElseThrow(() -> new ResourceNotFoundException("Enrollment request not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy yêu cầu ghi danh"));
     }
     
     private boolean isAlreadyEnrolled(User student, CourseTemplate courseTemplate) {
@@ -221,7 +221,7 @@ public class EnrollmentRequestServiceImpl implements EnrollmentRequestService {
         }
         
         if (targetClassroom == null) {
-            throw new BusinessLogicException("No available classroom found for this course");
+            throw new BusinessLogicException("Không tìm thấy lớp học còn chỗ cho khóa này");
         }
         
         // Create enrollment
@@ -257,7 +257,7 @@ public class EnrollmentRequestServiceImpl implements EnrollmentRequestService {
                 );
             }
         } catch (Exception e) {
-            log.error("Error sending enrollment request notifications", e);
+            log.error("Lỗi khi gửi thông báo yêu cầu ghi danh", e);
         }
     }
     
@@ -269,7 +269,7 @@ public class EnrollmentRequestServiceImpl implements EnrollmentRequestService {
                 buildApprovalEmail(request)
             );
         } catch (Exception e) {
-            log.error("Error sending approval notification", e);
+            log.error("Lỗi khi gửi thông báo phê duyệt", e);
         }
     }
     
@@ -281,7 +281,7 @@ public class EnrollmentRequestServiceImpl implements EnrollmentRequestService {
                 buildRejectionEmail(request)
             );
         } catch (Exception e) {
-            log.error("Error sending rejection notification", e);
+            log.error("Lỗi khi gửi thông báo từ chối", e);
         }
     }
     

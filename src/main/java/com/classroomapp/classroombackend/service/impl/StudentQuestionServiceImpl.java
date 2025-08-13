@@ -30,7 +30,7 @@ public class StudentQuestionServiceImpl implements StudentQuestionService {
         User student = userRepository.findById(questionDto.getStudentId())
                 .orElseThrow(() -> new RuntimeException("Student not found"));
         User teacher = userRepository.findById(questionDto.getTeacherId())
-                .orElseThrow(() -> new RuntimeException("Teacher not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giáo viên"));
         
         StudentQuestion question = new StudentQuestion();
         question.setStudent(student);
@@ -49,7 +49,7 @@ public class StudentQuestionServiceImpl implements StudentQuestionService {
         StudentQuestion question = questionRepository.findById(questionId)
                 .orElseThrow(() -> new RuntimeException("Question not found"));
         User teacher = userRepository.findById(teacherId)
-                .orElseThrow(() -> new RuntimeException("Teacher not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giáo viên"));
         
         question.markAsAnswered(answer, teacher);
         StudentQuestion savedQuestion = questionRepository.save(question);
@@ -77,7 +77,7 @@ public class StudentQuestionServiceImpl implements StudentQuestionService {
     @Transactional(readOnly = true)
     public List<StudentQuestionDto> getQuestionsByTeacher(Long teacherId) {
         User teacher = userRepository.findById(teacherId)
-                .orElseThrow(() -> new RuntimeException("Teacher not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giáo viên"));
         List<StudentQuestion> questions = questionRepository.findByTeacherOrderByCreatedAtDesc(teacher);
         return questions.stream().map(this::convertToDto).collect(Collectors.toList());
     }
@@ -86,7 +86,7 @@ public class StudentQuestionServiceImpl implements StudentQuestionService {
     @Transactional(readOnly = true)
     public List<StudentQuestionDto> getPendingQuestionsByTeacher(Long teacherId) {
         User teacher = userRepository.findById(teacherId)
-                .orElseThrow(() -> new RuntimeException("Teacher not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giáo viên"));
         List<StudentQuestion> questions = questionRepository.findByTeacherAndStatusOrderByCreatedAtDesc(teacher, "PENDING");
         return questions.stream().map(this::convertToDto).collect(Collectors.toList());
     }
@@ -111,7 +111,7 @@ public class StudentQuestionServiceImpl implements StudentQuestionService {
         User student = userRepository.findById(studentId)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
         User teacher = userRepository.findById(teacherId)
-                .orElseThrow(() -> new RuntimeException("Teacher not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giáo viên"));
         List<StudentQuestion> questions = questionRepository.findByStudentAndTeacherOrderByCreatedAtDesc(student, teacher);
         return questions.stream().map(this::convertToDto).collect(Collectors.toList());
     }
@@ -154,7 +154,7 @@ public class StudentQuestionServiceImpl implements StudentQuestionService {
     @Transactional(readOnly = true)
     public Long countPendingQuestionsByTeacher(Long teacherId) {
         User teacher = userRepository.findById(teacherId)
-                .orElseThrow(() -> new RuntimeException("Teacher not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giáo viên"));
         return questionRepository.countPendingQuestionsByTeacher(teacher);
     }
     

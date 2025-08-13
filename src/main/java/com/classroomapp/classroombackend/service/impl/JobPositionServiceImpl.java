@@ -25,11 +25,29 @@ public class JobPositionServiceImpl implements JobPositionService {
     @Override
     @Transactional
     public JobPositionDto createJobPosition(JobPositionDto dto) {
+        // Validation title/description length
+        if (dto.getTitle() != null && dto.getTitle().length() > 50) {
+            throw new IllegalArgumentException("Vị trí tối đa 50 ký tự!");
+        }
+        if (dto.getDescription() != null && dto.getDescription().length() > 200) {
+            throw new IllegalArgumentException("Mô tả tối đa 200 ký tự!");
+        }
         // Validation cho số lượng
         if (dto.getQuantity() == null || dto.getQuantity() < 1) {
             throw new IllegalArgumentException("Số lượng phải là số nguyên dương và tối thiểu là 1");
         }
+        if (dto.getQuantity() != null && dto.getQuantity() > 50) {
+            throw new IllegalArgumentException("Số lượng tối đa là 50");
+        }
         
+        // Chuẩn hoá salaryRange: chỉ nhận số tối đa 50 ký tự
+        if (dto.getSalaryRange() != null) {
+            String digits = dto.getSalaryRange().replaceAll("[^0-9]", "");
+            if (digits.length() > 50) {
+                digits = digits.substring(0, 50);
+            }
+            dto.setSalaryRange(digits);
+        }
         JobPosition entity = modelMapper.map(dto, JobPosition.class);
         JobPosition saved = jobPositionRepository.save(entity);
         
@@ -51,9 +69,19 @@ public class JobPositionServiceImpl implements JobPositionService {
     @Override
     @Transactional
     public JobPositionDto updateJobPosition(Long id, JobPositionDto dto) {
+        // Validation title/description length
+        if (dto.getTitle() != null && dto.getTitle().length() > 50) {
+            throw new IllegalArgumentException("Vị trí tối đa 50 ký tự!");
+        }
+        if (dto.getDescription() != null && dto.getDescription().length() > 200) {
+            throw new IllegalArgumentException("Mô tả tối đa 200 ký tự!");
+        }
         // Validation cho số lượng
         if (dto.getQuantity() == null || dto.getQuantity() < 1) {
             throw new IllegalArgumentException("Số lượng phải là số nguyên dương và tối thiểu là 1");
+        }
+        if (dto.getQuantity() != null && dto.getQuantity() > 50) {
+            throw new IllegalArgumentException("Số lượng tối đa là 50");
         }
         
         JobPosition entity = jobPositionRepository.findById(id)
@@ -63,7 +91,15 @@ public class JobPositionServiceImpl implements JobPositionService {
         
         entity.setTitle(dto.getTitle());
         entity.setDescription(dto.getDescription());
-        entity.setSalaryRange(dto.getSalaryRange());
+        if (dto.getSalaryRange() != null) {
+            String digits = dto.getSalaryRange().replaceAll("[^0-9]", "");
+            if (digits.length() > 50) {
+                digits = digits.substring(0, 50);
+            }
+            entity.setSalaryRange(digits);
+        } else {
+            entity.setSalaryRange(null);
+        }
         entity.setQuantity(dto.getQuantity());
         JobPosition saved = jobPositionRepository.save(entity);
         

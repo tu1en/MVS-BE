@@ -63,7 +63,7 @@ public class CourseTemplateService {
             
         } catch (Exception e) {
             logger.error("Error importing course template: {}", e.getMessage());
-            throw new RuntimeException("Failed to import course template: " + e.getMessage(), e);
+            throw new RuntimeException("Nhập mẫu khóa học thất bại: " + e.getMessage(), e);
         }
     }
     
@@ -76,7 +76,7 @@ public class CourseTemplateService {
             return excelImportService.exportCourseTemplateToExcel(courseTemplateId);
         } catch (Exception e) {
             logger.error("Error exporting course template: {}", e.getMessage());
-            throw new RuntimeException("Failed to export course template: " + e.getMessage(), e);
+            throw new RuntimeException("Xuất mẫu khóa học thất bại: " + e.getMessage(), e);
         }
     }
     
@@ -111,7 +111,7 @@ public class CourseTemplateService {
     @Transactional(readOnly = true)
     public CourseTemplateDto getCourseTemplateById(Long id) {
         CourseTemplate courseTemplate = courseTemplateRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Course template not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy mẫu khóa học với id: " + id));
         return courseTemplateMapper.toDto(courseTemplate);
     }
     
@@ -121,7 +121,7 @@ public class CourseTemplateService {
     @Transactional
     public CourseTemplateDto updateCourseTemplate(Long id, CourseTemplateDto courseTemplateDto) {
         CourseTemplate existingCourse = courseTemplateRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Course template not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy mẫu khóa học với id: " + id));
         
         existingCourse.setName(courseTemplateDto.getName());
         existingCourse.setDescription(courseTemplateDto.getDescription());
@@ -148,7 +148,7 @@ public class CourseTemplateService {
     @Transactional
     public void deleteCourseTemplate(Long id) {
         CourseTemplate courseTemplate = courseTemplateRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Course template not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy mẫu khóa học với id: " + id));
         
         courseTemplate.setIsActive(false);
         courseTemplateRepository.save(courseTemplate);
@@ -162,7 +162,7 @@ public class CourseTemplateService {
     @Transactional
     public LessonTemplateDto addLessonToCourseTemplate(Long courseTemplateId, LessonTemplateDto lessonTemplateDto) {
         CourseTemplate courseTemplate = courseTemplateRepository.findById(courseTemplateId)
-                .orElseThrow(() -> new RuntimeException("Course template not found with id: " + courseTemplateId));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy mẫu khóa học với id: " + courseTemplateId));
         
         LessonTemplate lessonTemplate = new LessonTemplate();
         lessonTemplate.setCourseTemplate(courseTemplate);
@@ -202,7 +202,7 @@ public class CourseTemplateService {
     @Transactional
     public LessonTemplateDto updateLesson(Long id, LessonTemplateDto lessonTemplateDto) {
         LessonTemplate lessonTemplate = lessonTemplateRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Lesson template not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy mẫu bài học với id: " + id));
         
         lessonTemplate.setWeekNumber(lessonTemplateDto.getWeekNumber());
         lessonTemplate.setTopicName(lessonTemplateDto.getTopicName());
@@ -229,7 +229,7 @@ public class CourseTemplateService {
     @Transactional
     public void deleteLesson(Long id) {
         LessonTemplate lessonTemplate = lessonTemplateRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Lesson template not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy mẫu bài học với id: " + id));
         
         CourseTemplate courseTemplate = lessonTemplate.getCourseTemplate();
         lessonTemplateRepository.delete(lessonTemplate);
@@ -352,7 +352,7 @@ public class CourseTemplateService {
     @Transactional(readOnly = true)
     public PublicCourseTemplateDto getPublicCourseTemplateDetail(Long id) {
         CourseTemplate courseTemplate = courseTemplateRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Course template not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy mẫu khóa học với id: " + id));
                 
         if (!Boolean.TRUE.equals(courseTemplate.getIsPublic()) || !Boolean.TRUE.equals(courseTemplate.getIsActive())) {
             throw new RuntimeException("Course template is not available for public enrollment");

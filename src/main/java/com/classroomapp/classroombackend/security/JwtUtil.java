@@ -6,14 +6,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.classroomapp.classroombackend.constants.RoleConstants;
-
 import javax.crypto.SecretKey;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import com.classroomapp.classroombackend.constants.RoleConstants;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -119,7 +119,7 @@ public class JwtUtil {
 
     public boolean validateToken(String token) {
         if (token == null) {
-            log.error("JWT validation failed: token is null");
+            log.error("Xác thực JWT thất bại: token null");
             return false;
         }
         
@@ -132,17 +132,17 @@ public class JwtUtil {
             log.debug("JWT token validated successfully");
             return true;
         } catch (SecurityException e) {
-            log.error("JWT validation failed: Invalid signature: {}", e.getMessage());
+            log.error("Xác thực JWT thất bại: Chữ ký không hợp lệ: {}", e.getMessage());
         } catch (MalformedJwtException e) {
-            log.error("JWT validation failed: Malformed token: {}", e.getMessage());
+            log.error("Xác thực JWT thất bại: Token sai định dạng: {}", e.getMessage());
         } catch (ExpiredJwtException e) {
-            log.error("JWT validation failed: Token expired: {}", e.getMessage());
+            log.error("Xác thực JWT thất bại: Token đã hết hạn: {}", e.getMessage());
         } catch (UnsupportedJwtException e) {
-            log.error("JWT validation failed: Unsupported token: {}", e.getMessage());
+            log.error("Xác thực JWT thất bại: Token không được hỗ trợ: {}", e.getMessage());
         } catch (IllegalArgumentException e) {
-            log.error("JWT validation failed: Empty claims: {}", e.getMessage());
+            log.error("Xác thực JWT thất bại: Claims rỗng: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("JWT validation failed: Unknown error: {}", e.getMessage());
+            log.error("Xác thực JWT thất bại: Lỗi không xác định: {}", e.getMessage());
         }
         return false;
     }
@@ -158,7 +158,7 @@ public class JwtUtil {
             log.debug("Extracted subject from token: {}", subject);
             return subject;
         } catch (Exception e) {
-            log.error("Error getting subject from token: {}", e.getMessage());
+            log.error("Lỗi lấy subject từ token: {}", e.getMessage());
             return null;
         }
     }

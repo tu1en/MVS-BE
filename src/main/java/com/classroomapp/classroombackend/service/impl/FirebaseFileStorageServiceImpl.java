@@ -35,8 +35,8 @@ public class FirebaseFileStorageServiceImpl implements FileStorageService {
                 firebaseResponse.getFileSize()
             );
         } catch (Exception e) {
-            log.error("Firebase File Storage Service: Error uploading file", e);
-            throw new RuntimeException("Failed to upload file to Firebase Storage", e);
+            log.error("Firebase File Storage Service: Lỗi khi tải lên file", e);
+            throw new RuntimeException("Tải lên file lên Firebase Storage thất bại", e);
         }
     }
 
@@ -47,8 +47,8 @@ public class FirebaseFileStorageServiceImpl implements FileStorageService {
             firebaseStorageService.deleteFile(fileName);
             log.info("Firebase File Storage Service: File deleted successfully");
         } catch (Exception e) {
-            log.error("Firebase File Storage Service: Error deleting file", e);
-            throw new RuntimeException("Failed to delete file from Firebase Storage", e);
+            log.error("Firebase File Storage Service: Lỗi khi xóa file", e);
+            throw new RuntimeException("Xóa file khỏi Firebase Storage thất bại", e);
         }
     }
 } 

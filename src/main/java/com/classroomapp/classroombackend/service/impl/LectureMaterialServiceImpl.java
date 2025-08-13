@@ -57,24 +57,24 @@ public class LectureMaterialServiceImpl implements LectureMaterialService {
         try {
             Files.createDirectories(this.fileStorageLocation);
         } catch (Exception ex) {
-            throw new FileStorageException("Could not create the directory where the uploaded files will be stored.", ex);
+            throw new FileStorageException("Không thể tạo thư mục để lưu trữ file tải lên.", ex);
         }
     }
     
     @Override
     public LectureMaterialDto storeFile(MultipartFile file, Long lectureId, String userEmail) {
         Lecture lecture = lectureRepository.findById(lectureId)
-            .orElseThrow(() -> new ResourceNotFoundException("Lecture not found with id: " + lectureId));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài giảng với id: " + lectureId));
 
         if (!lecture.getClassroom().getTeacher().getEmail().equals(userEmail)) {
-            throw new UnauthorizedException("User is not authorized to upload materials to this lecture.");
+            throw new UnauthorizedException("Bạn không có quyền tải tài liệu lên cho bài giảng này.");
         }
 
         String fileName = StringUtils.cleanPath(file.getOriginalFilename());
 
         try {
             if (fileName.contains("..")) {
-                throw new FileStorageException("Sorry! Filename contains invalid path sequence " + fileName);
+                throw new FileStorageException("Xin lỗi! Tên file chứa chuỗi đường dẫn không hợp lệ " + fileName);
             }
 
             Path targetLocation = this.fileStorageLocation.resolve(fileName);
@@ -91,14 +91,14 @@ public class LectureMaterialServiceImpl implements LectureMaterialService {
             return modelMapper.map(savedMaterial, LectureMaterialDto.class);
 
         } catch (IOException ex) {
-            throw new FileStorageException("Could not store file " + fileName + ". Please try again!", ex);
+            throw new FileStorageException("Không thể lưu file " + fileName + ". Vui lòng thử lại!", ex);
         }
     }
 
     @Override
     public ResponseEntity<Resource> getFile(Long materialId) {
         LectureMaterial material = lectureMaterialRepository.findById(materialId)
-                .orElseThrow(() -> new ResourceNotFoundException("File not found with id " + materialId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy file với id " + materialId));
 
         try {
             Path filePath = Paths.get(material.getFilePath()).normalize();
@@ -109,10 +109,10 @@ public class LectureMaterialServiceImpl implements LectureMaterialService {
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
                     .body(resource);
             } else {
-                throw new ResourceNotFoundException("File not found " + material.getFileName());
+                throw new ResourceNotFoundException("Không tìm thấy file " + material.getFileName());
             }
         } catch (MalformedURLException ex) {
-            throw new ResourceNotFoundException("File not found " + material.getFileName(), ex);
+            throw new ResourceNotFoundException("Không tìm thấy file " + material.getFileName(), ex);
         }
     }
 
@@ -127,10 +127,10 @@ public class LectureMaterialServiceImpl implements LectureMaterialService {
     @Override
     public void deleteFile(Long materialId, String userEmail) {
         LectureMaterial material = lectureMaterialRepository.findById(materialId)
-            .orElseThrow(() -> new ResourceNotFoundException("Material not found with id: " + materialId));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài liệu với id: " + materialId));
 
         if (!material.getLecture().getClassroom().getTeacher().getEmail().equals(userEmail)) {
-            throw new UnauthorizedException("User is not authorized to delete this material.");
+            throw new UnauthorizedException("Bạn không có quyền xóa tài liệu này.");
         }
 
         try {
@@ -138,7 +138,7 @@ public class LectureMaterialServiceImpl implements LectureMaterialService {
             Files.deleteIfExists(filePath);
             lectureMaterialRepository.delete(material);
         } catch (IOException ex) {
-            throw new FileStorageException("Could not delete file " + material.getFileName() + ". Please try again!", ex);
+            throw new FileStorageException("Không thể xóa file " + material.getFileName() + ". Vui lòng thử lại!", ex);
         }
     }
 } 

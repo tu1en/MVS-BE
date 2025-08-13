@@ -96,11 +96,11 @@ public class ShiftService {
         }
         
         if (shift.getStartTime().isAfter(shift.getEndTime()) || shift.getStartTime().equals(shift.getEndTime())) {
-            throw new IllegalArgumentException("End time must be after start time");
+            throw new IllegalArgumentException("Giờ kết thúc phải sau giờ bắt đầu");
         }
         
         if (shift.getName() == null || shift.getName().trim().isEmpty()) {
-            throw new IllegalArgumentException("Shift name is required");
+            throw new IllegalArgumentException("Cần cung cấp tên ca làm việc");
         }
         
         if (shift.getName().length() > 100) {
@@ -110,7 +110,7 @@ public class ShiftService {
         // Check for minimum 1 hour duration
         long minutes = java.time.Duration.between(shift.getStartTime(), shift.getEndTime()).toMinutes();
         if (minutes < 60) {
-            throw new IllegalArgumentException("Shift duration must be at least 1 hour");
+            throw new IllegalArgumentException("Thời lượng ca làm việc phải tối thiểu 1 giờ");
         }
         
         // Check for maximum 12 hour duration

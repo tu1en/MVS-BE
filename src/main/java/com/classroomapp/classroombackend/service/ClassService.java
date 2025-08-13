@@ -92,13 +92,13 @@ public class ClassService {
         
         // Find course template
         CourseTemplate courseTemplate = courseTemplateRepository.findById(request.getCourseTemplateId())
-                .orElseThrow(() -> new RuntimeException("Course template not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy mẫu khóa học"));
         
         // Validate teacher and room
         User teacher = null;
         if (request.getTeacherId() != null) {
             teacher = userRepository.findById(request.getTeacherId())
-                    .orElseThrow(() -> new RuntimeException("Teacher not found"));
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy giáo viên"));
         }
         // Fallback: if teacher not provided, use current authenticated user if role is TEACHER
         if (teacher == null) {
@@ -122,7 +122,7 @@ public class ClassService {
         Room room = null;
         if (request.getRoomId() != null) {
             room = roomRepository.findById(request.getRoomId())
-                    .orElseThrow(() -> new RuntimeException("Room not found"));
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng"));
         }
         
         // Nếu endDate chưa truyền, tự tính dự kiến dựa vào số bài học và số buổi/tuần đã chọn
@@ -201,7 +201,7 @@ public class ClassService {
             webSocketNotificationService.notifyClassCreated(classDto);
             logger.info("Sent WebSocket notification for class creation: {}", classDto.getClassName());
         } catch (Exception e) {
-            logger.error("Failed to send WebSocket notification for class creation", e);
+            logger.error("Gửi thông báo WebSocket cho việc tạo lớp học thất bại", e);
             // Don't fail the whole operation if notification fails
         }
         
@@ -481,7 +481,7 @@ public class ClassService {
     @Transactional
     public ClassDto cloneClass(Long sourceClassId, CloneClassRequest request) {
         ClassEntity sourceClass = classRepository.findById(sourceClassId)
-                .orElseThrow(() -> new RuntimeException("Source class not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy lớp nguồn"));
         
         // Create new class request
         CreateClassRequest createRequest = new CreateClassRequest();
@@ -519,7 +519,7 @@ public class ClassService {
      */
     public ClassDto getClassById(Long id) {
         ClassEntity classEntity = classRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Class not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy lớp với id: " + id));
         return convertToDto(classEntity);
     }
     
@@ -582,7 +582,7 @@ public class ClassService {
     @Transactional
     public ClassDto updateClassPartial(Long id, java.util.Map<String, Object> payload) {
         ClassEntity entity = classRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Class not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy lớp với id: " + id));
 
         if (payload.containsKey("isPublic")) {
             try {
@@ -606,7 +606,7 @@ public class ClassService {
     @Transactional
     public ClassDto updateClassStatus(Long id, String status) {
         ClassEntity classEntity = classRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Class not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy lớp với id: " + id));
         
         ClassEntity.ClassStatus oldStatus = classEntity.getStatus();
         classEntity.setStatus(ClassEntity.ClassStatus.valueOf(status));
@@ -620,7 +620,7 @@ public class ClassService {
             logger.info("Sent WebSocket notification for class status update: {} -> {}", 
                        oldStatus, status);
         } catch (Exception e) {
-            logger.error("Failed to send WebSocket notification for class status update", e);
+            logger.error("Gửi thông báo WebSocket cho cập nhật trạng thái lớp học thất bại", e);
         }
         
         return classDto;
@@ -639,15 +639,15 @@ public class ClassService {
     
     private void validateCreateClassRequest(CreateClassRequest request) {
         if (request.getClassName() == null || request.getClassName().trim().isEmpty()) {
-            throw new RuntimeException("Class name is required");
+            throw new RuntimeException("Tên lớp là bắt buộc");
         }
         
         if (request.getStartDate() == null) {
-            throw new RuntimeException("Start date is required");
+            throw new RuntimeException("Ngày bắt đầu là bắt buộc");
         }
         
         if (request.getEndDate() != null && request.getStartDate().isAfter(request.getEndDate())) {
-            throw new RuntimeException("Start date must be before end date");
+            throw new RuntimeException("Ngày bắt đầu phải trước ngày kết thúc");
         }
         
         if (request.getMaxStudents() == null || request.getMaxStudents() <= 0) {
@@ -735,7 +735,7 @@ public class ClassService {
                     classLesson.getClassEntity().getClassName());
             }
         } catch (Exception e) {
-            logger.warn("❌ Failed to create default lecture for lesson '{}': {}", template.getTopicName(), e.getMessage());
+            logger.warn("❌ Tạo bài giảng mặc định cho bài học '{}' thất bại: {}", template.getTopicName(), e.getMessage());
         }
     }
 

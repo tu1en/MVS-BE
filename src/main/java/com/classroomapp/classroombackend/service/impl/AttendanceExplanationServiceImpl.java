@@ -6,6 +6,7 @@ import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.AttendanceExplanationRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.AttendanceExplanationService;
+import com.classroomapp.classroombackend.util.SecurityUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.ss.usermodel.Font;
@@ -37,9 +38,45 @@ public class AttendanceExplanationServiceImpl implements AttendanceExplanationSe
     
     @Autowired
     private UserRepository userRepository;
+    
+    @Autowired
+    private SecurityUtils securityUtils;
 
     @Override
     public AttendanceExplanation submitExplanation(AttendanceExplanation explanation) {
+        // Basic validation to avoid 500 on DB constraints
+        if (explanation == null) {
+            throw new IllegalArgumentException("Explanation payload is required");
+        }
+        if (explanation.getAbsenceDate() == null) {
+            throw new IllegalArgumentException("absenceDate is required");
+        }
+        if (explanation.getReason() == null || explanation.getReason().trim().isEmpty()) {
+            throw new IllegalArgumentException("reason is required");
+        }
+
+        // Resolve current user and set staff/submitter information
+        com.classroomapp.classroombackend.model.usermanagement.User currentUser = securityUtils.getCurrentUser();
+        if (currentUser == null) {
+            throw new IllegalArgumentException("User is not authenticated");
+        }
+
+        explanation.setStaff(currentUser);
+        if (explanation.getSubmitterName() == null || explanation.getSubmitterName().trim().isEmpty()) {
+            explanation.setSubmitterName(currentUser.getFullName());
+        }
+        // Fill department if missing and available on user
+        if ((explanation.getDepartment() == null || explanation.getDepartment().trim().isEmpty())) {
+            try {
+                String dept = currentUser.getDepartment();
+                if (dept != null && !dept.isEmpty()) {
+                    explanation.setDepartment(dept);
+                }
+            } catch (Exception ignore) {
+                // In case User doesn't have department field in some envs
+            }
+        }
+
         explanation.setSubmittedAt(LocalDateTime.now());
         explanation.setStatus(ExplanationStatus.PENDING);
         return repository.save(explanation);
@@ -55,7 +92,7 @@ public class AttendanceExplanationServiceImpl implements AttendanceExplanationSe
     @Override
     public AttendanceExplanation approveExplanation(Long id, String approverName) {
         AttendanceExplanation explanation = repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Explanation not found with id: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giải trình với id: " + id));
         explanation.setStatus(ExplanationStatus.APPROVED);
         explanation.setApproverName(approverName);
         return repository.save(explanation);
@@ -64,7 +101,7 @@ public class AttendanceExplanationServiceImpl implements AttendanceExplanationSe
     @Override
     public AttendanceExplanation rejectExplanation(Long id, String approverName) {
         AttendanceExplanation explanation = repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Explanation not found with id: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giải trình với id: " + id));
         explanation.setStatus(ExplanationStatus.REJECTED);
         explanation.setApproverName(approverName);
         return repository.save(explanation);

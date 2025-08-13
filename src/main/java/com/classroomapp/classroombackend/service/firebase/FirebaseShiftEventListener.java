@@ -41,7 +41,7 @@ public class FirebaseShiftEventListener {
             firebaseShiftService.syncShiftAssignment(assignment)
                 .thenRun(() -> log.debug("Successfully synced new assignment to Firebase"))
                 .exceptionally(throwable -> {
-                    log.error("Error syncing new assignment to Firebase: {}", throwable.getMessage());
+                    log.error("Lỗi đồng bộ assignment mới lên Firebase: {}", throwable.getMessage());
                     return null;
                 });
 
@@ -49,12 +49,12 @@ public class FirebaseShiftEventListener {
             shiftNotificationService.sendShiftAssignedNotification(assignment)
                 .thenRun(() -> log.debug("Successfully sent assignment notification"))
                 .exceptionally(throwable -> {
-                    log.error("Error sending assignment notification: {}", throwable.getMessage());
+                    log.error("Lỗi gửi thông báo assignment: {}", throwable.getMessage());
                     return null;
                 });
 
         } catch (Exception e) {
-            log.error("Error handling ShiftAssignmentCreated event: {}", e.getMessage());
+            log.error("Lỗi xử lý sự kiện ShiftAssignmentCreated: {}", e.getMessage());
         }
     }
 
@@ -73,7 +73,7 @@ public class FirebaseShiftEventListener {
             firebaseShiftService.syncShiftAssignment(assignment)
                 .thenRun(() -> log.debug("Successfully synced updated assignment to Firebase"))
                 .exceptionally(throwable -> {
-                    log.error("Error syncing updated assignment to Firebase: {}", throwable.getMessage());
+                    log.error("Lỗi đồng bộ assignment đã cập nhật lên Firebase: {}", throwable.getMessage());
                     return null;
                 });
 
@@ -82,13 +82,13 @@ public class FirebaseShiftEventListener {
                 shiftNotificationService.sendShiftUpdatedNotification(assignment)
                     .thenRun(() -> log.debug("Successfully sent assignment update notification"))
                     .exceptionally(throwable -> {
-                        log.error("Error sending assignment update notification: {}", throwable.getMessage());
+                        log.error("Lỗi gửi thông báo cập nhật assignment: {}", throwable.getMessage());
                         return null;
                     });
             }
 
         } catch (Exception e) {
-            log.error("Error handling ShiftAssignmentUpdated event: {}", e.getMessage());
+            log.error("Lỗi xử lý sự kiện ShiftAssignmentUpdated: {}", e.getMessage());
         }
     }
 
@@ -108,7 +108,7 @@ public class FirebaseShiftEventListener {
             firebaseShiftService.syncShiftAssignment(assignment)
                 .thenRun(() -> log.debug("Successfully synced cancelled assignment to Firebase"))
                 .exceptionally(throwable -> {
-                    log.error("Error syncing cancelled assignment to Firebase: {}", throwable.getMessage());
+                    log.error("Lỗi đồng bộ assignment đã hủy lên Firebase: {}", throwable.getMessage());
                     return null;
                 });
 
@@ -116,12 +116,12 @@ public class FirebaseShiftEventListener {
             shiftNotificationService.sendShiftCancelledNotification(assignment, reason)
                 .thenRun(() -> log.debug("Successfully sent assignment cancellation notification"))
                 .exceptionally(throwable -> {
-                    log.error("Error sending assignment cancellation notification: {}", throwable.getMessage());
+                    log.error("Lỗi gửi thông báo hủy assignment: {}", throwable.getMessage());
                     return null;
                 });
 
         } catch (Exception e) {
-            log.error("Error handling ShiftAssignmentCancelled event: {}", e.getMessage());
+            log.error("Lỗi xử lý sự kiện ShiftAssignmentCancelled: {}", e.getMessage());
         }
     }
 
@@ -140,12 +140,12 @@ public class FirebaseShiftEventListener {
             firebaseShiftService.syncShiftAssignment(assignment)
                 .thenRun(() -> log.debug("Successfully synced check-in to Firebase"))
                 .exceptionally(throwable -> {
-                    log.error("Error syncing check-in to Firebase: {}", throwable.getMessage());
+                    log.error("Lỗi đồng bộ check-in lên Firebase: {}", throwable.getMessage());
                     return null;
                 });
 
         } catch (Exception e) {
-            log.error("Error handling EmployeeCheckedIn event: {}", e.getMessage());
+            log.error("Lỗi xử lý sự kiện EmployeeCheckedIn: {}", e.getMessage());
         }
     }
 
@@ -164,12 +164,12 @@ public class FirebaseShiftEventListener {
             firebaseShiftService.syncShiftAssignment(assignment)
                 .thenRun(() -> log.debug("Successfully synced check-out to Firebase"))
                 .exceptionally(throwable -> {
-                    log.error("Error syncing check-out to Firebase: {}", throwable.getMessage());
+                    log.error("Lỗi đồng bộ check-out lên Firebase: {}", throwable.getMessage());
                     return null;
                 });
 
         } catch (Exception e) {
-            log.error("Error handling EmployeeCheckedOut event: {}", e.getMessage());
+            log.error("Lỗi xử lý sự kiện EmployeeCheckedOut: {}", e.getMessage());
         }
     }
 
@@ -188,7 +188,7 @@ public class FirebaseShiftEventListener {
             firebaseShiftService.syncShiftSwapRequest(swapRequest)
                 .thenRun(() -> log.debug("Successfully synced new swap request to Firebase"))
                 .exceptionally(throwable -> {
-                    log.error("Error syncing new swap request to Firebase: {}", throwable.getMessage());
+                    log.error("Lỗi đồng bộ yêu cầu đổi ca mới lên Firebase: {}", throwable.getMessage());
                     return null;
                 });
 
@@ -196,12 +196,12 @@ public class FirebaseShiftEventListener {
             shiftNotificationService.sendSwapRequestReceivedNotification(swapRequest)
                 .thenRun(() -> log.debug("Successfully sent swap request notification"))
                 .exceptionally(throwable -> {
-                    log.error("Error sending swap request notification: {}", throwable.getMessage());
+                    log.error("Lỗi gửi thông báo yêu cầu đổi ca: {}", throwable.getMessage());
                     return null;
                 });
 
         } catch (Exception e) {
-            log.error("Error handling SwapRequestCreated event: {}", e.getMessage());
+            log.error("Lỗi xử lý sự kiện SwapRequestCreated: {}", e.getMessage());
         }
     }
 
@@ -220,7 +220,7 @@ public class FirebaseShiftEventListener {
             firebaseShiftService.syncShiftSwapRequest(swapRequest)
                 .thenRun(() -> log.debug("Successfully synced approved swap request to Firebase"))
                 .exceptionally(throwable -> {
-                    log.error("Error syncing approved swap request to Firebase: {}", throwable.getMessage());
+                    log.error("Lỗi đồng bộ yêu cầu đổi ca đã duyệt lên Firebase: {}", throwable.getMessage());
                     return null;
                 });
 
@@ -228,12 +228,12 @@ public class FirebaseShiftEventListener {
             shiftNotificationService.sendSwapRequestApprovedNotification(swapRequest)
                 .thenRun(() -> log.debug("Successfully sent swap request approval notification"))
                 .exceptionally(throwable -> {
-                    log.error("Error sending swap request approval notification: {}", throwable.getMessage());
+                    log.error("Lỗi gửi thông báo duyệt yêu cầu đổi ca: {}", throwable.getMessage());
                     return null;
                 });
 
         } catch (Exception e) {
-            log.error("Error handling SwapRequestApproved event: {}", e.getMessage());
+            log.error("Lỗi xử lý sự kiện SwapRequestApproved: {}", e.getMessage());
         }
     }
 
@@ -253,7 +253,7 @@ public class FirebaseShiftEventListener {
             firebaseShiftService.syncShiftSwapRequest(swapRequest)
                 .thenRun(() -> log.debug("Successfully synced rejected swap request to Firebase"))
                 .exceptionally(throwable -> {
-                    log.error("Error syncing rejected swap request to Firebase: {}", throwable.getMessage());
+                    log.error("Lỗi đồng bộ yêu cầu đổi ca bị từ chối lên Firebase: {}", throwable.getMessage());
                     return null;
                 });
 
@@ -261,12 +261,12 @@ public class FirebaseShiftEventListener {
             shiftNotificationService.sendSwapRequestRejectedNotification(swapRequest, reason)
                 .thenRun(() -> log.debug("Successfully sent swap request rejection notification"))
                 .exceptionally(throwable -> {
-                    log.error("Error sending swap request rejection notification: {}", throwable.getMessage());
+                    log.error("Lỗi gửi thông báo từ chối yêu cầu đổi ca: {}", throwable.getMessage());
                     return null;
                 });
 
         } catch (Exception e) {
-            log.error("Error handling SwapRequestRejected event: {}", e.getMessage());
+            log.error("Lỗi xử lý sự kiện SwapRequestRejected: {}", e.getMessage());
         }
     }
 
@@ -285,7 +285,7 @@ public class FirebaseShiftEventListener {
             firebaseShiftService.syncShiftSchedule(schedule)
                 .thenRun(() -> log.debug("Successfully synced published schedule to Firebase"))
                 .exceptionally(throwable -> {
-                    log.error("Error syncing published schedule to Firebase: {}", throwable.getMessage());
+                    log.error("Lỗi đồng bộ lịch đã publish lên Firebase: {}", throwable.getMessage());
                     return null;
                 });
 
@@ -294,13 +294,13 @@ public class FirebaseShiftEventListener {
                 shiftNotificationService.sendSchedulePublishedNotification(schedule, event.getAffectedEmployees())
                     .thenRun(() -> log.debug("Successfully sent schedule published notification"))
                     .exceptionally(throwable -> {
-                        log.error("Error sending schedule published notification: {}", throwable.getMessage());
+                        log.error("Lỗi gửi thông báo publish lịch: {}", throwable.getMessage());
                         return null;
                     });
             }
 
         } catch (Exception e) {
-            log.error("Error handling SchedulePublished event: {}", e.getMessage());
+            log.error("Lỗi xử lý sự kiện SchedulePublished: {}", e.getMessage());
         }
     }
 
@@ -319,12 +319,12 @@ public class FirebaseShiftEventListener {
             firebaseShiftService.syncShiftTemplate(template)
                 .thenRun(() -> log.debug("Successfully synced updated template to Firebase"))
                 .exceptionally(throwable -> {
-                    log.error("Error syncing updated template to Firebase: {}", throwable.getMessage());
+                    log.error("Lỗi đồng bộ template đã cập nhật lên Firebase: {}", throwable.getMessage());
                     return null;
                 });
 
         } catch (Exception e) {
-            log.error("Error handling ShiftTemplateUpdated event: {}", e.getMessage());
+            log.error("Lỗi xử lý sự kiện ShiftTemplateUpdated: {}", e.getMessage());
         }
     }
 

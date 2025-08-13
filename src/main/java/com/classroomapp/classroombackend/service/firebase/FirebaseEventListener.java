@@ -63,7 +63,7 @@ public class FirebaseEventListener {
             log.info("ðŸ”¥ Firebase event listeners initialized successfully");
 
         } catch (Exception e) {
-            log.error("ðŸ”¥ Failed to initialize Firebase event listeners", e);
+            log.error("Lỗi khởi tạo listeners sự kiện Firebase", e);
         }
     }
 
@@ -78,7 +78,7 @@ public class FirebaseEventListener {
                         database.getReference(path).removeEventListener(listener);
                     }
                 } catch (Exception e) {
-                    log.warn("ðŸ”¥ Failed to remove listener for path: {}", path, e);
+                    log.warn("Lỗi gỡ listener cho path: {}", path, e);
                 }
             });
             listeners.clear();
@@ -246,7 +246,7 @@ public class FirebaseEventListener {
 
                     @Override
                     public void onCancelled(DatabaseError databaseError) {
-                        log.warn("ðŸ”¥ Failed to cleanup old live updates: {}", databaseError.getMessage());
+                        log.warn("Lỗi dọn dẹp live updates cũ: {}", databaseError.getMessage());
                     }
                 });
             }
@@ -270,7 +270,7 @@ public class FirebaseEventListener {
                 log.debug("ðŸ”¥ Sent notification to topic: {}", topic);
             }
         } catch (Exception e) {
-            log.error("ðŸ”¥ Failed to send notification to topic: {}", topic, e);
+            log.error("Lỗi gửi thông báo tới topic: {}", topic, e);
         }
     }
 }

@@ -76,7 +76,7 @@ public class StaffShiftAssignment {
     private void validateAssignment() {
         if (effectiveFrom != null && effectiveUntil != null && 
             effectiveUntil.isBefore(effectiveFrom)) {
-            throw new IllegalStateException("Effective until date must be after effective from date");
+            throw new IllegalStateException("Ngày hiệu lực đến phải sau ngày hiệu lực từ");
         }
     }
 }

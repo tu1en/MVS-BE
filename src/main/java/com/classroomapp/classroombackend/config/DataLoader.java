@@ -274,6 +274,7 @@ seedEvidenceTemplates();
         // Always verify database state
         verifyDatabaseState();
         verifyUserRoleAssignments();
+        ensureParentRoleAndUser();
         
         // Always create attendance explanations test data
         createAttendanceExplanationsData();
@@ -313,7 +314,7 @@ seedEvidenceTemplates();
                 seedAbsences();
                 log.info("============== Absence Seeding Complete ==============");
             } catch (Exception e) {
-                log.error("Error seeding absence data: {}", e.getMessage(), e);
+                log.error("Lỗi khi seed dữ liệu vắng mặt: {}", e.getMessage(), e);
             }
         } else if (absenceRepository.count() > 0) {
             log.info("Absence data already exists. Count: {}", absenceRepository.count());
@@ -366,7 +367,25 @@ seedEvidenceTemplates();
                     app.setJobPosition(positions.get(i % positions.size()));
                     app.setStatus("PENDING");
                     app.setCvUrl("/static/sample_materials/sample.pdf");
-                    app.setCreatedAt(LocalDateTime.now().minusDays(i + 1));
+                    // Đặt createdAt nằm trong khoảng thời gian của kế hoạch của vị trí tương ứng
+                    try {
+                        JobPosition job = positions.get(i % positions.size());
+                        LocalDate planStart = job.getRecruitmentPlan().getStartDate();
+                        LocalDate planEnd = job.getRecruitmentPlan().getEndDate();
+                        LocalDate today = LocalDate.now();
+                        LocalDate effectiveEnd = planEnd.isAfter(today) ? today : planEnd;
+                        if (effectiveEnd.isBefore(planStart)) {
+                            effectiveEnd = planStart;
+                        }
+                        long days = java.time.temporal.ChronoUnit.DAYS.between(planStart, effectiveEnd);
+                        long safeDays = Math.max(0, days);
+                        long offset = (safeDays == 0) ? 0 : (i % (safeDays + 1));
+                        LocalDate chosen = planStart.plusDays(offset);
+                        if (chosen.isAfter(effectiveEnd)) chosen = effectiveEnd;
+                        app.setCreatedAt(chosen.atTime(9 + (i % 8), 0));
+                    } catch (Exception ex) {
+                        app.setCreatedAt(LocalDateTime.now().minusDays(i + 1));
+                    }
                     recruitmentApplicationRepository.save(app);
                     log.info("✅ Created test application for {} applying to: {}", testApplicants[i], positions.get(i % positions.size()).getTitle());
                 }
@@ -418,7 +437,7 @@ seedEvidenceTemplates();
             }
             
         } catch (Exception e) {
-            log.error("❌ Error during duplicate cleanup: {}", e.getMessage(), e);
+            log.error("❌ Lỗi trong quá trình dọn dẹp bản ghi trùng lặp: {}", e.getMessage(), e);
         }
     }
 
@@ -447,7 +466,11 @@ seedEvidenceTemplates();
                 accountant.setId(5);
                 roleRepository.save(accountant);
 
-                log.info("✅ Created roles with explicit IDs (including ACCOUNTANT).");
+                Role parent = new Role("PARENT");
+                parent.setId(6);
+                roleRepository.save(parent);
+
+                log.info("✅ Created roles with explicit IDs (including ACCOUNTANT, PARENT).");
 
             } finally {
                 entityManager.createNativeQuery("SET IDENTITY_INSERT roles OFF").executeUpdate();
@@ -513,6 +536,16 @@ seedEvidenceTemplates();
                 admin.setFullName("Administrator");
                 admin.setRoleId(RoleConstants.ADMIN);
                 userRepository.save(admin);
+
+                // Create parent user
+                User parent = new User();
+                parent.setId(601L);
+                parent.setUsername("parent");
+                parent.setPassword(passwordEncoder.encode("parent123"));
+                parent.setEmail("parent@test.com");
+                parent.setFullName("Parent User");
+                parent.setRoleId(RoleConstants.PARENT);
+                userRepository.save(parent);
 
                 // Create subject-specific teachers
                 User mathTeacher = new User();
@@ -781,6 +814,35 @@ seedEvidenceTemplates();
         }
     }
 
+    /**
+     * Ensure PARENT role and a default parent user exist when DB is not empty.
+     */
+    private void ensureParentRoleAndUser() {
+        try {
+            // Ensure role exists
+            if (!roleRepository.findByName("PARENT").isPresent()) {
+                Role parentRole = new Role("PARENT");
+                parentRole.setId(RoleConstants.PARENT);
+                roleRepository.save(parentRole);
+                log.info("✅ Ensured PARENT role exists.");
+            }
+
+            // Ensure default parent user exists
+            if (!userRepository.existsByUsername("parent")) {
+                User parent = new User();
+                parent.setUsername("parent");
+                parent.setPassword(passwordEncoder.encode("parent123"));
+                parent.setEmail("parent@test.com");
+                parent.setFullName("Parent User");
+                parent.setRoleId(RoleConstants.PARENT);
+                userRepository.save(parent);
+                log.info("✅ Ensured default parent user exists.");
+            }
+        } catch (Exception e) {
+            log.warn("⚠️ Could not ensure PARENT role/user: {}", e.getMessage());
+        }
+    }
+
     private void seedCourses() {
         if (courseRepository.count() == 0) {
             Course math = new Course();
@@ -1031,7 +1093,7 @@ seedEvidenceTemplates();
 
             log.info("✅ Created 5 sample role requests.");
         } catch (Exception e) {
-            log.error("❌ Error creating sample requests: {}", e.getMessage());
+            log.error("❌ Lỗi khi tạo dữ liệu yêu cầu mẫu: {}", e.getMessage());
         }
     }
 
@@ -1039,25 +1101,25 @@ seedEvidenceTemplates();
         if (recruitmentPlanRepository.count() == 0) {
             // Tạo kế hoạch tuyển dụng với tên mới và nhiều vị trí hơn
             RecruitmentPlan plan1 = new RecruitmentPlan();
-            plan1.setTitle("Kế hoạch tuyển sinh đợt thứ nhất");
-            plan1.setStartDate(LocalDate.now().minusDays(10));
-            plan1.setEndDate(LocalDate.now().plusDays(30));
+            plan1.setTitle("Kế hoạch tuyển dụng Q1");
+            plan1.setStartDate(LocalDate.now().minusDays(40));
+            plan1.setEndDate(LocalDate.now().minusDays(10));
             plan1.setTotalQuantity(5);
             plan1.setStatus(RecruitmentPlan.Status.OPEN);
             recruitmentPlanRepository.save(plan1);
             
             RecruitmentPlan plan2 = new RecruitmentPlan();
-            plan2.setTitle("Kế hoạch tuyển sinh đợt thứ hai");
-            plan2.setStartDate(LocalDate.now().minusDays(5));
-            plan2.setEndDate(LocalDate.now().plusDays(35));
+            plan2.setTitle("Kế hoạch tuyển dụng Q2");
+            plan2.setStartDate(LocalDate.now());
+            plan2.setEndDate(LocalDate.now().plusDays(30));
             plan2.setTotalQuantity(4);
             plan2.setStatus(RecruitmentPlan.Status.OPEN);
             recruitmentPlanRepository.save(plan2);
             
             RecruitmentPlan plan3 = new RecruitmentPlan();
-            plan3.setTitle("Kế hoạch tuyển sinh đợt thứ ba");
-            plan3.setStartDate(LocalDate.now().minusDays(2));
-            plan3.setEndDate(LocalDate.now().plusDays(40));
+            plan3.setTitle("Kế hoạch tuyển dụng Q3");
+            plan3.setStartDate(LocalDate.now().plusDays(40));
+            plan3.setEndDate(LocalDate.now().plusDays(70));
             plan3.setTotalQuantity(5);
             plan3.setStatus(RecruitmentPlan.Status.OPEN);
             recruitmentPlanRepository.save(plan3);
@@ -1076,74 +1138,74 @@ seedEvidenceTemplates();
                 JobPosition job1 = new JobPosition();
                 job1.setTitle("Kế toán viên");
                 job1.setDescription("Phụ trách công tác kế toán, báo cáo tài chính, quản lý sổ sách kế toán theo quy định. Yêu cầu: Tốt nghiệp đại học chuyên ngành Kế toán, có kinh nghiệm 2-3 năm, thành thạo Excel và phần mềm kế toán.");
-                job1.setSalaryRange("15-25 triệu");
+                job1.setSalaryRange("15"); // FE sẽ hiển thị đuôi 'triệu'
                 job1.setContractType("FULL_TIME");
                 job1.setQuantity(2);
-                job1.setRecruitmentPlan(plans.get(0));
+                job1.setRecruitmentPlan(plans.get(0)); // Q1 window
                 jobPositionRepository.save(job1);
                 
                 JobPosition job2 = new JobPosition();
                 job2.setTitle("Nhân viên HR");
                 job2.setDescription("Phụ trách tuyển dụng, đào tạo, quản lý nhân sự, chấm công, lương thưởng. Yêu cầu: Tốt nghiệp đại học chuyên ngành Quản trị nhân lực hoặc liên quan, có kinh nghiệm 1-2 năm, kỹ năng giao tiếp tốt.");
-                job2.setSalaryRange("12-20 triệu");
+                job2.setSalaryRange("12"); // FE sẽ hiển thị đuôi 'triệu'
                 job2.setContractType("FULL_TIME");
                 job2.setQuantity(1);
-                job2.setRecruitmentPlan(plans.get(0));
+                job2.setRecruitmentPlan(plans.get(0)); // Q1 window
                 jobPositionRepository.save(job2);
                 
                 JobPosition job3 = new JobPosition();
                 job3.setTitle("Giáo viên Toán lớp 10");
                 job3.setDescription("Dạy Toán cho học sinh lớp 10, luyện thi đại học. Yêu cầu: Tốt nghiệp đại học chuyên ngành Toán hoặc Sư phạm Toán, có kinh nghiệm giảng dạy, nhiệt tình, tận tâm với học sinh.");
-                job3.setSalaryRange("500,000-800,000 VNĐ/giờ");
+                job3.setSalaryRange("500000"); // FE sẽ hiển thị đuôi 'VNĐ/giờ'
                 job3.setContractType("PART_TIME");
                 job3.setQuantity(1);
-                job3.setRecruitmentPlan(plans.get(0));
+                job3.setRecruitmentPlan(plans.get(0)); // Q1 window
                 jobPositionRepository.save(job3);
                 
                 JobPosition job4 = new JobPosition();
                 job4.setTitle("Giáo viên Lý lớp 11");
                 job4.setDescription("Dạy Vật lý cho học sinh lớp 11, chuẩn bị kiến thức cho kỳ thi THPT. Yêu cầu: Tốt nghiệp đại học chuyên ngành Vật lý hoặc Sư phạm Vật lý, có phương pháp giảng dạy hiệu quả, khả năng truyền đạt tốt.");
-                job4.setSalaryRange("600,000-900,000 VNĐ/giờ");
+                job4.setSalaryRange("600000");
                 job4.setContractType("PART_TIME");
                 job4.setQuantity(1);
-                job4.setRecruitmentPlan(plans.get(0));
+                job4.setRecruitmentPlan(plans.get(0)); // Q1 window
                 jobPositionRepository.save(job4);
                 
                 // Kế hoạch 2: Đợt thứ hai - 4 vị trí (4 PART_TIME - Giáo viên)
                 JobPosition job5 = new JobPosition();
                 job5.setTitle("Giáo viên Hóa lớp 10");
                 job5.setDescription("Dạy Hóa học cho học sinh lớp 10, giúp học sinh nắm vững kiến thức cơ bản và chuẩn bị cho các năm học tiếp theo. Yêu cầu: Tốt nghiệp đại học chuyên ngành Hóa học hoặc Sư phạm Hóa học, có kinh nghiệm giảng dạy, nhiệt tình, tận tâm với học sinh.");
-                job5.setSalaryRange("600,000-900,000 VNĐ/giờ");
+                job5.setSalaryRange("600000");
                 job5.setContractType("PART_TIME");
                 job5.setQuantity(1);
-                job5.setRecruitmentPlan(plans.get(1));
+                job5.setRecruitmentPlan(plans.get(1)); // Q2 window
                 jobPositionRepository.save(job5);
                 
                 JobPosition job6 = new JobPosition();
                 job6.setTitle("Giáo viên Hóa lớp 11");
                 job6.setDescription("Dạy Hóa học cho học sinh lớp 11, giúp học sinh hiểu sâu các khái niệm hóa học và chuẩn bị kiến thức cho lớp 12. Yêu cầu: Tốt nghiệp đại học chuyên ngành Hóa học hoặc Sư phạm Hóa học, có phương pháp giảng dạy hiệu quả, khả năng truyền đạt tốt.");
-                job6.setSalaryRange("700,000-1,000,000 VNĐ/giờ");
+                job6.setSalaryRange("700000");
                 job6.setContractType("PART_TIME");
                 job6.setQuantity(1);
-                job6.setRecruitmentPlan(plans.get(1));
+                job6.setRecruitmentPlan(plans.get(1)); // Q2 window
                 jobPositionRepository.save(job6);
                 
                 JobPosition job7 = new JobPosition();
                 job7.setTitle("Giáo viên Hóa lớp 12");
                 job7.setDescription("Dạy Hóa học cho học sinh lớp 12, giúp học sinh hoàn thiện kiến thức và chuẩn bị tốt cho kỳ thi tốt nghiệp THPT. Yêu cầu: Tốt nghiệp đại học chuyên ngành Hóa học hoặc Sư phạm Hóa học, có kinh nghiệm giảng dạy, kiến thức chuyên môn vững vàng.");
-                job7.setSalaryRange("800,000-1,200,000 VNĐ/giờ");
+                job7.setSalaryRange("800000");
                 job7.setContractType("PART_TIME");
                 job7.setQuantity(1);
-                job7.setRecruitmentPlan(plans.get(1));
+                job7.setRecruitmentPlan(plans.get(1)); // Q2 window
                 jobPositionRepository.save(job7);
                 
                 JobPosition job8 = new JobPosition();
                 job8.setTitle("Giáo viên Tiếng Anh");
                 job8.setDescription("Dạy Tiếng Anh cho học sinh các cấp từ lớp 10-12, giúp học sinh phát triển kỹ năng nghe, nói, đọc, viết. Yêu cầu: Tốt nghiệp đại học chuyên ngành Tiếng Anh hoặc Sư phạm Tiếng Anh, có chứng chỉ IELTS 7.0+, có kinh nghiệm giảng dạy.");
-                job8.setSalaryRange("800,000-1,200,000 VNĐ/giờ");
+                job8.setSalaryRange("800000");
                 job8.setContractType("PART_TIME");
                 job8.setQuantity(1);
-                job8.setRecruitmentPlan(plans.get(1));
+                job8.setRecruitmentPlan(plans.get(1)); // Q2 window
                 jobPositionRepository.save(job8);
                 
                 // Kế hoạch 3: Đợt thứ ba - 5 vị trí (5 PART_TIME - Giáo viên)
@@ -1154,7 +1216,7 @@ seedEvidenceTemplates();
                 job9.setSalaryRange("600,000-900,000 VNĐ/giờ");
                 job9.setContractType("PART_TIME");
                 job9.setQuantity(1);
-                job9.setRecruitmentPlan(plans.get(2));
+                job9.setRecruitmentPlan(plans.get(2)); // Q3 window
                 jobPositionRepository.save(job9);
                 
                 JobPosition job10 = new JobPosition();
@@ -1163,7 +1225,7 @@ seedEvidenceTemplates();
                 job10.setSalaryRange("700,000-1,000,000 VNĐ/giờ");
                 job10.setContractType("PART_TIME");
                 job10.setQuantity(1);
-                job10.setRecruitmentPlan(plans.get(2));
+                job10.setRecruitmentPlan(plans.get(2)); // Q3 window
                 jobPositionRepository.save(job10);
                 
                 JobPosition job11 = new JobPosition();
@@ -1172,7 +1234,7 @@ seedEvidenceTemplates();
                 job11.setSalaryRange("800,000-1,200,000 VNĐ/giờ");
                 job11.setContractType("PART_TIME");
                 job11.setQuantity(1);
-                job11.setRecruitmentPlan(plans.get(2));
+                job11.setRecruitmentPlan(plans.get(2)); // Q3 window
                 jobPositionRepository.save(job11);
                 
                 JobPosition job12 = new JobPosition();
@@ -1181,7 +1243,7 @@ seedEvidenceTemplates();
                 job12.setSalaryRange("600,000-900,000 VNĐ/giờ");
                 job12.setContractType("PART_TIME");
                 job12.setQuantity(1);
-                job12.setRecruitmentPlan(plans.get(2));
+                job12.setRecruitmentPlan(plans.get(2)); // Q3 window
                 jobPositionRepository.save(job12);
                 
                 JobPosition job13 = new JobPosition();
@@ -1190,12 +1252,12 @@ seedEvidenceTemplates();
                 job13.setSalaryRange("700,000-1,000,000 VNĐ/giờ");
                 job13.setContractType("PART_TIME");
                 job13.setQuantity(1);
-                job13.setRecruitmentPlan(plans.get(2));
+                job13.setRecruitmentPlan(plans.get(2)); // Q3 window
                 jobPositionRepository.save(job13);
                 
                 log.info("✅ Created 13 job positions across 3 recruitment plans");
             } else {
-                log.error("❌ Not enough recruitment plans found for job positions");
+                log.error("❌ Không đủ kế hoạch tuyển dụng cho việc tạo vị trí công việc");
             }
         } else {
             log.info("✅ Job positions already seeded.");
@@ -1255,12 +1317,29 @@ seedEvidenceTemplates();
                 application.setAddress(addresses[i % addresses.length]);
                 application.setCvUrl("/static/sample_cv/cv" + (i + 1) + ".pdf");
                 // Mặc định PENDING; đặt một phần thành APPROVED để hiển thị ở tab "Lên lịch"
-                application.setStatus(i < 5 ? "APPROVED" : (i < 8 ? "PENDING" : "REJECTED"));
-                application.setCreatedAt(LocalDateTime.now().minusDays(i));
-                
-                // Đảm bảo có job position để gán
+                application.setStatus("PENDING");
+                // Đặt createdAt nằm trong khoảng thời gian của kế hoạch tuyển dụng tương ứng
                 JobPosition jobPosition = jobPositions.get(i % jobPositions.size());
                 application.setJobPosition(jobPosition);
+                try {
+                    LocalDate planStart = jobPosition.getRecruitmentPlan().getStartDate();
+                    LocalDate planEnd = jobPosition.getRecruitmentPlan().getEndDate();
+                    LocalDate today = LocalDate.now();
+                    LocalDate effectiveEnd = planEnd.isAfter(today) ? today : planEnd;
+                    if (effectiveEnd.isBefore(planStart)) {
+                        effectiveEnd = planStart; // nếu kế hoạch ở tương lai, lấy ngày bắt đầu
+                    }
+                    long days = java.time.temporal.ChronoUnit.DAYS.between(planStart, effectiveEnd);
+                    long safeDays = Math.max(0, days);
+                    long offset = (safeDays == 0) ? 0 : (i % (safeDays + 1));
+                    LocalDate chosen = planStart.plusDays(offset);
+                    if (chosen.isAfter(effectiveEnd)) {
+                        chosen = effectiveEnd;
+                    }
+                    application.setCreatedAt(chosen.atTime(9 + (i % 8), 0));
+                } catch (Exception ex) {
+                    application.setCreatedAt(LocalDateTime.now().minusDays(i));
+                }
                 
                 recruitmentApplicationRepository.save(application);
                 log.info("✅ Created application for {} applying to: {} (status={})", applicants[i][0], jobPosition.getTitle(), application.getStatus());
@@ -1713,7 +1792,7 @@ seedEvidenceTemplates();
             log.info("✅ Student User: ID={}, Email={}, Role={}, RoleId={}",
                 student.getId(), student.getEmail(), student.getRole(), student.getRoleId());
         } else {
-            log.error("❌ Student user not found!");
+            log.error("❌ Không tìm thấy người dùng STUDENT!");
         }
 
         // Check teacher user
@@ -1722,7 +1801,7 @@ seedEvidenceTemplates();
             log.info("✅ Teacher User: ID={}, Email={}, Role={}, RoleId={}",
                 teacher.getId(), teacher.getEmail(), teacher.getRole(), teacher.getRoleId());
         } else {
-            log.error("❌ Teacher user not found!");
+            log.error("❌ Không tìm thấy người dùng TEACHER!");
         }
 
         // Check classrooms and their teacher assignments
@@ -1924,7 +2003,7 @@ private void seedEvidenceTemplates() {
             log.info("✅ Created {} evidence templates", evidenceTemplateRepository.count());
             
         } catch (Exception e) {
-            log.error("❌ Error seeding evidence templates: {}", e.getMessage(), e);
+            log.error("❌ Lỗi khi seed mẫu minh chứng: {}", e.getMessage(), e);
         }
     } else {
         log.info("✅ Evidence templates already seeded. Count: {}", evidenceTemplateRepository.count());

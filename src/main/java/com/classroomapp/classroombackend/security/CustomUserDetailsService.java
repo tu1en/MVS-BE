@@ -53,8 +53,8 @@ public class CustomUserDetailsService implements UserDetailsService {
         }
 
         User user = userOptional.orElseThrow(() -> {
-            log.error("CustomUserDetailsService - User not found with identifier: {}", usernameOrEmail);
-            return new UsernameNotFoundException("User not found with identifier: " + usernameOrEmail);
+            log.error("CustomUserDetailsService - Không tìm thấy người dùng với định danh: {}", usernameOrEmail);
+            return new UsernameNotFoundException("Không tìm thấy người dùng với định danh: " + usernameOrEmail);
         });
 
         log.info("CustomUserDetailsService - Found user: ID={}, Username={}, Email={}, RoleId={}",

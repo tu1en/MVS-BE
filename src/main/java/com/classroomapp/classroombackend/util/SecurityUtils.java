@@ -30,7 +30,7 @@ public class SecurityUtils {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             
             if (authentication == null || !authentication.isAuthenticated()) {
-                log.warn("No authenticated user found in security context");
+                log.warn("Không tìm thấy người dùng đã xác thực trong security context");
                 return null;
             }
             
@@ -52,15 +52,15 @@ public class SecurityUtils {
                     }
                 }
                 
-                log.warn("User not found with username/email: {}", username);
+                log.warn("Không tìm thấy người dùng với username/email: {}", username);
                 return null;
             }
             
-            log.warn("Principal is not an instance of UserDetails: {}", principal.getClass());
+            log.warn("Principal không phải là một instance của UserDetails: {}", principal.getClass());
             return null;
             
         } catch (Exception e) {
-            log.error("Error getting current user ID", e);
+            log.error("Lỗi khi lấy ID người dùng hiện tại", e);
             return null;
         }
     }
@@ -116,7 +116,7 @@ public class SecurityUtils {
             return null;
             
         } catch (Exception e) {
-            log.error("Error getting current user", e);
+            log.error("Lỗi khi lấy người dùng hiện tại", e);
             return null;
         }
     }
@@ -274,7 +274,7 @@ public class SecurityUtils {
             return null;
             
         } catch (Exception e) {
-            log.error("Error getting current username", e);
+            log.error("Lỗi khi lấy tên đăng nhập hiện tại", e);
             return null;
         }
     }
@@ -287,7 +287,7 @@ public class SecurityUtils {
     public User getCurrentUserRequired() {
         User user = getCurrentUser();
         if (user == null) {
-            throw new RuntimeException("User not authenticated or not found");
+            throw new RuntimeException("Người dùng chưa xác thực hoặc không tìm thấy");
         }
         return user;
     }
@@ -300,7 +300,7 @@ public class SecurityUtils {
     public Long getCurrentUserIdRequired() {
         Long userId = getCurrentUserId();
         if (userId == null) {
-            throw new RuntimeException("User not authenticated or not found");
+            throw new RuntimeException("Người dùng chưa xác thực hoặc không tìm thấy");
         }
         return userId;
     }
@@ -417,7 +417,7 @@ public class SecurityUtils {
                                role.equals("ROLE_ADMIN") || 
                                role.equals("ROLE_ACCOUNTANT"));
         } catch (Exception e) {
-            log.warn("Error checking staff role: {}", e.getMessage());
+            log.warn("Lỗi khi kiểm tra vai trò nhân sự: {}", e.getMessage());
             return false;
         }
     }
@@ -448,7 +448,7 @@ public class SecurityUtils {
                                role.equals("ROLE_ADMIN") || 
                                role.equals("ROLE_ACCOUNTANT"));
         } catch (Exception e) {
-            log.warn("Error checking admin staff role: {}", e.getMessage());
+            log.warn("Lỗi khi kiểm tra vai trò nhân sự hành chính: {}", e.getMessage());
             return false;
         }
     }
@@ -477,7 +477,7 @@ public class SecurityUtils {
                 .findFirst()
                 .orElse(null);
         } catch (Exception e) {
-            log.warn("Error getting user role: {}", e.getMessage());
+            log.warn("Lỗi khi lấy vai trò người dùng: {}", e.getMessage());
             return null;
         }
     }

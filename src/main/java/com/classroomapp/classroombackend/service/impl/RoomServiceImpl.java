@@ -86,7 +86,7 @@ public class RoomServiceImpl implements RoomService {
         if (room.isPresent()) {
             return convertToDto(room.get());
         }
-        throw new RuntimeException("Room not found with ID: " + roomId);
+        throw new RuntimeException("Không tìm thấy phòng với ID: " + roomId);
     }
     
     @Override
@@ -96,7 +96,7 @@ public class RoomServiceImpl implements RoomService {
         if (room.isPresent()) {
             return convertToDto(room.get());
         }
-        throw new RuntimeException("Room not found with code: " + roomCode);
+        throw new RuntimeException("Không tìm thấy phòng với mã: " + roomCode);
     }
     
     @Override
@@ -105,7 +105,7 @@ public class RoomServiceImpl implements RoomService {
         
         // Check if room code already exists
         if (roomRepository.existsByRoomCode(roomDto.getRoomCode())) {
-            throw new RuntimeException("Room with code " + roomDto.getRoomCode() + " already exists");
+            throw new RuntimeException("Phòng với mã " + roomDto.getRoomCode() + " đã tồn tại");
         }
         
         Room room = convertToEntity(roomDto);
@@ -122,7 +122,7 @@ public class RoomServiceImpl implements RoomService {
         
         Optional<Room> existingRoom = roomRepository.findById(roomId);
         if (!existingRoom.isPresent()) {
-            throw new RuntimeException("Room not found with ID: " + roomId);
+            throw new RuntimeException("Không tìm thấy phòng với ID: " + roomId);
         }
         
         Room room = existingRoom.get();
@@ -130,7 +130,7 @@ public class RoomServiceImpl implements RoomService {
         // Check if room code is being changed and if new code already exists
         if (!room.getRoomCode().equals(roomDto.getRoomCode()) && 
             roomRepository.existsByRoomCode(roomDto.getRoomCode())) {
-            throw new RuntimeException("Room with code " + roomDto.getRoomCode() + " already exists");
+            throw new RuntimeException("Phòng với mã " + roomDto.getRoomCode() + " đã tồn tại");
         }
         
         // Update fields
@@ -154,7 +154,7 @@ public class RoomServiceImpl implements RoomService {
         
         Optional<Room> room = roomRepository.findById(roomId);
         if (!room.isPresent()) {
-            throw new RuntimeException("Room not found with ID: " + roomId);
+            throw new RuntimeException("Không tìm thấy phòng với ID: " + roomId);
         }
         
         Room roomEntity = room.get();
@@ -177,7 +177,7 @@ public class RoomServiceImpl implements RoomService {
             // Check if room exists and is active
             Optional<Room> room = roomRepository.findById(request.getRoomId());
             if (!room.isPresent() || !room.get().getIsActive()) {
-                return new RoomAvailabilityResponseDto(false, "Room not found or inactive");
+                return new RoomAvailabilityResponseDto(false, "Không tìm thấy phòng hoặc phòng đang bị vô hiệu hóa");
             }
             
             // Check for conflicting classes
@@ -185,10 +185,10 @@ public class RoomServiceImpl implements RoomService {
                 request.getRoomId(), date, request.getExcludeClassId());
             
             if (conflictingClasses.isEmpty()) {
-                return new RoomAvailabilityResponseDto(true, "Room is available");
+                return new RoomAvailabilityResponseDto(true, "Phòng trống");
             } else {
                 List<String> conflicts = conflictingClasses.stream()
-                    .map(cls -> String.format("Class '%s' conflicts with requested time slot", 
+                    .map(cls -> String.format("Lớp '%s' bị trùng với khung thời gian yêu cầu", 
                                            cls.getClassName()))
                     .collect(Collectors.toList());
                 
@@ -196,8 +196,8 @@ public class RoomServiceImpl implements RoomService {
             }
             
         } catch (Exception e) {
-            log.error("Error checking room availability: {}", e.getMessage(), e);
-            return new RoomAvailabilityResponseDto(false, "Error checking availability: " + e.getMessage());
+            log.error("Lỗi khi kiểm tra tình trạng phòng: {}", e.getMessage(), e);
+            return new RoomAvailabilityResponseDto(false, "Lỗi khi kiểm tra tình trạng phòng: " + e.getMessage());
         }
     }
     
@@ -230,8 +230,8 @@ public class RoomServiceImpl implements RoomService {
                           .collect(Collectors.toList());
                           
         } catch (Exception e) {
-            log.error("Error searching for available rooms: {}", e.getMessage(), e);
-            throw new RuntimeException("Error searching for available rooms: " + e.getMessage());
+            log.error("Lỗi khi tìm kiếm phòng trống: {}", e.getMessage(), e);
+            throw new RuntimeException("Lỗi khi tìm kiếm phòng trống: " + e.getMessage());
         }
     }
     
@@ -250,8 +250,8 @@ public class RoomServiceImpl implements RoomService {
                          .collect(Collectors.toList());
                          
         } catch (Exception e) {
-            log.error("Error getting room schedule: {}", e.getMessage(), e);
-            throw new RuntimeException("Error getting room schedule: " + e.getMessage());
+            log.error("Lỗi khi lấy lịch phòng: {}", e.getMessage(), e);
+            throw new RuntimeException("Lỗi khi lấy lịch phòng: " + e.getMessage());
         }
     }
     
@@ -270,8 +270,8 @@ public class RoomServiceImpl implements RoomService {
                          .collect(Collectors.toList());
                          
         } catch (Exception e) {
-            log.error("Error getting multiple rooms schedule: {}", e.getMessage(), e);
-            throw new RuntimeException("Error getting multiple rooms schedule: " + e.getMessage());
+            log.error("Lỗi khi lấy lịch cho nhiều phòng: {}", e.getMessage(), e);
+            throw new RuntimeException("Lỗi khi lấy lịch cho nhiều phòng: " + e.getMessage());
         }
     }
     

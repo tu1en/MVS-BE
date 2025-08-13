@@ -55,7 +55,7 @@ public class CriticalFixesTestRunner implements ApplicationRunner {
             log.info("🎉 [CriticalFixesTestRunner] All critical fixes verified successfully!");
 
         } catch (Exception e) {
-            log.error("❌ [CriticalFixesTestRunner] Critical fix verification failed: {}", e.getMessage(), e);
+            log.error("❌ [CriticalFixesTestRunner] Kiểm tra bản sửa lỗi quan trọng thất bại: {}", e.getMessage(), e);
             throw e;
         }
     }

@@ -52,6 +52,9 @@ public class User {
     @Column(name = "phone_number", length = 20)
     private String phoneNumber;
 
+    @Column(name = "gender", length = 16)
+    private String gender; // MALE, FEMALE, OTHER (nullable)
+
     @Column(name = "role_id")
     private Integer roleId;
 

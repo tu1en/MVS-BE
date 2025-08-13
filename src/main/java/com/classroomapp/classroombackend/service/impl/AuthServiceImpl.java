@@ -79,7 +79,7 @@ public class AuthServiceImpl implements AuthService {
             
             // Get user details
             User user = userRepository.findByUsername(loginRequest.getUsername())
-                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
             
             // Generate token - FIX: Use email as the primary subject for the token
             String token = generateToken(user.getEmail(), user.getRoleId(), user.getEmail());
@@ -99,8 +99,8 @@ public class AuthServiceImpl implements AuthService {
                     .userId(user.getId())
                     .build();
         } catch (BadCredentialsException e) {
-            log.error("Authentication failed for user {}: {}", loginRequest.getUsername(), e.getMessage());
-            throw new IllegalArgumentException("Invalid username or password");
+            log.error("Xác thực thất bại cho người dùng {}: {}", loginRequest.getUsername(), e.getMessage());
+            throw new IllegalArgumentException("Tên đăng nhập hoặc mật khẩu không hợp lệ");
         }
     }
 
@@ -111,13 +111,13 @@ public class AuthServiceImpl implements AuthService {
         // Check if username already exists
         if (userService.IsUsernameExists(registerDto.getUsername())) {
             log.warn("Registration failed: Username {} already exists", registerDto.getUsername());
-            throw new IllegalArgumentException("Username already taken");
+            throw new IllegalArgumentException("Tên đăng nhập đã được sử dụng");
         }
 
         // Check if email already exists
         if (userService.IsEmailExists(registerDto.getEmail())) {
             log.warn("Registration failed: Email {} already registered", registerDto.getEmail());
-            throw new IllegalArgumentException("Email already registered");
+            throw new IllegalArgumentException("Email đã được đăng ký");
         }
 
         // Create new user
@@ -176,8 +176,8 @@ public class AuthServiceImpl implements AuthService {
                     .userId(user.getId())
                     .build();
         } catch (FirebaseAuthException e) {
-            log.error("Google authentication failed: {}", e.getMessage());
-            throw new IllegalArgumentException("Invalid Google ID token", e);
+            log.error("Xác thực Google thất bại: {}", e.getMessage());
+            throw new IllegalArgumentException("Mã Google ID không hợp lệ", e);
         }
     }
 
@@ -186,7 +186,7 @@ public class AuthServiceImpl implements AuthService {
         log.info("Password reset requested for email: {}", passwordResetRequest.getEmail());
         
         User user = userRepository.findByEmail(passwordResetRequest.getEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
 
         // Generate a password reset token
         String resetToken = generateToken(user.getUsername(), user.getRoleId(), user.getEmail());
@@ -201,8 +201,8 @@ public class AuthServiceImpl implements AuthService {
         
         // Validate token
         if (!jwtUtil.validateToken(passwordConfirmation.getToken())) {
-            log.warn("Invalid or expired password reset token");
-            throw new IllegalArgumentException("Invalid or expired token");
+            log.warn("Token đặt lại mật khẩu không hợp lệ hoặc đã hết hạn");
+            throw new IllegalArgumentException("Token không hợp lệ hoặc đã hết hạn");
         }
 
         // Get username from token

@@ -113,11 +113,11 @@ public class StaffShiftAssignmentService {
         }
         
         if (effectiveFrom == null) {
-            throw new IllegalArgumentException("Effective from date is required");
+            throw new IllegalArgumentException("Cần cung cấp ngày hiệu lực từ");
         }
         
         if (effectiveUntil != null && effectiveUntil.isBefore(effectiveFrom)) {
-            throw new IllegalArgumentException("Effective until date must be after or equal to effective from date");
+            throw new IllegalArgumentException("Ngày hiệu lực đến phải sau hoặc bằng ngày hiệu lực từ");
         }
         
         // Check for overlapping assignments

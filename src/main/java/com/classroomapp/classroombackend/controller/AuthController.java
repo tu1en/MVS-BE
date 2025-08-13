@@ -90,9 +90,9 @@ public class AuthController {
                     .orElse(userRepository.findByEmail(username).orElse(null));
             
             if (user == null) {
-                System.out.println("User not found: " + username);
+                System.out.println("Không tìm thấy người dùng: " + username);
                 Map<String, String> errorResponse = new HashMap<>();
-                errorResponse.put("error", "User not found");
+                errorResponse.put("error", "Không tìm thấy người dùng");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
             }
 
@@ -101,9 +101,9 @@ public class AuthController {
             System.out.println("Password encoder matches: " + passwordEncoder.matches(password, user.getPassword()));
 
             if (!passwordEncoder.matches(password, user.getPassword())) {
-                System.out.println("Invalid password for user: " + username);
+                System.out.println("Mật khẩu không hợp lệ cho người dùng: " + username);
                 Map<String, String> errorResponse = new HashMap<>();
-                errorResponse.put("error", "Invalid password");
+                errorResponse.put("error", "Mật khẩu không hợp lệ");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
             }
 
@@ -143,7 +143,7 @@ public class AuthController {
         } catch (Exception e) {
             System.out.println("Login error: " + e.getMessage());
             Map<String, String> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Login failed: " + e.getMessage());
+            errorResponse.put("error", "Đăng nhập thất bại: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }    /**
@@ -157,7 +157,7 @@ public class AuthController {
         String email = request.get("email");
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng"));
 
         // Generate a password reset token with claims
         String roleName = jwtUtil.convertRoleIdToName(user.getRoleId());
@@ -316,7 +316,7 @@ public class AuthController {
         }
         
         if (username == null) {
-             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
+             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Người dùng chưa xác thực");
         }
 
         String oldPassword = request.get("oldPassword");

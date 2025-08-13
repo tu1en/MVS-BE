@@ -39,7 +39,7 @@ public class RequestServiceImpl implements RequestService {
     @Override
     public void createRegistrationRequest(CreateRequestDto dto) {
         if (requestRepository.existsByEmailAndStatusIn(dto.getEmail(), List.of("PENDING", "APPROVED")) || userRepository.existsByEmail(dto.getEmail())) {
-            throw new BusinessLogicException("An account with this email already exists or is pending approval.");
+            throw new BusinessLogicException("Đã tồn tại tài khoản với email này hoặc đang chờ phê duyệt.");
         }
 
         Request newRequest = new Request();
@@ -60,7 +60,7 @@ public class RequestServiceImpl implements RequestService {
                 newRequest.getRequestedRole()
             );
         } catch (Exception e) {
-            log.error("Failed to send confirmation email", e);
+            log.error("Gửi email xác nhận thất bại", e);
         }
     }
 
@@ -69,7 +69,7 @@ public class RequestServiceImpl implements RequestService {
     public RequestResponseDTO createRequest(RequestDTO requestDTO) {
         // Check if there's already an active request
         if (hasActiveRequest(requestDTO.getEmail(), requestDTO.getRequestedRole())) {
-            throw new BusinessLogicException("Already has an active request for this role");
+            throw new BusinessLogicException("Đã có một yêu cầu đang hoạt động cho vai trò này");
         }
 
         Request request = new Request();
@@ -91,7 +91,7 @@ public class RequestServiceImpl implements RequestService {
                 request.getRequestedRole()
             );
         } catch (Exception e) {
-            log.error("Failed to send confirmation email", e);
+            log.error("Gửi email xác nhận thất bại", e);
             // Don't fail the request if email fails
         }
 
@@ -104,12 +104,12 @@ public class RequestServiceImpl implements RequestService {
         log.info("Starting approval process for request ID: {}", requestId);
         
         Request request = requestRepository.findById(requestId)
-                .orElseThrow(() -> new BusinessLogicException("Request not found with ID: " + requestId));
+                .orElseThrow(() -> new BusinessLogicException("Không tìm thấy yêu cầu với ID: " + requestId));
         log.info("Found request: {}", request);
 
         if (!"PENDING".equals(request.getStatus())) {
-            log.warn("Request {} is not in PENDING status. Current status: {}", requestId, request.getStatus());
-            throw new BusinessLogicException("Request is not in PENDING status. Current status: " + request.getStatus());
+            log.warn("Yêu cầu {} không ở trạng thái PENDING. Trạng thái hiện tại: {}", requestId, request.getStatus());
+            throw new BusinessLogicException("Yêu cầu không ở trạng thái PENDING. Trạng thái hiện tại: " + request.getStatus());
         }
 
         // Create User from Request info
@@ -152,7 +152,7 @@ public class RequestServiceImpl implements RequestService {
             emailService.sendApprovalEmail(newUser.getEmail(), newUser.getFullName(), roleNameForEmail, randomPassword);
             log.info("Successfully sent approval notification for request {}", requestId);
         } catch (Exception e) {
-            log.error("Failed to send approval email for request {}: {}", requestId, e.getMessage(), e);
+            log.error("Gửi email phê duyệt cho yêu cầu {} thất bại: {}", requestId, e.getMessage(), e);
         }
 
         RequestResponseDTO responseDTO = convertToDTO(savedRequest);
@@ -164,10 +164,10 @@ public class RequestServiceImpl implements RequestService {
     @Transactional
     public RequestResponseDTO rejectRequest(Long requestId, String reason) {
         Request request = requestRepository.findById(requestId)
-                .orElseThrow(() -> new RuntimeException("Request not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu"));
 
         if (!"PENDING".equals(request.getStatus())) {
-            throw new RuntimeException("Request is not in PENDING status");
+            throw new RuntimeException("Yêu cầu không ở trạng thái PENDING");
         }
 
         request.setStatus("REJECTED");
@@ -184,7 +184,7 @@ public class RequestServiceImpl implements RequestService {
                 reason
             );
         } catch (Exception e) {
-            log.error("Failed to send rejection email", e);
+            log.error("Gửi email từ chối thất bại", e);
             // Don't fail the rejection if email fails
         }
 
@@ -213,7 +213,7 @@ public class RequestServiceImpl implements RequestService {
     @Override
     public RequestResponseDTO getRequestDetails(Long requestId) {
         Request request = requestRepository.findById(requestId)
-                .orElseThrow(() -> new RuntimeException("Request not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu"));
         return convertToDTO(request);
     }
 
@@ -236,8 +236,8 @@ public class RequestServiceImpl implements RequestService {
         log.info("Found request: {}", request);
 
         if (!"PENDING".equals(request.getStatus())) {
-            log.warn("Request {} is not in PENDING status. Current status: {}", requestId, request.getStatus());
-            throw new RuntimeException("Request is not in PENDING status. Current status: " + request.getStatus());
+            log.warn("Yêu cầu {} không ở trạng thái PENDING. Trạng thái hiện tại: {}", requestId, request.getStatus());
+            throw new RuntimeException("Yêu cầu không ở trạng thái PENDING. Trạng thái hiện tại: " + request.getStatus());
         }
 
         log.info("Setting request {} status to APPROVED", requestId);
@@ -245,7 +245,7 @@ public class RequestServiceImpl implements RequestService {
         request.setProcessedAt(LocalDateTime.now());
         
         // Skip user creation/update
-        log.info("SKIPPING user creation/update for testing purposes");
+        log.info("BỎ QUA tạo/cập nhật người dùng cho mục đích kiểm thử");
         
         // Send approval notification
         try {
@@ -259,7 +259,7 @@ public class RequestServiceImpl implements RequestService {
             );
             log.info("Successfully sent approval notification for request {}", requestId);
         } catch (Exception e) {
-            log.error("Failed to send approval email for request {}: {}", requestId, e.getMessage(), e);
+            log.error("Gửi email phê duyệt cho yêu cầu {} thất bại: {}", requestId, e.getMessage(), e);
             // Don't fail the approval if email fails
         }
 

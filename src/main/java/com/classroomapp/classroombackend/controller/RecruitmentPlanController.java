@@ -59,12 +59,14 @@ public class RecruitmentPlanController {
     }
     
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteRecruitmentPlan(@PathVariable Long id) {
+    public ResponseEntity<?> deleteRecruitmentPlan(@PathVariable Long id) {
         try {
             recruitmentPlanService.deleteRecruitmentPlan(id);
             return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body("Không thể xoá kế hoạch tuyển dụng.");
         }
     }
     

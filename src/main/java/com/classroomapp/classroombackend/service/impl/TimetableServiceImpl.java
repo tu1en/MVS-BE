@@ -54,7 +54,7 @@ public class TimetableServiceImpl implements TimetableService {
     @Transactional(readOnly = true)
     public TimetableEventDto getEventById(Long eventId) {
         TimetableEvent event = timetableEventRepository.findById(eventId)
-                .orElseThrow(() -> new RuntimeException("Event not found with id: " + eventId));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy sự kiện với id: " + eventId));
         return convertToDto(event);
     }
 
@@ -169,7 +169,7 @@ public class TimetableServiceImpl implements TimetableService {
     @Transactional
     public TimetableEventDto updateEvent(Long eventId, CreateEventDto updateDto) {
         TimetableEvent event = timetableEventRepository.findById(eventId)
-                .orElseThrow(() -> new RuntimeException("Event not found with id: " + eventId));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy sự kiện với id: " + eventId));
         
         // Update fields
         if (updateDto.getTitle() != null) {
@@ -222,7 +222,7 @@ public class TimetableServiceImpl implements TimetableService {
     @Transactional
     public TimetableEventDto cancelEvent(Long eventId) {
         TimetableEvent event = timetableEventRepository.findById(eventId)
-                .orElseThrow(() -> new RuntimeException("Event not found with id: " + eventId));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy sự kiện với id: " + eventId));
         
         event.setIsCancelled(true);
         event.setUpdatedAt(LocalDateTime.now());

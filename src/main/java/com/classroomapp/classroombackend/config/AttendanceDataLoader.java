@@ -207,6 +207,7 @@ public class AttendanceDataLoader implements CommandLineRunner {
             case 3 -> "MANAGER";
             case 4 -> "ADMIN";
             case 5 -> "ACCOUNTANT";
+            case 6 -> "PARENT";
             default -> "STAFF";
         };
     }

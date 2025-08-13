@@ -48,15 +48,22 @@ public class RecruitmentPlanService {
     }
     
     public RecruitmentPlan createRecruitmentPlan(RecruitmentPlan plan) {
+        // Validate title max length 50
+        if (plan.getTitle() != null && plan.getTitle().length() > 50) {
+            throw new IllegalArgumentException("Tên kế hoạch tối đa 50 ký tự!");
+        }
         // Kiểm tra startDate không được trong quá khứ
         if (plan.getStartDate().isBefore(LocalDate.now())) {
-            throw new IllegalArgumentException("Start date cannot be in the past");
+            throw new IllegalArgumentException("Ngày bắt đầu không được trong quá khứ");
         }
         
         // Kiểm tra endDate phải sau startDate
         if (plan.getEndDate().isBefore(plan.getStartDate())) {
-            throw new IllegalArgumentException("End date must be after start date");
+            throw new IllegalArgumentException("Ngày kết thúc phải sau ngày bắt đầu");
         }
+        
+        // Không được chồng chéo với bất kỳ kế hoạch nào khác
+        validateNoOverlap(plan.getStartDate(), plan.getEndDate(), null);
         
         // Tự động tính totalQuantity từ các vị trí (ban đầu = 0)
         plan.setTotalQuantity(0);
@@ -72,21 +79,31 @@ public class RecruitmentPlanService {
     public RecruitmentPlan updateRecruitmentPlan(Long id, RecruitmentPlan plan) {
         RecruitmentPlan existingPlan = recruitmentPlanRepository.findById(id).orElse(null);
         if (existingPlan == null) {
-            throw new IllegalArgumentException("Recruitment plan not found");
+            throw new IllegalArgumentException("Không tìm thấy kế hoạch tuyển dụng");
         }
         
         // Kiểm tra startDate không được trong quá khứ
         if (plan.getStartDate().isBefore(LocalDate.now())) {
-            throw new IllegalArgumentException("Start date cannot be in the past");
+            throw new IllegalArgumentException("Ngày bắt đầu không được trong quá khứ");
         }
         
         // Kiểm tra endDate phải sau startDate
         if (plan.getEndDate().isBefore(plan.getStartDate())) {
-            throw new IllegalArgumentException("End date must be after start date");
+            throw new IllegalArgumentException("Ngày kết thúc phải sau ngày bắt đầu");
         }
         
+        // Không được chồng chéo với bất kỳ kế hoạch nào khác (bỏ qua chính nó)
+        validateNoOverlap(plan.getStartDate(), plan.getEndDate(), id);
+        
+        // Validate title max length 50
+        if (plan.getTitle() != null && plan.getTitle().length() > 50) {
+            throw new IllegalArgumentException("Tên kế hoạch tối đa 50 ký tự!");
+        }
         existingPlan.setTitle(plan.getTitle());
-        existingPlan.setStartDate(plan.getStartDate());
+        // Nếu ngày bắt đầu đã qua, không cho sửa startDate
+        if (!existingPlan.getStartDate().isBefore(LocalDate.now())) {
+            existingPlan.setStartDate(plan.getStartDate());
+        }
         existingPlan.setEndDate(plan.getEndDate());
         existingPlan.setStatus(plan.getStatus());
         existingPlan.setUpdatedAt(java.time.LocalDateTime.now());
@@ -102,7 +119,24 @@ public class RecruitmentPlanService {
         return recruitmentPlanRepository.save(existingPlan);
     }
     
+    private void validateNoOverlap(LocalDate newStart, LocalDate newEnd, Long excludeId) {
+        List<RecruitmentPlan> all = recruitmentPlanRepository.findAll();
+        for (RecruitmentPlan p : all) {
+            if (excludeId != null && p.getId().equals(excludeId)) continue;
+            LocalDate s = p.getStartDate();
+            LocalDate e = p.getEndDate();
+            boolean overlaps = !(newEnd.isBefore(s) || newStart.isAfter(e));
+            if (overlaps) {
+                throw new IllegalArgumentException("Recruitment plan dates overlap with existing plan: " + p.getTitle());
+            }
+        }
+    }
+    
     public void deleteRecruitmentPlan(Long id) {
+        RecruitmentPlan plan = recruitmentPlanRepository.findById(id).orElse(null);
+        if (plan != null && !plan.getStartDate().isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("Kế hoạch đã bắt đầu, không thể xoá.");
+        }
         // Xóa các vị trí liên quan
         jobPositionRepository.deleteByRecruitmentPlanId(id);
         
@@ -115,7 +149,7 @@ public class RecruitmentPlanService {
     public RecruitmentPlan changeStatus(Long id, RecruitmentPlan.Status status) {
         RecruitmentPlan plan = recruitmentPlanRepository.findById(id).orElse(null);
         if (plan == null) {
-            throw new IllegalArgumentException("Recruitment plan not found");
+            throw new IllegalArgumentException("Không tìm thấy kế hoạch tuyển dụng");
         }
         
         plan.setStatus(status);
@@ -155,6 +189,10 @@ public class RecruitmentPlanService {
                 plan.getEndDate().isBefore(today)) {
                 plan.setStatus(RecruitmentPlan.Status.CLOSED);
                 shouldUpdate = true;
+                try {
+                    // Xóa toàn bộ đơn ứng tuyển thuộc các vị trí của kế hoạch này
+                    recruitmentApplicationRepository.deleteByJobPosition_RecruitmentPlanId(plan.getId());
+                } catch (Exception ignored) {}
             }
             
             // Mở kế hoạch khi đến ngày bắt đầu
@@ -179,16 +217,29 @@ public class RecruitmentPlanService {
         }
     }
     
-    // Scan và đóng các kế hoạch có ngày bắt đầu trong tương lai
+    // Scan và chuẩn hoá trạng thái kế hoạch (đóng kế hoạch chưa đến ngày mở, và kế hoạch đã hết hạn)
     @Transactional
     public void scanAndCloseFuturePlans() {
         LocalDate today = LocalDate.now();
         List<RecruitmentPlan> allPlans = recruitmentPlanRepository.findAll();
         
         for (RecruitmentPlan plan : allPlans) {
-            if (plan.getStatus() == RecruitmentPlan.Status.OPEN && 
-                plan.getStartDate().isAfter(today)) {
+            boolean changed = false;
+            // Đóng kế hoạch OPEN nhưng ngày bắt đầu còn ở tương lai
+            if (plan.getStatus() == RecruitmentPlan.Status.OPEN && plan.getStartDate().isAfter(today)) {
                 plan.setStatus(RecruitmentPlan.Status.CLOSED);
+                changed = true;
+            }
+            // Đóng kế hoạch OPEN nhưng đã quá ngày kết thúc
+            if (plan.getStatus() == RecruitmentPlan.Status.OPEN && plan.getEndDate().isBefore(today)) {
+                plan.setStatus(RecruitmentPlan.Status.CLOSED);
+                changed = true;
+                try {
+                    // Xoá toàn bộ đơn ứng tuyển thuộc kế hoạch này
+                    recruitmentApplicationRepository.deleteByJobPosition_RecruitmentPlanId(plan.getId());
+                } catch (Exception ignored) {}
+            }
+            if (changed) {
                 plan.setUpdatedAt(java.time.LocalDateTime.now());
                 recruitmentPlanRepository.save(plan);
             }

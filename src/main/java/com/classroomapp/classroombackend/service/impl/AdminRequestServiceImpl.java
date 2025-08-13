@@ -39,7 +39,7 @@ public class AdminRequestServiceImpl implements AdminRequestService {
     @Override
     public RequestDTO approveRequest(Long id) {
         Request request = requestRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Request not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy yêu cầu với id: " + id));
         // Logic to approve request and create user
         request.setStatus("COMPLETED");
         request.setResultStatus("APPROVED");
@@ -87,7 +87,7 @@ public class AdminRequestServiceImpl implements AdminRequestService {
     @Override
     public RequestDTO rejectRequest(Long id, String reason) {
         Request request = requestRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Request not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy yêu cầu với id: " + id));
         request.setStatus("COMPLETED");
         request.setResultStatus("REJECTED");
         request.setRejectReason(reason);

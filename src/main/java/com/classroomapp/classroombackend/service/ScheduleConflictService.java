@@ -98,8 +98,8 @@ public class ScheduleConflictService {
             return conflicts;
             
         } catch (Exception e) {
-            log.error("Error checking schedule conflicts: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to check schedule conflicts: " + e.getMessage());
+            log.error("Lỗi khi kiểm tra xung đột lịch: {}", e.getMessage(), e);
+            throw new RuntimeException("Kiểm tra xung đột lịch thất bại: " + e.getMessage());
         }
     }
 

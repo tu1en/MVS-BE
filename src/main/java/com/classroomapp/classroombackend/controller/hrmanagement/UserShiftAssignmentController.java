@@ -67,14 +67,14 @@ public class UserShiftAssignmentController {
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
             
         } catch (IllegalArgumentException e) {
-            log.error("Error creating shift assignments: {}", e.getMessage());
+            log.error("Lỗi khi tạo phân công ca: {}", e.getMessage());
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", e.getMessage());
             return ResponseEntity.badRequest().body(response);
             
         } catch (Exception e) {
-            log.error("Unexpected error creating shift assignments", e);
+            log.error("Lỗi không xác định khi tạo phân công ca", e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "CÃ³ lá»—i xáº£y ra khi táº¡o phÃ¢n cÃ´ng ca lÃ m viá»‡c");
@@ -102,14 +102,14 @@ public class UserShiftAssignmentController {
             return ResponseEntity.ok(response);
             
         } catch (IllegalArgumentException e) {
-            log.error("Error updating shift assignment: {}", e.getMessage());
+            log.error("Lỗi khi cập nhật phân công ca: {}", e.getMessage());
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", e.getMessage());
             return ResponseEntity.badRequest().body(response);
             
         } catch (Exception e) {
-            log.error("Unexpected error updating shift assignment", e);
+            log.error("Lỗi không xác định khi cập nhật phân công ca", e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "CÃ³ lá»—i xáº£y ra khi cáº­p nháº­t phÃ¢n cÃ´ng ca lÃ m viá»‡c");
@@ -139,7 +139,7 @@ public class UserShiftAssignmentController {
             return ResponseEntity.notFound().build();
             
         } catch (Exception e) {
-            log.error("Error getting shift assignment by ID: {}", id, e);
+            log.error("Lỗi khi lấy phân công ca theo ID: {}", id, e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "CÃ³ lá»—i xáº£y ra khi láº¥y thÃ´ng tin phÃ¢n cÃ´ng ca lÃ m viá»‡c");
@@ -184,7 +184,7 @@ public class UserShiftAssignmentController {
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
-            log.error("Error getting shift assignments", e);
+            log.error("Lỗi khi lấy danh sách phân công ca", e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "CÃ³ lá»—i xáº£y ra khi láº¥y danh sÃ¡ch phÃ¢n cÃ´ng ca lÃ m viá»‡c");
@@ -210,7 +210,7 @@ public class UserShiftAssignmentController {
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
-            log.error("Error getting assignments by user: {}", userId, e);
+            log.error("Lỗi khi lấy phân công ca theo người dùng: {}", userId, e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "CÃ³ lá»—i xáº£y ra khi láº¥y phÃ¢n cÃ´ng ca cá»§a ngÆ°á»i dÃ¹ng");
@@ -236,7 +236,7 @@ public class UserShiftAssignmentController {
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
-            log.error("Error getting assignments by shift: {}", shiftId, e);
+            log.error("Lỗi khi lấy phân công ca theo ca làm việc: {}", shiftId, e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "CÃ³ lá»—i xáº£y ra khi láº¥y phÃ¢n cÃ´ng ca cá»§a ca lÃ m viá»‡c");
@@ -263,7 +263,7 @@ public class UserShiftAssignmentController {
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
-            log.error("Error getting assignments for date: {}", date, e);
+            log.error("Lỗi khi lấy phân công ca theo ngày: {}", date, e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "CÃ³ lá»—i xáº£y ra khi láº¥y phÃ¢n cÃ´ng ca theo ngÃ y");
@@ -288,7 +288,7 @@ public class UserShiftAssignmentController {
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
-            log.error("Error getting eligible users", e);
+            log.error("Lỗi khi lấy danh sách người dùng đủ điều kiện", e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "CÃ³ lá»—i xáº£y ra khi láº¥y danh sÃ¡ch ngÆ°á»i dÃ¹ng cÃ³ thá»ƒ phÃ¢n cÃ´ng");
@@ -319,7 +319,7 @@ public class UserShiftAssignmentController {
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
-            log.error("Error checking overlapping assignments", e);
+            log.error("Lỗi khi kiểm tra phân công trùng lặp", e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "CÃ³ lá»—i xáº£y ra khi kiá»ƒm tra trÃ¹ng láº·p phÃ¢n cÃ´ng");
@@ -349,7 +349,7 @@ public class UserShiftAssignmentController {
             return ResponseEntity.badRequest().body(response);
             
         } catch (Exception e) {
-            log.error("Error deleting shift assignment", e);
+            log.error("Lỗi khi xóa phân công ca", e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "CÃ³ lá»—i xáº£y ra khi xÃ³a phÃ¢n cÃ´ng ca lÃ m viá»‡c");

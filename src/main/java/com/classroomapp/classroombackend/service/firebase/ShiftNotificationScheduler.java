@@ -61,7 +61,7 @@ public class ShiftNotificationScheduler {
             }
             
         } catch (Exception e) {
-            log.error("Error in shift reminders scheduler: {}", e.getMessage());
+            log.error("Lỗi trong scheduler nhắc nhở ca làm: {}", e.getMessage());
         }
     }
 
@@ -82,7 +82,7 @@ public class ShiftNotificationScheduler {
             }
             
         } catch (Exception e) {
-            log.error("Error in check-in reminders scheduler: {}", e.getMessage());
+            log.error("Lỗi trong scheduler nhắc nhở check-in: {}", e.getMessage());
         }
     }
 
@@ -103,7 +103,7 @@ public class ShiftNotificationScheduler {
             }
             
         } catch (Exception e) {
-            log.error("Error in check-out reminders scheduler: {}", e.getMessage());
+            log.error("Lỗi trong scheduler nhắc nhở check-out: {}", e.getMessage());
         }
     }
 
@@ -118,7 +118,7 @@ public class ShiftNotificationScheduler {
             shiftSwapService.processExpiredRequests();
             
         } catch (Exception e) {
-            log.error("Error processing expired swap requests: {}", e.getMessage());
+            log.error("Lỗi xử lý yêu cầu đổi ca hết hạn: {}", e.getMessage());
         }
     }
 
@@ -136,7 +136,7 @@ public class ShiftNotificationScheduler {
             log.info("Cleaned up {} old swap requests", cleaned);
             
         } catch (Exception e) {
-            log.error("Error cleaning up old notifications: {}", e.getMessage());
+            log.error("Lỗi dọn dẹp thông báo cũ: {}", e.getMessage());
         }
     }
 
@@ -156,7 +156,7 @@ public class ShiftNotificationScheduler {
             log.info("Found {} assignments for today", todayAssignments.size());
             
         } catch (Exception e) {
-            log.error("Error sending daily summary notifications: {}", e.getMessage());
+            log.error("Lỗi gửi thông báo tổng hợp hằng ngày: {}", e.getMessage());
         }
     }
 
@@ -174,7 +174,7 @@ public class ShiftNotificationScheduler {
             log.info("Preparing weekly schedule notifications for week starting {}", nextMonday);
             
         } catch (Exception e) {
-            log.error("Error sending weekly schedule notifications: {}", e.getMessage());
+            log.error("Lỗi gửi thông báo lịch hằng tuần: {}", e.getMessage());
         }
     }
 
@@ -208,7 +208,7 @@ public class ShiftNotificationScheduler {
             }
             
         } catch (Exception e) {
-            log.error("Error in system health monitor: {}", e.getMessage());
+            log.error("Lỗi trong theo dõi sức khỏe hệ thống: {}", e.getMessage());
         }
     }
 
@@ -237,7 +237,7 @@ public class ShiftNotificationScheduler {
             // Send to all managers immediately
             
         } catch (Exception e) {
-            log.error("Error sending emergency notification: {}", e.getMessage());
+            log.error("Lỗi gửi thông báo khẩn cấp: {}", e.getMessage());
         }
     }
 
@@ -253,7 +253,7 @@ public class ShiftNotificationScheduler {
             sendCheckOutReminders();
             
         } catch (Exception e) {
-            log.error("Error triggering test notifications: {}", e.getMessage());
+            log.error("Lỗi kích hoạt thông báo kiểm thử: {}", e.getMessage());
         }
     }
 }

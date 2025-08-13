@@ -64,7 +64,7 @@ public class FirebaseShiftService {
             }, Runnable::run);
             
         } catch (Exception e) {
-            log.error("Error syncing assignment ID: {} to Firebase: {}", assignment.getId(), e.getMessage());
+            log.error("Lỗi đồng bộ assignment ID: {} lên Firebase: {}", assignment.getId(), e.getMessage());
             future.completeExceptionally(e);
         }
         
@@ -91,7 +91,7 @@ public class FirebaseShiftService {
             }, Runnable::run);
             
         } catch (Exception e) {
-            log.error("Error syncing schedule ID: {} to Firebase: {}", schedule.getId(), e.getMessage());
+            log.error("Lỗi đồng bộ schedule ID: {} lên Firebase: {}", schedule.getId(), e.getMessage());
             future.completeExceptionally(e);
         }
         
@@ -118,7 +118,7 @@ public class FirebaseShiftService {
             }, Runnable::run);
             
         } catch (Exception e) {
-            log.error("Error syncing swap request ID: {} to Firebase: {}", swapRequest.getId(), e.getMessage());
+            log.error("Lỗi đồng bộ yêu cầu đổi ca ID: {} lên Firebase: {}", swapRequest.getId(), e.getMessage());
             future.completeExceptionally(e);
         }
         
@@ -145,7 +145,7 @@ public class FirebaseShiftService {
             }, Runnable::run);
             
         } catch (Exception e) {
-            log.error("Error syncing template ID: {} to Firebase: {}", template.getId(), e.getMessage());
+            log.error("Lỗi đồng bộ template ID: {} lên Firebase: {}", template.getId(), e.getMessage());
             future.completeExceptionally(e);
         }
         
@@ -180,7 +180,7 @@ public class FirebaseShiftService {
             }, Runnable::run);
             
         } catch (Exception e) {
-            log.error("Error sending notification to user: {}: {}", recipientId, e.getMessage());
+            log.error("Lỗi gửi thông báo tới người dùng: {}: {}", recipientId, e.getMessage());
             future.completeExceptionally(e);
         }
         
@@ -205,7 +205,7 @@ public class FirebaseShiftService {
             }, Runnable::run);
             
         } catch (Exception e) {
-            log.error("Error removing assignment ID: {} from Firebase: {}", assignmentId, e.getMessage());
+            log.error("Lỗi xóa assignment ID: {} khỏi Firebase: {}", assignmentId, e.getMessage());
             future.completeExceptionally(e);
         }
         
@@ -234,7 +234,7 @@ public class FirebaseShiftService {
             employeeShiftRef.setValueAsync(employeeShiftData);
             
         } catch (Exception e) {
-            log.error("Error syncing to employee shifts: {}", e.getMessage());
+            log.error("Lỗi đồng bộ tới employee shifts: {}", e.getMessage());
         }
     }
 
@@ -418,7 +418,7 @@ public class FirebaseShiftService {
             }, Runnable::run);
             
         } catch (Exception e) {
-            log.error("Error bulk syncing assignments to Firebase: {}", e.getMessage());
+            log.error("Lỗi đồng bộ hàng loạt assignments lên Firebase: {}", e.getMessage());
             future.completeExceptionally(e);
         }
         

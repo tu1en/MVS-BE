@@ -85,14 +85,14 @@ public class UserServiceExtensionImpl implements UserServiceExtension {
                     );
                     log.info("Sent account information email to new user: {}", email);
                 } catch (Exception e) {
-                    log.error("Failed to send account information email to: {}", email, e);
+                    log.error("Gửi email thông tin tài khoản thất bại tới: {}", email, e);
                     // Don't fail user creation if email sending fails
                 }
                 
                 return true;
             }
         } catch (Exception e) {
-            log.error("Error creating/updating user: {}", email, e);
+            log.error("Lỗi khi tạo/cập nhật người dùng: {}", email, e);
             return false;
         }
     }
@@ -137,14 +137,14 @@ public class UserServiceExtensionImpl implements UserServiceExtension {
                     );
                     log.info("Sent account information email to new user: {}", email);
                 } catch (Exception e) {
-                    log.error("Failed to send account information email to: {}", email, e);
+                    log.error("Gửi email thông tin tài khoản thất bại tới: {}", email, e);
                     // Don't fail user creation if email sending fails
                 }
                 
                 return true;
             }
         } catch (Exception e) {
-            log.error("Error creating user with active status: {}", email, e);
+            log.error("Lỗi khi tạo người dùng với trạng thái active: {}", email, e);
             return false;
         }
     }
@@ -176,7 +176,7 @@ public class UserServiceExtensionImpl implements UserServiceExtension {
                 return true;
             }
         } catch (Exception e) {
-            log.error("Error creating user without contract: {}", email, e);
+            log.error("Lỗi khi tạo người dùng chưa có hợp đồng: {}", email, e);
             return false;
         }
     } 
@@ -194,7 +194,7 @@ public class UserServiceExtensionImpl implements UserServiceExtension {
             }
             return false;
         } catch (Exception e) {
-            log.error("Error checking contract status for user: {}", email, e);
+            log.error("Lỗi khi kiểm tra trạng thái hợp đồng cho người dùng: {}", email, e);
             return false;
         }
     }
@@ -209,6 +209,7 @@ public class UserServiceExtensionImpl implements UserServiceExtension {
             case "MANAGER": return "Manager";
             case "ACCOUNTANT": return "Accountant";
             case "ADMIN": return "Administrator";
+            case "PARENT": return "Parent";
             default: return role;
         }
     }
@@ -226,6 +227,8 @@ public class UserServiceExtensionImpl implements UserServiceExtension {
                 return 4;
             case "ACCOUNTANT":
                 return 5; // New role for accountant
+            case "PARENT":
+                return 6; // New role for parent
             default:
                 return 1; // Default to STUDENT
         }

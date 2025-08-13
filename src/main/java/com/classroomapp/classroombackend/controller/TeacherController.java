@@ -76,7 +76,7 @@ public class TeacherController {
             String email = authentication.getName();
             User currentUser = userRepository.findByEmail(email)
                     .orElseGet(() -> userRepository.findByUsername(email)
-                                     .orElseThrow(() -> new ResourceNotFoundException("User not found with email/username: " + email)));
+                                     .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với email/tên đăng nhập: " + email)));
             
             // Get all course templates that teacher can manage
             List<CourseTemplateDto> courses = courseTemplateService.getAllCourseTemplates();
@@ -99,7 +99,7 @@ public class TeacherController {
             String email = authentication.getName();
             User currentUser = userRepository.findByEmail(email)
                     .orElseGet(() -> userRepository.findByUsername(email)
-                                     .orElseThrow(() -> new ResourceNotFoundException("User not found with email/username: " + email)));
+                                     .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với email/tên đăng nhập: " + email)));
             
             CourseTemplateDto course = courseTemplateService.getCourseTemplateById(id);
             return ResponseEntity.ok(course);
@@ -117,7 +117,7 @@ public class TeacherController {
             String email = authentication.getName();
             User currentUser = userRepository.findByEmail(email)
                     .orElseGet(() -> userRepository.findByUsername(email)
-                                     .orElseThrow(() -> new ResourceNotFoundException("User not found with email/username: " + email)));
+                                     .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với email/tên đăng nhập: " + email)));
             
             // Set teacher as the creator
             courseDto.setTeacherId(currentUser.getId());
@@ -139,7 +139,7 @@ public class TeacherController {
             String email = authentication.getName();
             User currentUser = userRepository.findByEmail(email)
                     .orElseGet(() -> userRepository.findByUsername(email)
-                                     .orElseThrow(() -> new ResourceNotFoundException("User not found with email/username: " + email)));
+                                     .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với email/tên đăng nhập: " + email)));
             
             courseDto.setId(id);
             courseDto.setTeacherId(currentUser.getId());
@@ -161,7 +161,7 @@ public class TeacherController {
             String email = authentication.getName();
             User currentUser = userRepository.findByEmail(email)
                     .orElseGet(() -> userRepository.findByUsername(email)
-                                     .orElseThrow(() -> new ResourceNotFoundException("User not found with email/username: " + email)));
+                                     .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với email/tên đăng nhập: " + email)));
             
             // Get teacher's course templates
             List<CourseTemplateDto> teacherCourses = courseTemplateService.getCourseTemplatesByTeacher(currentUser.getId());
@@ -174,7 +174,7 @@ public class TeacherController {
             return ResponseEntity.ok(enrollmentData);
             
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Failed to retrieve enrollments: " + e.getMessage()));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Không thể lấy danh sách ghi danh: " + e.getMessage()));
         }
     }
     */
@@ -196,9 +196,9 @@ public class TeacherController {
             return ResponseEntity.ok(schedules);
             
         } catch (Exception e) {
-            System.err.println("Error in getTeacherSchedule: " + e.getMessage());
+            System.err.println("Lỗi trong getTeacherSchedule: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi: " + e.getMessage());
         }
     }
     
@@ -217,7 +217,7 @@ public class TeacherController {
             
             // Validate day of week
             if (dayOfWeek < 0 || dayOfWeek > 6) {
-                return ResponseEntity.badRequest().body("Day of week must be between 0 and 6");
+                return ResponseEntity.badRequest().body("Giá trị ngày trong tuần phải từ 0 đến 6");
             }
             
             // Get schedules for teacher and day
@@ -227,7 +227,7 @@ public class TeacherController {
             return ResponseEntity.ok(schedules);
             
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi: " + e.getMessage());
         }
     }
     
@@ -253,7 +253,7 @@ public class TeacherController {
             return ResponseEntity.status(HttpStatus.CREATED).body(createdSchedule);
             
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi: " + e.getMessage());
         }
     }
 
@@ -341,7 +341,7 @@ public class TeacherController {
         } catch (Exception e) {
             // Log the exception for debugging purposes
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Failed to retrieve dashboard stats: " + e.getMessage()));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Không thể lấy thống kê dashboard: " + e.getMessage()));
         }
     }
 
@@ -423,7 +423,7 @@ public class TeacherController {
         } catch (Exception e) {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("hasOfficialContract", false);
-            errorResponse.put("error", "Failed to retrieve contract status: " + e.getMessage());
+            errorResponse.put("error", "Không thể lấy trạng thái hợp đồng: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }

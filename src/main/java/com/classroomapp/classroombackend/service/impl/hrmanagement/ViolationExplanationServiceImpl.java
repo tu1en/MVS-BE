@@ -78,7 +78,7 @@ public class ViolationExplanationServiceImpl implements ViolationExplanationServ
             try {
                 evidenceService.uploadEvidenceFiles(savedExplanation.getId(), createDto);
             } catch (Exception e) {
-                log.error("Error uploading evidence files for explanation {}", savedExplanation.getId(), e);
+                log.error("Lỗi khi tải lên file bằng chứng cho giải trình {}", savedExplanation.getId(), e);
                 // Don't fail the explanation submission, just log the error
             }
         }
@@ -124,7 +124,7 @@ public class ViolationExplanationServiceImpl implements ViolationExplanationServ
             try {
                 evidenceService.uploadEvidenceFiles(updatedExplanation.getId(), updateDto);
             } catch (Exception e) {
-                log.error("Error uploading evidence files for explanation {}", updatedExplanation.getId(), e);
+                log.error("Lỗi khi tải lên file bằng chứng cho giải trình {}", updatedExplanation.getId(), e);
             }
         }
         
@@ -280,7 +280,7 @@ public class ViolationExplanationServiceImpl implements ViolationExplanationServ
         try {
             evidenceService.deleteEvidenceByExplanation(id);
         } catch (Exception e) {
-            log.error("Error deleting evidence files for explanation {}", id, e);
+            log.error("Lỗi khi xóa các file bằng chứng cho giải trình {}", id, e);
         }
 
         // Delete explanation

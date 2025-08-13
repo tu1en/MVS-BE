@@ -217,8 +217,8 @@ public class SystemAdministrationServiceImpl implements SystemAdministrationServ
             
             return auditLogRepository.save(auditLog);
         } catch (Exception e) {
-            log.error("Error creating audit log: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to create audit log", e);
+            log.error("Lỗi khi tạo audit log: {}", e.getMessage(), e);
+            throw new RuntimeException("Tạo audit log thất bại", e);
         }
     }
 
@@ -229,7 +229,7 @@ public class SystemAdministrationServiceImpl implements SystemAdministrationServ
             log.info("Finding audit log by ID: {}", id);
             return auditLogRepository.findById(id).orElse(null);
         } catch (Exception e) {
-            log.error("Error finding audit log by ID {}: {}", id, e.getMessage(), e);
+            log.error("Lỗi khi tìm audit log theo ID {}: {}", id, e.getMessage(), e);
             return null;
         }
     }
@@ -242,7 +242,7 @@ public class SystemAdministrationServiceImpl implements SystemAdministrationServ
                     pageable.getPageNumber(), pageable.getPageSize());
             return auditLogRepository.findAll(pageable);
         } catch (Exception e) {
-            log.error("Error getting audit logs: {}", e.getMessage(), e);
+            log.error("Lỗi khi lấy danh sách audit logs: {}", e.getMessage(), e);
             return new PageImpl<>(new ArrayList<>(), pageable, 0);
         }
     }
@@ -271,7 +271,7 @@ public class SystemAdministrationServiceImpl implements SystemAdministrationServ
                     AuditLog.AuditAction auditAction = AuditLog.AuditAction.valueOf(action.toUpperCase());
                     return auditLogRepository.findByAction(auditAction, pageable);
                 } catch (IllegalArgumentException e) {
-                    log.warn("Invalid action filter: {}", action);
+                    log.warn("Bộ lọc action không hợp lệ: {}", action);
                     return new PageImpl<>(new ArrayList<>(), pageable, 0);
                 }
             }
@@ -281,7 +281,7 @@ public class SystemAdministrationServiceImpl implements SystemAdministrationServ
                     AuditLog.AuditCategory auditCategory = AuditLog.AuditCategory.valueOf(category.toUpperCase());
                     return auditLogRepository.findByCategory(auditCategory, pageable);
                 } catch (IllegalArgumentException e) {
-                    log.warn("Invalid category filter: {}", category);
+                    log.warn("Bộ lọc category không hợp lệ: {}", category);
                     return new PageImpl<>(new ArrayList<>(), pageable, 0);
                 }
             }
@@ -291,7 +291,7 @@ public class SystemAdministrationServiceImpl implements SystemAdministrationServ
                     AuditLog.AuditSeverity auditSeverity = AuditLog.AuditSeverity.valueOf(severity.toUpperCase());
                     return auditLogRepository.findBySeverity(auditSeverity, pageable);
                 } catch (IllegalArgumentException e) {
-                    log.warn("Invalid severity filter: {}", severity);
+                    log.warn("Bộ lọc severity không hợp lệ: {}", severity);
                     return new PageImpl<>(new ArrayList<>(), pageable, 0);
                 }
             }
@@ -312,7 +312,7 @@ public class SystemAdministrationServiceImpl implements SystemAdministrationServ
                     LocalDateTime end = LocalDateTime.parse(endDate + "T23:59:59");
                     return auditLogRepository.findInDateRange(start, end, pageable);
                 } catch (Exception e) {
-                    log.warn("Invalid date format for filtering: startDate={}, endDate={}", startDate, endDate);
+                    log.warn("Định dạng ngày không hợp lệ khi lọc: startDate={}, endDate={}", startDate, endDate);
                     return new PageImpl<>(new ArrayList<>(), pageable, 0);
                 }
             }
@@ -321,7 +321,7 @@ public class SystemAdministrationServiceImpl implements SystemAdministrationServ
             return auditLogRepository.findAll(pageable);
             
         } catch (Exception e) {
-            log.error("Error getting filtered audit logs: {}", e.getMessage(), e);
+            log.error("Lỗi khi lọc audit logs: {}", e.getMessage(), e);
             return new PageImpl<>(new ArrayList<>(), pageable, 0);
         }
     }
@@ -344,7 +344,7 @@ public class SystemAdministrationServiceImpl implements SystemAdministrationServ
             log.info("Getting audit logs for user: {}", userId);
             return auditLogRepository.findByUserId(userId, pageable);
         } catch (Exception e) {
-            log.error("Error getting audit logs for user {}: {}", userId, e.getMessage(), e);
+            log.error("Lỗi khi lấy audit logs cho người dùng {}: {}", userId, e.getMessage(), e);
             return new PageImpl<>(new ArrayList<>(), pageable, 0);
         }
     }
@@ -356,7 +356,7 @@ public class SystemAdministrationServiceImpl implements SystemAdministrationServ
             log.info("Getting audit logs by action: {}", action);
             return auditLogRepository.findByAction(action, pageable);
         } catch (Exception e) {
-            log.error("Error getting audit logs by action {}: {}", action, e.getMessage(), e);
+            log.error("Lỗi khi lấy audit logs theo action {}: {}", action, e.getMessage(), e);
             return new PageImpl<>(new ArrayList<>(), pageable, 0);
         }
     }
@@ -368,7 +368,7 @@ public class SystemAdministrationServiceImpl implements SystemAdministrationServ
             log.info("Getting security logs");
             return auditLogRepository.findSecurityLogs(pageable);
         } catch (Exception e) {
-            log.error("Error getting security logs: {}", e.getMessage(), e);
+            log.error("Lỗi khi lấy security logs: {}", e.getMessage(), e);
             return new PageImpl<>(new ArrayList<>(), pageable, 0);
         }
     }
@@ -383,7 +383,7 @@ public class SystemAdministrationServiceImpl implements SystemAdministrationServ
             }
             return auditLogRepository.searchLogs(searchTerm.trim(), pageable);
         } catch (Exception e) {
-            log.error("Error searching audit logs with term {}: {}", searchTerm, e.getMessage(), e);
+            log.error("Lỗi khi tìm kiếm audit logs với từ khóa {}: {}", searchTerm, e.getMessage(), e);
             return new PageImpl<>(new ArrayList<>(), pageable, 0);
         }
     }
@@ -427,7 +427,7 @@ public class SystemAdministrationServiceImpl implements SystemAdministrationServ
             
             return auditStats;
         } catch (Exception e) {
-            log.error("Error getting audit statistics: {}", e.getMessage(), e);
+            log.error("Lỗi khi lấy thống kê audit: {}", e.getMessage(), e);
             return new AuditStatistics();
         }
     }
@@ -524,10 +524,10 @@ public class SystemAdministrationServiceImpl implements SystemAdministrationServ
             log.info("Cleanup completed: deleted {} audit logs", logsToDelete);
             return result;
         } catch (Exception e) {
-            log.error("Error cleaning up audit logs: {}", e.getMessage(), e);
+            log.error("Lỗi khi dọn dẹp audit logs: {}", e.getMessage(), e);
             CleanupResult result = new CleanupResult();
             result.setSuccess(false);
-            result.setMessage("Failed to cleanup audit logs: " + e.getMessage());
+            result.setMessage("Dọn dẹp audit logs thất bại: " + e.getMessage());
             return result;
         }
     }
@@ -618,7 +618,7 @@ public class SystemAdministrationServiceImpl implements SystemAdministrationServ
             return result;
             
         } catch (Exception e) {
-            log.error("Error getting teacher-student activity: {}", e.getMessage(), e);
+            log.error("Lỗi khi lấy hoạt động giáo viên-học sinh: {}", e.getMessage(), e);
             // Return empty data structure on error
             Map<String, Object> emptyResult = new HashMap<>();
             emptyResult.put("months", new ArrayList<>());

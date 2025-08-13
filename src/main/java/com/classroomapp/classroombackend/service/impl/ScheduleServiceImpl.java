@@ -110,8 +110,8 @@ public class ScheduleServiceImpl implements ScheduleService {
         log.info("Updating schedule ID: {}", id);
         
         if (!scheduleRepository.existsById(id)) {
-            log.error("Schedule not found with ID: {}", id);
-            throw new EntityNotFoundException("Schedule not found with ID: " + id);
+            log.error("Không tìm thấy lịch với ID: {}", id);
+            throw new EntityNotFoundException("Không tìm thấy lịch với ID: " + id);
         }
         
         Schedule schedule = convertToEntity(scheduleDto);
@@ -127,8 +127,8 @@ public class ScheduleServiceImpl implements ScheduleService {
         log.info("Deleting schedule ID: {}", id);
         
         if (!scheduleRepository.existsById(id)) {
-            log.error("Schedule not found with ID: {}", id);
-            throw new EntityNotFoundException("Schedule not found with ID: " + id);
+            log.error("Không tìm thấy lịch với ID: {}", id);
+            throw new EntityNotFoundException("Không tìm thấy lịch với ID: " + id);
         }
         
         scheduleRepository.deleteById(id);
@@ -297,7 +297,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         if (dayOfWeek >= 0 && dayOfWeek <= 6) {
             day = DayOfWeek.of(dayOfWeek == 0 ? 1 : (dayOfWeek == 6 ? 7 : dayOfWeek + 1));
         } else {
-            return "Invalid day (" + dayOfWeek + ")";
+            return "Ngày không hợp lệ (" + dayOfWeek + ")";
         }
         
         return day.getDisplayName(TextStyle.FULL, Locale.forLanguageTag("vi-VN"));
@@ -309,16 +309,16 @@ public class ScheduleServiceImpl implements ScheduleService {
         
         Optional<Classroom> classroomOpt = classroomRepository.findById(classroomId);
         if (!classroomOpt.isPresent()) {
-            log.error("Classroom not found with ID: {}", classroomId);
-            throw new EntityNotFoundException("Classroom not found with ID: " + classroomId);
+            log.error("Không tìm thấy lớp học với ID: {}", classroomId);
+            throw new EntityNotFoundException("Không tìm thấy lớp học với ID: " + classroomId);
         }
         
         Classroom classroom = classroomOpt.get();
         User teacher = classroom.getTeacher();
         
         if (teacher == null) {
-            log.error("Classroom has no assigned teacher. ID: {}", classroomId);
-            throw new EntityNotFoundException("Classroom has no assigned teacher");
+            log.error("Lớp học chưa có giáo viên phụ trách. ID: {}", classroomId);
+            throw new EntityNotFoundException("Lớp học chưa có giáo viên phụ trách");
         }
         
         // Check if schedules already exist for this classroom

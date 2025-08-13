@@ -57,7 +57,7 @@ public class AttendanceServiceImpl implements AttendanceService {
     @Override
     @Transactional
     public void createOrUpdateAttendance(CreateOrUpdateAttendanceDto dto) {
-       throw new UnsupportedOperationException("This method is deprecated and part of the old attendance flow.");
+       throw new UnsupportedOperationException("Phương thức này đã bị ngừng sử dụng và thuộc luồng điểm danh cũ.");
     }
 
     @Override
@@ -72,7 +72,7 @@ public class AttendanceServiceImpl implements AttendanceService {
 
         // Ensure the lecture belongs to the classroom
         if (!lecture.getClassroom().getId().equals(classroom.getId())) {
-            throw new BusinessLogicException("Lecture does not belong to the specified classroom.");
+            throw new BusinessLogicException("Bài giảng không thuộc lớp học đã chỉ định.");
         }
 
         // Find or create an AttendanceSession for this lecture
@@ -133,7 +133,7 @@ public class AttendanceServiceImpl implements AttendanceService {
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         if (!classroomSecurityService.isTeacherOfClassroom(user, createDto.getClassroomId())) {
-            throw new BusinessLogicException("Only the teacher can create an attendance session.");
+            throw new BusinessLogicException("Chỉ giáo viên mới có thể tạo phiên điểm danh.");
         }
 
         Classroom classroom = classroomRepository.findById(createDto.getClassroomId())
@@ -166,7 +166,7 @@ public AttendanceSessionDto getActiveSession(Long classroomId) {
 public void markAttendance(StudentAttendanceDto dto, UserDetails userDetails) {
     // Get the current user from security context
     User student = userRepository.findByEmail(userDetails.getUsername())
-            .orElseThrow(() -> new BusinessLogicException("User not found"));
+            .orElseThrow(() -> new BusinessLogicException("Không tìm thấy người dùng"));
     
     // Find the attendance session
     AttendanceSession session = attendanceSessionRepository.findById(dto.getSessionId())
@@ -174,22 +174,22 @@ public void markAttendance(StudentAttendanceDto dto, UserDetails userDetails) {
     
     // Check if session is open
     if (!session.getIsOpen()) {
-        throw new BusinessLogicException("Attendance session is closed");
+        throw new BusinessLogicException("Phiên điểm danh đã đóng");
     }
     
     // Check if session has expired
     if (session.getExpiresAt() != null && LocalDateTime.now().isAfter(session.getExpiresAt())) {
-        throw new BusinessLogicException("Attendance session has expired");
+        throw new BusinessLogicException("Phiên điểm danh đã hết hạn");
     }
     
     // Check if student is enrolled in the classroom
     if (!classroomSecurityService.isMember(session.getClassroom().getId(), userDetails)) {
-        throw new BusinessLogicException("You are not enrolled in this classroom");
+        throw new BusinessLogicException("Bạn chưa được ghi danh trong lớp học này");
     }
     
     // Check if attendance already recorded
     if (attendanceRepository.existsByStudentAndSession(student, session)) {
-        throw new BusinessLogicException("Attendance already recorded for this session");
+        throw new BusinessLogicException("Bạn đã điểm danh cho phiên này rồi");
     }
     
     // Create attendance record
@@ -211,7 +211,7 @@ public List<AttendanceResultDto> getSessionResults(Long sessionId) {
     // Security check: only teacher can view session results
     User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     if (!classroomSecurityService.isTeacherOfClassroom(currentUser, session.getClassroom().getId())) {
-        throw new BusinessLogicException("Only the teacher can view session results");
+        throw new BusinessLogicException("Chỉ giáo viên mới có thể xem kết quả phiên");
     }
     
     // Get all students enrolled in the classroom
@@ -332,14 +332,14 @@ public List<AttendanceResultDto> getSessionResults(Long sessionId) {
                 .orElseThrow(() -> new BusinessLogicException("Attendance session not found"));
 
         if (!session.getIsOpen()) {
-            throw new BusinessLogicException("Attendance session is closed");
+            throw new BusinessLogicException("Phiên điểm danh đã đóng");
         }
         if (session.getExpiresAt() != null && LocalDateTime.now().isAfter(session.getExpiresAt())) {
-            throw new BusinessLogicException("Attendance session has expired");
+            throw new BusinessLogicException("Phiên điểm danh đã hết hạn");
         }
 
         if (attendanceRepository.findBySession_IdAndStudent_Id(sessionId, user.getId()).isPresent()) {
-            throw new BusinessLogicException("Attendance already recorded for this session");
+            throw new BusinessLogicException("Bạn đã điểm danh cho phiên này rồi");
         }
 
         Attendance record = new Attendance();
@@ -358,7 +358,7 @@ public List<AttendanceResultDto> getSessionResults(Long sessionId) {
                 .orElseThrow(() -> new BusinessLogicException("Attendance session not found"));
 
         if (!classroomSecurityService.isTeacherOfClassroom(user, session.getClassroom().getId())) {
-            throw new BusinessLogicException("Only the teacher can close the session");
+            throw new BusinessLogicException("Chỉ giáo viên mới có thể đóng phiên");
         }
 
         session.setIsOpen(false);
@@ -390,7 +390,7 @@ public List<AttendanceResultDto> getSessionResults(Long sessionId) {
         boolean isSelf = currentUser.getId().equals(studentId);
 
         if (!isTeacher && !isSelf) {
-            throw new BusinessLogicException("Not authorized to view this attendance result.");
+            throw new BusinessLogicException("Không có quyền xem kết quả điểm danh này.");
         }
 
         List<AttendanceSession> sessions = attendanceSessionRepository.findByClassroomId(classroomId);
@@ -420,7 +420,7 @@ public List<AttendanceResultDto> getSessionResults(Long sessionId) {
     public List<AttendanceDto> findByUserId(Long userId) {
         // First find the user
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với id: " + userId));
         
         List<Attendance> attendances = attendanceRepository.findByStudent(user);
         return attendances.stream()

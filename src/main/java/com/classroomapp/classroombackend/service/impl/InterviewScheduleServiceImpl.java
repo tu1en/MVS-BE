@@ -29,6 +29,13 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
     public InterviewScheduleDto create(Long applicationId, LocalDateTime startTime, LocalDateTime endTime) {
         RecruitmentApplication app = appRepo.findById(applicationId)
                 .orElseThrow(() -> new RuntimeException("Application not found"));
+        // Validate within recruitment plan window
+        if (app.getJobPosition() != null && app.getJobPosition().getRecruitmentPlan() != null) {
+            var plan = app.getJobPosition().getRecruitmentPlan();
+            if (startTime.toLocalDate().isBefore(plan.getStartDate()) || endTime.toLocalDate().isAfter(plan.getEndDate())) {
+                throw new IllegalArgumentException("Thời gian phỏng vấn phải nằm trong khoảng thời gian của kế hoạch tuyển dụng");
+            }
+        }
         InterviewSchedule entity = new InterviewSchedule();
         entity.setApplication(app);
         entity.setStartTime(startTime);
@@ -72,7 +79,7 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
     @Transactional
     public void updateOffer(Long id, String offer) {
         InterviewSchedule entity = interviewRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Interview not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy lịch phỏng vấn"));
         entity.setOffer(offer);
         interviewRepo.save(entity);
     }
@@ -81,7 +88,10 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
     @Transactional
     public void updateEvaluation(Long id, String evaluation) {
         InterviewSchedule entity = interviewRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Interview not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy lịch phỏng vấn"));
+        if (evaluation != null && evaluation.length() > 200) {
+            throw new IllegalArgumentException("Đánh giá tối đa 200 ký tự!");
+        }
         entity.setEvaluation(evaluation);
         interviewRepo.save(entity);
     }
@@ -90,7 +100,7 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
     @Transactional
     public void updateHourlyRate(Long id, String hourlyRate) {
         InterviewSchedule entity = interviewRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Interview not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy lịch phỏng vấn"));
         entity.setHourlyRate(new java.math.BigDecimal(hourlyRate));
         interviewRepo.save(entity);
     }
@@ -105,7 +115,7 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
     @Transactional(readOnly = true)
     public InterviewScheduleDto getById(Long id) {
         InterviewSchedule entity = interviewRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Interview not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy lịch phỏng vấn"));
         return toDto(entity);
     }
 
@@ -157,6 +167,14 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
     public InterviewScheduleDto update(Long id, LocalDateTime startTime, LocalDateTime endTime) {
         InterviewSchedule entity = interviewRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Interview not found"));
+        // Validate within recruitment plan window
+        RecruitmentApplication app = entity.getApplication();
+        if (app != null && app.getJobPosition() != null && app.getJobPosition().getRecruitmentPlan() != null) {
+            var plan = app.getJobPosition().getRecruitmentPlan();
+            if (startTime.toLocalDate().isBefore(plan.getStartDate()) || endTime.toLocalDate().isAfter(plan.getEndDate())) {
+                throw new IllegalArgumentException("Thời gian phỏng vấn phải nằm trong khoảng thời gian của kế hoạch tuyển dụng");
+            }
+        }
         entity.setStartTime(startTime);
         entity.setEndTime(endTime);
         InterviewSchedule saved = interviewRepo.save(entity);

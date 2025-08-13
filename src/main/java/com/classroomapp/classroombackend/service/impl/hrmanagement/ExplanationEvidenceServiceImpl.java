@@ -89,7 +89,7 @@ public class ExplanationEvidenceServiceImpl implements ExplanationEvidenceServic
                 uploadedFiles.add(uploadedFile);
                 
             } catch (Exception e) {
-                log.error("Error uploading file {} for explanation {}", file.getOriginalFilename(), explanationId, e);
+                log.error("Lỗi khi tải lên file {} cho giải trình {}", file.getOriginalFilename(), explanationId, e);
                 // Continue with other files, don't fail the entire upload
             }
         }
@@ -159,7 +159,7 @@ public class ExplanationEvidenceServiceImpl implements ExplanationEvidenceServic
                 savedEvidence.setFilePath("evidence/" + explanationId + "/" + uploadResponse.getFileName());
                 evidenceRepository.save(savedEvidence);
             } catch (Exception e) {
-                log.error("Error uploading to Firebase Storage, using local path", e);
+                log.error("Lỗi khi tải lên Firebase Storage, sử dụng đường dẫn local", e);
                 // Keep the local path as fallback
             }
             
@@ -167,7 +167,7 @@ public class ExplanationEvidenceServiceImpl implements ExplanationEvidenceServic
             return convertToDto(savedEvidence);
             
         } catch (Exception e) {
-            log.error("Error uploading evidence file for explanation {}", explanationId, e);
+            log.error("Lỗi khi tải lên file bằng chứng cho giải trình {}", explanationId, e);
             throw new RuntimeException("Lá»—i khi táº£i lÃªn file báº±ng chá»©ng: " + e.getMessage());
         }
     }
@@ -214,7 +214,7 @@ public class ExplanationEvidenceServiceImpl implements ExplanationEvidenceServic
             log.info("Evidence file deleted successfully: {}", id);
             
         } catch (Exception e) {
-            log.error("Error deleting evidence file {}", id, e);
+            log.error("Lỗi khi xóa file bằng chứng {}", id, e);
             throw new RuntimeException("Lá»—i khi xÃ³a file báº±ng chá»©ng: " + e.getMessage());
         }
     }
@@ -235,7 +235,7 @@ public class ExplanationEvidenceServiceImpl implements ExplanationEvidenceServic
                 evidenceRepository.delete(evidence);
                 
             } catch (Exception e) {
-                log.error("Error deleting evidence file {} for explanation {}", evidence.getId(), explanationId, e);
+                log.error("Lỗi khi xóa file bằng chứng {} cho giải trình {}", evidence.getId(), explanationId, e);
             }
         }
         
@@ -287,7 +287,7 @@ public class ExplanationEvidenceServiceImpl implements ExplanationEvidenceServic
                     .collect(Collectors.toList());
                     
         } catch (Exception e) {
-            log.error("Error parsing date range: {} to {}", startDate, endDate, e);
+            log.error("Lỗi khi parse khoảng ngày: {} đến {}", startDate, endDate, e);
             throw new IllegalArgumentException("Äá»‹nh dáº¡ng ngÃ y khÃ´ng há»£p lá»‡");
         }
     }
@@ -413,7 +413,7 @@ public class ExplanationEvidenceServiceImpl implements ExplanationEvidenceServic
                 evidenceRepository.delete(evidence);
 
             } catch (Exception e) {
-                log.error("Error deleting orphaned file {}", evidence.getId(), e);
+                log.error("Lỗi khi xóa file mồ côi {}", evidence.getId(), e);
             }
         }
 

@@ -42,10 +42,10 @@ public class CourseFeedbackServiceImpl implements CourseFeedbackService {
     public CourseFeedbackDto createFeedback(CourseFeedbackDto feedbackDto) {
         String studentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         User student = userRepository.findByEmail(studentEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("Student not found with email: " + studentEmail));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy học sinh với email: " + studentEmail));
 
         Classroom classroom = classroomRepository.findById(feedbackDto.getClassroomId())
-                .orElseThrow(() -> new ResourceNotFoundException("Classroom not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học"));
 
         // Security Check: Ensure the logged-in student is actually enrolled in the classroom.
         ClassroomEnrollmentId enrollmentId = new ClassroomEnrollmentId(classroom.getId(), student.getId());
@@ -80,7 +80,7 @@ public class CourseFeedbackServiceImpl implements CourseFeedbackService {
     @Transactional(readOnly = true)
     public CourseFeedbackDto getFeedbackById(Long feedbackId) {
         CourseFeedback feedback = feedbackRepository.findById(feedbackId)
-                .orElseThrow(() -> new RuntimeException("Feedback not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy phản hồi"));
         return convertToDto(feedback);
     }
     
@@ -88,7 +88,7 @@ public class CourseFeedbackServiceImpl implements CourseFeedbackService {
     @Transactional(readOnly = true)
     public List<CourseFeedbackDto> getFeedbackByStudent(Long studentId) {
         User student = userRepository.findById(studentId)
-                .orElseThrow(() -> new RuntimeException("Student not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy học sinh"));
         List<CourseFeedback> feedbacks = feedbackRepository.findByStudentOrderByCreatedAtDesc(student);
         return feedbacks.stream().map(this::convertToDto).collect(Collectors.toList());
     }
@@ -97,7 +97,7 @@ public class CourseFeedbackServiceImpl implements CourseFeedbackService {
     @Transactional(readOnly = true)
     public List<CourseFeedbackDto> getFeedbackByClassroom(Long classroomId) {
         Classroom classroom = classroomRepository.findById(classroomId)
-                .orElseThrow(() -> new RuntimeException("Classroom not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy lớp học"));
         List<CourseFeedback> feedbacks = feedbackRepository.findByClassroomOrderByCreatedAtDesc(classroom);
         return feedbacks.stream().map(this::convertToDto).collect(Collectors.toList());
     }
@@ -106,7 +106,7 @@ public class CourseFeedbackServiceImpl implements CourseFeedbackService {
     @Transactional(readOnly = true)
     public List<CourseFeedbackDto> getFeedbackByTeacher(Long teacherId) {
         User teacher = userRepository.findById(teacherId)
-                .orElseThrow(() -> new RuntimeException("Teacher not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giáo viên"));
         List<CourseFeedback> feedbacks = feedbackRepository.findByTeacherOrderByCreatedAtDesc(teacher);
         return feedbacks.stream().map(this::convertToDto).collect(Collectors.toList());
     }
@@ -157,9 +157,9 @@ public class CourseFeedbackServiceImpl implements CourseFeedbackService {
     @Override
     public CourseFeedbackDto reviewFeedback(Long feedbackId, String response, Long reviewerId) {
         CourseFeedback feedback = feedbackRepository.findById(feedbackId)
-                .orElseThrow(() -> new RuntimeException("Feedback not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy phản hồi"));
         User reviewer = userRepository.findById(reviewerId)
-                .orElseThrow(() -> new RuntimeException("Reviewer not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người đánh giá"));
         
         feedback.markAsReviewed(reviewer, response);
         CourseFeedback savedFeedback = feedbackRepository.save(feedback);
@@ -169,7 +169,7 @@ public class CourseFeedbackServiceImpl implements CourseFeedbackService {
     @Override
     public CourseFeedbackDto acknowledgeFeedback(Long feedbackId) {
         CourseFeedback feedback = feedbackRepository.findById(feedbackId)
-                .orElseThrow(() -> new RuntimeException("Feedback not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy phản hồi"));
         feedback.acknowledge();
         CourseFeedback savedFeedback = feedbackRepository.save(feedback);
         return convertToDto(savedFeedback);
@@ -179,9 +179,9 @@ public class CourseFeedbackServiceImpl implements CourseFeedbackService {
     @Transactional(readOnly = true)
     public boolean hasStudentGivenFeedback(Long studentId, Long classroomId) {
         User student = userRepository.findById(studentId)
-                .orElseThrow(() -> new RuntimeException("Student not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy học sinh"));
         Classroom classroom = classroomRepository.findById(classroomId)
-                .orElseThrow(() -> new RuntimeException("Classroom not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy lớp học"));
         return feedbackRepository.existsByStudentAndClassroom(student, classroom);
     }
     
@@ -189,7 +189,7 @@ public class CourseFeedbackServiceImpl implements CourseFeedbackService {
     @Transactional(readOnly = true)
     public Double getAverageRatingByClassroom(Long classroomId) {
         Classroom classroom = classroomRepository.findById(classroomId)
-                .orElseThrow(() -> new RuntimeException("Classroom not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy lớp học"));
         return feedbackRepository.getAverageRatingByClassroom(classroom);
     }
     
@@ -197,7 +197,7 @@ public class CourseFeedbackServiceImpl implements CourseFeedbackService {
     @Transactional(readOnly = true)
     public Double getAverageTeachingQualityByTeacher(Long teacherId) {
         User teacher = userRepository.findById(teacherId)
-                .orElseThrow(() -> new RuntimeException("Teacher not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giáo viên"));
         return feedbackRepository.getAverageTeachingQualityByTeacher(teacher);
     }
     
@@ -205,14 +205,14 @@ public class CourseFeedbackServiceImpl implements CourseFeedbackService {
     @Transactional(readOnly = true)
     public Long countFeedbackByTeacherAndStatus(Long teacherId, String status) {
         User teacher = userRepository.findById(teacherId)
-                .orElseThrow(() -> new RuntimeException("Teacher not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giáo viên"));
         return feedbackRepository.countFeedbackByTeacherAndStatus(teacher, status);
     }
     
     @Override
     public void deleteFeedback(Long feedbackId) {
         if (!feedbackRepository.existsById(feedbackId)) {
-            throw new RuntimeException("Feedback not found");
+            throw new RuntimeException("Không tìm thấy phản hồi");
         }
         feedbackRepository.deleteById(feedbackId);
     }
