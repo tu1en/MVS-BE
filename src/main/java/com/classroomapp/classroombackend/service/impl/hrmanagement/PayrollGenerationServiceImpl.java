@@ -351,7 +351,7 @@ public class PayrollGenerationServiceImpl implements PayrollGenerationService {
                 PayrollResult result = generatePayrollForContract(contract, period);
                 results.add(result);
             } catch (Exception e) {
-                log.error("Tạo bảng lương thất bại cho người dùng {}: {}", user.getFullName(), e.getMessage());
+                log.error("Tạo bảng lương thất bại cho hợp đồng {}: {}", contract.getId(), e.getMessage());
                 log.error("Failed to generate payroll for contract {}: {}", contract.getId(), e.getMessage());
             }
         }

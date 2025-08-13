@@ -68,7 +68,7 @@ public class EvidenceTemplate {
     @Column(name = "sort_order")
     private Integer sortOrder = 0;
     
-    @Column(name = "usage_instructions", columnDefinition = "TEXT")
+    @Column(name = "usage_instructions", columnDefinition = "NVARCHAR(MAX)")
     private String usageInstructions;
     
     @Column(name = "required_fields")

@@ -1,17 +1,31 @@
 package com.classroomapp.classroombackend.model;
 
-import com.classroomapp.classroombackend.model.usermanagement.User;
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
-import org.hibernate.annotations.Type;
-
-import javax.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+
+import org.hibernate.annotations.Type;
+
+import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 /**
  * Entity representing parent leave notices for students
@@ -51,10 +65,9 @@ public class ParentLeaveNotice {
     @Column(name = "reason_code", nullable = false)
     private ReasonCode reasonCode;
 
-    @Column(name = "note", columnDefinition = "TEXT")
+    @Column(name = "note", columnDefinition = "NVARCHAR(MAX)")
     private String note;
 
-    @Type(type = "json")
     @Column(name = "attachments", columnDefinition = "JSON")
     private List<String> attachments; // File paths/URLs as JSON array
 
@@ -108,16 +121,16 @@ public class ParentLeaveNotice {
 
     // Constructor for LATE type
     public ParentLeaveNotice(Long parentId, Long studentId, LocalDate date, 
-                           LocalTime arriveAt, ReasonCode reasonCode, String note) {
+                           LocalTime arriveTime, ReasonCode reasonCode, String note) {
         this(parentId, studentId, NoticeType.LATE, date, reasonCode, note);
-        this.arriveAt = arriveAt;
+        this.arriveAt = arriveTime;
     }
 
     // Constructor for EARLY type
     public ParentLeaveNotice(Long parentId, Long studentId, LocalDate date, 
-                           LocalTime leaveAt, ReasonCode reasonCode, String note) {
+                           ReasonCode reasonCode, String note, LocalTime leaveTime) {
         this(parentId, studentId, NoticeType.EARLY, date, reasonCode, note);
-        this.leaveAt = leaveAt;
+        this.leaveAt = leaveTime;
     }
 
     // Lifecycle callbacks

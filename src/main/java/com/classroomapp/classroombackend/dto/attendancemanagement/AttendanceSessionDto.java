@@ -23,4 +23,5 @@ public class AttendanceSessionDto {
     private boolean autoMarkTeacherAttendance;
     private boolean isActive;
     private LocalDateTime createdAt;
+    private Long createdBy;
 }

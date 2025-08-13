@@ -1,14 +1,9 @@
 package com.classroomapp.classroombackend.controller;
 
-import com.classroomapp.classroombackend.dto.ClassroomDto;
-import com.classroomapp.classroombackend.dto.UserDto;
-import com.classroomapp.classroombackend.dto.ParentRequestDto;
-import com.classroomapp.classroombackend.model.ParentRequest;
-import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceSessionDto;
-import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
-import com.classroomapp.classroombackend.repository.ParentRequestRepository;
-import com.classroomapp.classroombackend.service.AttendanceService;
-import com.classroomapp.classroombackend.service.ClassroomService;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,12 +13,25 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.classroomapp.classroombackend.dto.ParentRequestDto;
+import com.classroomapp.classroombackend.dto.UserDto;
+import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceSessionDto;
+import com.classroomapp.classroombackend.dto.attendancemanagement.AttendanceSubmitDto;
+import com.classroomapp.classroombackend.dto.attendancemanagement.CreateAttendanceSessionDto;
+import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
+import com.classroomapp.classroombackend.model.ParentRequest;
+import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.ParentRequestRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.classroomapp.classroombackend.service.AttendanceService;
+import com.classroomapp.classroombackend.service.ClassroomService;
 
 /**
  * Controller for Teaching Assistant operations
@@ -76,7 +84,18 @@ public class TeachingAssistantController {
         try {
             log.info("Fetching students for classroom ID: {}", classroomId);
             
-            List<UserDto> students = classroomService.getClassroomStudents(classroomId);
+            List<User> studentUsers = classroomService.getStudentsInClassroom(classroomId);
+            List<UserDto> students = studentUsers.stream()
+                .map(user -> {
+                    UserDto dto = new UserDto();
+                    dto.setId(user.getId());
+                    dto.setFullName(user.getFullName());
+                    dto.setEmail(user.getEmail());
+                    dto.setUsername(user.getUsername());
+                    dto.setRoleId(user.getRoleId());
+                    return dto;
+                })
+                .toList();
             return ResponseEntity.ok(students);
         } catch (Exception e) {
             log.error("Error fetching students for classroom {}: {}", classroomId, e.getMessage(), e);

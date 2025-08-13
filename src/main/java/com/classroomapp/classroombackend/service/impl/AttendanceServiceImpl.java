@@ -63,34 +63,31 @@ public class AttendanceServiceImpl implements AttendanceService {
     @Override
     @Transactional
     public void submitAttendance(AttendanceSubmitDto submitDto) {
-        // Validate lecture and classroom existence
-        Lecture lecture = lectureRepository.findById(submitDto.getLectureId())
-                .orElseThrow(() -> new BusinessLogicException("Lecture not found with ID: " + submitDto.getLectureId()));
-
+        // Validate classroom existence
         Classroom classroom = classroomRepository.findById(submitDto.getClassroomId())
                 .orElseThrow(() -> new BusinessLogicException("Classroom not found with ID: " + submitDto.getClassroomId()));
-
-        // Ensure the lecture belongs to the classroom
-        if (!lecture.getClassroom().getId().equals(classroom.getId())) {
-            throw new BusinessLogicException("Bài giảng không thuộc lớp học đã chỉ định.");
+                
+        // Validate session existence if provided
+        AttendanceSession session = null;
+        if (submitDto.getSessionId() != null) {
+            session = attendanceSessionRepository.findById(submitDto.getSessionId())
+                    .orElseThrow(() -> new BusinessLogicException("Session not found with ID: " + submitDto.getSessionId()));
         }
 
-        // Find or create an AttendanceSession for this lecture
-        // For simplicity, we'll assume one session per lecture. In a real scenario,
-        // you might have multiple sessions per lecture (e.g., re-takes)
-        AttendanceSession session = attendanceSessionRepository.findByLectureId(lecture.getId())
-                .orElseGet(() -> {
-                    AttendanceSession newSession = new AttendanceSession();
-                    newSession.setClassroom(classroom);
-                    newSession.setLecture(lecture);
-                    newSession.setCreatedAt(LocalDateTime.now());
-                    newSession.setExpiresAt(LocalDateTime.now().plusHours(1)); // Example: session expires in 1 hour
-                    newSession.setIsOpen(true);
-                    newSession.setSessionDate(LocalDate.now()); // Set session date to today
-                    // Set teacher clock-in time when attendance is submitted - this enables teaching history tracking
-                    newSession.setTeacherClockInTime(LocalDateTime.now());
-                    return attendanceSessionRepository.save(newSession);
-                });
+        // No need to check lecture-classroom relationship as we're not using lectures anymore
+
+        // Create a new session if none exists
+        if (session == null) {
+            session = new AttendanceSession();
+            session.setClassroom(classroom);
+            session.setCreatedAt(LocalDateTime.now());
+            session.setExpiresAt(LocalDateTime.now().plusHours(1)); // Example: session expires in 1 hour
+            session.setIsOpen(true);
+            session.setSessionDate(LocalDate.now()); // Set session date to today
+            // Set teacher clock-in time when attendance is submitted - this enables teaching history tracking
+            session.setTeacherClockInTime(LocalDateTime.now());
+            session = attendanceSessionRepository.save(session);
+        }
 
         // Ensure session is open and not expired if a new one wasn't created
         if (!session.getIsOpen() ||
@@ -108,23 +105,21 @@ public class AttendanceServiceImpl implements AttendanceService {
             attendanceSessionRepository.save(session);
         }
 
-        // Process each attendance record
-        for (AttendanceSubmitDto.AttendanceRecordUpdateDto recordDto : submitDto.getRecords()) {
-            User student = userRepository.findById(recordDto.getStudentId())
-                    .orElseThrow(() -> new BusinessLogicException("Student not found with ID: " + recordDto.getStudentId()));
+        // Process single attendance record
+        User student = userRepository.findById(submitDto.getStudentId())
+                .orElseThrow(() -> new BusinessLogicException("Student not found with ID: " + submitDto.getStudentId()));
 
-            // Find existing record or create new one
-            Attendance attendance = attendanceRepository.findBySession_IdAndStudent_Id(session.getId(), student.getId())
-                    .orElseGet(Attendance::new);
+        // Find existing record or create new one
+        Attendance attendance = attendanceRepository.findBySession_IdAndStudent_Id(session.getId(), student.getId())
+                .orElseGet(Attendance::new);
 
-            attendance.setSession(session);
-            attendance.setStudent(student);
-            attendance.setStatus(AttendanceStatus.valueOf(recordDto.getStatus().toUpperCase()));
-            // Lưu ghi chú nếu có
-            attendance.setNote(recordDto.getNote());
+        attendance.setSession(session);
+        attendance.setStudent(student);
+        attendance.setStatus(AttendanceStatus.valueOf(submitDto.getStatus().toUpperCase()));
+        // Lưu ghi chú nếu có
+        attendance.setNote(submitDto.getNote());
 
-            attendanceRepository.save(attendance);
-        }
+        attendanceRepository.save(attendance);
     }
 
     @Override

@@ -1,10 +1,6 @@
 package com.classroomapp.classroombackend.controller;
 
-import com.classroomapp.classroombackend.dto.CreateTeacherEvaluationDto;
-import com.classroomapp.classroombackend.dto.TeacherEvaluationDto;
-import com.classroomapp.classroombackend.dto.TeacherEvaluationStatisticsDto;
-import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
-import com.classroomapp.classroombackend.service.TeacherEvaluationService;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,10 +10,22 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.classroomapp.classroombackend.dto.CreateTeacherEvaluationDto;
+import com.classroomapp.classroombackend.dto.TeacherEvaluationDto;
+import com.classroomapp.classroombackend.dto.TeacherEvaluationStatisticsDto;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.classroomapp.classroombackend.service.TeacherEvaluationService;
 
 import jakarta.validation.Valid;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/teacher-evaluations")
@@ -230,100 +238,4 @@ public class TeacherEvaluationController {
     }
 }
 
-/**
- * Controller for Teaching Assistant operations
- * Handles classroom assignments, attendance, and student evaluations for teaching assistants
- */
-@RestController
-@RequestMapping("/api/teaching-assistant")
-@PreAuthorize("hasRole('TEACHING_ASSISTANT')")
-public class TeachingAssistantController {
-    
-    private static final Logger log = LoggerFactory.getLogger(TeachingAssistantController.class);
-    
-    @Autowired
-    private ClassroomService classroomService;
-    
-    @Autowired
-    private UserRepository userRepository;
-    
-    @Autowired
-    private AttendanceService attendanceService;
-    
-    /**
-     * Get all classrooms assigned to the current teaching assistant
-     */
-    @GetMapping("/my-assigned-classes")
-    public ResponseEntity<List<ClassroomDto>> getMyAssignedClasses(Authentication authentication) {
-        try {
-            Long assistantId = getUserIdFromAuthentication(authentication);
-            log.info("Fetching assigned classes for teaching assistant ID: {}", assistantId);
-            
-            // For now, return classrooms where the assistant might help
-            // This would need proper assignment logic in the future
-            List<ClassroomDto> classrooms = classroomService.getAllClassrooms();
-            
-            return ResponseEntity.ok(classrooms);
-        } catch (Exception e) {
-            log.error("Error fetching assigned classes for teaching assistant: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-    
-    /**
-     * Get students in a specific classroom assigned to the teaching assistant
-     */
-    @GetMapping("/classroom/{classroomId}/students")
-    public ResponseEntity<List<UserDto>> getClassroomStudents(@PathVariable Long classroomId) {
-        try {
-            log.info("Fetching students for classroom ID: {}", classroomId);
-            
-            List<UserDto> students = classroomService.getClassroomStudents(classroomId);
-            return ResponseEntity.ok(students);
-        } catch (Exception e) {
-            log.error("Error fetching students for classroom {}: {}", classroomId, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-    
-    /**
-     * Get attendance sessions for a specific classroom
-     */
-    @GetMapping("/classroom/{classroomId}/attendance-sessions")
-    public ResponseEntity<List<AttendanceSessionDto>> getClassroomAttendanceSessions(@PathVariable Long classroomId) {
-        try {
-            log.info("Fetching attendance sessions for classroom ID: {}", classroomId);
-            
-            // This would need implementation in AttendanceService
-            // For now, return empty list
-            List<AttendanceSessionDto> sessions = new ArrayList<>();
-            
-            return ResponseEntity.ok(sessions);
-        } catch (Exception e) {
-            log.error("Error fetching attendance sessions for classroom {}: {}", classroomId, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-    
-    // Helper method to extract user ID from authentication
-    private Long getUserIdFromAuthentication(Authentication authentication) {
-        if (authentication == null || !(authentication.getPrincipal() instanceof UserDetails)) {
-            log.error("Authentication is null or principal is not UserDetails");
-            throw new RuntimeException("User is not authenticated or user details are not available.");
-        }
 
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        String username = userDetails.getUsername();
-        log.info("Looking up user by email: {}", username);
-
-        return userRepository.findByEmail(username)
-                .map(user -> {
-                    log.info("Found user: {} with ID: {}", user.getFullName(), user.getId());
-                    return user.getId();
-                })
-                .orElseThrow(() -> {
-                    log.error("User not found with email: {}", username);
-                    return new RuntimeException("User not found with email: " + username);
-                });
-    }
-}

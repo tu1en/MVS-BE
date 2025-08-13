@@ -1,14 +1,26 @@
 package com.classroomapp.classroombackend.model;
 
+import java.time.LocalDateTime;
+import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonBackReference;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import org.hibernate.annotations.Type;
-
-import javax.persistence.*;
-import java.time.LocalDateTime;
-import java.util.Map;
 
 /**
  * Entity representing parent notification preferences
@@ -28,15 +40,12 @@ public class ParentNotificationPrefs {
     @Column(name = "parent_id", nullable = false)
     private Long parentId;
 
-    @Type(type = "json")
     @Column(name = "channels", columnDefinition = "JSON", nullable = false)
     private Map<String, Boolean> channels; // {"inapp": true, "email": false, "sms": false}
 
-    @Type(type = "json")
     @Column(name = "quiet_hours", columnDefinition = "JSON")
     private Map<String, String> quietHours; // {"from": "22:00", "to": "07:00"}
 
-    @Type(type = "json")
     @Column(name = "event_toggles", columnDefinition = "JSON", nullable = false)
     private Map<String, Boolean> eventToggles; // Per-event notification settings
 

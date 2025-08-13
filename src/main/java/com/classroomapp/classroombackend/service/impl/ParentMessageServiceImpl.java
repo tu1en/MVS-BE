@@ -1,23 +1,25 @@
 package com.classroomapp.classroombackend.service.impl;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.classroomapp.classroombackend.model.Parent;
 import com.classroomapp.classroombackend.model.ParentMessage;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.parentmanagement.ParentMessageRepository;
 import com.classroomapp.classroombackend.repository.parentmanagement.ParentRepository;
 import com.classroomapp.classroombackend.repository.parentmanagement.StudentParentRepository;
-import com.classroomapp.classroombackend.repository.UserRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.ParentMessageService;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Implementation of ParentMessageService
