@@ -1,6 +1,7 @@
 package com.classroomapp.classroombackend.config;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -370,13 +371,26 @@ public class ViolationTestDataLoader implements CommandLineRunner {
         logger.info("violationDetectionService.detectDailyViolations(LocalDate.of(2025, 8, 4))");
     }
 
+    // Generate 6-digit contract ID: 2-digit monthly sequence + MMYY
+    private String generateSeedContractId() {
+        LocalDate today = LocalDate.now();
+        LocalDate startOfMonth = today.withDayOfMonth(1);
+        LocalDate endOfMonth = startOfMonth.plusMonths(1);
+        LocalDateTime startOfMonthDateTime = startOfMonth.atStartOfDay();
+        LocalDateTime endOfMonthDateTime = endOfMonth.atStartOfDay();
+        Long contractsThisMonth = contractRepository.countByCreatedAtBetween(startOfMonthDateTime, endOfMonthDateTime);
+        String sequence = String.format("%02d", contractsThisMonth + 1);
+        String dateFormat = String.format("%02d%02d", today.getMonthValue(), today.getYear() % 100);
+        return sequence + dateFormat;
+    }
+
     /**
      * Create a contract for a teacher
      */
     private void createTeacherContract(User teacher, String subject) {
         try {
             Contract contract = new Contract();
-            contract.setContractId("CT" + teacher.getId() + "_" + System.currentTimeMillis()); // Tạo mã hợp đồng duy nhất
+            contract.setContractId(generateSeedContractId()); // 6-digit SSMMYY
             contract.setUserId(teacher.getId());
             contract.setFullName(teacher.getFullName());
             contract.setEmail(teacher.getEmail());
@@ -388,8 +402,6 @@ public class ViolationTestDataLoader implements CommandLineRunner {
             // Giáo viên: lương theo giờ
             contract.setHourlySalary(150_000L + (long)(Math.random()*80_000L)); // 150k - 230k VND/giờ
             contract.setWorkingHours("ca sáng (07:30-11:30)");
-            contract.setStartDate(LocalDate.now().minusYears(1));
-            contract.setEndDate(LocalDate.now().plusYears(2));
             contract.setStatus("ACTIVE");
             contract.setSubject(subject);
             contract.setClassLevel("10,11,12");
@@ -406,7 +418,7 @@ public class ViolationTestDataLoader implements CommandLineRunner {
     private void createStaffContract(User staff, String department, String position) {
         try {
             Contract contract = new Contract();
-            contract.setContractId("CT" + staff.getId() + "_" + System.currentTimeMillis()); // Tạo mã hợp đồng duy nhất
+            contract.setContractId(generateSeedContractId()); // 6-digit SSMMYY
             contract.setUserId(staff.getId());
             contract.setFullName(staff.getFullName());
             contract.setEmail(staff.getEmail());
@@ -414,28 +426,8 @@ public class ViolationTestDataLoader implements CommandLineRunner {
             contract.setContractType("STAFF");
             contract.setPosition(position);
             contract.setDepartment(department);
-            // Thiết lập dữ liệu chuẩn cho nhân viên kế toán mẫu
-            if ("ank89353@gmail.com".equalsIgnoreCase(staff.getEmail())) {
-                // Lương GROSS cố định để tính thuế/BH theo luật
-                contract.setSalary(17_000_000.0);
-                contract.setGrossSalary(17_000_000L);
-                contract.setNetSalary(null);
-                contract.setHourlySalary(null);
-                // Offer có số để Payroll lấy GROSS từ offer trước
-                contract.setOffer("Lương GROSS: 17000000 VND");
-                // Ngày làm việc chuẩn (thứ 2 - thứ 6)
-                contract.setWorkDays("MON,TUE,WED,THU,FRI");
-                contract.setWorkShifts("08:00-16:00");
-                contract.setWorkingHours("ca hành chính (08:00-16:00)");
-            } else {
-                // Mặc định: 12-17 triệu
-                contract.setSalary(12000000.0 + (int)(Math.random()*5000000));
-                contract.setWorkingHours("ca hành chính (08:00-16:00)");
-                contract.setWorkDays("MON,TUE,WED,THU,FRI");
-                contract.setWorkShifts("08:00-16:00");
-            }
-            contract.setStartDate(LocalDate.now().minusYears(1));
-            contract.setEndDate(LocalDate.now().plusYears(2));
+            contract.setSalary(12000000.0 + (int)(Math.random()*5000000)); // 12-17 million VND
+            contract.setWorkingHours("ca hành chính (08:00-16:00)");
             contract.setStatus("ACTIVE");
             contract.setSubject(null); // Staff don't have subjects
             contract.setClassLevel(null);

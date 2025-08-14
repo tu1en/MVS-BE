@@ -60,13 +60,9 @@ public class PayrollGenerationServiceImpl implements PayrollGenerationService {
             List<StaffAttendanceLog> attendanceLogs = attendanceLogRepository
                 .findByUserIdAndDateRange(userId, periodStart, periodEnd);
 
-            // Xác định phạm vi công chuẩn theo hợp đồng (giao giữa kỳ lương và thời hạn HĐ)
-            LocalDate standardStart = contract.getStartDate().isAfter(periodStart) ? contract.getStartDate() : periodStart;
-            LocalDate standardEnd = (contract.getEndDate() != null && contract.getEndDate().isBefore(periodEnd)) ? contract.getEndDate() : periodEnd;
-            if (standardEnd.isBefore(standardStart)) {
-                // HĐ không hiệu lực trong kỳ → không có công chuẩn
-                standardEnd = standardStart.minusDays(1);
-            }
+            // Sử dụng toàn bộ kỳ lương vì không cần ràng buộc theo ngày bắt đầu/kết thúc hợp đồng
+            LocalDate standardStart = periodStart;
+            LocalDate standardEnd = periodEnd;
 
             // Tập ngày trong tuần làm việc theo hợp đồng (mặc định: Mon-Fri)
             Set<DayOfWeek> allowedDays = parseAllowedWorkDays(contract.getWorkDays());
@@ -167,8 +163,6 @@ public class PayrollGenerationServiceImpl implements PayrollGenerationService {
             payrollResult.setUserEmail(user.getEmail());
             payrollResult.setContractType(contract.getContractType());
             payrollResult.setContractOffer(contract.getOffer());
-            payrollResult.setContractStartDate(contract.getStartDate());
-            payrollResult.setContractEndDate(contract.getEndDate());
             // Bổ sung đơn giá theo giờ nếu có trong hợp đồng (giúp FE hiển thị)
             if (contract.getHourlySalary() != null && contract.getHourlySalary() > 0) {
                 payrollResult.setHourlySalary(new BigDecimal(contract.getHourlySalary()));
@@ -226,12 +220,9 @@ public class PayrollGenerationServiceImpl implements PayrollGenerationService {
             List<StaffAttendanceLog> attendanceLogs = attendanceLogRepository
                 .findByUserIdAndDateRange(user.getId(), periodStart, periodEnd);
 
-            // Determine standard working days using contract constraints
-            LocalDate standardStart = contract.getStartDate().isAfter(periodStart) ? contract.getStartDate() : periodStart;
-            LocalDate standardEnd = (contract.getEndDate() != null && contract.getEndDate().isBefore(periodEnd)) ? contract.getEndDate() : periodEnd;
-            if (standardEnd.isBefore(standardStart)) {
-                standardEnd = standardStart.minusDays(1);
-            }
+            // Sử dụng toàn bộ kỳ lương vì không cần ràng buộc theo ngày bắt đầu/kết thúc hợp đồng
+            LocalDate standardStart = periodStart;
+            LocalDate standardEnd = periodEnd;
             Set<DayOfWeek> allowedDays = parseAllowedWorkDays(contract.getWorkDays());
             int totalWorkingDays = calculateWorkingDaysInPeriod(standardStart, standardEnd, allowedDays);
             int actualWorkingDays = (int) attendanceLogs.stream()
@@ -310,8 +301,7 @@ public class PayrollGenerationServiceImpl implements PayrollGenerationService {
             payrollResult.setUserEmail(user.getEmail());
             payrollResult.setContractType(contract.getContractType());
             payrollResult.setContractOffer(contract.getOffer());
-            payrollResult.setContractStartDate(contract.getStartDate());
-            payrollResult.setContractEndDate(contract.getEndDate());
+            // Bỏ việc set startDate và endDate vì không cần thiết
             if (contract.getHourlySalary() != null && contract.getHourlySalary() > 0) {
                 payrollResult.setHourlySalary(new BigDecimal(contract.getHourlySalary()));
             }

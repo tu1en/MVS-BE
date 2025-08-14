@@ -65,11 +65,6 @@ public class Contract {
     @Column(name = "working_hours", columnDefinition = "NVARCHAR(255)")
     private String workingHours;
 
-    @Column(name = "start_date", nullable = false)
-    private LocalDate startDate;
-
-    @Column(name = "end_date")
-    private LocalDate endDate;
 
     @Column(name = "status", nullable = false, columnDefinition = "NVARCHAR(50)")
     private String status; // "ACTIVE", "EXPIRED", "TERMINATED"

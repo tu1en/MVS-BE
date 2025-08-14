@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -154,9 +153,7 @@ public class ContractServiceImpl implements ContractService {
             contract.setSalary(contract.getGrossSalary().doubleValue());
         }
         
-        if (contract.getStartDate() == null) {
-            throw new IllegalArgumentException("Yêu cầu ngày bắt đầu");
-        }
+        // Start date validation removed - dates no longer required for contract creation
         
         Contract savedContract = contractRepository.save(contract);
         log.info("Contract created successfully with id: {}", savedContract.getId());
@@ -189,17 +186,14 @@ public class ContractServiceImpl implements ContractService {
         Contract existingContract = contractRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hợp đồng với ID: " + id));
         
-        // Validate required editable fields only
-        if (contractDto.getStartDate() == null) {
-            throw new IllegalArgumentException("Yêu cầu ngày bắt đầu khi cập nhật hợp đồng");
-        }
+        // Date validation removed - start/end dates no longer required for contract updates
         
         // Log which fields are being restricted from update
         log.info("Contract update - Preserving read-only fields: fullName, email, phoneNumber, contractType, position, department, salary, workingHours, offer, evaluation, grossSalary, netSalary, hourlySalary (salary fields completely removed from edit form)");
         
         // ONLY UPDATE EDITABLE FIELDS (as per frontend restrictions):
         // - birthDate, citizenId, address, qualification, subject, educationLevel
-        // - startDate, endDate, contractTerms, status
+        // - contractTerms, status (date fields removed)
         
         // Update editable personal information fields
         if (contractDto.getBirthDate() != null) {
@@ -245,12 +239,7 @@ public class ContractServiceImpl implements ContractService {
             existingContract.setComments(contractDto.getComments());
         }
         
-        // Update editable contract fields
-        existingContract.setStartDate(contractDto.getStartDate());
-        
-        if (contractDto.getEndDate() != null) {
-            existingContract.setEndDate(contractDto.getEndDate());
-        }
+        // Date fields removed from contract updates
         
         if (contractDto.getStatus() != null && !contractDto.getStatus().trim().isEmpty()) {
             existingContract.setStatus(contractDto.getStatus());
@@ -599,8 +588,7 @@ public class ContractServiceImpl implements ContractService {
         contract.setHourlySalary(contractDto.getHourlySalary());
         
         contract.setWorkingHours(contractDto.getWorkingHours());
-        contract.setStartDate(contractDto.getStartDate());
-        contract.setEndDate(contractDto.getEndDate());
+        // Date field mapping removed
         contract.setStatus(contractDto.getStatus());
         contract.setContractTerms(contractDto.getContractTerms());
         contract.setCreatedBy(contractDto.getCreatedBy());
@@ -644,8 +632,7 @@ public class ContractServiceImpl implements ContractService {
         dto.setHourlySalary(contract.getHourlySalary());
         
         dto.setWorkingHours(contract.getWorkingHours());
-        dto.setStartDate(contract.getStartDate());
-        dto.setEndDate(contract.getEndDate());
+        // Date field mapping removed
         dto.setStatus(contract.getStatus());
         dto.setContractTerms(contract.getContractTerms());
         dto.setCreatedBy(contract.getCreatedBy());
@@ -668,41 +655,13 @@ public class ContractServiceImpl implements ContractService {
     }
     
     /**
-     * Auto-update contract status based on end date
-     * - EXPIRED: past end date
-     * - NEAR_EXPIRY: within 30 days of end date
-     * - ACTIVE: more than 30 days until end date
+     * Auto-update contract status - simplified without end date dependency
+     * All contracts remain ACTIVE by default since date-based expiry is removed
      */
     private void updateContractStatusBasedOnEndDate(Contract contract) {
-        if (contract.getEndDate() == null) {
-            return; // Skip if no end date
-        }
-        
-        LocalDate today = LocalDate.now();
-        LocalDate endDate = contract.getEndDate();
-        long daysUntilExpiry = ChronoUnit.DAYS.between(today, endDate);
-        
-        String currentStatus = contract.getStatus();
-        String newStatus = null;
-        
-        if (daysUntilExpiry < 0) {
-            // Contract has expired
-            newStatus = "EXPIRED";
-        } else if (daysUntilExpiry <= 30) {
-            // Contract is near expiry (30 days or less)
-            newStatus = "NEAR_EXPIRY";
-        } else {
-            // Contract is still active
-            newStatus = "ACTIVE";
-        }
-        
-        // Update status if it has changed
-        if (!newStatus.equals(currentStatus)) {
-            log.info("Auto-updating contract {} status from {} to {} (days until expiry: {})", 
-                    contract.getContractId(), currentStatus, newStatus, daysUntilExpiry);
-            contract.setStatus(newStatus);
-            contractRepository.save(contract);
-        }
+        // Date-based status updates removed - contracts remain ACTIVE by default
+        // Status changes now handled manually through contract management UI
+        log.debug("Contract status auto-update disabled - manual status management only");
     }
 
     @Override
@@ -726,8 +685,6 @@ public class ContractServiceImpl implements ContractService {
         contract1.setDepartment("Phòng Giáo vụ");
         contract1.setSalary(15000000.0);
         contract1.setWorkingHours("ca sáng (7:30-9:30)");
-        contract1.setStartDate(LocalDate.of(2024, 1, 15));
-        contract1.setEndDate(LocalDate.of(2026, 1, 15));
         contract1.setStatus("ACTIVE");
         contractRepository.save(contract1);
         
@@ -743,8 +700,7 @@ public class ContractServiceImpl implements ContractService {
         contract2.setDepartment("Phòng Tài chính");
         contract2.setSalary(12000000.0);
         contract2.setWorkingHours("ca chiều (14:30-16:30)");
-        contract2.setStartDate(LocalDate.of(2024, 2, 1));
-        contract2.setEndDate(today.plusDays(20)); // Còn 20 ngày
+        // Date fields removed from test data
         contract2.setStatus("ACTIVE");
         contractRepository.save(contract2);
         
@@ -760,8 +716,7 @@ public class ContractServiceImpl implements ContractService {
         contract3.setDepartment("Phòng Giáo vụ");
         contract3.setSalary(16000000.0);
         contract3.setWorkingHours("ca tối (19:20-21:20)");
-        contract3.setStartDate(LocalDate.of(2024, 3, 1));
-        contract3.setEndDate(today.plusDays(10)); // Còn 10 ngày
+        // Date fields removed from test data
         contract3.setStatus("NEAR_EXPIRY");
         contractRepository.save(contract3);
         
@@ -777,8 +732,7 @@ public class ContractServiceImpl implements ContractService {
         contract4.setDepartment("Phòng Hành chính");
         contract4.setSalary(11000000.0);
         contract4.setWorkingHours("ca sáng (7:30-9:30)");
-        contract4.setStartDate(LocalDate.of(2024, 4, 1));
-        contract4.setEndDate(today.plusDays(5)); // Còn 5 ngày
+        // Date fields removed from test data
         contract4.setStatus("NEAR_EXPIRY");
         contractRepository.save(contract4);
         
@@ -794,8 +748,7 @@ public class ContractServiceImpl implements ContractService {
         contract5.setDepartment("Phòng Giáo vụ");
         contract5.setSalary(17000000.0);
         contract5.setWorkingHours("ca chiều (14:30-16:30)");
-        contract5.setStartDate(LocalDate.of(2024, 5, 1));
-        contract5.setEndDate(today.minusDays(3)); // Hết hạn 3 ngày trước
+        // Date fields removed from test data
         contract5.setStatus("EXPIRED");
         contractRepository.save(contract5);
         

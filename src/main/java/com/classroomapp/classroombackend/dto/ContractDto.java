@@ -22,8 +22,6 @@ public class ContractDto {
     private String department;
     private Double salary;
     private String workingHours;
-    private LocalDate startDate;
-    private LocalDate endDate;
     private String status; // "ACTIVE", "EXPIRED", "TERMINATED"
     private String contractTerms;
     private String createdBy;

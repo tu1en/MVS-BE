@@ -28,90 +28,32 @@ public class ContractStatusSchedulerService {
     @Scheduled(cron = "0 0 9 * * *") // Chạy lúc 9:00 AM mỗi ngày
     @Transactional
     public void updateContractStatuses() {
-        log.info("Starting daily contract status update job");
-        
-        LocalDate today = LocalDate.now();
-        
-        log.info("Starting contract status update - Today: {}", today);
-        
-        // Lấy tất cả hợp đồng đang ACTIVE
-        List<Contract> activeContracts = contractRepository.findByStatusOrderByCreatedAtDesc("ACTIVE");
-        log.info("Found {} active contracts to check", activeContracts.size());
-        
-        int nearExpiryCount = 0;
-        int expiredCount = 0;
-        
-        for (Contract contract : activeContracts) {
-            if (contract.getEndDate() == null) {
-                log.info("Contract {} has no end date, skipping", contract.getId());
-                continue; // Bỏ qua hợp đồng không có ngày kết thúc
-            }
-            
-            LocalDate endDate = contract.getEndDate();
-            LocalDate nearExpiryDate = endDate.minusDays(15); // 15 ngày TRƯỚC ngày kết thúc
-            
-            log.info("Checking contract {} - End date: {}, Near expiry date: {}", 
-                    contract.getId(), endDate, nearExpiryDate);
-            
-            // Kiểm tra hợp đồng đã hết hạn (ngày kết thúc <= hôm nay)
-            if (endDate.isBefore(today) || endDate.isEqual(today)) {
-                contract.setStatus("EXPIRED");
-                contractRepository.save(contract);
-                expiredCount++;
-                log.info("Contract {} expired on {}", contract.getId(), endDate);
-            }
-            // Kiểm tra hợp đồng gần hết hạn (hôm nay >= 15 ngày trước ngày kết thúc)
-            else if ((today.isEqual(nearExpiryDate) || today.isAfter(nearExpiryDate)) && today.isBefore(endDate)) {
-                contract.setStatus("NEAR_EXPIRY");
-                contractRepository.save(contract);
-                nearExpiryCount++;
-                
-                // Gửi email thông báo
-                sendExpiryNotificationEmail(contract);
-                log.info("Contract {} marked as near expiry - expires on {}, near expiry started on {}", 
-                        contract.getId(), endDate, nearExpiryDate);
-            } else {
-                log.info("Contract {} is still active - expires on {}", contract.getId(), endDate);
-            }
-        }
-        
-        log.info("Contract status update completed: {} near expiry, {} expired", nearExpiryCount, expiredCount);
+        // Scheduler disabled: Contract no longer has endDate/startDate.
+        log.info("Contract status scheduler disabled (date fields removed). Skipping status update job.");
     }
     
     /**
      * Gửi email thông báo hợp đồng gần hết hạn
      */
     private void sendExpiryNotificationEmail(Contract contract) {
+        // Disabled: endDate removed from Contract, email content cannot include expiry date
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setTo(contract.getEmail());
-            message.setSubject("Thông báo: Hợp đồng của bạn sắp hết hạn");
-            
+            message.setSubject("Thông báo: Cập nhật hợp đồng");
             String emailContent = String.format(
                 "Kính gửi %s,\n\n" +
-                "Chúng tôi xin thông báo rằng hợp đồng của bạn sắp hết hạn:\n\n" +
-                "- Họ tên: %s\n" +
-                "- Vị trí: %s\n" +
-                "- Phòng ban: %s\n" +
-                "- Ngày kết thúc hợp đồng: %s\n" +
-                "- Thời gian còn lại: khoảng 15 ngày\n\n" +
-                "Vui lòng liên hệ với phòng Nhân sự để thực hiện các thủ tục gia hạn hợp đồng nếu cần thiết.\n\n" +
+                "Hệ thống gửi thông báo liên quan đến hợp đồng của bạn.\n\n" +
                 "Trân trọng,\n" +
                 "Phòng Nhân sự\n" +
                 "Hệ thống Quản lý Lớp học",
-                contract.getFullName(),
-                contract.getFullName(),
-                contract.getPosition(),
-                contract.getDepartment() != null ? contract.getDepartment() : "Chưa xác định",
-                contract.getEndDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+                contract.getFullName()
             );
-            
             message.setText(emailContent);
             mailSender.send(message);
-            
-            log.info("Expiry notification email sent to: {}", contract.getEmail());
+            log.info("Notification email sent to: {}", contract.getEmail());
         } catch (Exception e) {
-            log.error("Failed to send expiry notification email to {}: {}", contract.getEmail(), e.getMessage());
+            log.error("Failed to send notification email to {}: {}", contract.getEmail(), e.getMessage());
         }
     }
     

@@ -54,9 +54,9 @@ public class ContractBackfillSeeder implements CommandLineRunner {
                 changed = true;
             }
 
-            // Ensure status
+            // Ensure status - mặc định ACTIVE vì không cần endDate
             if (isBlank(c.getStatus())) {
-                c.setStatus(computeStatus(c.getEndDate()));
+                c.setStatus("ACTIVE");
                 changed = true;
             }
 
@@ -146,11 +146,7 @@ public class ContractBackfillSeeder implements CommandLineRunner {
                 changed = true;
             }
 
-            // Ensure start_date minimal
-            if (c.getStartDate() == null) {
-                c.setStartDate(LocalDate.now());
-                changed = true;
-            }
+            // Bỏ việc set startDate vì không cần thiết
             if (c.getCreatedAt() == null) {
                 c.setCreatedAt(LocalDateTime.now());
                 changed = true;
@@ -178,13 +174,7 @@ public class ContractBackfillSeeder implements CommandLineRunner {
         return sequence + dateFormat; // matches 6-digit format used elsewhere
     }
 
-    private String computeStatus(LocalDate endDate) {
-        if (endDate == null) return "ACTIVE";
-        long daysUntilExpiry = ChronoUnit.DAYS.between(LocalDate.now(), endDate);
-        if (daysUntilExpiry < 0) return "EXPIRED";
-        if (daysUntilExpiry <= 30) return "NEAR_EXPIRY";
-        return "ACTIVE";
-    }
+    // Bỏ method computeStatus vì không cần endDate nữa
 
     private Long deriveHourlyFromSalaryOrOffer(Contract c) {
         try {
