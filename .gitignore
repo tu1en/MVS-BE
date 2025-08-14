@@ -1,5 +1,5 @@
 # ------------------------------------------------------------------
-# 1. Build artefacts – đã OK
+# 1. Build artefacts
 *.class
 *.jar
 *.war
@@ -10,11 +10,11 @@
 *.rar
 target/
 
-# 2. Log, crash-dump – đã OK
+# 2. Log & crash dump
 *.log
 hs_err_pid*
 
-# 3. IDE, hệ điều hành – đã OK
+# 3. IDE & hệ điều hành
 .idea/
 .vscode/
 .settings/
@@ -26,7 +26,7 @@ Thumbs.db
 .project
 .classpath
 
-# 4. Maven tạm – đã OK
+# 4. Maven tạm
 pom.xml.*
 release.properties
 dependency-reduced-pom.xml
@@ -34,22 +34,22 @@ buildNumber.properties
 .mvn/
 
 # ------------------------------------------------------------------
-# 5. **Bổ sung**: script SQL & backup
-*.sql               # file .sql bất kỳ
-*.backup            # file đuôi .backup (dữ liệu, cấu hình…)
+# 5. Script DB & file backup
+*.sql
+*.backup
 
-# 6. **File cấu hình Spring Boot thực tế**
+# 6. File cấu hình Spring Boot (thật)
 **/application.properties
-application-*.properties    # ví dụ application-dev.properties
+application-*.properties
 
-# Giữ lại file mẫu để team tham khảo:
+#   Giữ lại file mẫu để tham khảo
 !src/main/resources/application-example.properties
 
-# 7. **Java class cấu hình DB muốn ẩn**
+# 7. Java class cấu hình DB muốn ẩn
 **/DatabaseConfig.java
 
-# 8. **Khóa dịch vụ Firebase (JSON)**
+# 8. Khóa Firebase JSON
 src/main/resources/mve-1-firebase-adminsdk.json
-#   ↑ bỏ cặp dấu nháy, Git không hiểu ký tự `"`.
-# Bỏ toàn bộ thư mục uploads (nếu là file người dùng)
+
+# 9. File người dùng tải lên
 uploads/
