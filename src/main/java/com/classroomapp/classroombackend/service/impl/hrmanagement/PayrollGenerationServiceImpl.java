@@ -109,8 +109,6 @@ public class PayrollGenerationServiceImpl implements PayrollGenerationService {
             payrollResult.setUserEmail(user.getEmail());
             payrollResult.setContractType(contract.getContractType());
             payrollResult.setContractOffer(contract.getOffer());
-            payrollResult.setContractStartDate(contract.getStartDate());
-            payrollResult.setContractEndDate(contract.getEndDate());
             // Bổ sung đơn giá theo giờ nếu có trong hợp đồng (giúp FE hiển thị)
             if (contract.getHourlySalary() != null && contract.getHourlySalary() > 0) {
                 payrollResult.setHourlySalary(new BigDecimal(contract.getHourlySalary()));

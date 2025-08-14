@@ -58,11 +58,6 @@ public class Contract {
     @Column(name = "working_hours")
     private String workingHours;
 
-    @Column(name = "start_date", nullable = false)
-    private LocalDate startDate;
-
-    @Column(name = "end_date")
-    private LocalDate endDate;
 
     @Column(name = "status", nullable = false)
     private String status; // "ACTIVE", "EXPIRED", "TERMINATED"

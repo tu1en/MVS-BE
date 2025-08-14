@@ -689,23 +689,28 @@ seedEvidenceTemplates();
                     u.setPassword(passwordEncoder.encode("teacher123"));
                     u.setEmail(t[1]);
                     u.setFullName(t[2]);
-                    u.setRoleId(RoleConstants.TEACHER);
-                    u.setDepartment(t[3]);
-                    u.setHireDate(LocalDate.now().minusMonths((int)(nextId % 24)));
-                    userRepository.save(u);
 
-                    // Tạo hợp đồng ACTIVE cho giáo viên để đồng bộ bộ lọc môn/ca/cấp
-                    try {
-                        Contract c = new Contract();
-                        c.setContractId("CT" + u.getId() + "_" + System.currentTimeMillis()); // Tạo mã hợp đồng duy nhất
-                        c.setUserId(u.getId());
-                        c.setFullName(u.getFullName());
-                        c.setEmail(u.getEmail());
-                        c.setPhoneNumber("09" + (int)(10000000 + Math.random()*89999999));
-                        c.setContractType("TEACHER");
-                        c.setPosition("Giáo viên " + t[3]);
-                        c.setDepartment(t[3]);
-                        c.setSalary(15000000.0 + (int)(Math.random()*6000000));
+    // Tạo hợp đồng ACTIVE cho giáo viên để đồng bộ bộ lọc môn/ca/cấp
+    try {
+        Contract c = new Contract();
+        // Generate 6-digit contract ID: 2-digit monthly sequence + MMYY
+        LocalDate today = LocalDate.now();
+        LocalDate startOfMonth = today.withDayOfMonth(1);
+        LocalDate endOfMonth = startOfMonth.plusMonths(1);
+        Long contractsThisMonth = contractRepository
+            .countByCreatedAtBetween(startOfMonth.atStartOfDay(), endOfMonth.atStartOfDay());
+        String sequence = String.format("%02d", contractsThisMonth + 1);
+        String dateFormat = String.format("%02d%02d", today.getMonthValue(), today.getYear() % 100);
+        c.setContractId(sequence + dateFormat);
+        c.setUserId(u.getId());
+        c.setFullName(u.getFullName());
+        c.setEmail(u.getEmail());
+        c.setPhoneNumber("09" + (int)(10000000 + Math.random()*89999999));
+        c.setContractType("TEACHER");
+        c.setPosition("Giáo viên " + t[3]);
+        c.setDepartment(t[3]);
+        c.setSalary(15000000.0 + (int)(Math.random()*6000000));
+        // Giáo viên: thêm đơn giá theo giờ để phục vụ tính lương theo giờ
                         // Giáo viên: thêm đơn giá theo giờ để phục vụ tính lương theo giờ
                         try {
                             long hourly = 120_000L + (long)(Math.random() * 100_000L); // 120k - 220k VND/giờ
@@ -714,9 +719,7 @@ seedEvidenceTemplates();
                         // ngẫu nhiên ca làm việc
                         String[] shifts = new String[]{"ca sáng (07:30-09:30)", "ca chiều (13:30-15:30)", "ca tối (18:00-20:00)"};
                         c.setWorkingHours(shifts[(int)(Math.random()*shifts.length)]);
-                        c.setStartDate(LocalDate.now());
-                        // Ngày kết thúc hợp đồng: 2 năm sau theo mặc định
-                        c.setEndDate(LocalDate.now().plusYears(2));
+                        // Date fields removed from seed (startDate/endDate)
                         c.setStatus("ACTIVE");
                         c.setSubject(t[3]);
                         // phân bổ cấp học 10/11/12
