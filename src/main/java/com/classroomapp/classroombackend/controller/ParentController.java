@@ -26,9 +26,13 @@ import org.springframework.http.HttpHeaders;
 import com.classroomapp.classroombackend.model.Parent;
 import com.classroomapp.classroombackend.model.ParentLeaveNotice;
 import com.classroomapp.classroombackend.model.StudentParent;
+import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.security.JwtUtil;
 import com.classroomapp.classroombackend.service.ParentLeaveNoticeService;
 import com.classroomapp.classroombackend.service.ParentService;
+
+import io.jsonwebtoken.Claims;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -47,14 +51,17 @@ public class ParentController {
     private final ParentService parentService;
     private final ParentLeaveNoticeService leaveNoticeService;
     private final JwtUtil jwtUtil;
+    private final UserRepository userRepository;
 
     @Autowired
     public ParentController(ParentService parentService, 
                            ParentLeaveNoticeService leaveNoticeService,
-                           JwtUtil jwtUtil) {
+                           JwtUtil jwtUtil,
+                           UserRepository userRepository) {
         this.parentService = parentService;
         this.leaveNoticeService = leaveNoticeService;
         this.jwtUtil = jwtUtil;
+        this.userRepository = userRepository;
     }
 
     /**
@@ -417,13 +424,38 @@ public class ParentController {
 
     private Long getParentIdFromToken(HttpServletRequest request) {
         String token = getTokenFromRequest(request);
-        String email = jwtUtil.getSubjectFromToken(token);
         
-        Optional<Parent> parent = parentService.getParentByEmail(email);
+        // First try to get username from claims, fall back to subject
+        String username;
+        try {
+            Claims claims = jwtUtil.getAllClaimsFromToken(token);
+            username = claims.get("username", String.class);
+            if (username == null) {
+                username = jwtUtil.getSubjectFromToken(token);
+            }
+        } catch (Exception e) {
+            username = jwtUtil.getSubjectFromToken(token);
+        }
+        
+        log.debug("Looking for user with username: {}", username);
+        
+        // First find the User by username
+        Optional<User> user = userRepository.findByUsername(username);
+        if (!user.isPresent()) {
+            log.error("User not found for username: {}", username);
+            throw new IllegalArgumentException("User not found for token");
+        }
+        
+        log.debug("Found user with ID: {}", user.get().getId());
+        
+        // Then find the Parent entity by userId
+        Optional<Parent> parent = parentService.getParentByUserId(user.get().getId());
         if (parent.isPresent()) {
+            log.debug("Found parent with ID: {}", parent.get().getId());
             return parent.get().getId();
         } else {
-            throw new IllegalArgumentException("Parent not found for token");
+            log.error("Parent not found for user ID: {}", user.get().getId());
+            throw new IllegalArgumentException("Parent not found for user");
         }
     }
 

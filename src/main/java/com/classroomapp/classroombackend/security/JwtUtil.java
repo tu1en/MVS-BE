@@ -10,10 +10,13 @@ import javax.crypto.SecretKey;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.classroomapp.classroombackend.constants.RoleConstants;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.classroomapp.classroombackend.service.ParentService;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -36,6 +39,12 @@ public class JwtUtil {
     private long jwtExpirationMs;
 
     private static final long JWT_TOKEN_VALIDITY = 24 * 60 * 60; // 24 hours
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private ParentService parentService;
 
     public SecretKey getSecretKeyFromString() {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
@@ -244,8 +253,15 @@ public class JwtUtil {
                 return false;
             }
             
-            List<Long> childIds = getChildIdsFromToken(token);
-            boolean hasAccess = childIds.contains(childId);
+            // Get parent ID from token and check database directly
+            String email = getSubjectFromToken(token);
+            if (email == null) {
+                log.error("No email found in token");
+                return false;
+            }
+            
+            // Use Spring to get ParentService and check database
+            boolean hasAccess = checkParentChildAccessInDatabase(email, childId);
             
             log.debug("Parent access check for child {}: {}", childId, hasAccess);
             return hasAccess;
@@ -290,5 +306,40 @@ public class JwtUtil {
         }
         
         return hasAccessToChild(token, childId);
+    }
+
+    /**
+     * Check parent-child access directly from database
+     * Used when JWT token doesn't contain childIds claim
+     */
+    private boolean checkParentChildAccessInDatabase(String email, Long childId) {
+        try {
+            // Find user by email
+            var userOpt = userRepository.findByEmail(email);
+            if (userOpt.isEmpty()) {
+                log.error("User not found with email: {}", email);
+                return false;
+            }
+            
+            var user = userOpt.get();
+            
+            // Find parent entity by user ID and check access
+            var parentOpt = parentService.getParentByUserId(user.getId());
+            if (parentOpt.isEmpty()) {
+                log.error("Parent entity not found for user: {}", email);
+                return false;
+            }
+            
+            var parent = parentOpt.get();
+            boolean hasAccess = parentService.hasAccessToStudent(parent.getId(), childId);
+            
+            log.debug("Database check - Parent {} has access to child {}: {}", email, childId, hasAccess);
+            return hasAccess;
+            
+        } catch (Exception e) {
+            log.error("Error checking parent-child access in database for email {} and child {}: {}", 
+                     email, childId, e.getMessage());
+            return false;
+        }
     }
 }

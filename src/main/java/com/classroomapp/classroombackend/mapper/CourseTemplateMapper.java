@@ -27,18 +27,4 @@ public interface CourseTemplateMapper {
     List<CourseTemplateDto> toDtoList(List<CourseTemplate> courseTemplates);
     
     List<LessonTemplateDto> lessonToDtoList(List<LessonTemplate> lessonTemplates);
-    
-    // Custom mapping methods to handle User <-> Long conversion
-    @org.mapstruct.Named("userToLong")
-    default Long mapUserToLong(User user) {
-        return user != null ? user.getId() : null;
-    }
-    
-    @org.mapstruct.Named("longToUser")
-    default User mapLongToUser(Long userId) {
-        if (userId == null) return null;
-        User user = new User();
-        user.setId(userId);
-        return user;
-    }
 }

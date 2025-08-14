@@ -27,6 +27,9 @@ public class AssignmentDto {
     @Size(max = 2000, message = "Description cannot exceed 2000 characters")
     private String description;
     
+    // Rich text content for WYSIWYG editor
+    private String richTextContent;
+    
     @NotNull(message = "Due date is required")
     @Future(message = "Due date must be in the future")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")

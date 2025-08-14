@@ -21,6 +21,7 @@ import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.assignmentmanagement.AssignmentRepository;
 import com.classroomapp.classroombackend.repository.assignmentmanagement.SubmissionRepository;
+import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomEnrollmentRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.FileStorageService;
 import com.classroomapp.classroombackend.service.SubmissionService;
@@ -36,6 +37,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     private final UserRepository userRepository;
     private final ModelMapper modelMapper;
     private final FileStorageService fileStorageService;
+    private final ClassroomEnrollmentRepository classroomEnrollmentRepository;
 
     @Override
     public SubmissionDto GetSubmissionById(Long id) {
@@ -46,38 +48,46 @@ public class SubmissionServiceImpl implements SubmissionService {
     @Override
     @Transactional
     public SubmissionDto submit(CreateSubmissionDto dto, String studentUsername) {
-        System.out.println("=== SUBMISSION SERVICE DEBUG ===");
-        System.out.println("Student username: " + studentUsername);
-        System.out.println("Assignment ID: " + dto.getAssignmentId());
-        System.out.println("Comment: " + dto.getComment());
-        System.out.println("Attachments: " + (dto.getAttachments() != null ? dto.getAttachments().size() : 0));
+
         
         User student = userRepository.findByEmail(studentUsername)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", studentUsername));
         
-        System.out.println("Found student: " + student.getId() + " - " + student.getEmail());
+
 
         Assignment assignment = assignmentRepository.findById(dto.getAssignmentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Assignment", "id", dto.getAssignmentId()));
 
-        // 1. Kiểm tra hạn nộp
+        // 1. Kiểm tra học sinh có enrolled trong classroom không
+        boolean isEnrolled = classroomEnrollmentRepository.findByClassroomAndUser(assignment.getClassroom(), student).isPresent();
+        if (!isEnrolled) {
+            throw new BusinessLogicException("Student is not enrolled in this classroom.");
+        }
+
+        // 2. Kiểm tra hạn nộp
         if (LocalDateTime.now().isAfter(assignment.getDueDate())) {
             throw new BusinessLogicException("Assignment deadline has passed.");
         }
 
-        // 2. Logic Upsert: Tìm hoặc tạo mới Submission
+        // 3. Logic Upsert: Tìm hoặc tạo mới Submission
         Submission submission = submissionRepository
                 .findByAssignmentAndStudent(assignment, student)
                 .orElse(new Submission(assignment, student));
 
-        // 3. Nếu là nộp lại, xóa file cũ
+        // 4. Nếu là nộp lại, xóa file cũ
         if (submission.getId() != null && submission.getAttachments() != null) {
             submission.getAttachments().forEach(att -> fileStorageService.delete(att.getFileName()));
             submission.getAttachments().clear();
         }
 
-        // 4. Cập nhật nội dung và file mới
+        // 5. Validate file attachments
+        if (dto.getAttachments() != null && !dto.getAttachments().isEmpty()) {
+            validateFileAttachments(dto.getAttachments());
+        }
+
+        // 6. Cập nhật nội dung và file mới
         submission.setComment(dto.getComment());
+        submission.setRichTextContent(dto.getRichTextContent());
         submission.setSubmittedAt(LocalDateTime.now());
 
         if (dto.getAttachments() != null && !dto.getAttachments().isEmpty()) {
@@ -87,12 +97,8 @@ public class SubmissionServiceImpl implements SubmissionService {
         }
 
         Submission savedSubmission = submissionRepository.save(submission);
-        System.out.println("Saved submission with ID: " + savedSubmission.getId());
-        System.out.println("Submission attachments count: " + savedSubmission.getAttachments().size());
         
         SubmissionDto result = modelMapper.map(savedSubmission, SubmissionDto.class);
-        System.out.println("Mapped to DTO with ID: " + result.getId());
-        System.out.println("=== END SUBMISSION SERVICE DEBUG ===");
         return result;
     }
 
@@ -335,6 +341,46 @@ public class SubmissionServiceImpl implements SubmissionService {
         return stats;
     }
     
+    
+    // File validation constants
+    private static final long MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+    private static final int MAX_FILES_PER_SUBMISSION = 10;
+    private static final String[] ALLOWED_FILE_TYPES = {
+        "pdf", "doc", "docx", "txt", "rtf", "odt",
+        "jpg", "jpeg", "png", "gif", "bmp",
+        "xls", "xlsx", "ppt", "pptx", "csv",
+        "zip", "rar", "7z"
+    };
+    
+    /**
+     * Validate file attachments for size, type, and count
+     */
+    private void validateFileAttachments(java.util.List<com.classroomapp.classroombackend.dto.FileUploadResponse> attachments) {
+        // Check file count
+        if (attachments.size() > MAX_FILES_PER_SUBMISSION) {
+            throw new BusinessLogicException("Cannot upload more than " + MAX_FILES_PER_SUBMISSION + " files per submission.");
+        }
+        
+        for (com.classroomapp.classroombackend.dto.FileUploadResponse fileInfo : attachments) {
+            // Check file size
+            if (fileInfo.getSize() > MAX_FILE_SIZE) {
+                throw new BusinessLogicException("File '" + fileInfo.getFileName() + "' exceeds maximum size of " + (MAX_FILE_SIZE / 1024 / 1024) + "MB.");
+            }
+            
+            // Check file type
+            String fileName = fileInfo.getFileName();
+            if (fileName != null && fileName.contains(".")) {
+                String fileExtension = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
+                boolean isAllowedType = java.util.Arrays.asList(ALLOWED_FILE_TYPES).contains(fileExtension);
+                if (!isAllowedType) {
+                    throw new BusinessLogicException("File type '" + fileExtension + "' is not allowed. Allowed types: " + String.join(", ", ALLOWED_FILE_TYPES));
+                }
+            } else {
+                throw new BusinessLogicException("File must have a valid extension.");
+            }
+        }
+    }
+
     // Helper method to find submission by ID or throw exception
     private Submission FindSubmissionById(Long id) {
         return submissionRepository.findById(id)

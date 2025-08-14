@@ -2,6 +2,7 @@ package com.classroomapp.classroombackend.controller;
 
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,7 @@ import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.security.JwtUtil;
 import com.classroomapp.classroombackend.service.AuthService;
+import com.classroomapp.classroombackend.service.ParentService;
 import com.classroomapp.classroombackend.service.RequestService;
 import com.classroomapp.classroombackend.service.UserService;
 import com.google.firebase.auth.FirebaseAuth;
@@ -44,16 +46,19 @@ public class AuthController {
     private final UserRepository userRepository;
     private final UserService userService;
     private final RequestService requestService; // Inject RequestService
+    private final ParentService parentService; // Inject ParentService
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
 
     @Autowired
     public AuthController(AuthService authService, UserRepository userRepository, 
-                         UserService userService, RequestService requestService, JwtUtil jwtUtil, PasswordEncoder passwordEncoder) {
+                         UserService userService, RequestService requestService, 
+                         ParentService parentService, JwtUtil jwtUtil, PasswordEncoder passwordEncoder) {
         this.authService = authService;
         this.userRepository = userRepository;
         this.userService = userService;
         this.requestService = requestService; // Initialize RequestService
+        this.parentService = parentService; // Initialize ParentService
         this.jwtUtil = jwtUtil;
         this.passwordEncoder = passwordEncoder;
     }
@@ -122,13 +127,18 @@ public class AuthController {
             claims.put("roles", new String[]{roleName});
             
             // Generate JWT token mới với claims đầy đủ
-            String token = Jwts.builder()
-                .setClaims(claims)
-                .setSubject(user.getEmail()) // CONSISTENT: Subject is always email
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)) // 24 giờ
-                .signWith(jwtUtil.getSecretKeyFromString(), SignatureAlgorithm.HS512)
-                .compact();
+            // Generate appropriate JWT token based on role
+            String token;
+            if ("PARENT".equals(roleName)) {
+                // For parent users, get their children and use generateParentToken
+                List<Long> childIds = getChildIdsForParent(user.getId());
+                token = jwtUtil.generateParentToken(user.getEmail(), user.getRoleId(), childIds);
+                log.info("Generated parent token with {} children for user: {}", childIds.size(), user.getEmail());
+            } else {
+                // For other roles, use regular token generation
+                token = jwtUtil.generateToken(user.getEmail(), user.getRoleId());
+                log.info("Generated regular token for user: {} with role: {}", user.getEmail(), roleName);
+            }
 
             log.info("AuthController - Generated JWT token for user: {} with role: {}", user.getEmail(), user.getRoleId());
             
@@ -348,5 +358,24 @@ public class AuthController {
         userRepository.save(user);
         
         return ResponseEntity.ok("Đổi mật khẩu thành công");
+    }
+
+    /**
+     * Helper method to get child IDs for a parent user
+     * Used for generating parent JWT tokens with child access
+     */
+    private List<Long> getChildIdsForParent(Long userId) {
+        try {
+            // Find the parent entity by user ID
+            return parentService.getParentByUserId(userId)
+                .map(parent -> parentService.getChildrenByParentId(parent.getId())
+                    .stream()
+                    .map(studentParent -> studentParent.getStudentId())
+                    .toList())
+                .orElse(List.of());
+        } catch (Exception e) {
+            log.error("Error getting child IDs for parent user {}: {}", userId, e.getMessage());
+            return List.of();
+        }
     }
 }

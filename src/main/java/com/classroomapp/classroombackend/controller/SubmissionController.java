@@ -90,16 +90,19 @@ public class SubmissionController {
     }
     
     @GetMapping("/assignment/{assignmentId}")
+    @PreAuthorize("@submissionSecurityService.canAccessAssignmentSubmissions(#assignmentId)")
     public ResponseEntity<List<SubmissionDto>> GetSubmissionsByAssignment(@PathVariable Long assignmentId) {
         return ResponseEntity.ok(submissionService.GetSubmissionsByAssignment(assignmentId));
     }
     
     @GetMapping("/student/{studentId}")
+    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN') or (hasRole('STUDENT') and @submissionSecurityService.isCurrentStudent(#studentId))")
     public ResponseEntity<List<SubmissionDto>> GetSubmissionsByStudent(@PathVariable Long studentId) {
         return ResponseEntity.ok(submissionService.GetSubmissionsByStudent(studentId));
     }
     
     @GetMapping(value = "/assignment/{assignmentId}/student/{studentId}", produces = "application/json;charset=UTF-8")
+    @PreAuthorize("hasRole('TEACHER') or (hasRole('STUDENT') and @submissionSecurityService.isCurrentStudent(#studentId))")
     public ResponseEntity<SubmissionDto> GetStudentSubmissionForAssignment(
             @PathVariable Long assignmentId,
             @PathVariable Long studentId) {

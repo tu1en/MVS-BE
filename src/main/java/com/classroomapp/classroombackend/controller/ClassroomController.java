@@ -189,13 +189,10 @@ public ResponseEntity<Map<String, Object>> GetClassroomsByCurrentTeacher() {
     @GetMapping("/{classroomId}/exams")
     // @PreAuthorize("hasAnyAuthority('STUDENT', 'MANAGER', 'ADMIN')")
     public ResponseEntity<List<ExamDto>> getExamsByClassroomId(@PathVariable Long classroomId) {
-        System.out.println("=== DEBUG: Getting exams for classroom " + classroomId + " ===");
         try {
             List<ExamDto> exams = examService.getExamsByClassroomId(classroomId);
-            System.out.println("=== DEBUG: Found " + exams.size() + " exams ===");
             return ResponseEntity.ok(exams);
         } catch (Exception e) {
-            System.out.println("=== DEBUG: Error getting exams: " + e.getMessage() + " ===");
             throw e;
         }
     }

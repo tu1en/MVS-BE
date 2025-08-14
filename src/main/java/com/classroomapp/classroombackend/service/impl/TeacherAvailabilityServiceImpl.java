@@ -37,7 +37,7 @@ public class TeacherAvailabilityServiceImpl implements com.classroomapp.classroo
 
     @Override
     public List<AvailableTeacherDto> findAvailableTeachers(AvailableTeachersRequest request) {
-        System.out.println("=== DEBUG findAvailableTeachers ===");
+
         System.out.println("Request subject: [" + request.getSubject() + "]");
         System.out.println("Request educationLevel: [" + request.getEducationLevel() + "]");
         System.out.println("Request schedule: [" + request.getSchedule() + "]");

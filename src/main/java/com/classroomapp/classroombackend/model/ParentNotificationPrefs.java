@@ -3,6 +3,9 @@ package com.classroomapp.classroombackend.model;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.Column;
@@ -40,13 +43,16 @@ public class ParentNotificationPrefs {
     @Column(name = "parent_id", nullable = false)
     private Long parentId;
 
-    @Column(name = "channels", columnDefinition = "JSON", nullable = false)
+    @Column(name = "channels", columnDefinition = "NVARCHAR(MAX)", nullable = false)
+    @JdbcTypeCode(SqlTypes.JSON)
     private Map<String, Boolean> channels; // {"inapp": true, "email": false, "sms": false}
 
-    @Column(name = "quiet_hours", columnDefinition = "JSON")
+    @Column(name = "quiet_hours", columnDefinition = "NVARCHAR(MAX)")
+    @JdbcTypeCode(SqlTypes.JSON)
     private Map<String, String> quietHours; // {"from": "22:00", "to": "07:00"}
 
-    @Column(name = "event_toggles", columnDefinition = "JSON", nullable = false)
+    @Column(name = "event_toggles", columnDefinition = "NVARCHAR(MAX)", nullable = false)
+    @JdbcTypeCode(SqlTypes.JSON)
     private Map<String, Boolean> eventToggles; // Per-event notification settings
 
     @Enumerated(EnumType.STRING)

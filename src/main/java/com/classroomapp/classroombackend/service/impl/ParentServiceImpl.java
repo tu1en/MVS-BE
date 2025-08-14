@@ -4,6 +4,8 @@ import com.classroomapp.classroombackend.model.Parent;
 import com.classroomapp.classroombackend.model.StudentParent;
 import com.classroomapp.classroombackend.repository.parentmanagement.ParentRepository;
 import com.classroomapp.classroombackend.repository.parentmanagement.StudentParentRepository;
+import com.classroomapp.classroombackend.repository.TimetableEventRepository;
+import com.classroomapp.classroombackend.model.TimetableEvent;
 import com.classroomapp.classroombackend.service.ParentService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,12 +32,15 @@ public class ParentServiceImpl implements ParentService {
 
     private final ParentRepository parentRepository;
     private final StudentParentRepository studentParentRepository;
+    private final TimetableEventRepository timetableEventRepository;
 
     @Autowired
     public ParentServiceImpl(ParentRepository parentRepository, 
-                            StudentParentRepository studentParentRepository) {
+                            StudentParentRepository studentParentRepository,
+                            TimetableEventRepository timetableEventRepository) {
         this.parentRepository = parentRepository;
         this.studentParentRepository = studentParentRepository;
+        this.timetableEventRepository = timetableEventRepository;
     }
 
     @Override
@@ -114,7 +119,7 @@ public class ParentServiceImpl implements ParentService {
     @Override
     @Transactional(readOnly = true)
     public List<StudentParent> getChildrenByParentId(Long parentId) {
-        return studentParentRepository.findActiveChildrenByParentId(parentId);
+        return studentParentRepository.findActiveRelationshipsWithDetailsForParent(parentId);
     }
 
     @Override
@@ -240,27 +245,36 @@ public class ParentServiceImpl implements ParentService {
     @Override
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getChildSchedule(Long childId, LocalDate startDate, LocalDate endDate) {
-        // This would typically integrate with your existing schedule/timetable system
-        // For now, returning sample data - replace with actual implementation
         List<Map<String, Object>> schedule = new ArrayList<>();
         
         try {
-            // Query your schedule/timetable tables here
-            // Example implementation - replace with your actual data access logic
+            // Query timetable events for the date range
+            LocalDateTime startDateTime = startDate.atStartOfDay();
+            LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
             
-            // Sample schedule event
-            Map<String, Object> event = new HashMap<>();
-            event.put("id", 1L);
-            event.put("date", startDate.toString());
-            event.put("startTime", "08:00");
-            event.put("endTime", "09:30");
-            event.put("subject", "Toán học");
-            event.put("title", "Toán học - Đại số");
-            event.put("teacher", "Cô Nguyễn Thị A");
-            event.put("classroom", "Phòng 101");
-            event.put("type", "class");
+            List<TimetableEvent> events = timetableEventRepository.findEventsByDateRange(startDateTime, endDateTime);
             
-            schedule.add(event);
+            // Filter for class events (students see classes, not internal meetings)
+            events = events.stream()
+                .filter(event -> event.getEventType() == TimetableEvent.EventType.CLASS || 
+                               event.getEventType() == TimetableEvent.EventType.ASSIGNMENT_DUE)
+                .collect(java.util.stream.Collectors.toList());
+            
+            for (TimetableEvent event : events) {
+                Map<String, Object> scheduleEvent = new HashMap<>();
+                scheduleEvent.put("id", event.getId());
+                scheduleEvent.put("date", event.getStartDatetime().toLocalDate().toString());
+                scheduleEvent.put("startTime", event.getStartDatetime().toLocalTime().toString());
+                scheduleEvent.put("endTime", event.getEndDatetime().toLocalTime().toString());
+                scheduleEvent.put("title", event.getTitle());
+                scheduleEvent.put("subject", extractSubjectFromTitle(event.getTitle()));
+                scheduleEvent.put("teacher", "Giáo viên"); // Default teacher name
+                scheduleEvent.put("classroom", event.getLocation() != null ? event.getLocation() : "Phòng học");
+                scheduleEvent.put("type", event.getEventType() == TimetableEvent.EventType.CLASS ? "class" : "assignment");
+                scheduleEvent.put("description", event.getDescription());
+                
+                schedule.add(scheduleEvent);
+            }
             
             log.info("Retrieved {} schedule events for child {} from {} to {}", 
                     schedule.size(), childId, startDate, endDate);
@@ -271,30 +285,56 @@ public class ParentServiceImpl implements ParentService {
         
         return schedule;
     }
+    
+    /**
+     * Extract subject name from event title
+     */
+    private String extractSubjectFromTitle(String title) {
+        if (title == null) return "Môn học";
+        
+        // Extract subject from titles like "Toán 11A - Học kỳ 1"
+        if (title.contains(" - ")) {
+            return title.substring(0, title.indexOf(" - "));
+        }
+        
+        // For titles like "Kiểm tra Toán học"
+        if (title.startsWith("Kiểm tra ")) {
+            return title.substring("Kiểm tra ".length());
+        }
+        
+        return title;
+    }
 
     @Override
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getChildExams(Long childId, LocalDate startDate, LocalDate endDate) {
-        // This would typically integrate with your existing exam system
-        // For now, returning sample data - replace with actual implementation
         List<Map<String, Object>> exams = new ArrayList<>();
         
         try {
-            // Query your exam tables here
-            // Example implementation - replace with your actual data access logic
+            // Query timetable events for exam events in the date range
+            LocalDateTime startDateTime = startDate.atStartOfDay();
+            LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
             
-            // Sample exam event
-            Map<String, Object> exam = new HashMap<>();
-            exam.put("id", 1L);
-            exam.put("examDate", startDate.plusDays(3).toString());
-            exam.put("examTime", "14:00");
-            exam.put("examName", "Kiểm tra giữa kỳ");
-            exam.put("subject", "Toán học");
-            exam.put("classroom", "Phòng 201");
-            exam.put("duration", 90); // minutes
-            exam.put("description", "Kiểm tra chương 1-3");
+            List<TimetableEvent> events = timetableEventRepository.findEventsByDateRange(startDateTime, endDateTime);
             
-            exams.add(exam);
+            // Filter for exam events only
+            events = events.stream()
+                .filter(event -> event.getEventType() == TimetableEvent.EventType.EXAM)
+                .collect(java.util.stream.Collectors.toList());
+            
+            for (TimetableEvent event : events) {
+                Map<String, Object> exam = new HashMap<>();
+                exam.put("id", event.getId());
+                exam.put("examDate", event.getStartDatetime().toLocalDate().toString());
+                exam.put("examTime", event.getStartDatetime().toLocalTime().toString());
+                exam.put("examName", event.getTitle());
+                exam.put("subject", extractSubjectFromTitle(event.getTitle()));
+                exam.put("classroom", event.getLocation() != null ? event.getLocation() : "Phòng thi");
+                exam.put("duration", calculateDurationInMinutes(event.getStartDatetime(), event.getEndDatetime()));
+                exam.put("description", event.getDescription() != null ? event.getDescription() : "Bài kiểm tra");
+                
+                exams.add(exam);
+            }
             
             log.info("Retrieved {} exam events for child {} from {} to {}", 
                     exams.size(), childId, startDate, endDate);
@@ -304,6 +344,13 @@ public class ParentServiceImpl implements ParentService {
         }
         
         return exams;
+    }
+    
+    /**
+     * Calculate duration between two LocalDateTime objects in minutes
+     */
+    private long calculateDurationInMinutes(LocalDateTime start, LocalDateTime end) {
+        return java.time.Duration.between(start, end).toMinutes();
     }
 
     @Override

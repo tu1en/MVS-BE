@@ -44,6 +44,10 @@ public class Assignment {
     @Lob
     @Column(length = 2000, columnDefinition = "NVARCHAR(MAX)")
     private String description;
+    // Rich text content for WYSIWYG editor
+    @Lob
+    @Column(columnDefinition = "NVARCHAR(MAX)")
+    private String richTextContent;
 
     @NotNull
     @Future // Must be a future date

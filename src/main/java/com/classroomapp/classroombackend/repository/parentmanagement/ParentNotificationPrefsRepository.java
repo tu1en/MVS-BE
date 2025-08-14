@@ -1,13 +1,14 @@
 package com.classroomapp.classroombackend.repository.parentmanagement;
 
-import com.classroomapp.classroombackend.model.ParentNotificationPrefs;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Optional;
+import com.classroomapp.classroombackend.model.ParentNotificationPrefs;
 
 /**
  * Repository for ParentNotificationPrefs entity
@@ -34,26 +35,27 @@ public interface ParentNotificationPrefsRepository extends JpaRepository<ParentN
     /**
      * Find parents with email notifications enabled
      */
-    @Query("SELECT pnp FROM ParentNotificationPrefs pnp WHERE JSON_EXTRACT(pnp.channels, '$.email') = true")
+    @Query(value = "SELECT * FROM parent_notification_prefs pnp WHERE JSON_VALUE(pnp.channels, '$.email') = 'true'", nativeQuery = true)
     List<ParentNotificationPrefs> findParentsWithEmailEnabled();
 
     /**
      * Find parents with SMS notifications enabled
      */
-    @Query("SELECT pnp FROM ParentNotificationPrefs pnp WHERE JSON_EXTRACT(pnp.channels, '$.sms') = true")
+    @Query(value = "SELECT * FROM parent_notification_prefs pnp WHERE JSON_VALUE(pnp.channels, '$.sms') = 'true'", nativeQuery = true)
     List<ParentNotificationPrefs> findParentsWithSmsEnabled();
 
     /**
      * Find parents with in-app notifications enabled
      */
-    @Query("SELECT pnp FROM ParentNotificationPrefs pnp WHERE JSON_EXTRACT(pnp.channels, '$.inapp') = true")
+    @Query(value = "SELECT * FROM parent_notification_prefs pnp WHERE JSON_VALUE(pnp.channels, '$.inapp') = 'true'", nativeQuery = true)
     List<ParentNotificationPrefs> findParentsWithInAppEnabled();
 
     /**
      * Find parents with specific event notifications enabled
+     * Note: eventKey should be the key name without $ or quotes, e.g. "leave_notice_ack"
      */
-    @Query("SELECT pnp FROM ParentNotificationPrefs pnp WHERE JSON_EXTRACT(pnp.eventToggles, :eventPath) = true")
-    List<ParentNotificationPrefs> findParentsWithEventEnabled(@Param("eventPath") String eventPath);
+    @Query(value = "SELECT * FROM parent_notification_prefs pnp WHERE JSON_VALUE(pnp.event_toggles, '$.' + :eventKey) = 'true'", nativeQuery = true)
+    List<ParentNotificationPrefs> findParentsWithEventEnabled(@Param("eventKey") String eventKey);
 
     /**
      * Find parents by language preference

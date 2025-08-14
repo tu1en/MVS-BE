@@ -168,13 +168,11 @@ public class ClassroomManagementController {
 
     @GetMapping("/{classroomId}/exams")
     public ResponseEntity<List<ExamDto>> getExamsByClassroomId(@PathVariable Long classroomId) {
-        log.info("=== DEBUG: Getting exams for classroom {} via classroom-management API ===", classroomId);
         try {
             List<ExamDto> exams = examService.getExamsByClassroomId(classroomId);
-            log.info("=== DEBUG: Found {} exams ===", exams.size());
             return ResponseEntity.ok(exams);
         } catch (Exception e) {
-            log.error("=== DEBUG: Error getting exams: {} ===", e.getMessage());
+            log.error("Error getting exams for classroom {}: {}", classroomId, e.getMessage());
             throw e;
         }
     }

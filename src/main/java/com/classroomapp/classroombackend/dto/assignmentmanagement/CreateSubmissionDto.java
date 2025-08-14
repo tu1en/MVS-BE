@@ -21,5 +21,9 @@ public class CreateSubmissionDto {
     @Size(max = 2000, message = "Comment cannot exceed 2000 characters")
     private String comment;
     
+    // Rich text content for WYSIWYG editor (HTML format)
+    @Size(max = 10000, message = "Rich text content cannot exceed 10000 characters")
+    private String richTextContent;
+    
     private List<FileUploadResponse> attachments;
 }

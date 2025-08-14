@@ -51,3 +51,5 @@ application-*.properties    # ví dụ application-dev.properties
 # 8. **Khóa dịch vụ Firebase (JSON)**
 src/main/resources/mve-1-firebase-adminsdk.json
 #   ↑ bỏ cặp dấu nháy, Git không hiểu ký tự `"`.
+# Bỏ toàn bộ thư mục uploads (nếu là file người dùng)
+uploads/

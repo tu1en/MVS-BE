@@ -5,7 +5,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -69,6 +70,7 @@ public class ParentLeaveNotice {
     private String note;
 
     @Column(name = "attachments", columnDefinition = "JSON")
+    @JdbcTypeCode(SqlTypes.JSON)
     private List<String> attachments; // File paths/URLs as JSON array
 
     @Enumerated(EnumType.STRING)

@@ -26,6 +26,10 @@ public class CreateAssignmentDto {
     @Size(max = 2000, message = "Description cannot exceed 2000 characters")
     private String description;
     
+    // Rich text content for WYSIWYG editor (HTML format)
+    @Size(max = 10000, message = "Rich text content cannot exceed 10000 characters")
+    private String richTextContent;
+    
     @NotNull(message = "Due date is required")
     @Future(message = "Due date must be in the future")
     private LocalDateTime dueDate;

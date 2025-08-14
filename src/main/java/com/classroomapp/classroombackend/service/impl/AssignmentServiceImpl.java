@@ -190,18 +190,12 @@ public class AssignmentServiceImpl implements AssignmentService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String currentPrincipalName = authentication.getName(); // This is the email
         
-        System.out.println("DEBUG: Current principal name (email): " + currentPrincipalName);
-        
-        // FIX: Look up user by email, which is the principal name from JWT
+        // Look up user by email, which is the principal name from JWT
         User currentUser = userRepository.findByEmail(currentPrincipalName)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", currentPrincipalName));
 
-        System.out.println("DEBUG: Found user: " + currentUser.getUsername() + " with email: " + currentUser.getEmail());
-
         // Use the correct username from the fetched user entity to find assignments
         List<Assignment> assignments = assignmentRepository.findByTeacherUsername(currentUser.getUsername());
-
-        System.out.println("DEBUG: Found " + assignments.size() + " assignments for teacher: " + currentUser.getUsername());
 
         return assignments.stream()
                 .map(a -> modelMapper.map(a, AssignmentDto.class))
@@ -387,7 +381,9 @@ public class AssignmentServiceImpl implements AssignmentService {
 
     @Override
     public BulkGradingResultDto bulkGradeSubmissions(Long assignmentId, BulkGradingDto bulkGradingDto) {
-        return null;
+        // TODO: Implement bulk grading functionality
+        // Currently commented out due to missing DTO classes
+        throw new UnsupportedOperationException("Bulk grading feature is not yet implemented");
     }
 
     @Override

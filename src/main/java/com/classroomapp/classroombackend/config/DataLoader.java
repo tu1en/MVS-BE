@@ -3,6 +3,7 @@ package com.classroomapp.classroombackend.config;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,6 +51,9 @@ import com.classroomapp.classroombackend.model.classroommanagement.Course;
 import com.classroomapp.classroombackend.model.hrmanagement.EvidenceTemplate;
 import com.classroomapp.classroombackend.model.usermanagement.Role;
 import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.model.Parent;
+import com.classroomapp.classroombackend.model.StudentParent;
+import com.classroomapp.classroombackend.model.TimetableEvent;
 import com.classroomapp.classroombackend.repository.AccomplishmentRepository;
 import com.classroomapp.classroombackend.repository.AnnouncementRepository;
 import com.classroomapp.classroombackend.repository.AttendanceExplanationRepository;
@@ -77,6 +81,8 @@ import com.classroomapp.classroombackend.repository.hrmanagement.EvidenceTemplat
 import com.classroomapp.classroombackend.repository.requestmanagement.RequestRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.RoleRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.classroomapp.classroombackend.repository.parentmanagement.ParentRepository;
+import com.classroomapp.classroombackend.repository.parentmanagement.StudentParentRepository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -177,6 +183,12 @@ private EvidenceTemplateRepository evidenceTemplateRepository;
     @Autowired
     private PasswordEncoder passwordEncoder;
     
+    @Autowired
+    private ParentRepository parentRepository;
+    
+    @Autowired
+    private StudentParentRepository studentParentRepository;
+    
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -275,6 +287,11 @@ seedEvidenceTemplates();
         verifyDatabaseState();
         verifyUserRoleAssignments();
         ensureParentRoleAndUser();
+        
+        // Seed parent test data if needed
+        log.info("============== Checking Parent Test Data =============");
+        seedParentTestData();
+        log.info("============== Parent Test Data Complete ============");
         
         // Always create attendance explanations test data
         createAttendanceExplanationsData();
@@ -828,18 +845,83 @@ seedEvidenceTemplates();
             }
 
             // Ensure default parent user exists
+            User parentUser = null;
             if (!userRepository.existsByUsername("parent")) {
-                User parent = new User();
-                parent.setUsername("parent");
-                parent.setPassword(passwordEncoder.encode("parent123"));
-                parent.setEmail("parent@test.com");
-                parent.setFullName("Parent User");
-                parent.setRoleId(RoleConstants.PARENT);
-                userRepository.save(parent);
+                parentUser = new User();
+                parentUser.setUsername("parent");
+                parentUser.setPassword(passwordEncoder.encode("parent123"));
+                parentUser.setEmail("parent@test.com");
+                parentUser.setFullName("Parent User");
+                parentUser.setRoleId(RoleConstants.PARENT);
+                parentUser.setParentPhone("0901234567");
+                parentUser.setParentName("Parent User");
+                parentUser = userRepository.save(parentUser);
                 log.info("✅ Ensured default parent user exists.");
+            } else {
+                parentUser = userRepository.findByUsername("parent").orElse(null);
+            }
+
+            if (parentUser != null) {
+                // Create Parent entity if not exists
+                if (!parentRepository.existsByUserId(parentUser.getId())) {
+                    Parent parent = new Parent();
+                    parent.setUserId(parentUser.getId());
+                    parent.setName("Parent User");
+                    parent.setEmail("parent@test.com");
+                    parent.setPhone("0901234567");
+                    parent = parentRepository.save(parent);
+                    log.info("✅ Created Parent entity for default parent user.");
+
+                    // Create 2 dedicated student users for the default parent
+                    User child1 = new User();
+                    child1.setUsername("child1_of_parent");
+                    child1.setPassword(passwordEncoder.encode("student123"));
+                    child1.setEmail("child1@test.com");
+                    child1.setFullName("Nguyễn Văn An");
+                    child1.setRoleId(RoleConstants.STUDENT);
+                    child1.setParentPhone("0901234567");
+                    child1.setParentName("Parent User");
+                    User savedChild1 = userRepository.save(child1);
+
+                    User child2 = new User();
+                    child2.setUsername("child2_of_parent");
+                    child2.setPassword(passwordEncoder.encode("student123"));
+                    child2.setEmail("child2@test.com");
+                    child2.setFullName("Nguyễn Thị Bình");
+                    child2.setRoleId(RoleConstants.STUDENT);
+                    child2.setParentPhone("0901234567");
+                    child2.setParentName("Parent User");
+                    User savedChild2 = userRepository.save(child2);
+
+                    log.info("✅ Created 2 student users for default parent.");
+
+                    // Create StudentParent relationships
+                    StudentParent relationship1 = new StudentParent();
+                    relationship1.setStudentId(savedChild1.getId());
+                    relationship1.setParentId(parent.getId());
+                    relationship1.setRelationType(StudentParent.RelationType.FATHER);
+                    relationship1.setIsPrimary(true);
+                    relationship1.setLegalGuardian(true);
+                    relationship1.setStartAt(LocalDate.now());
+                    studentParentRepository.save(relationship1);
+
+                    StudentParent relationship2 = new StudentParent();
+                    relationship2.setStudentId(savedChild2.getId());
+                    relationship2.setParentId(parent.getId());
+                    relationship2.setRelationType(StudentParent.RelationType.FATHER);
+                    relationship2.setIsPrimary(true);
+                    relationship2.setLegalGuardian(true);
+                    relationship2.setStartAt(LocalDate.now());
+                    studentParentRepository.save(relationship2);
+
+                    log.info("✅ Created StudentParent relationships for default parent and 2 children.");
+                } else {
+                    log.info("✅ Parent entity and children already exist for default parent user.");
+                }
             }
         } catch (Exception e) {
             log.warn("⚠️ Could not ensure PARENT role/user: {}", e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -2172,6 +2254,477 @@ private void createEvidenceTemplate(String name, String code, String description
 
         } catch (Exception e) {
             log.error("❌ Error seeding teacher evaluations: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Seed comprehensive parent role test data
+     * Creates parents, students, relationships, courses, enrollments, attendance and timetable data for testing parent functionality
+     */
+    private void seedParentTestData() {
+        try {
+            log.info("🚀 Starting parent role seeder data creation...");
+            
+            // Create parent users
+            List<User> parentUsers = createParentUsers();
+            log.info("✅ Created {} parent users", parentUsers.size());
+            
+            // Create student users with parent information
+            List<User> studentUsers = createStudentUsers(parentUsers);
+            log.info("✅ Created {} student users", studentUsers.size());
+            
+            // Create parent entities
+            List<Parent> parents = createParentEntities(parentUsers);
+            log.info("✅ Created {} parent entities", parents.size());
+            
+            // Create parent-student relationships
+            createParentStudentRelationships(parents, studentUsers);
+            log.info("✅ Created parent-student relationships");
+            
+            // Create sample courses for students
+            List<Course> parentTestCourses = createParentTestCourses();
+            log.info("✅ Created {} test courses", parentTestCourses.size());
+            
+            // Enroll students in courses
+            createStudentEnrollments(studentUsers, parentTestCourses);
+            log.info("✅ Created student course enrollments");
+            
+            // Create attendance sessions and records
+            createParentTestAttendance(parentTestCourses, studentUsers);
+            log.info("✅ Created attendance data for parent testing");
+            
+            // Create timetable events for students
+            createTimetableEventsForStudents(studentUsers, parentTestCourses);
+            log.info("✅ Created timetable events for students");
+            
+            log.info("🎉 Parent role seeder data creation completed successfully!");
+            
+        } catch (Exception e) {
+            log.error("❌ Error creating parent seeder data: {}", e.getMessage(), e);
+        }
+    }
+    
+    private List<User> createParentUsers() {
+        List<User> parentUsers = new ArrayList<>();
+        
+        // Parent 1: Trần Văn Nam (will have 2 children)
+        User parent1 = new User();
+        parent1.setUsername("parent_tran_van_nam");
+        parent1.setPassword(passwordEncoder.encode("password123"));
+        parent1.setEmail("tran.van.nam@email.com");
+        parent1.setFullName("Trần Văn Nam");
+        parent1.setPhoneNumber("0901234567");
+        parent1.setRoleId(RoleConstants.PARENT);
+        parent1.setStatus("active");
+        parentUsers.add(userRepository.save(parent1));
+        
+        // Parent 2: Nguyễn Thị Lan (will have 1 child)
+        User parent2 = new User();
+        parent2.setUsername("parent_nguyen_thi_lan");
+        parent2.setPassword(passwordEncoder.encode("password123"));
+        parent2.setEmail("nguyen.thi.lan@email.com");
+        parent2.setFullName("Nguyễn Thị Lan");
+        parent2.setPhoneNumber("0912345678");
+        parent2.setRoleId(RoleConstants.PARENT);
+        parent2.setStatus("active");
+        parentUsers.add(userRepository.save(parent2));
+        
+        // Parent 3: Lê Minh Đức (will have 1 child)
+        User parent3 = new User();
+        parent3.setUsername("parent_le_minh_duc");
+        parent3.setPassword(passwordEncoder.encode("password123"));
+        parent3.setEmail("le.minh.duc@email.com");
+        parent3.setFullName("Lê Minh Đức");
+        parent3.setPhoneNumber("0923456789");
+        parent3.setRoleId(RoleConstants.PARENT);
+        parent3.setStatus("active");
+        parentUsers.add(userRepository.save(parent3));
+        
+        // Parent 4: Phạm Thị Mai (will have 1 child)
+        User parent4 = new User();
+        parent4.setUsername("parent_pham_thi_mai");
+        parent4.setPassword(passwordEncoder.encode("password123"));
+        parent4.setEmail("pham.thi.mai@email.com");
+        parent4.setFullName("Phạm Thị Mai");
+        parent4.setPhoneNumber("0934567890");
+        parent4.setRoleId(RoleConstants.PARENT);
+        parent4.setStatus("active");
+        parentUsers.add(userRepository.save(parent4));
+        
+        return parentUsers;
+    }
+    
+    private List<User> createStudentUsers(List<User> parentUsers) {
+        List<User> studentUsers = new ArrayList<>();
+        
+        // Student 1: Child of Trần Văn Nam
+        User student1 = new User();
+        student1.setUsername("student_tran_minh_anh");
+        student1.setPassword(passwordEncoder.encode("password123"));
+        student1.setEmail("tran.minh.anh@student.edu.vn");
+        student1.setFullName("Trần Minh Anh");
+        student1.setPhoneNumber("0987654321");
+        student1.setRoleId(RoleConstants.STUDENT);
+        student1.setParentPhone("0901234567");
+        student1.setParentName("Trần Văn Nam");
+        student1.setStatus("active");
+        studentUsers.add(userRepository.save(student1));
+        
+        // Student 2: Another child of Trần Văn Nam
+        User student2 = new User();
+        student2.setUsername("student_tran_thu_ha");
+        student2.setPassword(passwordEncoder.encode("password123"));
+        student2.setEmail("tran.thu.ha@student.edu.vn");
+        student2.setFullName("Trần Thu Hà");
+        student2.setPhoneNumber("0976543210");
+        student2.setRoleId(RoleConstants.STUDENT);
+        student2.setParentPhone("0901234567");
+        student2.setParentName("Trần Văn Nam");
+        student2.setStatus("active");
+        studentUsers.add(userRepository.save(student2));
+        
+        // Student 3: Child of Nguyễn Thị Lan
+        User student3 = new User();
+        student3.setUsername("student_nguyen_hoang_long");
+        student3.setPassword(passwordEncoder.encode("password123"));
+        student3.setEmail("nguyen.hoang.long@student.edu.vn");
+        student3.setFullName("Nguyễn Hoàng Long");
+        student3.setPhoneNumber("0965432109");
+        student3.setRoleId(RoleConstants.STUDENT);
+        student3.setParentPhone("0912345678");
+        student3.setParentName("Nguyễn Thị Lan");
+        student3.setStatus("active");
+        studentUsers.add(userRepository.save(student3));
+        
+        // Student 4: Child of Lê Minh Đức
+        User student4 = new User();
+        student4.setUsername("student_le_thi_hong");
+        student4.setPassword(passwordEncoder.encode("password123"));
+        student4.setEmail("le.thi.hong@student.edu.vn");
+        student4.setFullName("Lê Thị Hồng");
+        student4.setPhoneNumber("0954321098");
+        student4.setRoleId(RoleConstants.STUDENT);
+        student4.setParentPhone("0923456789");
+        student4.setParentName("Lê Minh Đức");
+        student4.setStatus("active");
+        studentUsers.add(userRepository.save(student4));
+        
+        // Student 5: Child of Phạm Thị Mai
+        User student5 = new User();
+        student5.setUsername("student_pham_van_duc");
+        student5.setPassword(passwordEncoder.encode("password123"));
+        student5.setEmail("pham.van.duc@student.edu.vn");
+        student5.setFullName("Phạm Văn Đức");
+        student5.setPhoneNumber("0943210987");
+        student5.setRoleId(RoleConstants.STUDENT);
+        student5.setParentPhone("0934567890");
+        student5.setParentName("Phạm Thị Mai");
+        student5.setStatus("active");
+        studentUsers.add(userRepository.save(student5));
+        
+        return studentUsers;
+    }
+    
+    private List<Parent> createParentEntities(List<User> parentUsers) {
+        List<Parent> parents = new ArrayList<>();
+        
+        for (User parentUser : parentUsers) {
+            Parent parent = new Parent();
+            parent.setUserId(parentUser.getId());
+            parent.setName(parentUser.getFullName());
+            parent.setPhone(parentUser.getPhoneNumber());
+            parent.setEmail(parentUser.getEmail());
+            parent.setStatus(Parent.ParentStatus.ACTIVE);
+            parents.add(entityManager.merge(parent));
+        }
+        
+        return parents;
+    }
+    
+    private void createParentStudentRelationships(List<Parent> parents, List<User> students) {
+        // Parent 1 (Trần Văn Nam) has 2 children
+        createStudentParentRelation(parents.get(0), students.get(0), StudentParent.RelationType.FATHER);
+        createStudentParentRelation(parents.get(0), students.get(1), StudentParent.RelationType.FATHER);
+        
+        // Parent 2 (Nguyễn Thị Lan) has 1 child  
+        createStudentParentRelation(parents.get(1), students.get(2), StudentParent.RelationType.MOTHER);
+        
+        // Parent 3 (Lê Minh Đức) has 1 child
+        createStudentParentRelation(parents.get(2), students.get(3), StudentParent.RelationType.FATHER);
+        
+        // Parent 4 (Phạm Thị Mai) has 1 child
+        createStudentParentRelation(parents.get(3), students.get(4), StudentParent.RelationType.MOTHER);
+    }
+    
+    private void createStudentParentRelation(Parent parent, User student, StudentParent.RelationType relationType) {
+        StudentParent relationship = new StudentParent();
+        relationship.setStudentId(student.getId());
+        relationship.setParentId(parent.getId());
+        relationship.setRelationType(relationType);
+        relationship.setIsPrimary(true);
+        relationship.setLegalGuardian(true);
+        relationship.setStartAt(LocalDate.now());
+        entityManager.merge(relationship);
+    }
+
+    /**
+     * Creates sample courses for parent testing
+     */
+    private List<Course> createParentTestCourses() {
+        List<Course> courses = new ArrayList<>();
+        
+        // Create simple courses using the actual Course entity structure
+        String[] courseNames = {
+            "Toán 11A - Học kỳ 1", 
+            "Văn 11B - Học kỳ 1",
+            "Lý 12A - Ôn thi THPT"
+        };
+        
+        String[] descriptions = {
+            "Lớp học môn Toán cho học sinh khối 11",
+            "Lớp học môn Ngữ văn cho học sinh khối 11", 
+            "Lớp ôn tập Vật lý cho học sinh lớp 12 chuẩn bị thi THPT Quốc gia"
+        };
+        
+        for (int i = 0; i < courseNames.length; i++) {
+            Course course = new Course();
+            course.setName(courseNames[i]);
+            course.setDescription(descriptions[i]);
+            
+            courses.add(entityManager.merge(course));
+        }
+        
+        return courses;
+    }
+    
+    /**
+     * Creates student enrollments in courses using direct SQL
+     */
+    private void createStudentEnrollments(List<User> studentUsers, List<Course> courses) {
+        if (courses.isEmpty()) {
+            log.warn("No courses available for student enrollment");
+            return;
+        }
+        
+        // Enroll each student in 1 course
+        for (int i = 0; i < studentUsers.size(); i++) {
+            User student = studentUsers.get(i);
+            Course course = courses.get(i % courses.size());
+            
+            try {
+                // Check if enrollment already exists
+                String checkQuery = "SELECT COUNT(*) FROM enrollments WHERE student_id = ? AND course_id = ?";
+                Integer count = jdbcTemplate.queryForObject(checkQuery, Integer.class, student.getId(), course.getId());
+                
+                if (count != null && count == 0) {
+                    // Create new enrollment using direct SQL
+                    String insertQuery = "INSERT INTO enrollments (student_id, course_id, enrollment_date, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)";
+                    jdbcTemplate.update(insertQuery,
+                        student.getId(),
+                        course.getId(),
+                        LocalDate.now().minusMonths(2),
+                        "ACTIVE",
+                        LocalDateTime.now(),
+                        LocalDateTime.now()
+                    );
+                    
+                    log.debug("Enrolled student {} in course {}", student.getFullName(), course.getName());
+                }
+            } catch (Exception e) {
+                log.debug("Error enrolling student {}: {}", student.getFullName(), e.getMessage());
+            }
+        }
+    }
+    
+    /**
+     * Creates a single enrollment record - simplified version
+     */
+    private void createEnrollment(User student, Course course) {
+        try {
+            String insertQuery = "INSERT INTO enrollments (student_id, course_id, enrollment_date, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)";
+            jdbcTemplate.update(insertQuery,
+                student.getId(),
+                course.getId(),
+                LocalDate.now().minusMonths(2),
+                "ACTIVE",
+                LocalDateTime.now(),
+                LocalDateTime.now()
+            );
+        } catch (Exception e) {
+            log.debug("Error creating enrollment: {}", e.getMessage());
+        }
+    }
+    
+    /**
+     * Creates attendance sessions and records for parent testing
+     * Simplified version that works with existing Classroom structure
+     */
+    private void createParentTestAttendance(List<Course> courses, List<User> studentUsers) {
+        try {
+            // Get available classrooms
+            List<Classroom> classrooms = classroomRepository.findAll();
+            if (classrooms.isEmpty()) {
+                log.warn("No classrooms available for attendance creation");
+                return;
+            }
+            
+            // Create some attendance sessions for each classroom
+            for (int i = 0; i < Math.min(classrooms.size(), 3); i++) {
+                Classroom classroom = classrooms.get(i);
+                createAttendanceSessionsForClassroom(classroom, studentUsers);
+            }
+            
+        } catch (Exception e) {
+            log.error("Error creating parent test attendance: {}", e.getMessage());
+        }
+    }
+    
+    /**
+     * Creates attendance sessions for a classroom
+     */
+    private void createAttendanceSessionsForClassroom(Classroom classroom, List<User> studentUsers) {
+        try {
+            // Create 2-3 attendance sessions for this classroom
+            for (int i = 0; i < 3; i++) {
+                AttendanceSession session = new AttendanceSession();
+                session.setClassroom(classroom);
+                session.setSessionDate(LocalDate.now().minusDays(i + 1));
+                session.setStartTime(Instant.now().minusSeconds(3600 * (i + 1)));
+                session.setEndTime(Instant.now().minusSeconds(1800 * (i + 1)));
+                session.setStatus(AttendanceSession.SessionStatus.CLOSED);
+                session.setCreatedAt(LocalDateTime.now().minusDays(i + 1));
+                
+                AttendanceSession savedSession = attendanceSessionRepository.save(session);
+                
+                // Create attendance records for students in this classroom
+                createAttendanceRecordsForSession(savedSession, studentUsers);
+            }
+        } catch (Exception e) {
+            log.error("Error creating attendance sessions for classroom {}: {}", classroom.getId(), e.getMessage());
+        }
+    }
+    
+    /**
+     * Creates attendance records for students in a session
+     */
+    private void createAttendanceRecordsForSession(AttendanceSession session, List<User> studentUsers) {
+        // Create attendance records for first few students (simulate enrollment)
+        for (int i = 0; i < Math.min(studentUsers.size(), 3); i++) {
+            User student = studentUsers.get(i);
+            createAttendanceRecordForStudent(session, student);
+        }
+    }
+    
+    /**
+     * Creates a single attendance record for a student
+     */
+    private void createAttendanceRecordForStudent(AttendanceSession session, User student) {
+        try {
+            Attendance attendance = new Attendance();
+            attendance.setSession(session);
+            attendance.setStudent(student);
+            
+            // Randomize attendance status
+            int rand = student.getId().intValue() % 100;
+            if (rand < 80) {
+                attendance.setStatus(AttendanceStatus.PRESENT);
+            } else if (rand < 95) {
+                attendance.setStatus(AttendanceStatus.LATE);
+                attendance.setNote("Đến muộn 10 phút");
+            } else {
+                attendance.setStatus(AttendanceStatus.ABSENT);
+                attendance.setNote("Vắng không phép");
+            }
+            
+            attendanceRepository.save(attendance);
+            
+        } catch (Exception e) {
+            log.error("Error creating attendance record for student {}: {}", student.getFullName(), e.getMessage());
+        }
+    }
+
+    /**
+     * Creates timetable events for students so they appear in parent schedule view
+     */
+    private void createTimetableEventsForStudents(List<User> studentUsers, List<Course> courses) {
+        try {
+            if (courses.isEmpty()) {
+                log.warn("No courses available for timetable event creation");
+                return;
+            }
+            
+            // Get classrooms for the events
+            List<Classroom> classrooms = classroomRepository.findAll();
+            if (classrooms.isEmpty()) {
+                log.warn("No classrooms available for timetable events");
+                return;
+            }
+            
+            // Create recurring weekly schedule for each course
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime startOfWeek = now.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+            
+            for (int courseIndex = 0; courseIndex < courses.size(); courseIndex++) {
+                Course course = courses.get(courseIndex);
+                
+                // Create events for next 4 weeks
+                for (int week = 0; week < 4; week++) {
+                    // Different schedule for each course
+                    int dayOfWeek = (courseIndex % 5) + 1; // Monday = 1, Friday = 5
+                    int startHour = 8 + (courseIndex % 4); // 8AM, 9AM, 10AM, 11AM
+                    
+                    LocalDateTime eventStart = startOfWeek
+                        .plusWeeks(week)
+                        .plusDays(dayOfWeek - 1) // Monday = 0
+                        .withHour(startHour)
+                        .withMinute(0)
+                        .withSecond(0);
+                        
+                    LocalDateTime eventEnd = eventStart.plusHours(2); // 2-hour classes
+                    
+                    // Create class event
+                    TimetableEvent classEvent = new TimetableEvent();
+                    classEvent.setTitle(course.getName());
+                    classEvent.setDescription("Lớp học " + course.getName());
+                    classEvent.setStartDatetime(eventStart);
+                    classEvent.setEndDatetime(eventEnd);
+                    classEvent.setEventType(TimetableEvent.EventType.CLASS);
+                    classEvent.setClassroomId(classrooms.get(courseIndex % classrooms.size()).getId());
+                    classEvent.setCreatedBy(1L); // Default user
+                    classEvent.setLocation("Phòng " + (101 + courseIndex));
+                    classEvent.setColor("#1890ff");
+                    classEvent.setCreatedAt(LocalDateTime.now());
+                    classEvent.setUpdatedAt(LocalDateTime.now());
+                    
+                    timetableEventRepository.save(classEvent);
+                    
+                    // Create exam event (once every 3 weeks)
+                    if (week % 3 == 2) {
+                        LocalDateTime examStart = eventStart.plusDays(2).withHour(14); // 2 days later at 2 PM
+                        LocalDateTime examEnd = examStart.plusHours(1); // 1-hour exam
+                        
+                        TimetableEvent examEvent = new TimetableEvent();
+                        examEvent.setTitle("Kiểm tra " + course.getName());
+                        examEvent.setDescription("Bài kiểm tra môn " + course.getName());
+                        examEvent.setStartDatetime(examStart);
+                        examEvent.setEndDatetime(examEnd);
+                        examEvent.setEventType(TimetableEvent.EventType.EXAM);
+                        examEvent.setClassroomId(classrooms.get(courseIndex % classrooms.size()).getId());
+                        examEvent.setCreatedBy(1L);
+                        examEvent.setLocation("Phòng thi " + (201 + courseIndex));
+                        examEvent.setColor("#f5222d");
+                        examEvent.setCreatedAt(LocalDateTime.now());
+                        examEvent.setUpdatedAt(LocalDateTime.now());
+                        
+                        timetableEventRepository.save(examEvent);
+                    }
+                }
+            }
+            
+            log.info("Created timetable events for {} courses", courses.size());
+            
+        } catch (Exception e) {
+            log.error("Error creating timetable events: {}", e.getMessage(), e);
         }
     }
 } 

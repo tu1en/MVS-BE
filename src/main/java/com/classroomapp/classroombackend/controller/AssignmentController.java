@@ -96,6 +96,7 @@ public class AssignmentController {
 
     // Add endpoint to get assignments by student
     @GetMapping("/student/{studentId}")
+    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN') or (hasRole('STUDENT') and @submissionSecurityService.isCurrentStudent(#studentId))")
     public ResponseEntity<List<AssignmentDto>> GetAssignmentsByStudent(@PathVariable Long studentId) {
         return ResponseEntity.ok(assignmentService.GetAssignmentsByStudent(studentId));
     }
@@ -245,7 +246,7 @@ public class AssignmentController {
 
     // Advanced Grading APIs for frontend AdvancedGrading.jsx
     @GetMapping("/{id}/submissions")
-    @PreAuthorize("permitAll()") // Allow access for testing
+    @PreAuthorize("@submissionSecurityService.canAccessAssignmentSubmissions(#id)")
     public ResponseEntity<List<AssignmentSubmissionDto>> getAssignmentSubmissions(@PathVariable Long id) {
         try {
             log.info("Getting submissions for assignment ID: " + id);
@@ -259,6 +260,7 @@ public class AssignmentController {
     }
 
     @PostMapping("/{assignmentId}/submissions/{submissionId}/grade")
+    @PreAuthorize("@submissionSecurityService.canGradeAssignmentSubmissions(#assignmentId)")
     public ResponseEntity<GradeDto> gradeSubmission(
             @PathVariable Long assignmentId,
             @PathVariable Long submissionId,

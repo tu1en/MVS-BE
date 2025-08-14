@@ -70,7 +70,6 @@ public class StudentParent {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id", insertable = false, updatable = false)
-    @JsonBackReference
     private User student;
 
     @ManyToOne(fetch = FetchType.LAZY)

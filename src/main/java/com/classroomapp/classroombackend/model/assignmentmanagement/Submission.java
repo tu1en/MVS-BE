@@ -14,6 +14,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
@@ -50,6 +51,11 @@ public class Submission {
 
     @Column(length = 2000, columnDefinition = "NVARCHAR(2000)")
     private String comment;
+    
+    // Rich text content for WYSIWYG editor (HTML format)
+    @Lob
+    @Column(columnDefinition = "NVARCHAR(MAX)")
+    private String richTextContent;
     
     private LocalDateTime submittedAt;
 

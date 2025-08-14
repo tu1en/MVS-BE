@@ -23,6 +23,9 @@ public class SubmissionDto {
     
     private String comment;
     
+    // Rich text content for WYSIWYG editor
+    private String richTextContent;
+    
     private String fileSubmissionUrl;
     
     private LocalDateTime submittedAt;
