@@ -53,3 +53,5 @@ src/main/resources/mve-1-firebase-adminsdk.json
 
 # 9. File người dùng tải lên
 uploads/
+# Test-only controller – do not commit
+**/SMSTestController.java
