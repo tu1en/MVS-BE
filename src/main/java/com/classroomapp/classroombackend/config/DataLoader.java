@@ -1,9 +1,9 @@
 package com.classroomapp.classroombackend.config;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,11 +30,13 @@ import com.classroomapp.classroombackend.model.CourseMaterial;
 import com.classroomapp.classroombackend.model.ExplanationStatus;
 import com.classroomapp.classroombackend.model.JobPosition;
 import com.classroomapp.classroombackend.model.Lecture;
+import com.classroomapp.classroombackend.model.Parent;
 import com.classroomapp.classroombackend.model.RecruitmentApplication;
 import com.classroomapp.classroombackend.model.RecruitmentPlan;
 import com.classroomapp.classroombackend.model.Request;
 import com.classroomapp.classroombackend.model.Schedule;
 import com.classroomapp.classroombackend.model.StudentMessage;
+import com.classroomapp.classroombackend.model.StudentParent;
 import com.classroomapp.classroombackend.model.StudentProgress;
 import com.classroomapp.classroombackend.model.TeacherEvaluation;
 import com.classroomapp.classroombackend.model.TimetableEvent;
@@ -51,9 +53,6 @@ import com.classroomapp.classroombackend.model.classroommanagement.Course;
 import com.classroomapp.classroombackend.model.hrmanagement.EvidenceTemplate;
 import com.classroomapp.classroombackend.model.usermanagement.Role;
 import com.classroomapp.classroombackend.model.usermanagement.User;
-import com.classroomapp.classroombackend.model.Parent;
-import com.classroomapp.classroombackend.model.StudentParent;
-import com.classroomapp.classroombackend.model.TimetableEvent;
 import com.classroomapp.classroombackend.repository.AccomplishmentRepository;
 import com.classroomapp.classroombackend.repository.AnnouncementRepository;
 import com.classroomapp.classroombackend.repository.AttendanceExplanationRepository;
@@ -78,11 +77,11 @@ import com.classroomapp.classroombackend.repository.classroommanagement.Classroo
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.CourseRepository;
 import com.classroomapp.classroombackend.repository.hrmanagement.EvidenceTemplateRepository;
+import com.classroomapp.classroombackend.repository.parentmanagement.ParentRepository;
+import com.classroomapp.classroombackend.repository.parentmanagement.StudentParentRepository;
 import com.classroomapp.classroombackend.repository.requestmanagement.RequestRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.RoleRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
-import com.classroomapp.classroombackend.repository.parentmanagement.ParentRepository;
-import com.classroomapp.classroombackend.repository.parentmanagement.StudentParentRepository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -282,6 +281,10 @@ seedEvidenceTemplates();
 
         // Ensure there are enough teachers for demo even when DB already has data
         ensureMinimumTeachers(24);
+        // Ensure sample requests and blogs are seeded if missing
+        // These methods are idempotent and will skip if data already exists
+        seedRequests();
+        seedBlogs();
 
         // Always verify database state
         verifyDatabaseState();

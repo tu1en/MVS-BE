@@ -37,13 +37,15 @@ public class BlogDto {
     private String tags;
     
     private String thumbnailUrl;
+    
+    private String content;
 
     // Constructors
     public BlogDto() {}
 
     public BlogDto(Long id, String title, String description, String imageUrl, String videoUrl,
                   LocalDateTime publishedDate, LocalDateTime lastEditedDate,
-                  Boolean isPublished, String status, String tags, String thumbnailUrl) {
+                  Boolean isPublished, String status, String tags, String thumbnailUrl, String content) {
         this.id = id;
         this.title = title;
         this.description = description;
@@ -55,6 +57,7 @@ public class BlogDto {
         this.status = status;
         this.tags = tags;
         this.thumbnailUrl = thumbnailUrl;
+        this.content = content;
     }
     
     // Getters and Setters
@@ -157,4 +160,11 @@ public class BlogDto {
     }
 
 
+    public String getContent() {
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
 } 

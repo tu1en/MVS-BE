@@ -36,7 +36,7 @@ public class BlogController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<BlogDto> createBlog(
             @Valid @RequestBody CreateBlogDto createBlogDto) {
         
@@ -81,14 +81,14 @@ public class BlogController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteBlog(@PathVariable Long id) {
         blogService.deleteBlog(id);
         return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{id}/publish")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public ResponseEntity<BlogDto> publishBlog(
             @PathVariable Long id) {
         
@@ -97,7 +97,7 @@ public class BlogController {
     }
 
     @PutMapping("/{id}/unpublish")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public ResponseEntity<BlogDto> unpublishBlog(
             @PathVariable Long id) {
         
