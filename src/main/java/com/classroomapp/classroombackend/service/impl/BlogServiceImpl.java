@@ -238,6 +238,7 @@ public class BlogServiceImpl implements BlogService {
         dto.setStatus(blog.getStatus());
         dto.setTags(blog.getTags());
         dto.setThumbnailUrl(blog.getThumbnailUrl());
+        dto.setContent(blog.getContent());
         
         return dto;
     }

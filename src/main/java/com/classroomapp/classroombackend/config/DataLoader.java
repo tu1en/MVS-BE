@@ -261,6 +261,11 @@ seedEvidenceTemplates();
             classrooms = classroomRepository.findAll();
         }
 
+        // Ensure sample requests and blogs are seeded if missing
+        // These methods are idempotent and will skip if data already exists
+        seedRequests();
+        seedBlogs();
+
         // Always verify database state
         verifyDatabaseState();
         verifyUserRoleAssignments();

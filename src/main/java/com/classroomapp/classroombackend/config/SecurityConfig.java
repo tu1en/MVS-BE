@@ -109,9 +109,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/interview-schedules/pending").permitAll() // Allow viewing pending interviews
                 
                 // Blog endpoints
-                .requestMatchers("/api/blogs").permitAll()
-                .requestMatchers("/api/blogs/published").permitAll()
-                .requestMatchers("/api/blogs/{id:[\\d]+}").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/blogs").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/blogs/published").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/blogs/{id:[\\d]+}").permitAll()
                 .requestMatchers("/api/blogs/search").permitAll()
                 .requestMatchers("/api/blogs/tag/**").permitAll()
                 .requestMatchers("/api/blogs/author/**").permitAll()
