@@ -1,16 +1,6 @@
-# Compiled class files
+# ------------------------------------------------------------------
+# 1. Build artefacts – đã OK
 *.class
-
-# Log files
-*.log
-
-# BlueJ files
-*.ctxt
-
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
-# Package Files
 *.jar
 *.war
 *.nar
@@ -18,39 +8,46 @@
 *.zip
 *.tar.gz
 *.rar
+target/
 
-# Virtual machine crash logs
+# 2. Log, crash-dump – đã OK
+*.log
 hs_err_pid*
 
-# Maven
-target/
-pom.xml.tag
-pom.xml.releaseBackup
-pom.xml.versionsBackup
-pom.xml.next
-release.properties
-dependency-reduced-pom.xml
-buildNumber.properties
-.mvn/timing.properties
-.mvn/wrapper/maven-wrapper.jar
-uploads/
-# IDE
+# 3. IDE, hệ điều hành – đã OK
 .idea/
-*.iws
-*.iml
-*.ipr
 .vscode/
 .settings/
+*.iml
+*.iws
+*.ipr
+.DS_Store
+Thumbs.db
 .project
 .classpath
 
-# OS
-.DS_Store
-Thumbs.db
+# 4. Maven tạm – đã OK
+pom.xml.*
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/
 
-# Application specific
-*.properties.backup
+# ------------------------------------------------------------------
+# 5. **Bổ sung**: script SQL & backup
+*.sql               # file .sql bất kỳ
+*.backup            # file đuôi .backup (dữ liệu, cấu hình…)
+
+# 6. **File cấu hình Spring Boot thực tế**
 **/application.properties
-application-*.properties
+application-*.properties    # ví dụ application-dev.properties
+
+# Giữ lại file mẫu để team tham khảo:
+!src/main/resources/application-example.properties
+
+# 7. **Java class cấu hình DB muốn ẩn**
 **/DatabaseConfig.java
-"src/main/resources/mve-1-firebase-adminsdk.json" 
+
+# 8. **Khóa dịch vụ Firebase (JSON)**
+src/main/resources/mve-1-firebase-adminsdk.json
+#   ↑ bỏ cặp dấu nháy, Git không hiểu ký tự `"`.
