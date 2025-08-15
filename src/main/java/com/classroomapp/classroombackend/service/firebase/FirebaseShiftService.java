@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Service;
 
 import com.classroomapp.classroombackend.model.hrmanagement.ShiftAssignment;
@@ -17,20 +19,31 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Service cho Firebase real-time sync cá»§a Shift Management data
- * Äá»“ng bá»™ hÃ³a shift assignments, schedules, swap requests vá»›i Firebase Realtime Database
+ * Service cho Firebase real-time sync của Shift Management data
+ * Đồng bộ hóa shift assignments, schedules, swap requests với Firebase Realtime Database
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
+@ConditionalOnBean(name = "classroomFirebaseDatabase")
 public class FirebaseShiftService {
 
     private final FirebaseDatabase firebaseDatabase;
     private final ObjectMapper objectMapper;
+
+    public FirebaseShiftService(@Qualifier("classroomFirebaseDatabase") FirebaseDatabase firebaseDatabase, ObjectMapper objectMapper) {
+        this.firebaseDatabase = firebaseDatabase;
+        this.objectMapper = objectMapper;
+        
+        // Check if FirebaseDatabase is available
+        if (firebaseDatabase == null) {
+            log.warn("FirebaseDatabase is null. Firebase sync features will be disabled.");
+        } else {
+            log.info("FirebaseShiftService initialized successfully with FirebaseDatabase");
+        }
+    }
 
     // Firebase paths
     private static final String SHIFT_ASSIGNMENTS_PATH = "shift-assignments";
@@ -44,6 +57,11 @@ public class FirebaseShiftService {
      * Sync shift assignment to Firebase
      */
     public CompletableFuture<Void> syncShiftAssignment(ShiftAssignment assignment) {
+        if (firebaseDatabase == null) {
+            log.warn("FirebaseDatabase not available, skipping sync for assignment ID: {}", assignment.getId());
+            return CompletableFuture.completedFuture(null);
+        }
+        
         log.info("Syncing shift assignment ID: {} to Firebase", assignment.getId());
         
         CompletableFuture<Void> future = new CompletableFuture<>();
@@ -75,6 +93,11 @@ public class FirebaseShiftService {
      * Sync shift schedule to Firebase
      */
     public CompletableFuture<Void> syncShiftSchedule(ShiftSchedule schedule) {
+        if (firebaseDatabase == null) {
+            log.warn("FirebaseDatabase not available, skipping sync for schedule ID: {}", schedule.getId());
+            return CompletableFuture.completedFuture(null);
+        }
+        
         log.info("Syncing shift schedule ID: {} to Firebase", schedule.getId());
         
         CompletableFuture<Void> future = new CompletableFuture<>();
@@ -102,6 +125,11 @@ public class FirebaseShiftService {
      * Sync shift swap request to Firebase
      */
     public CompletableFuture<Void> syncShiftSwapRequest(ShiftSwapRequest swapRequest) {
+        if (firebaseDatabase == null) {
+            log.warn("FirebaseDatabase not available, skipping sync for swap request ID: {}", swapRequest.getId());
+            return CompletableFuture.completedFuture(null);
+        }
+        
         log.info("Syncing swap request ID: {} to Firebase", swapRequest.getId());
         
         CompletableFuture<Void> future = new CompletableFuture<>();
@@ -129,6 +157,11 @@ public class FirebaseShiftService {
      * Sync shift template to Firebase
      */
     public CompletableFuture<Void> syncShiftTemplate(ShiftTemplate template) {
+        if (firebaseDatabase == null) {
+            log.warn("FirebaseDatabase not available, skipping sync for template ID: {}", template.getId());
+            return CompletableFuture.completedFuture(null);
+        }
+        
         log.info("Syncing shift template ID: {} to Firebase", template.getId());
         
         CompletableFuture<Void> future = new CompletableFuture<>();
@@ -157,6 +190,11 @@ public class FirebaseShiftService {
      */
     public CompletableFuture<Void> sendShiftNotification(Long recipientId, String title, String message, 
                                                          String type, Map<String, Object> data) {
+        if (firebaseDatabase == null) {
+            log.warn("FirebaseDatabase not available, skipping notification for user: {}", recipientId);
+            return CompletableFuture.completedFuture(null);
+        }
+        
         log.info("Sending shift notification to user: {} with type: {}", recipientId, type);
         
         CompletableFuture<Void> future = new CompletableFuture<>();
@@ -191,6 +229,11 @@ public class FirebaseShiftService {
      * Remove shift assignment from Firebase
      */
     public CompletableFuture<Void> removeShiftAssignment(Long assignmentId) {
+        if (firebaseDatabase == null) {
+            log.warn("FirebaseDatabase not available, skipping removal for assignment ID: {}", assignmentId);
+            return CompletableFuture.completedFuture(null);
+        }
+        
         log.info("Removing shift assignment ID: {} from Firebase", assignmentId);
         
         CompletableFuture<Void> future = new CompletableFuture<>();
@@ -216,6 +259,11 @@ public class FirebaseShiftService {
      * Sync employee's shifts for easier mobile app querying
      */
     private void syncToEmployeeShifts(ShiftAssignment assignment) {
+        if (firebaseDatabase == null) {
+            log.warn("FirebaseDatabase not available, skipping syncToEmployeeShifts for assignment ID: {}", assignment.getId());
+            return;
+        }
+        
         try {
             Map<String, Object> employeeShiftData = new HashMap<>();
             employeeShiftData.put("assignmentId", assignment.getId());

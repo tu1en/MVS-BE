@@ -38,45 +38,97 @@ public class FirebaseClassroomConfig {
     @PostConstruct
     public void initializeFirebase() {
         try {
-            // Kiá»ƒm tra xem FirebaseApp Ä‘Ã£ Ä‘Æ°á»£c khá»Ÿi táº¡o chÆ°a
+            // Kiểm tra xem FirebaseApp đã được khởi tạo chưa
             if (FirebaseApp.getApps().stream().noneMatch(app -> CLASSROOM_APP_NAME.equals(app.getName()))) {
-                ClassPathResource resource = new ClassPathResource(firebaseConfigPath);
+                log.info("Firebase app '{}' not found, attempting to initialize...", CLASSROOM_APP_NAME);
                 
-                if (!resource.exists()) {
-                    log.warn("ðŸ”¥ Firebase config file not found: {}. Firebase features will be disabled.", firebaseConfigPath);
+                // Check if there's already a default Firebase app
+                if (FirebaseApp.getApps().isEmpty()) {
+                    log.warn("No Firebase apps found. Please ensure FirebaseConfig initializes the main Firebase app first.");
                     return;
                 }
+                
+                // Try to get the existing app
+                try {
+                    FirebaseApp existingApp = FirebaseApp.getInstance(CLASSROOM_APP_NAME);
+                    log.info("Firebase app '{}' is available but not in getApps() list", CLASSROOM_APP_NAME);
+                    return;
+                } catch (IllegalStateException e) {
+                    log.warn("Firebase app '{}' not accessible: {}", CLASSROOM_APP_NAME, e.getMessage());
+                    
+                    // Try to initialize a new app with the same name
+                    try {
+                        ClassPathResource resource = new ClassPathResource(firebaseConfigPath);
+                        if (resource.exists()) {
+                            try (InputStream serviceAccount = resource.getInputStream()) {
+                                FirebaseOptions options = FirebaseOptions.builder()
+                                        .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+                                        .setDatabaseUrl(databaseUrl)
+                                        .setStorageBucket(storageBucket)
+                                        .build();
 
-                try (InputStream serviceAccount = resource.getInputStream()) {
-                    FirebaseOptions options = FirebaseOptions.builder()
-                            .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-                            .setDatabaseUrl(databaseUrl)
-                            .setStorageBucket(storageBucket)
-                            .build();
-
-                    FirebaseApp.initializeApp(options, CLASSROOM_APP_NAME);
-                    log.info("ðŸ”¥ Firebase initialized successfully for Classroom Management");
-                } catch (IOException e) {
-                    log.error("ðŸ”¥ Failed to initialize Firebase for Classroom Management", e);
+                                FirebaseApp.initializeApp(options, CLASSROOM_APP_NAME);
+                                log.info("Firebase app '{}' initialized successfully for Classroom Management", CLASSROOM_APP_NAME);
+                            }
+                        } else {
+                            log.warn("Firebase config file not found: {}. Using existing Firebase app.", firebaseConfigPath);
+                        }
+                    } catch (Exception initError) {
+                        log.error("Failed to initialize Firebase app '{}': {}", CLASSROOM_APP_NAME, initError.getMessage());
+                    }
                 }
             } else {
-                log.info("ðŸ”¥ Firebase already initialized for Classroom Management");
+                log.info("Firebase app '{}' already exists, skipping initialization", CLASSROOM_APP_NAME);
             }
         } catch (Exception e) {
-            log.error("ðŸ”¥ Error during Firebase initialization for Classroom Management", e);
+            log.error("Error during Firebase initialization check: {}", e.getMessage());
         }
     }
 
     @Bean(name = "classroomFirebaseDatabase")
     public FirebaseDatabase classroomFirebaseDatabase() {
         try {
-            FirebaseApp app = FirebaseApp.getInstance(CLASSROOM_APP_NAME);
+            // Wait a bit for Firebase app to be initialized
+            int maxAttempts = 5;
+            int attempt = 0;
+            FirebaseApp app = null;
+            
+            while (attempt < maxAttempts && app == null) {
+                try {
+                    app = FirebaseApp.getInstance(CLASSROOM_APP_NAME);
+                    break;
+                } catch (IllegalStateException e) {
+                    attempt++;
+                    if (attempt < maxAttempts) {
+                        log.info("Attempt {}/{}: Firebase app '{}' not ready yet, waiting...", attempt, maxAttempts, CLASSROOM_APP_NAME);
+                        try {
+                            Thread.sleep(1000); // Wait 1 second
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            if (app == null) {
+                log.error("Failed to get Firebase app '{}' after {} attempts", CLASSROOM_APP_NAME, maxAttempts);
+                // Instead of throwing exception, try to get default app
+                try {
+                    app = FirebaseApp.getInstance();
+                    log.info("Using default Firebase app as fallback");
+                } catch (IllegalStateException e) {
+                    log.error("No Firebase apps available. Firebase features will be disabled.");
+                    throw new RuntimeException("No Firebase apps available", e);
+                }
+            }
+            
             FirebaseDatabase database = FirebaseDatabase.getInstance(app);
-            log.info("ðŸ”¥ Firebase Database bean created for Classroom Management");
+            log.info("Firebase Database bean created successfully for Classroom Management");
             return database;
         } catch (Exception e) {
-            log.warn("ðŸ”¥ Failed to create Firebase Database bean for Classroom Management: {}", e.getMessage());
-            return null;
+            log.error("Failed to create Firebase Database bean for Classroom Management: {}", e.getMessage());
+            throw new RuntimeException("Failed to create Firebase Database bean", e);
         }
     }
 

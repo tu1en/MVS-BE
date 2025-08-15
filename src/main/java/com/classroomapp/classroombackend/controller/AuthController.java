@@ -29,6 +29,7 @@ import com.classroomapp.classroombackend.service.RequestService;
 import com.classroomapp.classroombackend.service.UserService;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;
+import com.google.firebase.FirebaseApp;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -227,10 +228,26 @@ public class AuthController {
         // Verify Google ID token
         FirebaseToken decodedToken;
         try {
-            decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
+            // Log available Firebase apps for debugging
+            log.info("Available Firebase apps: {}", 
+                FirebaseApp.getApps().stream()
+                    .map(app -> String.format("%s (name: %s)", app.getOptions().getProjectId(), app.getName()))
+                    .collect(java.util.stream.Collectors.joining(", ")));
+            
+            FirebaseApp firebaseApp = FirebaseApp.getInstance("classroom-management");
+            log.info("Successfully got Firebase app: {}", firebaseApp.getName());
+            
+            FirebaseAuth firebaseAuth = FirebaseAuth.getInstance(firebaseApp);
+            log.info("Successfully got FirebaseAuth instance");
+            
+            decodedToken = firebaseAuth.verifyIdToken(idToken);
+            log.info("Successfully verified Google ID token for email: {}", decodedToken.getEmail());
         } catch (com.google.firebase.auth.FirebaseAuthException e) {
             log.error("Invalid Google ID token", e);
             throw new IllegalArgumentException("Token Google không hợp lệ", e);
+        } catch (IllegalStateException e) {
+            log.error("Firebase app not found: {}", e.getMessage());
+            throw new IllegalArgumentException("Lỗi cấu hình Firebase", e);
         }
         
         String email = decodedToken.getEmail();

@@ -30,6 +30,7 @@ import com.classroomapp.classroombackend.service.UserService;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
+import com.google.firebase.FirebaseApp;
 
 import io.jsonwebtoken.Jwts;
 import lombok.extern.slf4j.Slf4j;
@@ -142,7 +143,18 @@ public class AuthServiceImpl implements AuthService {
         
         try {
             // Verify Google ID token
-            FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(googleAuthRequest.getIdToken());
+            log.info("Available Firebase apps: {}", 
+                FirebaseApp.getApps().stream()
+                    .map(app -> String.format("%s (name: %s)", app.getOptions().getProjectId(), app.getName()))
+                    .collect(java.util.stream.Collectors.joining(", ")));
+            
+            FirebaseApp firebaseApp = FirebaseApp.getInstance("classroom-management");
+            log.info("Successfully got Firebase app: {}", firebaseApp.getName());
+            
+            FirebaseAuth firebaseAuth = FirebaseAuth.getInstance(firebaseApp);
+            log.info("Successfully got FirebaseAuth instance");
+            
+            FirebaseToken decodedToken = firebaseAuth.verifyIdToken(googleAuthRequest.getIdToken());
             String email = decodedToken.getEmail();
             
             log.info("Google token verified for email: {}", email);

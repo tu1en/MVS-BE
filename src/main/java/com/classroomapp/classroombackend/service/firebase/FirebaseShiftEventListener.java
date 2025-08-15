@@ -10,24 +10,26 @@ import com.classroomapp.classroombackend.model.hrmanagement.ShiftTemplate;
 // import com.classroomapp.classroombackend.service.hrmanagement.shift.ShiftTemplateService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 /**
  * Event Listener cho Shift Management events
- * Xá»­ lÃ½ cÃ¡c events vÃ  trigger Firebase sync + notifications
+ * Xử lý các events và trigger Firebase sync + notifications
  */
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@ConditionalOnBean(name = "firebaseShiftService")
 public class FirebaseShiftEventListener {
 
     private final FirebaseShiftService firebaseShiftService;
     private final ShiftNotificationService shiftNotificationService;
 
     /**
-     * Event: Shift Assignment Ä‘Æ°á»£c táº¡o
+     * Event: Shift Assignment được tạo
      */
     @EventListener
     @Async
@@ -59,7 +61,7 @@ public class FirebaseShiftEventListener {
     }
 
     /**
-     * Event: Shift Assignment Ä‘Æ°á»£c cáº­p nháº­t
+     * Event: Shift Assignment được cập nhật
      */
     @EventListener
     @Async
@@ -93,7 +95,7 @@ public class FirebaseShiftEventListener {
     }
 
     /**
-     * Event: Shift Assignment bá»‹ há»§y
+     * Event: Shift Assignment bị hủy
      */
     @EventListener
     @Async
@@ -174,7 +176,7 @@ public class FirebaseShiftEventListener {
     }
 
     /**
-     * Event: Swap Request Ä‘Æ°á»£c táº¡o
+     * Event: Swap Request được tạo
      */
     @EventListener
     @Async
@@ -206,7 +208,7 @@ public class FirebaseShiftEventListener {
     }
 
     /**
-     * Event: Swap Request Ä‘Æ°á»£c phÃª duyá»‡t
+     * Event: Swap Request được phê duyệt
      */
     @EventListener
     @Async
@@ -238,7 +240,7 @@ public class FirebaseShiftEventListener {
     }
 
     /**
-     * Event: Swap Request bá»‹ tá»« chá»‘i
+     * Event: Swap Request bị từ chối
      */
     @EventListener
     @Async
@@ -271,7 +273,7 @@ public class FirebaseShiftEventListener {
     }
 
     /**
-     * Event: Schedule Ä‘Æ°á»£c publish
+     * Event: Schedule được publish
      */
     @EventListener
     @Async
@@ -305,7 +307,7 @@ public class FirebaseShiftEventListener {
     }
 
     /**
-     * Event: Template Ä‘Æ°á»£c cáº­p nháº­t
+     * Event: Template được cập nhật
      */
     @EventListener
     @Async
