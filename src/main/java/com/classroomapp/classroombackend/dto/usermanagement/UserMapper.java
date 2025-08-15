@@ -24,6 +24,10 @@ public class UserMapper {
         dto.setName(user.getFullName()); // Map fullName to name for compatibility
         dto.setPhoneNumber(user.getPhoneNumber());
         dto.setGender(user.getGender());
+        dto.setBirthDate(user.getBirthDate()); // For students, stored directly in User entity
+        dto.setParentName(user.getParentName());
+        dto.setParentPhone(user.getParentPhone());
+        dto.setSchool(user.getSchool());
         dto.setRoleId(user.getRoleId());
         dto.setEnabled("active".equalsIgnoreCase(user.getStatus()));
         dto.setStatus(user.getStatus());

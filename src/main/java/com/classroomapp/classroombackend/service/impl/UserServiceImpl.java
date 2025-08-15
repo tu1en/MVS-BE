@@ -45,11 +45,20 @@ public class UserServiceImpl implements UserService {
         dto.setEmail(user.getEmail());
         dto.setFullName(user.getFullName());
         dto.setName(user.getFullName());
+        dto.setPhoneNumber(user.getPhoneNumber());
+        dto.setGender(user.getGender());
+        dto.setBirthDate(user.getBirthDate()); // For students, stored directly in User entity
+        dto.setParentName(user.getParentName());
+        dto.setParentPhone(user.getParentPhone());
+        dto.setSchool(user.getSchool());
         dto.setRoleId(user.getRoleId());
         dto.setRoles(Collections.singleton(user.getRole()));
         dto.setStatus(user.getStatus());
         dto.setEnabled("active".equalsIgnoreCase(user.getStatus()));
         dto.setCreatedAt(user.getCreatedAt());
+        // Map department details
+        dto.setDepartment(user.getDepartment());
+        dto.setDepartmentId(user.getDepartmentId());
         return dto;
     }
 
