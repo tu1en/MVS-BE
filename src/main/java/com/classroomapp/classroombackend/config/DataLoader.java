@@ -843,11 +843,20 @@ seedEvidenceTemplates();
     private void ensureParentRoleAndUser() {
         try {
             // Ensure role exists
-            if (!roleRepository.findByName("PARENT").isPresent()) {
-                Role parentRole = new Role("PARENT");
-                parentRole.setId(RoleConstants.PARENT);
-                roleRepository.save(parentRole);
-                log.info("✅ Ensured PARENT role exists.");
+            Role parentRole = roleRepository.findByName("PARENT").orElse(null);
+            if (parentRole == null) {
+                parentRole = new Role("PARENT");
+                parentRole = roleRepository.save(parentRole);
+                log.info("✅ Ensured PARENT role exists with ID: {}.", parentRole.getId());
+            } else {
+                log.info("✅ PARENT role already exists with ID: {}.", parentRole.getId());
+            }
+
+            // Update RoleConstants.PARENT if it doesn't match the actual database ID
+            if (parentRole.getId() != RoleConstants.PARENT) {
+                log.warn("⚠️ Database PARENT role ID ({}) doesn't match RoleConstants.PARENT ({}). " +
+                        "Consider updating RoleConstants.PARENT to match the database.", 
+                        parentRole.getId(), RoleConstants.PARENT);
             }
 
             // Ensure default parent user exists
@@ -858,7 +867,7 @@ seedEvidenceTemplates();
                 parentUser.setPassword(passwordEncoder.encode("parent123"));
                 parentUser.setEmail("parent@test.com");
                 parentUser.setFullName("Parent User");
-                parentUser.setRoleId(RoleConstants.PARENT);
+                parentUser.setRoleId(parentRole.getId()); // Use the actual role ID from database
                 parentUser.setParentPhone("0901234567");
                 parentUser.setParentName("Parent User");
                 parentUser = userRepository.save(parentUser);

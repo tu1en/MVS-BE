@@ -107,6 +107,7 @@ public class User {
             case 4 -> "ADMIN";
             case 5 -> "ACCOUNTANT";
             case 6 -> "TEACHING_ASSISTANT";
+            case 7 -> "PARENT";
             default -> "USER";
         };
     }

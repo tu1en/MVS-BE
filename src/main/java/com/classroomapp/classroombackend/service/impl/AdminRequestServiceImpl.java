@@ -18,9 +18,13 @@ import com.classroomapp.classroombackend.service.EmailService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AdminRequestServiceImpl implements AdminRequestService {
 
     private final RequestRepository requestRepository;
@@ -52,6 +56,7 @@ public class AdminRequestServiceImpl implements AdminRequestService {
         if ("TEACHER".equalsIgnoreCase(requestedRole)) roleId = RoleConstants.TEACHER;
         else if ("MANAGER".equalsIgnoreCase(requestedRole)) roleId = RoleConstants.MANAGER;
         else if ("ADMIN".equalsIgnoreCase(requestedRole)) roleId = RoleConstants.ADMIN;
+        else if ("PARENT".equalsIgnoreCase(requestedRole)) roleId = RoleConstants.PARENT;
 
         // Kiểm tra user đã tồn tại chưa
         User user = userRepository.findByEmail(request.getEmail()).orElse(null);
@@ -68,18 +73,40 @@ public class AdminRequestServiceImpl implements AdminRequestService {
             user.setPhoneNumber(request.getPhoneNumber());
             user.setStatus("active");
             userRepository.save(user);
+            
+            // Nếu là tài khoản phụ huynh, tạo entity Parent và liên kết với con em
+            if (roleId == RoleConstants.PARENT) {
+                try {
+                    createParentAndLinkChildren(user, request);
+                } catch (Exception e) {
+                    log.error("Failed to create parent entity and link children for request {}", id, e);
+                    // Don't fail the approval if parent creation fails
+                }
+            }
         } else {
             // Nếu user đã có, cập nhật role nếu khác
             if (user.getRoleId() == null || user.getRoleId() != roleId) {
                 user.setRoleId(roleId);
                 userRepository.save(user);
+                
+                // Nếu chuyển thành phụ huynh, tạo entity Parent và liên kết với con em
+                if (roleId == RoleConstants.PARENT) {
+                    try {
+                        createParentAndLinkChildren(user, request);
+                    } catch (Exception e) {
+                        log.error("Failed to create parent entity and link children for existing user {}", user.getId(), e);
+                    }
+                }
             }
         }
         // Gửi email thông báo phê duyệt
         if (tempPassword != null) {
-            emailService.sendApprovalEmail(user.getEmail(), user.getFullName(), user.getRole(), tempPassword);
+            // Convert roleId back to role name for email
+            String roleName = convertRoleIdToRoleName(roleId);
+            emailService.sendApprovalEmail(user.getEmail(), user.getFullName(), roleName, tempPassword);
         } else {
-            emailService.sendRequestStatusNotification(user.getEmail(), user.getFullName(), user.getRole(), "APPROVED", null);
+            String roleName = convertRoleIdToRoleName(roleId);
+            emailService.sendRequestStatusNotification(user.getEmail(), user.getFullName(), roleName, "APPROVED", null);
         }
         return modelMapper.map(savedRequest, RequestDTO.class);
     }
@@ -114,5 +141,56 @@ public class AdminRequestServiceImpl implements AdminRequestService {
             sb.append(chars.charAt(random.nextInt(chars.length())));
         }
         return sb.toString();
+    }
+
+    private void createParentAndLinkChildren(User parentUser, Request request) {
+        try {
+            // Parse form responses to get children emails
+            String formResponses = request.getFormResponses();
+            if (formResponses != null && !formResponses.trim().isEmpty()) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                JsonNode formData = objectMapper.readTree(formResponses);
+                
+                if (formData.has("childrenEmails") && formData.get("childrenEmails").isArray()) {
+                    JsonNode childrenEmails = formData.get("childrenEmails");
+                    
+                    for (JsonNode emailNode : childrenEmails) {
+                        String childEmail = emailNode.asText();
+                        if (childEmail != null && !childEmail.trim().isEmpty()) {
+                            // Find child user by email
+                            User childUser = userRepository.findByEmail(childEmail).orElse(null);
+                            if (childUser != null) {
+                                // Link parent to child through ParentService
+                                // For now, we'll log the relationship
+                                log.info("Linking parent {} to child {}", parentUser.getId(), childUser.getId());
+                                
+                                // TODO: Implement actual linking through ParentService
+                                // parentService.linkParentToStudent(parentUser.getId(), childUser.getId(), 
+                                //     StudentParent.RelationType.GUARDIAN, true, true);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error parsing form responses for parent request", e);
+        }
+    }
+
+    private String convertRoleIdToRoleName(int roleId) {
+        switch (roleId) {
+            case RoleConstants.STUDENT:
+                return "Student";
+            case RoleConstants.TEACHER:
+                return "Teacher";
+            case RoleConstants.MANAGER:
+                return "Manager";
+            case RoleConstants.ADMIN:
+                return "Admin";
+            case RoleConstants.PARENT:
+                return "Parent";
+            default:
+                return "Unknown Role";
+        }
     }
 } 

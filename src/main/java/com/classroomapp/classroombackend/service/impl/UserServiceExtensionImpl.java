@@ -228,7 +228,7 @@ public class UserServiceExtensionImpl implements UserServiceExtension {
             case "ACCOUNTANT":
                 return 5; // New role for accountant
             case "PARENT":
-                return 6; // New role for parent
+                return 7; // New role for parent
             default:
                 return 1; // Default to STUDENT
         }
