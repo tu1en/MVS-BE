@@ -39,17 +39,17 @@ buildNumber.properties
 *.backup
 
 # 6. File cấu hình Spring Boot (thật)
-**/application.properties
-application-*.properties
+# **/application.properties
+# application-*.properties
 
 #   Giữ lại file mẫu để tham khảo
-!src/main/resources/application-example.properties
+# !src/main/resources/application-example.properties
 
 # 7. Java class cấu hình DB muốn ẩn
-**/DatabaseConfig.java
+# **/DatabaseConfig.java
 
 # 8. Khóa Firebase JSON
-src/main/resources/mve-1-firebase-adminsdk.json
+# src/main/resources/mve-1-firebase-adminsdk.json
 
 # 9. File người dùng tải lên
 uploads/

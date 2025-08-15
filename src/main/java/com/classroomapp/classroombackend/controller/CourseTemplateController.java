@@ -1,6 +1,7 @@
 package com.classroomapp.classroombackend.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +27,7 @@ import com.classroomapp.classroombackend.dto.ApiResponse;
 import com.classroomapp.classroombackend.dto.CourseTemplateDto;
 import com.classroomapp.classroombackend.dto.LessonTemplateDto;
 import com.classroomapp.classroombackend.service.CourseTemplateService;
+import com.classroomapp.classroombackend.service.QuickCourseGeneratorService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RestController
@@ -37,6 +39,9 @@ public class CourseTemplateController {
     
     @Autowired
     private CourseTemplateService courseTemplateService;
+    
+    @Autowired
+    private QuickCourseGeneratorService quickGeneratorService;
     
     @Autowired
     private ObjectMapper objectMapper;
@@ -361,5 +366,152 @@ public class CourseTemplateController {
     
     private String sanitizeFileName(String fileName) {
         return fileName.replaceAll("[^a-zA-Z0-9\\-_ ]", "").trim().replace(" ", "_");
+    }
+    
+    /**
+     * ===============================
+     * QUICK TEMPLATE GENERATION APIs
+     * ===============================
+     */
+    
+    /**
+     * Lấy danh sách template có sẵn để tạo nhanh
+     */
+    @GetMapping("/quick-templates")
+    public ResponseEntity<ApiResponse<Map<String, String>>> getAvailableQuickTemplates() {
+        try {
+            Map<String, String> templates = quickGeneratorService.getAvailableTemplates();
+            return ResponseEntity.ok(ApiResponse.success(templates, "Danh sách template tạo nhanh"));
+        } catch (Exception e) {
+            logger.error("Error getting quick templates: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .body(ApiResponse.error("Lỗi lấy danh sách template: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * Tạo nhanh template Toán lớp 12
+     */
+    @GetMapping("/quick-generate/math")
+    public ResponseEntity<?> generateMathTemplate() {
+        try {
+            byte[] excelBytes = quickGeneratorService.generateMathGrade12Template();
+            
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=Toan_Lop_12_Template.xlsx")
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .body(new org.springframework.core.io.ByteArrayResource(excelBytes));
+                    
+        } catch (Exception e) {
+            logger.error("Error generating Math template: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .body(ApiResponse.error("Lỗi tạo template Toán: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * Tạo nhanh template Ngữ văn lớp 12
+     */
+    @GetMapping("/quick-generate/literature")
+    public ResponseEntity<?> generateLiteratureTemplate() {
+        try {
+            byte[] excelBytes = quickGeneratorService.generateLiteratureGrade12Template();
+            
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=Ngu_Van_Lop_12_Template.xlsx")
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .body(new org.springframework.core.io.ByteArrayResource(excelBytes));
+                    
+        } catch (Exception e) {
+            logger.error("Error generating Literature template: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .body(ApiResponse.error("Lỗi tạo template Ngữ văn: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * Tạo nhanh template Tiếng Anh lớp 12
+     */
+    @GetMapping("/quick-generate/english")
+    public ResponseEntity<?> generateEnglishTemplate() {
+        try {
+            byte[] excelBytes = quickGeneratorService.generateEnglishGrade12Template();
+            
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=Tieng_Anh_Lop_12_Template.xlsx")
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .body(new org.springframework.core.io.ByteArrayResource(excelBytes));
+                    
+        } catch (Exception e) {
+            logger.error("Error generating English template: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .body(ApiResponse.error("Lỗi tạo template Tiếng Anh: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * Tạo nhanh template Vật lý lớp 12
+     */
+    @GetMapping("/quick-generate/physics")
+    public ResponseEntity<?> generatePhysicsTemplate() {
+        try {
+            // Tạo template Vật lý tùy chỉnh
+            byte[] excelBytes = quickGeneratorService.generateCustomTemplate(
+                "Vật lý lớp 12", 16, "Lý thuyết + Thí nghiệm", 90);
+            
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=Vat_Ly_Lop_12_Template.xlsx")
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .body(new org.springframework.core.io.ByteArrayResource(excelBytes));
+                    
+        } catch (Exception e) {
+            logger.error("Error generating Physics template: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .body(ApiResponse.error("Lỗi tạo template Vật lý: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * Tạo template tùy chỉnh
+     */
+    @PostMapping("/quick-generate/custom")
+    public ResponseEntity<?> generateCustomTemplate(
+            @RequestParam("courseName") String courseName,
+            @RequestParam("totalWeeks") int totalWeeks,
+            @RequestParam(value = "lessonType", defaultValue = "Lý thuyết + Thực hành") String lessonType,
+            @RequestParam(value = "duration", defaultValue = "120") int duration) {
+        
+        try {
+            // Validate input
+            if (courseName == null || courseName.trim().isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error("Tên khóa học không được để trống"));
+            }
+            
+            if (totalWeeks < 1 || totalWeeks > 52) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error("Số tuần phải từ 1-52"));
+            }
+            
+            if (duration < 30 || duration > 480) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error("Thời lượng phải từ 30-480 phút"));
+            }
+            
+            byte[] excelBytes = quickGeneratorService.generateCustomTemplate(
+                courseName, totalWeeks, lessonType, duration);
+            
+            String fileName = sanitizeFileName(courseName) + "_Template.xlsx";
+            
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName)
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .body(new org.springframework.core.io.ByteArrayResource(excelBytes));
+                    
+        } catch (Exception e) {
+            logger.error("Error generating custom template: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .body(ApiResponse.error("Lỗi tạo template tùy chỉnh: " + e.getMessage()));
+        }
     }
 }

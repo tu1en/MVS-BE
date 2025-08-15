@@ -48,21 +48,34 @@ public class ExcelImportService {
     public List<LessonData> parseExcelFile(MultipartFile file) throws IOException {
         List<LessonData> lessons = new ArrayList<>();
         
+        // VALIDATION CHUẨN CẤP 3 - NGHIÊM NGẶT THEO TEMPLATE
+        validateTemplateStrictly(file);
+        
         // Enhanced validation
         if (file == null || file.isEmpty()) {
-            throw new IOException("File không được để trống");
+            throw new IOException("❌ File không được để trống. Vui lòng sử dụng template.xlsx chuẩn được cung cấp");
         }
         
         if (file.getSize() > 50 * 1024 * 1024) { // 50MB limit
-            throw new IOException("File không được vượt quá 50MB");
+            throw new IOException("❌ File không được vượt quá 50MB");
         }
         
-        // Validate file extension
+        // QUAN TRỌNG: CHỈ CHẤP NHẬN .xlsx THEO ĐÚNG TEMPLATE CHUẨN
         String originalFilename = file.getOriginalFilename();
-        if (originalFilename == null || 
-            (!originalFilename.toLowerCase().endsWith(".xlsx") && 
-             !originalFilename.toLowerCase().endsWith(".xls"))) {
-            throw new IOException("File phải có định dạng Excel (.xlsx, .xls)");
+        if (originalFilename == null || !originalFilename.toLowerCase().endsWith(".xlsx")) {
+            throw new IOException("❌ CHỈ CHẤP NHẬN FILE .xlsx THEO ĐÚNG TEMPLATE CHUẨN!\n" +
+                "Vui lòng download template.xlsx chính thức từ hệ thống và sử dụng đúng định dạng này.\n" +
+                "KHÔNG chấp nhận file .xls hoặc định dạng khác!");
+        }
+        
+        // Validate MIME type nghiêm ngặt
+        String contentType = file.getContentType();
+        if (contentType == null || 
+            !contentType.equals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")) {
+            throw new IOException("❌ File không đúng định dạng .xlsx chuẩn!\n" +
+                "File upload có MIME type: " + contentType + "\n" +
+                "Yêu cầu: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet\n" +
+                "Vui lòng sử dụng template.xlsx chính thức được cung cấp!");
         }
         
         try (InputStream inputStream = file.getInputStream();
@@ -502,5 +515,177 @@ public class ExcelImportService {
                 row.createCell(colIndex).setCellValue(sampleData[rowIndex][colIndex]);
             }
         }
+    }
+    
+    /**
+     * VALIDATION TEMPLATE CHUẨN CẤP 3 - NGHIÊM NGẶT 100%
+     * Bắt buộc phải sử dụng đúng template.xlsx chuẩn - KHÔNG CHO PHÉP SAI LỆCH
+     */
+    private void validateTemplateStrictly(MultipartFile file) throws IOException {
+        try (InputStream inputStream = file.getInputStream();
+             Workbook workbook = new XSSFWorkbook(inputStream)) {
+            
+            Sheet sheet = workbook.getSheetAt(0);
+            
+            // 1. VALIDATE HEADER CHÍNH XÁC 100%
+            validateHeaderExact(sheet);
+            
+            // 2. VALIDATE CẤU TRÚC CHUẨN
+            validateStructureStandard(sheet);
+            
+            logger.info("✅ Template validation PASSED - File đúng chuẩn template.xlsx");
+            
+        } catch (IOException e) {
+            throw e; // Re-throw validation errors
+        } catch (Exception e) {
+            throw new IOException("❌ File không đúng chuẩn template.xlsx: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Validate header phải chính xác 100% theo template chuẩn
+     */
+    private void validateHeaderExact(Sheet sheet) throws IOException {
+        // Header chuẩn bắt buộc (KHÔNG ĐƯỢC THAY ĐỔI)
+        String[] REQUIRED_HEADERS = {
+            "Tuần", "Tên Chủ Đề", "Loại Hình", "Mục Đích", 
+            "Yêu Cầu Đạt Được", "Chuẩn Bị", "Thời Lượng (Phút)"
+        };
+        
+        Row headerRow = sheet.getRow(0);
+        if (headerRow == null) {
+            throw new IOException("❌ THIẾU DÒNG HEADER!\n" +
+                "Template chuẩn phải có dòng tiêu đề đầu tiên.\n" +
+                "Vui lòng sử dụng template.xlsx chính thức được cung cấp!");
+        }
+        
+        // Kiểm tra số cột chính xác
+        int actualColumns = headerRow.getLastCellNum();
+        if (actualColumns != REQUIRED_HEADERS.length) {
+            throw new IOException("❌ SỐ CỘT KHÔNG ĐÚNG CHUẨN!\n" +
+                String.format("Template chuẩn phải có CHÍNH XÁC %d cột.\n", REQUIRED_HEADERS.length) +
+                String.format("File của bạn có %d cột.\n", actualColumns) +
+                "Vui lòng download và sử dụng template.xlsx chính thức!");
+        }
+        
+        // Validate từng header một cách nghiêm ngặt
+        StringBuilder errorMsg = new StringBuilder();
+        for (int i = 0; i < REQUIRED_HEADERS.length; i++) {
+            Cell cell = headerRow.getCell(i);
+            String actualHeader = (cell != null && cell.getStringCellValue() != null) 
+                ? cell.getStringCellValue().trim() : "";
+            
+            String expectedHeader = REQUIRED_HEADERS[i];
+            if (!expectedHeader.equals(actualHeader)) {
+                errorMsg.append(String.format("• Cột %d: Mong đợi '%s', thực tế '%s'\n", 
+                    i + 1, expectedHeader, actualHeader));
+            }
+        }
+        
+        if (errorMsg.length() > 0) {
+            throw new IOException("❌ HEADER KHÔNG ĐÚNG CHUẨN TEMPLATE!\n\n" +
+                "Các lỗi được phát hiện:\n" + errorMsg.toString() + "\n" +
+                "🚫 KHÔNG ĐƯỢC THAY ĐỔI HEADER TRONG TEMPLATE!\n" +
+                "✅ Vui lòng download template.xlsx chính thức và điền dữ liệu vào đúng cột tương ứng.\n" +
+                "📋 Header chuẩn: [" + String.join(", ", REQUIRED_HEADERS) + "]");
+        }
+    }
+    
+    /**
+     * Validate cấu trúc và dữ liệu chuẩn
+     */
+    private void validateStructureStandard(Sheet sheet) throws IOException {
+        int totalRows = sheet.getLastRowNum();
+        
+        // Kiểm tra có dữ liệu không
+        if (totalRows < 1) {
+            throw new IOException("❌ TEMPLATE TRỐNG!\n" +
+                "Template phải có ít nhất 1 dòng dữ liệu sau header.\n" +
+                "Vui lòng điền thông tin khóa học vào template và upload lại!");
+        }
+        
+        // Kiểm tra giới hạn dòng
+        if (totalRows > 1000) {
+            throw new IOException("❌ QUÁ NHIỀU DỮ LIỆU!\n" +
+                String.format("Template chỉ hỗ trợ tối đa 1000 dòng dữ liệu. File của bạn có %d dòng.\n", totalRows) +
+                "Vui lòng chia nhỏ dữ liệu và upload từng phần!");
+        }
+        
+        // Validate sample data rows
+        int validRows = 0;
+        StringBuilder dataErrors = new StringBuilder();
+        
+        for (int i = 1; i <= Math.min(totalRows, 5); i++) { // Check first 5 rows for quick validation
+            Row row = sheet.getRow(i);
+            if (row != null) {
+                String rowError = validateRowDataStandard(row, i);
+                if (rowError == null) {
+                    validRows++;
+                } else {
+                    dataErrors.append("• Dòng ").append(i + 1).append(": ").append(rowError).append("\n");
+                }
+            }
+        }
+        
+        if (validRows == 0 && dataErrors.length() > 0) {
+            throw new IOException("❌ DỮ LIỆU KHÔNG ĐÚNG ĐỊNH DẠNG!\n\n" +
+                "Các lỗi được phát hiện:\n" + dataErrors.toString() + "\n" +
+                "📋 Quy tắc nhập liệu:\n" +
+                "• Cột 'Tuần': Số nguyên từ 1-52\n" +
+                "• Cột 'Tên Chủ Đề': Bắt buộc, tối đa 255 ký tự\n" +
+                "• Cột 'Thời Lượng': Số phút từ 1-480 (nếu có)\n" +
+                "• Các cột khác: Tùy chọn, tối đa 1000 ký tự");
+        }
+        
+        logger.info("✅ Đã validate {} dòng dữ liệu đầu tiên - Format đúng chuẩn", validRows);
+    }
+    
+    /**
+     * Validate một dòng dữ liệu theo chuẩn nghiêm ngặt
+     */
+    private String validateRowDataStandard(Row row, int rowIndex) {
+        // Check if row has any data
+        boolean hasData = false;
+        for (int i = 0; i < 7; i++) {
+            Cell cell = row.getCell(i);
+            if (cell != null && cell.toString().trim().length() > 0) {
+                hasData = true;
+                break;
+            }
+        }
+        
+        if (!hasData) {
+            return null; // Empty row - skip
+        }
+        
+        // Validate required fields
+        Cell weekCell = row.getCell(0);
+        Integer week = getIntegerFromCell(weekCell);
+        if (week == null) {
+            return "Thiếu số tuần (cột 1)";
+        }
+        if (week < 1 || week > 52) {
+            return "Số tuần phải từ 1-52, hiện tại: " + week;
+        }
+        
+        Cell topicCell = row.getCell(1);
+        String topic = getStringFromCell(topicCell);
+        if (topic == null || topic.trim().isEmpty()) {
+            return "Thiếu tên chủ đề (cột 2)";
+        }
+        if (topic.length() > 255) {
+            return "Tên chủ đề quá dài (>" + topic.length() + " ký tự)";
+        }
+        
+        // Validate optional duration
+        Cell durationCell = row.getCell(6);
+        if (durationCell != null) {
+            Integer duration = getIntegerFromCell(durationCell);
+            if (duration != null && (duration < 1 || duration > 480)) {
+                return "Thời lượng phải từ 1-480 phút, hiện tại: " + duration;
+            }
+        }
+        
+        return null; // Valid row
     }
 }
