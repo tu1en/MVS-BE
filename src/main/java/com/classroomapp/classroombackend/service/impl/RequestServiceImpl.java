@@ -4,6 +4,7 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,7 +21,11 @@ import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.requestmanagement.RequestRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.EmailService;
+import com.classroomapp.classroombackend.service.ParentService;
 import com.classroomapp.classroombackend.service.RequestService;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +38,7 @@ public class RequestServiceImpl implements RequestService {
     private final UserRepository userRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
+    private final ParentService parentService;
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
@@ -128,11 +134,23 @@ public class RequestServiceImpl implements RequestService {
         int roleId = RoleConstants.STUDENT; // Default to STUDENT
         if ("TEACHER".equalsIgnoreCase(request.getRequestedRole())) {
             roleId = RoleConstants.TEACHER;
+        } else if ("PARENT".equalsIgnoreCase(request.getRequestedRole())) {
+            roleId = RoleConstants.PARENT;
         }
         newUser.setRoleId(roleId);
 
         userRepository.save(newUser);
         log.info("Successfully created user for request {}", requestId);
+
+        // If this is a parent request, create parent entity and link to children
+        if (roleId == RoleConstants.PARENT) {
+            try {
+                createParentAndLinkChildren(newUser, request);
+            } catch (Exception e) {
+                log.error("Failed to create parent entity and link children for request {}", requestId, e);
+                // Don't fail the approval if parent creation fails
+            }
+        }
 
         // Update Request status
         log.info("Setting request {} status to APPROVED", requestId);
@@ -148,6 +166,8 @@ public class RequestServiceImpl implements RequestService {
             String roleNameForEmail = "STUDENT";
             if (roleId == RoleConstants.TEACHER) {
                 roleNameForEmail = "TEACHER";
+            } else if (roleId == RoleConstants.PARENT) {
+                roleNameForEmail = "PARENT";
             }
             emailService.sendApprovalEmail(newUser.getEmail(), newUser.getFullName(), roleNameForEmail, randomPassword);
             log.info("Successfully sent approval notification for request {}", requestId);
@@ -297,5 +317,59 @@ public class RequestServiceImpl implements RequestService {
             sb.append(chars.charAt(randomIndex));
         }
         return sb.toString();
+    }
+
+    /**
+     * Create parent entity and link to children based on request data
+     */
+    private void createParentAndLinkChildren(User parentUser, Request request) {
+        try {
+            // Parse form responses to get children emails
+            String formResponses = request.getFormResponses();
+            if (formResponses != null && !formResponses.trim().isEmpty()) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                JsonNode formData = objectMapper.readTree(formResponses);
+                
+                if (formData.has("childrenEmails") && formData.get("childrenEmails").isArray()) {
+                    JsonNode childrenEmails = formData.get("childrenEmails");
+                    
+                    for (JsonNode emailNode : childrenEmails) {
+                        String childEmail = emailNode.asText();
+                        if (childEmail != null && !childEmail.trim().isEmpty()) {
+                            // Find child user by email
+                            Optional<User> childUser = userRepository.findByEmail(childEmail);
+                            if (childUser.isPresent()) {
+                                // Link parent to child
+                                linkParentToChild(parentUser.getId(), childUser.get().getId());
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error parsing form responses for parent request", e);
+        }
+    }
+
+    /**
+     * Link parent to child through StudentParent relationship
+     */
+    private void linkParentToChild(Long parentId, Long childId) {
+        try {
+            // Use ParentService to link parent to child
+            log.info("Linking parent {} to child {}", parentId, childId);
+            
+            // Create parent entity first
+            parentService.createParentFromUser(parentId, "", "", "");
+            
+            // Link parent to student
+            parentService.linkParentToStudent(parentId, childId, 
+                com.classroomapp.classroombackend.model.StudentParent.RelationType.GUARDIAN, true, true);
+            
+            log.info("Successfully linked parent {} to child {}", parentId, childId);
+            
+        } catch (Exception e) {
+            log.error("Failed to link parent {} to child {}", parentId, childId, e);
+        }
     }
 } 

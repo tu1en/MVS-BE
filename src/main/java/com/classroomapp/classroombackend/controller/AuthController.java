@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.classroomapp.classroombackend.dto.PasswordConfirmationDto;
@@ -73,6 +74,18 @@ public class AuthController {
     public ResponseEntity<?> submitRegistrationRequest(@Valid @RequestBody CreateRequestDto createRequestDto) {
         requestService.createRegistrationRequest(createRequestDto);
         return ResponseEntity.ok(Map.of("message", "Request submitted successfully. Please wait for approval."));
+    }
+
+    /**
+     * Check if child email exists in the system
+     * 
+     * @param email email to check
+     * @return true if email exists, false otherwise
+     */
+    @GetMapping("/check-child-email")
+    public ResponseEntity<?> checkChildEmailExists(@RequestParam String email) {
+        boolean exists = userRepository.existsByEmail(email);
+        return ResponseEntity.ok(Map.of("exists", exists));
     }
 
     /**

@@ -17,7 +17,7 @@ public class CreateRequestDto {
     private String phoneNumber;
 
     @NotBlank
-    private String requestedRole; // "TEACHER" or "STUDENT"
+    private String requestedRole; // "TEACHER", "STUDENT", or "PARENT"
 
     private String formResponses; // Dữ liệu JSON từ form
 } 

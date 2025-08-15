@@ -47,22 +47,31 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public void sendRequestStatusNotification(String to, String fullName, String requestedRole, String status, String reason) {
         String subject;
-        String body;        
+        String templateName;
+        
         if ("APPROVED".equals(status)) {
             subject = "Yêu cầu " + requestedRole + " của bạn đã được chấp thuận";
-            Context context = new Context();
-            context.setVariable("name", fullName);
-            context.setVariable("role", requestedRole);
-            body = templateEngine.process("email/request-approved", context);
+            if ("PARENT".equalsIgnoreCase(requestedRole)) {
+                templateName = "email/parent-request-approved";
+            } else {
+                templateName = "email/request-approved";
+            }
         } else {
             subject = "Yêu cầu " + requestedRole + " của bạn đã bị từ chối";
-            Context context = new Context();
-            context.setVariable("name", fullName);
-            context.setVariable("role", requestedRole);
-            context.setVariable("reason", reason);
-            body = templateEngine.process("email/request-rejected", context);
+            if ("PARENT".equalsIgnoreCase(requestedRole)) {
+                templateName = "email/parent-request-rejected";
+            } else {
+                templateName = "email/request-rejected";
+            }
         }
         
+        Context context = new Context();
+        context.setVariable("name", fullName);
+        context.setVariable("role", requestedRole);
+        if ("REJECTED".equals(status)) {
+            context.setVariable("reason", reason);
+        }
+        String body = templateEngine.process(templateName, context);
         sendEmail(to, subject, body);
     }    @Override
     public void sendAccountInfoEmail(String to, String fullName, String role, String username, String password) {
@@ -82,19 +91,37 @@ public class EmailServiceImpl implements EmailService {
         Context context = new Context();
         context.setVariable("name", fullName);
         context.setVariable("role", requestedRole);
-        String body = templateEngine.process("email/request-received", context);
+        
+        String templateName;
+        if ("PARENT".equalsIgnoreCase(requestedRole)) {
+            templateName = "email/parent-request-received";
+        } else {
+            templateName = "email/request-received";
+        }
+        
+        String body = templateEngine.process(templateName, context);
         sendEmail(to, subject, body);
     }
 
     @Override
     public void sendApprovalEmail(String to, String fullName, String roleName, String temporaryPassword) {
-        String subject = "Yêu cầu tạo tài khoản học sinh đã được phê duyệt";
+        String subject;
+        String templateName;
+        
+        if ("PARENT".equalsIgnoreCase(roleName)) {
+            subject = "Yêu cầu tạo tài khoản phụ huynh đã được phê duyệt";
+            templateName = "email/parent-request-approved";
+        } else {
+            subject = "Yêu cầu tạo tài khoản học sinh đã được phê duyệt";
+            templateName = "email/request-approved";
+        }
+        
         Context context = new Context();
         context.setVariable("fullName", fullName);
         context.setVariable("role", roleName);
         context.setVariable("username", to);
         context.setVariable("password", temporaryPassword);
-        String body = templateEngine.process("email/request-approved", context);
+        String body = templateEngine.process(templateName, context);
         sendEmail(to, subject, body);
     }
 
