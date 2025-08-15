@@ -28,6 +28,7 @@ import com.classroomapp.classroombackend.service.RequestService;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,6 +49,11 @@ public class RequestServiceImpl implements RequestService {
     public void createRegistrationRequest(CreateRequestDto dto) {
         if (requestRepository.existsByEmailAndStatusIn(dto.getEmail(), List.of("PENDING", "APPROVED")) || userRepository.existsByEmail(dto.getEmail())) {
             throw new BusinessLogicException("Đã tồn tại tài khoản với email này hoặc đang chờ phê duyệt.");
+        }
+
+        // Validate formResponses nếu là yêu cầu học sinh
+        if ("STUDENT".equals(dto.getRequestedRole()) && dto.getFormResponses() != null) {
+            validateStudentFormData(dto.getFormResponses());
         }
 
         Request newRequest = new Request();
@@ -358,6 +364,61 @@ public class RequestServiceImpl implements RequestService {
         } catch (Exception e) {
             log.error("Error creating parent account and linking to student", e);
             // Không throw exception để không làm fail việc tạo tài khoản học sinh
+        }
+    }
+
+    private void validateStudentFormData(String formResponses) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode formData = objectMapper.readTree(formResponses);
+
+            // Validate các trường bắt buộc
+            if (!formData.has("parentEmail") || formData.get("parentEmail").asText().trim().isEmpty()) {
+                throw new BusinessLogicException("Email phụ huynh không được để trống");
+            }
+
+            if (!formData.has("parentFullName") || formData.get("parentFullName").asText().trim().isEmpty()) {
+                throw new BusinessLogicException("Họ và tên phụ huynh không được để trống");
+            }
+
+            if (!formData.has("parentPhoneNumber") || formData.get("parentPhoneNumber").asText().trim().isEmpty()) {
+                throw new BusinessLogicException("Số điện thoại phụ huynh không được để trống");
+            }
+
+            // Validate độ dài các trường
+            String parentEmail = formData.get("parentEmail").asText();
+            if (parentEmail.length() > 50) {
+                throw new BusinessLogicException("Email phụ huynh không được quá 50 ký tự");
+            }
+
+            String parentFullName = formData.get("parentFullName").asText();
+            if (parentFullName.length() > 50) {
+                throw new BusinessLogicException("Họ và tên phụ huynh không được quá 50 ký tự");
+            }
+
+            String parentPhoneNumber = formData.get("parentPhoneNumber").asText();
+            if (parentPhoneNumber.length() < 10 || parentPhoneNumber.length() > 11) {
+                throw new BusinessLogicException("Số điện thoại phụ huynh phải có từ 10 đến 11 chữ số");
+            }
+            if (!parentPhoneNumber.startsWith("0")) {
+                throw new BusinessLogicException("Số điện thoại phụ huynh phải bắt đầu bằng số 0");
+            }
+
+            // Validate trường thông tin thêm (nếu có)
+            if (formData.has("additionalInfo")) {
+                String additionalInfo = formData.get("additionalInfo").asText();
+                if (additionalInfo != null && additionalInfo.length() > 200) {
+                    throw new BusinessLogicException("Thông tin thêm không được quá 200 ký tự");
+                }
+            }
+
+        } catch (JsonProcessingException e) {
+            throw new BusinessLogicException("Dữ liệu form không hợp lệ: " + e.getMessage());
+        } catch (Exception e) {
+            if (e instanceof BusinessLogicException) {
+                throw e;
+            }
+            throw new BusinessLogicException("Dữ liệu form không hợp lệ: " + e.getMessage());
         }
     }
 } 
