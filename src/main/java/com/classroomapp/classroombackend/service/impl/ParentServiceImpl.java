@@ -2,6 +2,7 @@ package com.classroomapp.classroombackend.service.impl;
 
 import com.classroomapp.classroombackend.model.Parent;
 import com.classroomapp.classroombackend.model.StudentParent;
+import com.classroomapp.classroombackend.service.BillingService;
 import com.classroomapp.classroombackend.repository.parentmanagement.ParentRepository;
 import com.classroomapp.classroombackend.repository.parentmanagement.StudentParentRepository;
 import com.classroomapp.classroombackend.repository.TimetableEventRepository;
@@ -33,14 +34,17 @@ public class ParentServiceImpl implements ParentService {
     private final ParentRepository parentRepository;
     private final StudentParentRepository studentParentRepository;
     private final TimetableEventRepository timetableEventRepository;
+    private final BillingService billingService;
 
     @Autowired
     public ParentServiceImpl(ParentRepository parentRepository, 
                             StudentParentRepository studentParentRepository,
-                            TimetableEventRepository timetableEventRepository) {
+                            TimetableEventRepository timetableEventRepository,
+                            BillingService billingService) {
         this.parentRepository = parentRepository;
         this.studentParentRepository = studentParentRepository;
         this.timetableEventRepository = timetableEventRepository;
+        this.billingService = billingService;
     }
 
     @Override
@@ -356,65 +360,27 @@ public class ParentServiceImpl implements ParentService {
     @Override
     @Transactional(readOnly = true)
     public Map<String, Object> getChildBillingData(Long childId, LocalDate startDate, LocalDate endDate) {
-        Map<String, Object> billingData = new HashMap<>();
-        
         try {
-            // This would typically integrate with your existing billing system
-            // For now, returning sample data - replace with actual implementation
-            
-            // Summary data
-            Map<String, Object> summary = new HashMap<>();
-            summary.put("totalDebt", 2500000L); // VND
-            summary.put("totalPaid", 7500000L);
-            summary.put("unpaidInvoices", 2L);
-            summary.put("overdueAmount", 1000000L);
-            
-            // Sample invoices
-            List<Map<String, Object>> invoices = new ArrayList<>();
-            Map<String, Object> invoice = new HashMap<>();
-            invoice.put("id", 1L);
-            invoice.put("invoiceNumber", "INV-2024-001");
-            invoice.put("issueDate", "2024-01-15");
-            invoice.put("dueDate", "2024-02-15");
-            invoice.put("totalAmount", 2500000L);
-            invoice.put("paidAmount", 0L);
-            invoice.put("status", "PENDING");
-            
-            List<Map<String, Object>> items = new ArrayList<>();
-            Map<String, Object> item = new HashMap<>();
-            item.put("description", "Học phí tháng 1/2024");
-            item.put("quantity", 1);
-            item.put("unitPrice", 2500000L);
-            item.put("amount", 2500000L);
-            items.add(item);
-            invoice.put("items", items);
-            
-            invoices.add(invoice);
-            
-            // Sample payments
-            List<Map<String, Object>> payments = new ArrayList<>();
-            Map<String, Object> payment = new HashMap<>();
-            payment.put("id", 1L);
-            payment.put("paymentDate", "2024-01-10T10:30:00");
-            payment.put("invoiceNumber", "INV-2023-012");
-            payment.put("amount", 2500000L);
-            payment.put("paymentMethod", "BANK_TRANSFER");
-            payment.put("note", "Thanh toán học phí tháng 12/2023");
-            payment.put("receiptId", 1L);
-            payments.add(payment);
-            
-            billingData.put("summary", summary);
-            billingData.put("invoices", invoices);
-            billingData.put("payments", payments);
-            
-            log.info("Retrieved billing data for child {} from {} to {}", 
-                    childId, startDate, endDate);
+            // Use BillingService to get real billing data
+            return billingService.getStudentBillingData(childId, startDate, endDate);
             
         } catch (Exception e) {
             log.error("Error retrieving billing data for child {}", childId, e);
+            
+            // Return empty data structure on error
+            Map<String, Object> emptyBillingData = new HashMap<>();
+            Map<String, Object> emptySummary = new HashMap<>();
+            emptySummary.put("totalDebt", 0L);
+            emptySummary.put("totalPaid", 0L);
+            emptySummary.put("unpaidInvoices", 0);
+            emptySummary.put("overdueAmount", 0L);
+            
+            emptyBillingData.put("summary", emptySummary);
+            emptyBillingData.put("invoices", new ArrayList<>());
+            emptyBillingData.put("payments", new ArrayList<>());
+            
+            return emptyBillingData;
         }
-        
-        return billingData;
     }
 
     @Override

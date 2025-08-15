@@ -426,23 +426,28 @@ public class ParentController {
         String token = getTokenFromRequest(request);
         
         // First try to get username from claims, fall back to subject
-        String username;
+        String usernameOrEmail;
         try {
             Claims claims = jwtUtil.getAllClaimsFromToken(token);
-            username = claims.get("username", String.class);
-            if (username == null) {
-                username = jwtUtil.getSubjectFromToken(token);
+            usernameOrEmail = claims.get("username", String.class);
+            if (usernameOrEmail == null) {
+                usernameOrEmail = jwtUtil.getSubjectFromToken(token);
             }
         } catch (Exception e) {
-            username = jwtUtil.getSubjectFromToken(token);
+            usernameOrEmail = jwtUtil.getSubjectFromToken(token);
         }
         
-        log.debug("Looking for user with username: {}", username);
+        log.debug("Looking for user with username/email: {}", usernameOrEmail);
         
-        // First find the User by username
-        Optional<User> user = userRepository.findByUsername(username);
+        // Try to find user by username first, then by email if username search fails
+        Optional<User> user = userRepository.findByUsername(usernameOrEmail);
         if (!user.isPresent()) {
-            log.error("User not found for username: {}", username);
+            log.debug("User not found by username: {}, trying email", usernameOrEmail);
+            user = userRepository.findByEmail(usernameOrEmail);
+        }
+        
+        if (!user.isPresent()) {
+            log.error("User not found for username/email: {}", usernameOrEmail);
             throw new IllegalArgumentException("User not found for token");
         }
         
