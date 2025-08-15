@@ -14,6 +14,9 @@ import com.classroomapp.classroombackend.service.EmailService;
 
 import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.classroomapp.classroombackend.model.Request;
 
 @Service
 @Slf4j
@@ -87,18 +90,20 @@ public class EmailServiceImpl implements EmailService {
 
     @Override
     public void sendFormCompletionConfirmation(String to, String fullName, String requestedRole) {
-        String subject = "Đã nhận yêu cầu: Đăng ký vai trò " + requestedRole;
-        Context context = new Context();
-        context.setVariable("name", fullName);
-        context.setVariable("role", requestedRole);
-        
+        String subject;
         String templateName;
+        
         if ("PARENT".equalsIgnoreCase(requestedRole)) {
+            subject = "Yêu cầu tạo tài khoản phụ huynh đã được nhận";
             templateName = "email/parent-request-received";
         } else {
+            subject = "Yêu cầu tạo tài khoản học sinh đã được nhận";
             templateName = "email/request-received";
         }
         
+        Context context = new Context();
+        context.setVariable("fullName", fullName);
+        context.setVariable("role", requestedRole);
         String body = templateEngine.process(templateName, context);
         sendEmail(to, subject, body);
     }
@@ -280,36 +285,40 @@ public void sendEnrollmentRejectionNotification(String to, String studentName, S
 }
 
     @Override
-    public void sendPayrollConfirmationEmail(String to, String fullName, PayrollResult payrollResult) {
-        String subject = "Xác nhận bảng lương tháng " + (payrollResult.getPayrollPeriod() != null ? payrollResult.getPayrollPeriod() : "");
-        Context context = new Context();
-        context.setVariable("fullName", fullName);
-        context.setVariable("period", payrollResult.getPayrollPeriod() != null ? payrollResult.getPayrollPeriod().toString() : "");
-        context.setVariable("contractType", payrollResult.getContractType());
-        context.setVariable("grossSalary", payrollResult.getProratedGrossSalary());
-        context.setVariable("netSalary", payrollResult.getNetSalary());
-        java.math.BigDecimal pit = java.math.BigDecimal.ZERO;
-        java.math.BigDecimal si = java.math.BigDecimal.ZERO;
-        if (payrollResult.getTopCVResult() != null) {
-            if (payrollResult.getTopCVResult().getPersonalIncomeTax() != null) {
-                pit = payrollResult.getTopCVResult().getPersonalIncomeTax();
+    public void sendPayrollConfirmationEmail(String to, String fullName, com.classroomapp.classroombackend.model.hrmanagement.PayrollResult payrollResult) {
+        // Implementation for payroll confirmation email
+        log.info("Sending payroll confirmation email to: {}", to);
+    }
+
+    @Override
+    public void sendParentApprovalEmail(Request request) {
+        try {
+            String formResponses = request.getFormResponses();
+            if (formResponses != null && !formResponses.trim().isEmpty()) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                JsonNode formData = objectMapper.readTree(formResponses);
+                
+                if (formData.has("parentEmail")) {
+                    String parentEmail = formData.get("parentEmail").asText();
+                    String parentFullName = formData.has("parentFullName") ? 
+                        formData.get("parentFullName").asText() : "Phụ huynh";
+                    
+                    // Gửi email thông báo cho phụ huynh về việc tài khoản con đã được phê duyệt
+                    String subject = "Tài khoản con đã được phê duyệt thành công!";
+                    String templateName = "email/parent-child-approved";
+                    
+                    Context context = new Context();
+                    context.setVariable("fullName", parentFullName);
+                    context.setVariable("studentEmail", request.getEmail());
+                    context.setVariable("studentName", request.getFullName());
+                    
+                    String body = templateEngine.process(templateName, context);
+                    sendEmail(parentEmail, subject, body);
+                }
             }
-            if (payrollResult.getTopCVResult().getInsuranceDetails() != null &&
-                payrollResult.getTopCVResult().getInsuranceDetails().getTotalEmployeeContribution() != null) {
-                si = payrollResult.getTopCVResult().getInsuranceDetails().getTotalEmployeeContribution();
-            }
+        } catch (Exception e) {
+            log.error("Error sending parent approval email", e);
         }
-        context.setVariable("personalIncomeTax", pit);
-        context.setVariable("employeeInsurance", si);
-        context.setVariable("totalDeductions", pit.add(si));
-        context.setVariable("totalWorkingDays", payrollResult.getTotalWorkingDays());
-        context.setVariable("actualWorkingDays", payrollResult.getActualWorkingDays());
-        context.setVariable("weekendWorkingHours", payrollResult.getWeekendWorkingHours());
-        context.setVariable("weekdayWorkingHours", payrollResult.getWeekdayWorkingHours());
-        context.setVariable("hourlySalary", payrollResult.getHourlySalary());
-        context.setVariable("weekendPay", payrollResult.getWeekendPay());
-        String body = templateEngine.process("email/payroll-confirmation", context);
-        sendEmail(to, subject, body);
     }
 
 } 

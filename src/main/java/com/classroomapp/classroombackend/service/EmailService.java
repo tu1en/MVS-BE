@@ -1,5 +1,7 @@
 package com.classroomapp.classroombackend.service;
 
+import com.classroomapp.classroombackend.model.Request;
+
 /**
  * Service interface for email operations
  */
@@ -39,6 +41,8 @@ public interface EmailService {
      * @param requestedRole The role that was requested
      */
     void sendFormCompletionConfirmation(String to, String fullName, String requestedRole);
+    
+    void sendParentApprovalEmail(Request request);
 
     /**
      * Send an approval email with a temporary password.

@@ -16,7 +16,9 @@ import com.classroomapp.classroombackend.dto.RequestDTO;
 import com.classroomapp.classroombackend.dto.RequestResponseDTO;
 import com.classroomapp.classroombackend.dto.requestmanagement.CreateRequestDto;
 import com.classroomapp.classroombackend.exception.BusinessLogicException;
+import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
 import com.classroomapp.classroombackend.model.Request;
+import com.classroomapp.classroombackend.model.StudentParent;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.requestmanagement.RequestRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
@@ -107,77 +109,67 @@ public class RequestServiceImpl implements RequestService {
     @Override
     @Transactional
     public RequestResponseDTO approveRequest(Long requestId) {
-        log.info("Starting approval process for request ID: {}", requestId);
-        
         Request request = requestRepository.findById(requestId)
-                .orElseThrow(() -> new BusinessLogicException("Không tìm thấy yêu cầu với ID: " + requestId));
-        log.info("Found request: {}", request);
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy yêu cầu với ID: " + requestId));
 
         if (!"PENDING".equals(request.getStatus())) {
-            log.warn("Yêu cầu {} không ở trạng thái PENDING. Trạng thái hiện tại: {}", requestId, request.getStatus());
-            throw new BusinessLogicException("Yêu cầu không ở trạng thái PENDING. Trạng thái hiện tại: " + request.getStatus());
+            throw new BusinessLogicException("Yêu cầu này không thể được phê duyệt");
         }
 
-        // Create User from Request info
+        // Tạo tài khoản học sinh
         User newUser = new User();
+        newUser.setUsername(request.getEmail());
         newUser.setEmail(request.getEmail());
-        // Note: The User entity appears to use 'fullName' based on other files.
-        // If it uses firstName/lastName, this needs adjustment. Assuming fullName for now.
         newUser.setFullName(request.getFullName());
         newUser.setPhoneNumber(request.getPhoneNumber());
-
-        String randomPassword = generateRandomPassword();
-        newUser.setPassword(passwordEncoder.encode(randomPassword));
         newUser.setStatus("active");
-        
-        // Determine roleId from the requested role string
-        int roleId = RoleConstants.STUDENT; // Default to STUDENT
+        newUser.setCreatedAt(LocalDateTime.now());
+
+        // Set role cho học sinh
+        int roleId = RoleConstants.STUDENT;
         if ("TEACHER".equalsIgnoreCase(request.getRequestedRole())) {
             roleId = RoleConstants.TEACHER;
-        } else if ("PARENT".equalsIgnoreCase(request.getRequestedRole())) {
-            roleId = RoleConstants.PARENT;
         }
         newUser.setRoleId(roleId);
-
         userRepository.save(newUser);
-        log.info("Successfully created user for request {}", requestId);
 
-        // If this is a parent request, create parent entity and link to children
-        if (roleId == RoleConstants.PARENT) {
+        // Nếu là yêu cầu học sinh, tạo tài khoản phụ huynh và liên kết
+        if (roleId == RoleConstants.STUDENT) {
             try {
-                createParentAndLinkChildren(newUser, request);
+                createParentAccountAndLinkToStudent(newUser, request);
             } catch (Exception e) {
-                log.error("Failed to create parent entity and link children for request {}", requestId, e);
-                // Don't fail the approval if parent creation fails
+                log.error("Failed to create parent account and link to student for request {}", requestId, e);
             }
         }
 
-        // Update Request status
-        log.info("Setting request {} status to APPROVED", requestId);
+        // Cập nhật trạng thái yêu cầu
         request.setStatus("APPROVED");
+        request.setResultStatus("APPROVED");
         request.setProcessedAt(LocalDateTime.now());
+        requestRepository.save(request);
 
-        Request savedRequest = requestRepository.save(request);
+        // Gửi email thông báo phê duyệt
+        String randomPassword = generateRandomPassword();
+        newUser.setPassword(passwordEncoder.encode(randomPassword));
+        userRepository.save(newUser);
 
-        // Send approval notification with temporary password
-        try {
-            log.info("Sending approval notification for request {}", requestId);
-            // Re-fetch role name for the email
-            String roleNameForEmail = "STUDENT";
-            if (roleId == RoleConstants.TEACHER) {
-                roleNameForEmail = "TEACHER";
-            } else if (roleId == RoleConstants.PARENT) {
-                roleNameForEmail = "PARENT";
+        // Gửi email cho học sinh
+        String roleNameForEmail = "STUDENT";
+        if (roleId == RoleConstants.TEACHER) {
+            roleNameForEmail = "TEACHER";
+        }
+        emailService.sendApprovalEmail(newUser.getEmail(), newUser.getFullName(), roleNameForEmail, randomPassword);
+
+        // Gửi email cho phụ huynh nếu có
+        if (roleId == RoleConstants.STUDENT) {
+            try {
+                emailService.sendParentApprovalEmail(request);
+            } catch (Exception e) {
+                log.error("Failed to send parent approval email for request {}", requestId, e);
             }
-            emailService.sendApprovalEmail(newUser.getEmail(), newUser.getFullName(), roleNameForEmail, randomPassword);
-            log.info("Successfully sent approval notification for request {}", requestId);
-        } catch (Exception e) {
-            log.error("Gửi email phê duyệt cho yêu cầu {} thất bại: {}", requestId, e.getMessage(), e);
         }
 
-        RequestResponseDTO responseDTO = convertToDTO(savedRequest);
-        log.info("Returning response DTO: {}", responseDTO);
-        return responseDTO;
+        return convertToDTO(request);
     }
 
     @Override
@@ -319,57 +311,53 @@ public class RequestServiceImpl implements RequestService {
         return sb.toString();
     }
 
-    /**
-     * Create parent entity and link to children based on request data
-     */
-    private void createParentAndLinkChildren(User parentUser, Request request) {
+    private void createParentAccountAndLinkToStudent(User studentUser, Request request) {
         try {
-            // Parse form responses to get children emails
             String formResponses = request.getFormResponses();
             if (formResponses != null && !formResponses.trim().isEmpty()) {
                 ObjectMapper objectMapper = new ObjectMapper();
                 JsonNode formData = objectMapper.readTree(formResponses);
                 
-                if (formData.has("childrenEmails") && formData.get("childrenEmails").isArray()) {
-                    JsonNode childrenEmails = formData.get("childrenEmails");
+                if (formData.has("parentEmail") && formData.has("parentFullName")) {
+                    String parentEmail = formData.get("parentEmail").asText();
+                    String parentFullName = formData.get("parentFullName").asText();
+                    String parentPhone = formData.has("parentPhoneNumber") ? 
+                        formData.get("parentPhoneNumber").asText() : null;
+
+                    // Tạo tài khoản phụ huynh
+                    User parentUser = new User();
+                    parentUser.setUsername(parentEmail);
+                    parentUser.setEmail(parentEmail);
+                    parentUser.setFullName(parentFullName);
+                    parentUser.setPhoneNumber(parentPhone);
+                    parentUser.setStatus("active");
+                    parentUser.setRoleId(RoleConstants.PARENT);
+                    parentUser.setCreatedAt(LocalDateTime.now());
                     
-                    for (JsonNode emailNode : childrenEmails) {
-                        String childEmail = emailNode.asText();
-                        if (childEmail != null && !childEmail.trim().isEmpty()) {
-                            // Find child user by email
-                            Optional<User> childUser = userRepository.findByEmail(childEmail);
-                            if (childUser.isPresent()) {
-                                // Link parent to child
-                                linkParentToChild(parentUser.getId(), childUser.get().getId());
-                            }
-                        }
-                    }
+                    // Tạo mật khẩu cho phụ huynh
+                    String parentPassword = generateRandomPassword();
+                    parentUser.setPassword(passwordEncoder.encode(parentPassword));
+                    parentUser = userRepository.save(parentUser);
+
+                    // Tạo Parent entity
+                    parentService.createParentFromUser(parentUser.getId(), parentUser.getFullName(), 
+                        parentUser.getPhoneNumber(), parentUser.getEmail());
+
+                    // Liên kết phụ huynh với học sinh
+                    parentService.linkParentToStudent(parentUser.getId(), studentUser.getId(),
+                        StudentParent.RelationType.GUARDIAN, true, true);
+
+                    log.info("Successfully created parent account {} and linked to student {}", 
+                        parentUser.getId(), studentUser.getId());
+
+                    // Gửi email thông báo cho phụ huynh
+                    emailService.sendApprovalEmail(parentUser.getEmail(), parentUser.getFullName(), 
+                        "PARENT", parentPassword);
                 }
             }
         } catch (Exception e) {
-            log.error("Error parsing form responses for parent request", e);
-        }
-    }
-
-    /**
-     * Link parent to child through StudentParent relationship
-     */
-    private void linkParentToChild(Long parentId, Long childId) {
-        try {
-            // Use ParentService to link parent to child
-            log.info("Linking parent {} to child {}", parentId, childId);
-            
-            // Create parent entity first
-            parentService.createParentFromUser(parentId, "", "", "");
-            
-            // Link parent to student
-            parentService.linkParentToStudent(parentId, childId, 
-                com.classroomapp.classroombackend.model.StudentParent.RelationType.GUARDIAN, true, true);
-            
-            log.info("Successfully linked parent {} to child {}", parentId, childId);
-            
-        } catch (Exception e) {
-            log.error("Failed to link parent {} to child {}", parentId, childId, e);
+            log.error("Error creating parent account and linking to student", e);
+            // Không throw exception để không làm fail việc tạo tài khoản học sinh
         }
     }
 } 
