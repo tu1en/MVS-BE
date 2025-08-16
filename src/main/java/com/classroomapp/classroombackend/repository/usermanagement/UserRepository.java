@@ -76,6 +76,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE u.roleId = 5 AND u.status = 'active'")
     List<User> findActiveAccountants();
 
+    @Query("SELECT u FROM User u WHERE u.roleId = 7 AND u.status = 'active'")
+    List<User> findActiveParents();
+
     @Query("SELECT u FROM User u WHERE u.fullName LIKE %:keyword% OR u.username LIKE %:keyword%")
     List<User> searchUsersByName(@Param("keyword") String keyword);
 

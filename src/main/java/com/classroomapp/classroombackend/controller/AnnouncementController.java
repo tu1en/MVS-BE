@@ -1,14 +1,13 @@
 package com.classroomapp.classroombackend.controller;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,12 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.classroomapp.classroombackend.dto.AnnouncementDto;
 import com.classroomapp.classroombackend.dto.CreateAnnouncementDto;
-import com.classroomapp.classroombackend.dto.attendancemanagement.MyAttendanceHistoryDto;
-import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
-import com.classroomapp.classroombackend.model.usermanagement.User;
-import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.AnnouncementService;
-import com.classroomapp.classroombackend.service.AttendanceService;
 import com.classroomapp.classroombackend.service.impl.AnnouncementServiceImpl;
 
 import jakarta.validation.Valid;
@@ -41,8 +35,6 @@ public class AnnouncementController {
 
     private final AnnouncementService announcementService;
     private final AnnouncementServiceImpl announcementServiceImpl;
-private final UserRepository userRepository;
-private final AttendanceService attendanceService;
 
 
     @PostMapping
@@ -80,55 +72,63 @@ private final AttendanceService attendanceService;
         return ResponseEntity.ok(announcementService.getAnnouncementById(announcementId));
     }
 
-@GetMapping("/accountant/unread-count")
-@PreAuthorize("hasRole('ACCOUNTANT') or hasRole('ADMIN')")
-public ResponseEntity<Integer> getAccountantUnreadCount() {
-    log.info("Request to get accountant unread announcements count");
-    List<AnnouncementDto> announcements = announcementServiceImpl.getAnnouncementsForAccountant();
-    return ResponseEntity.ok(announcements.size());
-}
+    @GetMapping("/accountant/unread-count")
+    @PreAuthorize("hasRole('ACCOUNTANT') or hasRole('ADMIN')")
+    public ResponseEntity<Integer> getAccountantUnreadCount() {
+        log.info("Request to get accountant unread announcements count");
+        int count = announcementService.getUnreadAnnouncementCountForAccountant();
+        return ResponseEntity.ok(count);
+    }
 
-@GetMapping("/accountant/recent-unread")
-@PreAuthorize("hasRole('ACCOUNTANT') or hasRole('ADMIN')")
-public ResponseEntity<List<AnnouncementDto>> getAccountantRecentUnread(
-        @RequestParam(defaultValue = "5") int limit) {
-    log.info("Request to get accountant recent unread announcements, limit: {}", limit);
-    List<AnnouncementDto> announcements = announcementServiceImpl.getAnnouncementsForAccountant();
-    return ResponseEntity.ok(announcements.stream().limit(limit).collect(Collectors.toList()));
-}
+    @GetMapping("/accountant/recent-unread")
+    @PreAuthorize("hasRole('ACCOUNTANT') or hasRole('ADMIN')")
+    public ResponseEntity<List<AnnouncementDto>> getAccountantRecentUnread(
+            @RequestParam(defaultValue = "5") int limit) {
+        log.info("Request to get accountant recent unread announcements, limit: {}", limit);
+        List<AnnouncementDto> announcements = announcementService.getRecentUnreadAnnouncementsForAccountant(limit);
+        return ResponseEntity.ok(announcements);
+    }
 
-@GetMapping("/accountant")
-@PreAuthorize("hasRole('ACCOUNTANT') or hasRole('ADMIN')")
-public ResponseEntity<List<AnnouncementDto>> getAnnouncementsForAccountant() {
-    log.info("Request to get announcements for accountant");
-    List<AnnouncementDto> announcements = announcementServiceImpl.getAnnouncementsForAccountant();
-    return ResponseEntity.ok(announcements);
-}
+    @GetMapping("/accountant")
+    @PreAuthorize("hasRole('ACCOUNTANT') or hasRole('ADMIN')")
+    public ResponseEntity<List<AnnouncementDto>> getAnnouncementsForAccountant() {
+        log.info("Request to get announcements for accountant");
+        List<AnnouncementDto> announcements = announcementService.getAnnouncementsForAccountant();
+        return ResponseEntity.ok(announcements);
+    }
 
-@GetMapping("/teacher")
-@PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
-public ResponseEntity<List<AnnouncementDto>> getAnnouncementsForTeacher() {
-    log.info("Request to get announcements for teacher");
-    List<AnnouncementDto> announcements = announcementServiceImpl.getAnnouncementsForTeacher();
-    return ResponseEntity.ok(announcements);
-}
+    @GetMapping("/accountant/mark-all-read")
+    @PreAuthorize("hasRole('ACCOUNTANT') or hasRole('ADMIN')")
+    public ResponseEntity<Void> markAllAnnouncementsAsReadForAccountant() {
+        log.info("Request to mark all announcements as read for accountant");
+        announcementService.markAllAnnouncementsAsReadForAccountant();
+        return ResponseEntity.ok().build();
+    }
 
-@GetMapping("/teacher/unread-count")
-@PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
-public ResponseEntity<Integer> getTeacherUnreadCount() {
-    log.info("Request to get teacher unread announcements count");
-    List<AnnouncementDto> announcements = announcementServiceImpl.getAnnouncementsForTeacher();
-    return ResponseEntity.ok(announcements.size());
-}
+    @GetMapping("/teacher/unread-count")
+    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
+    public ResponseEntity<Integer> getTeacherUnreadCount() {
+        log.info("Request to get teacher unread announcements count");
+        int count = announcementService.getUnreadAnnouncementCountForTeacher();
+        return ResponseEntity.ok(count);
+    }
 
-@GetMapping("/teacher/recent-unread")
-@PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
-public ResponseEntity<List<AnnouncementDto>> getTeacherRecentUnread(
-        @RequestParam(defaultValue = "5") int limit) {
-    log.info("Request to get teacher recent unread announcements, limit: {}", limit);
-    List<AnnouncementDto> announcements = announcementServiceImpl.getAnnouncementsForTeacher();
-    return ResponseEntity.ok(announcements.stream().limit(limit).collect(Collectors.toList()));
-}
+    @GetMapping("/teacher/recent-unread")
+    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
+    public ResponseEntity<List<AnnouncementDto>> getTeacherRecentUnread(
+            @RequestParam(defaultValue = "5") int limit) {
+        log.info("Request to get teacher recent unread announcements, limit: {}", limit);
+        List<AnnouncementDto> announcements = announcementService.getRecentUnreadAnnouncementsForTeacher(limit);
+        return ResponseEntity.ok(announcements);
+    }
+
+    @GetMapping("/teacher")
+    @PreAuthorize("hasRole('TEACHER') or hasRole('ADMIN')")
+    public ResponseEntity<List<AnnouncementDto>> getAnnouncementsForTeacher() {
+        log.info("Request to get announcements for teacher");
+        List<AnnouncementDto> announcements = announcementService.getAnnouncementsForTeacher();
+        return ResponseEntity.ok(announcements);
+    }
 
     @GetMapping
     public ResponseEntity<List<AnnouncementDto>> getAllAnnouncements() {
@@ -141,7 +141,7 @@ public ResponseEntity<List<AnnouncementDto>> getTeacherRecentUnread(
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<List<AnnouncementDto>> getAnnouncementsForStudent() {
         log.info("Request to get announcements for student");
-        List<AnnouncementDto> announcements = announcementServiceImpl.getAnnouncementsForStudent();
+        List<AnnouncementDto> announcements = announcementService.getAnnouncementsForStudent();
         return ResponseEntity.ok(announcements);
     }
 
@@ -149,8 +149,8 @@ public ResponseEntity<List<AnnouncementDto>> getTeacherRecentUnread(
     @PreAuthorize("hasRole('STUDENT') or hasRole('ADMIN')")
     public ResponseEntity<Integer> getStudentUnreadCount() {
         log.info("Request to get student unread announcements count");
-        List<AnnouncementDto> announcements = announcementServiceImpl.getAnnouncementsForStudent();
-        return ResponseEntity.ok(announcements.size());
+        int count = announcementService.getUnreadAnnouncementCountForStudent();
+        return ResponseEntity.ok(count);
     }
 
     @GetMapping("/student/recent-unread")
@@ -158,37 +158,45 @@ public ResponseEntity<List<AnnouncementDto>> getTeacherRecentUnread(
     public ResponseEntity<List<AnnouncementDto>> getStudentRecentUnread(
             @RequestParam(defaultValue = "5") int limit) {
         log.info("Request to get student recent unread announcements, limit: {}", limit);
-        List<AnnouncementDto> announcements = announcementServiceImpl.getAnnouncementsForStudent();
-        return ResponseEntity.ok(announcements.stream()
-                .limit(limit)
-                .collect(Collectors.toList()));
+        List<AnnouncementDto> announcements = announcementService.getRecentUnreadAnnouncementsForStudent(limit);
+        return ResponseEntity.ok(announcements);
     }
 
-  // Thêm vào FrontendApiBridgeController
-@GetMapping("/attendance/my-history")
-public ResponseEntity<?> getMyAttendanceHistory(
-        @RequestParam Long classroomId,
-        Authentication authentication) {
-    try {
-        String username = authentication.getName();
-        User currentUser = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
-        
-        List<MyAttendanceHistoryDto> history = attendanceService.getMyAttendanceHistory(currentUser.getId(), classroomId);
-        return ResponseEntity.ok(Map.of("data", history));
-    } catch (Exception e) {
-        System.err.println("Error getting attendance history: " + e.getMessage());
-        e.printStackTrace();
-        // Return mock data for testing
-        List<MyAttendanceHistoryDto> mockHistory = new ArrayList<>();
-        mockHistory.add(new MyAttendanceHistoryDto(1L, "Buổi học Java 1", java.time.LocalDate.now().minusDays(1), 
-            com.classroomapp.classroombackend.model.attendancemanagement.AttendanceStatus.PRESENT));
-        mockHistory.add(new MyAttendanceHistoryDto(2L, "Buổi học Java 2", java.time.LocalDate.now().minusDays(2), 
-            com.classroomapp.classroombackend.model.attendancemanagement.AttendanceStatus.PRESENT));
-        
-        return ResponseEntity.ok(Map.of("data", mockHistory));
+    // Parent endpoints
+    @GetMapping("/parent")
+    @PreAuthorize("hasRole('PARENT') or hasRole('ADMIN')")
+    public ResponseEntity<List<AnnouncementDto>> getAnnouncementsForParent() {
+        log.info("Request to get announcements for parent");
+        List<AnnouncementDto> announcements = announcementService.getAnnouncementsForParent();
+        return ResponseEntity.ok(announcements);
     }
-}
+
+    @GetMapping("/parent/unread-count")
+    @PreAuthorize("hasRole('PARENT') or hasRole('ADMIN')")
+    public ResponseEntity<Integer> getParentUnreadCount() {
+        log.info("Request to get parent unread announcements count");
+        int count = announcementService.getUnreadAnnouncementCountForParent();
+        return ResponseEntity.ok(count);
+    }
+
+    @GetMapping("/parent/recent-unread")
+    @PreAuthorize("hasRole('PARENT') or hasRole('ADMIN')")
+    public ResponseEntity<List<AnnouncementDto>> getParentRecentUnread(
+            @RequestParam(defaultValue = "5") int limit) {
+        log.info("Request to get parent recent unread announcements, limit: {}", limit);
+        List<AnnouncementDto> announcements = announcementService.getRecentUnreadAnnouncementsForParent(limit);
+        return ResponseEntity.ok(announcements);
+    }
+
+    @GetMapping("/parent/mark-all-read")
+    @PreAuthorize("hasRole('PARENT') or hasRole('ADMIN')")
+    public ResponseEntity<Void> markAllAnnouncementsAsReadForParent() {
+        log.info("Request to mark all announcements as read for parent");
+        announcementService.markAllAnnouncementsAsReadForParent();
+        return ResponseEntity.ok().build();
+    }
+
+    
 
     // The old endpoints below are now either refactored or can be removed.
     // I am keeping them commented out for reference, but they should be cleaned up.
@@ -210,4 +218,68 @@ public ResponseEntity<?> getMyAttendanceHistory(
         // ...
     }
     */
+
+    // --- Generic endpoints to align with frontend service ---
+
+    @PostMapping("/{announcementId}/read")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> markAnnouncementAsReadGeneric(@PathVariable Long announcementId) {
+        log.info("Generic: mark announcement {} as read", announcementId);
+        announcementService.markAnnouncementAsRead(announcementId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{announcementId}/unread")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> markAnnouncementAsUnreadGeneric(@PathVariable Long announcementId) {
+        log.info("Generic: mark announcement {} as unread", announcementId);
+        announcementService.markAnnouncementAsUnread(announcementId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/mark-all-read")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> markAllAnnouncementsAsReadForCurrentRole() {
+        log.info("Generic: mark all announcements as read for current user role");
+        if (hasRole("ROLE_STUDENT")) {
+            announcementService.markAllAnnouncementsAsReadForStudent();
+        } else if (hasRole("ROLE_TEACHER")) {
+            announcementService.markAllAnnouncementsAsReadForTeacher();
+        } else if (hasRole("ROLE_ACCOUNTANT")) {
+            announcementService.markAllAnnouncementsAsReadForAccountant();
+        } else if (hasRole("ROLE_PARENT")) {
+            announcementService.markAllAnnouncementsAsReadForParent();
+        } else {
+            log.info("No applicable role found for mark-all-read; skipping");
+        }
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/unread-count")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Integer> getUnreadCountForCurrentRole() {
+        log.info("Generic: get unread announcements count for current user role");
+        int count = 0;
+        if (hasRole("ROLE_STUDENT")) {
+            count = announcementService.getUnreadAnnouncementCountForStudent();
+        } else if (hasRole("ROLE_TEACHER")) {
+            count = announcementService.getUnreadAnnouncementCountForTeacher();
+        } else if (hasRole("ROLE_ACCOUNTANT")) {
+            count = announcementService.getUnreadAnnouncementCountForAccountant();
+        } else if (hasRole("ROLE_PARENT")) {
+            count = announcementService.getUnreadAnnouncementCountForParent();
+        }
+        return ResponseEntity.ok(count);
+    }
+
+    private boolean hasRole(String role) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) return false;
+        for (GrantedAuthority authority : authentication.getAuthorities()) {
+            if (authority.getAuthority().equals(role)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

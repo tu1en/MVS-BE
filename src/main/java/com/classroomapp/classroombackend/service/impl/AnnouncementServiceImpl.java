@@ -67,6 +67,7 @@ public class AnnouncementServiceImpl implements AnnouncementService {
                 targetUsers.addAll(userRepository.findActiveStudents());
                 targetUsers.addAll(userRepository.findActiveTeachers());
                 targetUsers.addAll(userRepository.findActiveAccountants());
+                targetUsers.addAll(userRepository.findActiveParents());
                 break;
             case STUDENTS:
                 targetUsers.addAll(userRepository.findActiveStudents());
@@ -76,6 +77,9 @@ public class AnnouncementServiceImpl implements AnnouncementService {
                 break;
             case ACCOUNTANTS:
                 targetUsers.addAll(userRepository.findActiveAccountants());
+                break;
+            case PARENTS:
+                targetUsers.addAll(userRepository.findActiveParents());
                 break;
         }
 
@@ -183,6 +187,13 @@ public class AnnouncementServiceImpl implements AnnouncementService {
     }
 
     @Override
+    public void markAnnouncementAsUnread(Long announcementId) {
+        // Placeholder implementation mirroring markAnnouncementAsRead
+        log.info("Marking announcement {} as unread", announcementId);
+        // TODO: Implement user-specific read tracking with unread action
+    }
+
+    @Override
     public List<AnnouncementDto> getRecentUnreadAnnouncementsForTeacher(int limit) {
         List<Announcement> announcements = announcementRepository.findByTargetAudienceInAndStatusOrderByCreatedAtDesc(
                 List.of(Announcement.TargetAudience.ALL, Announcement.TargetAudience.TEACHERS),
@@ -257,6 +268,46 @@ public class AnnouncementServiceImpl implements AnnouncementService {
     @Override
     public void markAllAnnouncementsAsReadForAccountant() {
         log.info("Marking all announcements as read for accountant");
+        // TODO: Implement user-specific read tracking
+    }
+
+    // Parent methods - similar to Teacher/Accountant methods
+    @Override
+    public List<AnnouncementDto> getAnnouncementsForParent() {
+        List<Announcement> announcements = announcementRepository.findByTargetAudienceInAndStatusOrderByCreatedAtDesc(
+                List.of(Announcement.TargetAudience.ALL, Announcement.TargetAudience.PARENTS),
+                Announcement.AnnouncementStatus.ACTIVE
+        );
+        return announcements.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public int getUnreadAnnouncementCountForParent() {
+        List<Announcement> announcements = announcementRepository.findByTargetAudienceInAndStatusOrderByCreatedAtDesc(
+                List.of(Announcement.TargetAudience.ALL, Announcement.TargetAudience.PARENTS),
+                Announcement.AnnouncementStatus.ACTIVE
+        );
+        log.info("Found {} unread announcements for parents", announcements.size());
+        return announcements.size();
+    }
+
+    @Override
+    public List<AnnouncementDto> getRecentUnreadAnnouncementsForParent(int limit) {
+        List<Announcement> announcements = announcementRepository.findByTargetAudienceInAndStatusOrderByCreatedAtDesc(
+                List.of(Announcement.TargetAudience.ALL, Announcement.TargetAudience.PARENTS),
+                Announcement.AnnouncementStatus.ACTIVE
+        );
+        return announcements.stream()
+                .limit(limit)
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public void markAllAnnouncementsAsReadForParent() {
+        log.info("Marking all announcements as read for parent");
         // TODO: Implement user-specific read tracking
     }
 

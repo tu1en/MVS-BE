@@ -104,10 +104,16 @@ public interface AnnouncementService {
      */
     List<AnnouncementDto> getAnnouncementsForTeacher();
     
+    /**
+     * Get announcements for students
+     */
+    List<AnnouncementDto> getAnnouncementsForStudent();
+    
     // Notification-related methods
     int getUnreadAnnouncementCountForTeacher();
     int getUnreadAnnouncementCountForStudent();
     void markAnnouncementAsRead(Long announcementId);
+    void markAnnouncementAsUnread(Long announcementId);
     List<AnnouncementDto> getRecentUnreadAnnouncementsForTeacher(int limit);
     List<AnnouncementDto> getRecentUnreadAnnouncementsForStudent(int limit);
     void markAllAnnouncementsAsReadForTeacher();
@@ -118,4 +124,11 @@ public interface AnnouncementService {
     int getUnreadAnnouncementCountForAccountant();
     List<AnnouncementDto> getRecentUnreadAnnouncementsForAccountant(int limit);
     void markAllAnnouncementsAsReadForAccountant();
+
+    // Parent-specific methods
+    List<AnnouncementDto> getAnnouncementsForParent();
+    int getUnreadAnnouncementCountForParent();
+    List<AnnouncementDto> getRecentUnreadAnnouncementsForParent(int limit);
+    void markAllAnnouncementsAsReadForParent();
 }
+
