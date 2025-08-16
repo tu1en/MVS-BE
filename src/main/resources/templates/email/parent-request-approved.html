@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+        .header {
+            background-color: #52c41a;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .content {
+            padding: 20px;
+        }
+        .credentials {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .children-info {
+            background-color: #e6f7ff;
+            border: 1px solid #91d5ff;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Tài khoản phụ huynh Minh Việt Education của bạn</h1>
+    </div>
+    <div class="content">
+        <p>Kính gửi <span th:text="${fullName}"></span>,</p>
+        
+        <p>Yêu cầu tạo tài khoản phụ huynh cho hệ thống Minh Việt Education của bạn đã được duyệt.</p>
+        
+        <p>Đây là thông tin đăng nhập của bạn:</p>
+        
+        <div class="credentials">
+            <p><strong>Tên đăng nhập:</strong> <span th:text="${username}"></span></p>
+            <p><strong>Mật khẩu tạm thời:</strong> <span th:text="${password}"></span></p>
+        </div>
+
+        <div class="children-info">
+            <p><strong>Thông tin con em:</strong></p>
+            <p>Bạn có thể truy cập thông tin học tập, điểm số, lịch học và các báo cáo khác của con em mình thông qua tài khoản này.</p>
+        </div>
+        
+        <p>Vui lòng sử dụng thông tin này để đăng nhập. Vì lý do bảo mật, chúng tôi khuyên bạn nên đổi mật khẩu sau lần đăng nhập đầu tiên.</p>
+        
+        <p>Nếu bạn có bất kỳ câu hỏi hoặc cần hỗ trợ, vui lòng liên hệ với đội ngũ hỗ trợ của chúng tôi.</p>
+        
+        <p>Trân trọng,<br>
+        Đội ngũ Minh Việt Education.</p>
+    </div>
+    <div class="footer">
+        <p>&copy; Minh Việt Education 2025 Đã đăng ký bản quyền.</p>
+    </div>
+</body>
+</html>

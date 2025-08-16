@@ -3,6 +3,7 @@ package com.classroomapp.classroombackend.service.impl;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.ArrayList;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
@@ -36,12 +37,27 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
                 throw new IllegalArgumentException("Thời gian phỏng vấn phải nằm trong khoảng thời gian của kế hoạch tuyển dụng");
             }
         }
+        
+        // Kiểm tra trùng lịch trước khi tạo
+        if (hasConflict(startTime, endTime, applicationId)) {
+            throw new IllegalArgumentException("Thời gian phỏng vấn bị trùng với lịch phỏng vấn khác!");
+        }
+        
         InterviewSchedule entity = new InterviewSchedule();
         entity.setApplication(app);
         entity.setStartTime(startTime);
         entity.setEndTime(endTime);
         entity.setStatus("SCHEDULED");
         InterviewSchedule saved = interviewRepo.save(entity);
+        
+        // Scan lại toàn bộ lịch để đảm bảo không có conflict
+        List<String> conflicts = scanAllConflicts();
+        if (!conflicts.isEmpty()) {
+            // Log các conflict để debug
+            System.err.println("Detected conflicts after creating interview:");
+            conflicts.forEach(System.err::println);
+        }
+        
         return toDto(saved);
     }
 
@@ -124,7 +140,7 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
     public boolean hasConflict(LocalDateTime startTime, LocalDateTime endTime, Long excludeApplicationId) {
         try {
             // Lấy tất cả các lịch phỏng vấn đã được xếp (SCHEDULED hoặc PENDING)
-            // Không bao gồm COMPLETED vì lịch này có thể bị đè
+            // Chỉ cho phép đè lịch khi status là COMPLETED (Hoàn thành)
             List<InterviewSchedule> existingSchedules = interviewRepo.findAll().stream()
                 .filter(schedule -> "SCHEDULED".equals(schedule.getStatus()) || "PENDING".equals(schedule.getStatus()))
                 .collect(Collectors.toList());
@@ -162,6 +178,69 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
         }
     }
 
+    /**
+     * Hàm scan lại toàn bộ lịch để đảm bảo logic validation đúng
+     * Kiểm tra và báo cáo tất cả các conflict trong hệ thống
+     */
+    @Transactional(readOnly = true)
+    public List<String> scanAllConflicts() {
+        List<String> conflicts = new ArrayList<>();
+        List<InterviewSchedule> allSchedules = interviewRepo.findAll();
+        
+        // Lọc ra các lịch đang hoạt động (không phải COMPLETED)
+        List<InterviewSchedule> activeSchedules = allSchedules.stream()
+            .filter(schedule -> !"COMPLETED".equals(schedule.getStatus()))
+            .collect(Collectors.toList());
+        
+        // Kiểm tra từng cặp lịch đang hoạt động
+        for (int i = 0; i < activeSchedules.size(); i++) {
+            for (int j = i + 1; j < activeSchedules.size(); j++) {
+                InterviewSchedule schedule1 = activeSchedules.get(i);
+                InterviewSchedule schedule2 = activeSchedules.get(j);
+                
+                if (hasTimeOverlap(schedule1, schedule2)) {
+                    String conflict = String.format(
+                        "Conflict giữa lịch %d (%s) và lịch %d (%s) - Thời gian: %s - %s",
+                        schedule1.getId(),
+                        schedule1.getApplication() != null ? schedule1.getApplication().getFullName() : "Unknown",
+                        schedule2.getId(),
+                        schedule2.getApplication() != null ? schedule2.getApplication().getFullName() : "Unknown",
+                        schedule1.getStartTime().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")),
+                        schedule1.getEndTime().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
+                    );
+                    conflicts.add(conflict);
+                }
+            }
+        }
+        
+        return conflicts;
+    }
+    
+    /**
+     * Kiểm tra xem hai lịch có bị trùng thời gian không
+     */
+    private boolean hasTimeOverlap(InterviewSchedule schedule1, InterviewSchedule schedule2) {
+        LocalDateTime start1 = schedule1.getStartTime();
+        LocalDateTime end1 = schedule1.getEndTime();
+        LocalDateTime start2 = schedule2.getStartTime();
+        LocalDateTime end2 = schedule2.getEndTime();
+        
+        // Kiểm tra overlap theo từng điều kiện:
+        // 1. Thời gian bắt đầu của lịch 1 nằm trong khoảng thời gian của lịch 2
+        boolean start1Overlap = (start1.isAfter(start2) && start1.isBefore(end2));
+        
+        // 2. Thời gian kết thúc của lịch 1 nằm trong khoảng thời gian của lịch 2
+        boolean end1Overlap = (end1.isAfter(start2) && end1.isBefore(end2));
+        
+        // 3. Lịch 1 bao trọn lịch 2
+        boolean containsSchedule2 = start1.isBefore(start2) && end1.isAfter(end2);
+        
+        // 4. Lịch 2 bao trọn lịch 1
+        boolean containsSchedule1 = start2.isBefore(start1) && end2.isAfter(end1);
+        
+        return start1Overlap || end1Overlap || containsSchedule2 || containsSchedule1;
+    }
+
     @Override
     @Transactional
     public InterviewScheduleDto update(Long id, LocalDateTime startTime, LocalDateTime endTime) {
@@ -175,9 +254,24 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
                 throw new IllegalArgumentException("Thời gian phỏng vấn phải nằm trong khoảng thời gian của kế hoạch tuyển dụng");
             }
         }
+        
+        // Kiểm tra trùng lịch trước khi cập nhật
+        if (hasConflict(startTime, endTime, app != null ? app.getId() : null)) {
+            throw new IllegalArgumentException("Thời gian phỏng vấn bị trùng với lịch phỏng vấn khác!");
+        }
+        
         entity.setStartTime(startTime);
         entity.setEndTime(endTime);
         InterviewSchedule saved = interviewRepo.save(entity);
+        
+        // Scan lại toàn bộ lịch để đảm bảo không có conflict
+        List<String> conflicts = scanAllConflicts();
+        if (!conflicts.isEmpty()) {
+            // Log các conflict để debug
+            System.err.println("Detected conflicts after updating interview:");
+            conflicts.forEach(System.err::println);
+        }
+        
         return toDto(saved);
     }
 

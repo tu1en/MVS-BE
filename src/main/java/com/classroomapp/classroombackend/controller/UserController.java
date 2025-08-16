@@ -77,9 +77,15 @@ public class UserController {
                 User user = userDetails.getUser();
                 logger.info("Fetching profile for current user (CustomUserDetails): " + user.getEmail());
                 UserDto userDto = UserMapper.toDto(user);
-                // enrich with birthDate from active contract if available
-                Optional<Contract> active = contractRepository.findActiveContractByUserId(user.getId());
-                active.ifPresent(c -> userDto.setBirthDate(c.getBirthDate()));
+                // For students (roleId=1), birthDate is stored directly in User entity
+                // For other roles, get birthDate from active contract
+                if (user.getRoleId() != null && user.getRoleId() == 1) {
+                    // Student - birthDate already mapped from User entity
+                } else {
+                    // Other roles - get birthDate from active contract
+                    Optional<Contract> active = contractRepository.findActiveContractByUserId(user.getId());
+                    active.ifPresent(c -> userDto.setBirthDate(c.getBirthDate()));
+                }
                 return ResponseEntity.ok(userDto);
             } else if (principal instanceof UserDetails) {
                 // Handle standard UserDetails - the username is actually the email in our system
@@ -94,8 +100,15 @@ public class UserController {
                 }
                 
                 UserDto userDto = UserMapper.toDto(user);
-                Optional<Contract> active = contractRepository.findActiveContractByUserId(user.getId());
-                active.ifPresent(c -> userDto.setBirthDate(c.getBirthDate()));
+                // For students (roleId=1), birthDate is stored directly in User entity
+                // For other roles, get birthDate from active contract
+                if (user.getRoleId() != null && user.getRoleId() == 1) {
+                    // Student - birthDate already mapped from User entity
+                } else {
+                    // Other roles - get birthDate from active contract
+                    Optional<Contract> active = contractRepository.findActiveContractByUserId(user.getId());
+                    active.ifPresent(c -> userDto.setBirthDate(c.getBirthDate()));
+                }
                 return ResponseEntity.ok(userDto);
             } else {
                 // Fallback to string representation
@@ -107,6 +120,15 @@ public class UserController {
                 if (user != null) {
                     logger.info("Found user by email: " + username);
                     UserDto userDto = UserMapper.toDto(user);
+                    // For students (roleId=1), birthDate is stored directly in User entity
+                    // For other roles, get birthDate from active contract
+                    if (user.getRoleId() != null && user.getRoleId() == 1) {
+                        // Student - birthDate already mapped from User entity
+                    } else {
+                        // Other roles - get birthDate from active contract
+                        Optional<Contract> active = contractRepository.findActiveContractByUserId(user.getId());
+                        active.ifPresent(c -> userDto.setBirthDate(c.getBirthDate()));
+                    }
                     return ResponseEntity.ok(userDto);
                 }
                 
@@ -159,6 +181,8 @@ public class UserController {
             String newEmail = (String) profileData.getOrDefault("email", user.getEmail());
             String newPhone = (String) profileData.getOrDefault("phoneNumber", user.getPhoneNumber());
             String newGender = (String) profileData.getOrDefault("gender", user.getGender());
+            String newFullName = (String) profileData.getOrDefault("fullName", user.getFullName());
+            String newSchool = (String) profileData.getOrDefault("school", user.getSchool());
 
             // Basic validations
             if (newEmail == null || !newEmail.contains("@")) {
@@ -193,9 +217,10 @@ public class UserController {
             user.setEmail(newEmail);
             user.setPhoneNumber(newPhone);
             user.setGender(newGender);
-            userRepository.save(user);
+            user.setFullName(newFullName);
+            user.setSchool(newSchool);
 
-            // Update birth date on active contract if provided
+            // Handle birthDate based on role
             LocalDate birthDate = null;
             if (profileData.containsKey("birthDate") && profileData.get("birthDate") instanceof String) {
                 birthDate = LocalDate.parse((String) profileData.get("birthDate"));
@@ -210,19 +235,31 @@ public class UserController {
             }
 
             if (birthDate != null) {
-                Optional<Contract> active = contractRepository.findActiveContractByUserId(user.getId());
-                if (active.isPresent()) {
-                    Contract contract = active.get();
-                    contract.setBirthDate(birthDate);
-                    contractRepository.save(contract);
+                if (user.getRoleId() != null && user.getRoleId() == 1) {
+                    // Student - store birthDate directly in User entity
+                    user.setBirthDate(birthDate);
+                } else {
+                    // Other roles - store birthDate in active contract
+                    Optional<Contract> active = contractRepository.findActiveContractByUserId(user.getId());
+                    if (active.isPresent()) {
+                        Contract contract = active.get();
+                        contract.setBirthDate(birthDate);
+                        contractRepository.save(contract);
+                    }
                 }
             }
 
+            userRepository.save(user);
+
             // Build response with updated data
             UserDto userDto = UserMapper.toDto(user);
-            if (birthDate == null) {
+            
+            // Always check contract for non-student roles to get birthDate
+            if (user.getRoleId() != null && user.getRoleId() != 1) {
+                // For non-students, always get birthDate from contract
                 contractRepository.findActiveContractByUserId(user.getId()).ifPresent(c -> userDto.setBirthDate(c.getBirthDate()));
-            } else {
+            } else if (birthDate != null) {
+                // For students, use the birthDate from request if provided
                 userDto.setBirthDate(birthDate);
             }
 

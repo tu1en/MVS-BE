@@ -82,8 +82,8 @@ public class RecruitmentPlanService {
             throw new IllegalArgumentException("Không tìm thấy kế hoạch tuyển dụng");
         }
         
-        // Kiểm tra startDate không được trong quá khứ
-        if (plan.getStartDate().isBefore(LocalDate.now())) {
+        // Kiểm tra startDate không được trong quá khứ (chỉ khi kế hoạch chưa bắt đầu)
+        if (existingPlan.getStartDate().isAfter(LocalDate.now()) && plan.getStartDate().isBefore(LocalDate.now())) {
             throw new IllegalArgumentException("Ngày bắt đầu không được trong quá khứ");
         }
         

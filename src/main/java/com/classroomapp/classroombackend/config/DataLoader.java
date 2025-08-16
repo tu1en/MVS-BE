@@ -553,7 +553,7 @@ seedEvidenceTemplates();
                 manager.setId(301L);
                 manager.setUsername("manager");
                 manager.setPassword(passwordEncoder.encode("manager123"));
-                manager.setEmail("manager@test.com");
+                manager.setEmail("bigfattyboi1801@gmail.com");
                 manager.setFullName("Manager User");
                 manager.setRoleId(RoleConstants.MANAGER);
                 userRepository.save(manager);
@@ -854,11 +854,20 @@ seedEvidenceTemplates();
     private void ensureParentRoleAndUser() {
         try {
             // Ensure role exists
-            if (!roleRepository.findByName("PARENT").isPresent()) {
-                Role parentRole = new Role("PARENT");
-                parentRole.setId(RoleConstants.PARENT);
-                roleRepository.save(parentRole);
-                log.info("✅ Ensured PARENT role exists.");
+            Role parentRole = roleRepository.findByName("PARENT").orElse(null);
+            if (parentRole == null) {
+                parentRole = new Role("PARENT");
+                parentRole = roleRepository.save(parentRole);
+                log.info("✅ Ensured PARENT role exists with ID: {}.", parentRole.getId());
+            } else {
+                log.info("✅ PARENT role already exists with ID: {}.", parentRole.getId());
+            }
+
+            // Update RoleConstants.PARENT if it doesn't match the actual database ID
+            if (parentRole.getId() != RoleConstants.PARENT) {
+                log.warn("⚠️ Database PARENT role ID ({}) doesn't match RoleConstants.PARENT ({}). " +
+                        "Consider updating RoleConstants.PARENT to match the database.", 
+                        parentRole.getId(), RoleConstants.PARENT);
             }
 
             // Ensure default parent user exists
@@ -869,7 +878,7 @@ seedEvidenceTemplates();
                 parentUser.setPassword(passwordEncoder.encode("parent123"));
                 parentUser.setEmail("parent@test.com");
                 parentUser.setFullName("Parent User");
-                parentUser.setRoleId(RoleConstants.PARENT);
+                parentUser.setRoleId(parentRole.getId()); // Use the actual role ID from database
                 parentUser.setParentPhone("0901234567");
                 parentUser.setParentName("Parent User");
                 parentUser = userRepository.save(parentUser);
@@ -1296,21 +1305,21 @@ seedEvidenceTemplates();
         if (jobPositionRepository.count() == 0) {
             List<RecruitmentPlan> plans = recruitmentPlanRepository.findAll();
             if (plans.size() >= 3) {
-                // Kế hoạch 1: Đợt thứ nhất - 5 vị trí (3 FULL_TIME, 2 PART_TIME)
+                // Kế hoạch 1: Đợt thứ nhất - 5 vị trí (5 PART_TIME - Giáo viên)
                 JobPosition job1 = new JobPosition();
-                job1.setTitle("Kế toán viên");
-                job1.setDescription("Phụ trách công tác kế toán, báo cáo tài chính, quản lý sổ sách kế toán theo quy định. Yêu cầu: Tốt nghiệp đại học chuyên ngành Kế toán, có kinh nghiệm 2-3 năm, thành thạo Excel và phần mềm kế toán.");
-                job1.setSalaryRange("15"); // FE sẽ hiển thị đuôi 'triệu'
-                job1.setContractType("FULL_TIME");
+                job1.setTitle("Giáo viên Toán lớp 12");
+                job1.setDescription("Dạy Toán cho học sinh lớp 12, luyện thi đại học. Yêu cầu: Tốt nghiệp đại học chuyên ngành Toán hoặc Sư phạm Toán, có kinh nghiệm giảng dạy, nhiệt tình, tận tâm với học sinh.");
+                job1.setSalaryRange("700000"); // FE sẽ hiển thị đuôi 'VNĐ/giờ'
+                job1.setContractType("PART_TIME");
                 job1.setQuantity(2);
                 job1.setRecruitmentPlan(plans.get(0)); // Q1 window
                 jobPositionRepository.save(job1);
                 
                 JobPosition job2 = new JobPosition();
-                job2.setTitle("Nhân viên HR");
-                job2.setDescription("Phụ trách tuyển dụng, đào tạo, quản lý nhân sự, chấm công, lương thưởng. Yêu cầu: Tốt nghiệp đại học chuyên ngành Quản trị nhân lực hoặc liên quan, có kinh nghiệm 1-2 năm, kỹ năng giao tiếp tốt.");
-                job2.setSalaryRange("12"); // FE sẽ hiển thị đuôi 'triệu'
-                job2.setContractType("FULL_TIME");
+                job2.setTitle("Giáo viên Lý lớp 12");
+                job2.setDescription("Dạy Vật lý cho học sinh lớp 12, chuẩn bị kiến thức cho kỳ thi THPT. Yêu cầu: Tốt nghiệp đại học chuyên ngành Vật lý hoặc Sư phạm Vật lý, có phương pháp giảng dạy hiệu quả, khả năng truyền đạt tốt.");
+                job2.setSalaryRange("750000"); // FE sẽ hiển thị đuôi 'VNĐ/giờ'
+                job2.setContractType("PART_TIME");
                 job2.setQuantity(1);
                 job2.setRecruitmentPlan(plans.get(0)); // Q1 window
                 jobPositionRepository.save(job2);
@@ -1373,9 +1382,8 @@ seedEvidenceTemplates();
                 // Kế hoạch 3: Đợt thứ ba - 5 vị trí (5 PART_TIME - Giáo viên)
                 JobPosition job9 = new JobPosition();
                 job9.setTitle("Giáo viên Văn học lớp 10");
-                job9.setTitle("Giáo viên Văn học lớp 10");
                 job9.setDescription("Dạy Ngữ văn cho học sinh lớp 10, giúp học sinh hiểu và cảm nhận văn học, phát triển kỹ năng đọc hiểu và viết văn. Yêu cầu: Tốt nghiệp đại học chuyên ngành Văn học hoặc Sư phạm Văn, có kinh nghiệm giảng dạy, khả năng truyền đạt tốt, am hiểu văn học.");
-                job9.setSalaryRange("600,000-900,000 VNĐ/giờ");
+                job9.setSalaryRange("600000");
                 job9.setContractType("PART_TIME");
                 job9.setQuantity(1);
                 job9.setRecruitmentPlan(plans.get(2)); // Q3 window
@@ -1384,7 +1392,7 @@ seedEvidenceTemplates();
                 JobPosition job10 = new JobPosition();
                 job10.setTitle("Giáo viên Văn học lớp 11");
                 job10.setDescription("Dạy Ngữ văn cho học sinh lớp 11, giúp học sinh phân tích văn học sâu sắc và chuẩn bị kiến thức cho lớp 12. Yêu cầu: Tốt nghiệp đại học chuyên ngành Văn học hoặc Sư phạm Văn, có kinh nghiệm giảng dạy, khả năng truyền đạt tốt, am hiểu văn học.");
-                job10.setSalaryRange("700,000-1,000,000 VNĐ/giờ");
+                job10.setSalaryRange("700000");
                 job10.setContractType("PART_TIME");
                 job10.setQuantity(1);
                 job10.setRecruitmentPlan(plans.get(2)); // Q3 window
@@ -1393,7 +1401,7 @@ seedEvidenceTemplates();
                 JobPosition job11 = new JobPosition();
                 job11.setTitle("Giáo viên Văn học lớp 12");
                 job11.setDescription("Dạy Ngữ văn cho học sinh lớp 12, giúp học sinh hoàn thiện kiến thức và chuẩn bị tốt cho kỳ thi tốt nghiệp THPT. Yêu cầu: Tốt nghiệp đại học chuyên ngành Văn học hoặc Sư phạm Văn, có kinh nghiệm giảng dạy, khả năng truyền đạt tốt, am hiểu văn học.");
-                job11.setSalaryRange("800,000-1,200,000 VNĐ/giờ");
+                job11.setSalaryRange("800000");
                 job11.setContractType("PART_TIME");
                 job11.setQuantity(1);
                 job11.setRecruitmentPlan(plans.get(2)); // Q3 window
@@ -1402,7 +1410,7 @@ seedEvidenceTemplates();
                 JobPosition job12 = new JobPosition();
                 job12.setTitle("Giáo viên Sinh học lớp 11");
                 job12.setDescription("Dạy Sinh học cho học sinh lớp 11, giúp học sinh hiểu sâu các khái niệm sinh học và chuẩn bị kiến thức cho lớp 12. Yêu cầu: Tốt nghiệp đại học chuyên ngành Sinh học hoặc Sư phạm Sinh, có kinh nghiệm giảng dạy, kiến thức chuyên môn vững vàng.");
-                job12.setSalaryRange("600,000-900,000 VNĐ/giờ");
+                job12.setSalaryRange("600000");
                 job12.setContractType("PART_TIME");
                 job12.setQuantity(1);
                 job12.setRecruitmentPlan(plans.get(2)); // Q3 window
@@ -1411,7 +1419,7 @@ seedEvidenceTemplates();
                 JobPosition job13 = new JobPosition();
                 job13.setTitle("Giáo viên Sinh học lớp 12");
                 job13.setDescription("Dạy Sinh học cho học sinh lớp 12, giúp học sinh hoàn thiện kiến thức và chuẩn bị tốt cho kỳ thi tốt nghiệp THPT. Yêu cầu: Tốt nghiệp đại học chuyên ngành Sinh học hoặc Sư phạm Sinh, có kinh nghiệm giảng dạy, kiến thức chuyên môn vững vàng.");
-                job13.setSalaryRange("700,000-1,000,000 VNĐ/giờ");
+                job13.setSalaryRange("700000");
                 job13.setContractType("PART_TIME");
                 job13.setQuantity(1);
                 job13.setRecruitmentPlan(plans.get(2)); // Q3 window

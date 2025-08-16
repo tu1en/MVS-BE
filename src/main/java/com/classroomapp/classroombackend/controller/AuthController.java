@@ -4,6 +4,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.classroomapp.classroombackend.dto.PasswordConfirmationDto;
@@ -28,6 +30,7 @@ import com.classroomapp.classroombackend.service.RequestService;
 import com.classroomapp.classroombackend.service.UserService;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;
+import com.google.firebase.FirebaseApp;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -73,6 +76,18 @@ public class AuthController {
     public ResponseEntity<?> submitRegistrationRequest(@Valid @RequestBody CreateRequestDto createRequestDto) {
         requestService.createRegistrationRequest(createRequestDto);
         return ResponseEntity.ok(Map.of("message", "Request submitted successfully. Please wait for approval."));
+    }
+
+    /**
+     * Check if child email exists in the system
+     * 
+     * @param email email to check
+     * @return true if email exists, false otherwise
+     */
+    @GetMapping("/check-child-email")
+    public ResponseEntity<?> checkChildEmailExists(@RequestParam String email) {
+        boolean exists = userRepository.existsByEmail(email);
+        return ResponseEntity.ok(Map.of("exists", exists));
     }
 
     /**
@@ -165,29 +180,47 @@ public class AuthController {
     @PostMapping("/forgot-password")
     public ResponseEntity<String> forgotPassword(@RequestBody Map<String, String> request) {
         String email = request.get("email");
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng"));
-
-        // Generate a password reset token with claims
-        String roleName = jwtUtil.convertRoleIdToName(user.getRoleId());
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("sub", user.getUsername());
-        claims.put("email", user.getEmail());
-        claims.put("role", user.getRoleId());
-        claims.put("roles", new String[]{roleName});
         
-        String resetToken = Jwts.builder()
-            .setClaims(claims)
-            .setSubject(user.getUsername())
-            .setIssuedAt(new Date(System.currentTimeMillis()))
-            .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000))
-            .signWith(jwtUtil.getSecretKeyFromString(), SignatureAlgorithm.HS512)
-            .compact();
-            
-        userService.sendPasswordResetEmail(user.getEmail(), resetToken);
+        try {
+            // Tìm người dùng theo email
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new IllegalArgumentException("Email không tồn tại trong hệ thống"));
 
-        return ResponseEntity.ok("Password reset email sent successfully.");
+            // Tạo mật khẩu mới ngẫu nhiên
+            String newPassword = generateRandomPassword();
+            
+            // Cập nhật mật khẩu mới vào database
+            user.setPassword(passwordEncoder.encode(newPassword));
+            userRepository.save(user);
+            
+            // Gửi email với mật khẩu mới
+            userService.sendNewPasswordEmail(user.getEmail(), newPassword);
+
+            return ResponseEntity.ok("Mật khẩu mới đã được gửi đến email của bạn. Vui lòng kiểm tra email để lấy mật khẩu mới.");
+            
+        } catch (IllegalArgumentException e) {
+            log.error("Forgot password error: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Email không tồn tại trong hệ thống");
+        } catch (Exception e) {
+            log.error("Forgot password unexpected error: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Đã xảy ra lỗi khi xử lý yêu cầu. Vui lòng thử lại sau.");
+        }
+    }
+    
+    /**
+     * Tạo mật khẩu ngẫu nhiên
+     * @return mật khẩu ngẫu nhiên 8 ký tự
+     */
+    private String generateRandomPassword() {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        StringBuilder password = new StringBuilder();
+        Random random = new Random();
+        
+        for (int i = 0; i < 8; i++) {
+            password.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        
+        return password.toString();
     }
 
     /**
@@ -214,10 +247,26 @@ public class AuthController {
         // Verify Google ID token
         FirebaseToken decodedToken;
         try {
-            decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
+            // Log available Firebase apps for debugging
+            log.info("Available Firebase apps: {}", 
+                FirebaseApp.getApps().stream()
+                    .map(app -> String.format("%s (name: %s)", app.getOptions().getProjectId(), app.getName()))
+                    .collect(java.util.stream.Collectors.joining(", ")));
+            
+            FirebaseApp firebaseApp = FirebaseApp.getInstance("classroom-management");
+            log.info("Successfully got Firebase app: {}", firebaseApp.getName());
+            
+            FirebaseAuth firebaseAuth = FirebaseAuth.getInstance(firebaseApp);
+            log.info("Successfully got FirebaseAuth instance");
+            
+            decodedToken = firebaseAuth.verifyIdToken(idToken);
+            log.info("Successfully verified Google ID token for email: {}", decodedToken.getEmail());
         } catch (com.google.firebase.auth.FirebaseAuthException e) {
             log.error("Invalid Google ID token", e);
             throw new IllegalArgumentException("Token Google không hợp lệ", e);
+        } catch (IllegalStateException e) {
+            log.error("Firebase app not found: {}", e.getMessage());
+            throw new IllegalArgumentException("Lỗi cấu hình Firebase", e);
         }
         
         String email = decodedToken.getEmail();
@@ -318,14 +367,14 @@ public class AuthController {
     public ResponseEntity<String> changePassword(@RequestBody Map<String, String> request) {
         // Lấy thông tin người dùng đã xác thực từ Security Context
         Object principal = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        String username;
+        String userIdentifier;
         if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
-            username = ((org.springframework.security.core.userdetails.UserDetails) principal).getUsername();
+            userIdentifier = ((org.springframework.security.core.userdetails.UserDetails) principal).getUsername();
         } else {
-            username = principal.toString();
+            userIdentifier = principal.toString();
         }
         
-        if (username == null) {
+        if (userIdentifier == null) {
              return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Người dùng chưa xác thực");
         }
 
@@ -345,8 +394,9 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mật khẩu mới không được vượt quá 50 ký tự");
         }
         
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        // Tìm user theo email (vì JWT token sử dụng email làm subject)
+        User user = userRepository.findByEmail(userIdentifier)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng"));
         
         // Verify old password
         if (!passwordEncoder.matches(oldPassword, user.getPassword())) {

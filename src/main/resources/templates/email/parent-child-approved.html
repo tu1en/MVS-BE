@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tài khoản con đã được phê duyệt</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #4CAF50;
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .highlight {
+            background-color: #e8f5e8;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #4CAF50;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            color: #666;
+            font-size: 14px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .info-box {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎉 Tài khoản con đã được phê duyệt!</h1>
+        </div>
+        
+        <div class="content">
+            <p>Xin chào <strong th:text="${fullName}">Phụ huynh</strong>,</p>
+            
+            <p>Chúng tôi rất vui mừng thông báo rằng <strong>yêu cầu tạo tài khoản học sinh</strong> của con bạn đã được <strong>phê duyệt thành công</strong>!</p>
+            
+            <div class="highlight">
+                <h3>✅ Thông tin tài khoản con:</h3>
+                <ul>
+                    <li><strong>Email:</strong> <span th:text="${studentEmail}">student@example.com</span></li>
+                    <li><strong>Họ và tên:</strong> <span th:text="${studentName}">Tên học sinh</span></li>
+                    <li><strong>Trạng thái:</strong> <span style="color: #4CAF50;">Đã kích hoạt</span></li>
+                </ul>
+            </div>
+            
+            <p>Con bạn giờ đây có thể:</p>
+            <ul>
+                <li>Đăng nhập vào hệ thống với email và mật khẩu đã được gửi</li>
+                <li>Truy cập các khóa học và tài liệu học tập</li>
+                <li>Theo dõi tiến độ học tập</li>
+                <li>Tham gia các hoạt động học tập trực tuyến</li>
+            </ul>
+            
+            <div class="info-box">
+                <h4>📧 Email đã được gửi đến con bạn</h4>
+                <p>Con bạn đã nhận được email chứa thông tin đăng nhập và mật khẩu tạm thời. Vui lòng nhắc con kiểm tra email và đăng nhập vào hệ thống.</p>
+            </div>
+            
+            <p><strong>Lưu ý quan trọng:</strong></p>
+            <ul>
+                <li>Con bạn nên đổi mật khẩu sau khi đăng nhập lần đầu</li>
+                <li>Bạn có thể theo dõi tiến độ học tập của con thông qua tài khoản phụ huynh</li>
+                <li>Nếu có vấn đề gì, vui lòng liên hệ với chúng tôi</li>
+            </ul>
+        </div>
+        
+        <div class="footer">
+            <p>Trân trọng,<br>
+            <strong>Đội ngũ Minh Việt Education</strong></p>
+            <p>📧 Email: support@minhviet.edu.vn<br>
+            📞 Điện thoại: 1900-xxxx</p>
+        </div>
+    </div>
+</body>
+</html>

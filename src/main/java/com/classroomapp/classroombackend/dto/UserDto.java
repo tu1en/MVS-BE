@@ -51,6 +51,11 @@ public class UserDto {
 
     private String status;
 
+    // Student-specific fields
+    private String parentName;
+    private String parentPhone;
+    private String school;
+
     // Department info (for display in teacher profile)
     private String department;
     private Long departmentId;
@@ -94,8 +99,10 @@ public class UserDto {
         this.enabled = true; // bạn có thể map từ status nếu cần: status.equals("active")
         this.phoneNumber = user.getPhoneNumber();
         this.gender = user.getGender();
-        // birthDate không thể map trực tiếp từ User (nằm trong Contract)
-        // sẽ được điền ở tầng controller/service khi cần
+        this.birthDate = user.getBirthDate(); // For students, stored directly in User entity
+        this.parentName = user.getParentName();
+        this.parentPhone = user.getParentPhone();
+        this.school = user.getSchool();
         // Nếu cần map role dạng Set<String> thì bổ sung:
         this.roles = Set.of(user.getRole()); // ví dụ: ["TEACHER"]
     }

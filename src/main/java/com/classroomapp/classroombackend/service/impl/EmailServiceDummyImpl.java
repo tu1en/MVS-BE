@@ -3,6 +3,7 @@ package com.classroomapp.classroombackend.service.impl;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
+import com.classroomapp.classroombackend.model.Request;
 import com.classroomapp.classroombackend.model.hrmanagement.PayrollResult;
 import com.classroomapp.classroombackend.service.EmailService;
 
@@ -144,5 +145,27 @@ public class EmailServiceDummyImpl implements EmailService {
                 payrollResult.getPayrollPeriod(),
                 payrollResult.getProratedGrossSalary(),
                 payrollResult.getNetSalary());
+    }
+
+    @Override
+    public void sendParentApprovalEmail(Request request) {
+        log.info("DUMMY EMAIL SERVICE: Would send parent approval email for request ID: {} - Student: {} ({}), Parent: {}",
+                request.getId(), request.getFullName(), request.getEmail(), 
+                extractParentEmailFromRequest(request));
+    }
+
+    private String extractParentEmailFromRequest(Request request) {
+        try {
+            if (request.getFormResponses() != null && !request.getFormResponses().trim().isEmpty()) {
+                com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                com.fasterxml.jackson.databind.JsonNode formData = objectMapper.readTree(request.getFormResponses());
+                if (formData.has("parentEmail")) {
+                    return formData.get("parentEmail").asText();
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Could not extract parent email from request: {}", e.getMessage());
+        }
+        return "Unknown";
     }
 }

@@ -84,6 +84,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/register").permitAll()
                 .requestMatchers("/api/auth/google-login").permitAll()
                 .requestMatchers("/api/auth/reset-password").permitAll()
+                .requestMatchers("/api/auth/forgot-password").permitAll() // Allow forgot password without authentication
+                .requestMatchers("/api/auth/check-child-email").permitAll() // Allow checking child email for parent registration
                 .requestMatchers("/api/auth/change-password").authenticated() // Requires authentication
                 .requestMatchers("/api/auth/validate").authenticated() // Requires authentication for token validation
                 .requestMatchers("/api/public/**").permitAll()

@@ -45,11 +45,20 @@ public class UserServiceImpl implements UserService {
         dto.setEmail(user.getEmail());
         dto.setFullName(user.getFullName());
         dto.setName(user.getFullName());
+        dto.setPhoneNumber(user.getPhoneNumber());
+        dto.setGender(user.getGender());
+        dto.setBirthDate(user.getBirthDate()); // For students, stored directly in User entity
+        dto.setParentName(user.getParentName());
+        dto.setParentPhone(user.getParentPhone());
+        dto.setSchool(user.getSchool());
         dto.setRoleId(user.getRoleId());
         dto.setRoles(Collections.singleton(user.getRole()));
         dto.setStatus(user.getStatus());
         dto.setEnabled("active".equalsIgnoreCase(user.getStatus()));
         dto.setCreatedAt(user.getCreatedAt());
+        // Map department details
+        dto.setDepartment(user.getDepartment());
+        dto.setDepartmentId(user.getDepartmentId());
         return dto;
     }
 
@@ -355,6 +364,37 @@ public void sendPasswordResetEmail(String email, String resetLink) {
 }
 
 @Override
+public void sendNewPasswordEmail(String email, String newPassword) {
+    MimeMessage message = mailSender.createMimeMessage();
+    try {
+        MimeMessageHelper helper = new MimeMessageHelper(message, true);
+        helper.setTo(email);
+        helper.setSubject("Mật khẩu mới - Minh Việt Education");
+        String content = "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>"
+                + "<h2 style='color: #2563eb;'>Mật khẩu mới của bạn</h2>"
+                + "<p>Xin chào,</p>"
+                + "<p>Bạn đã yêu cầu đặt lại mật khẩu. Dưới đây là mật khẩu mới của bạn:</p>"
+                + "<div style='background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;'>"
+                + "<h3 style='color: #1f2937; margin: 0;'>Mật khẩu mới: <span style='color: #dc2626; font-weight: bold;'>" + newPassword + "</span></h3>"
+                + "</div>"
+                + "<p><strong>Lưu ý quan trọng:</strong></p>"
+                + "<ul>"
+                + "<li>Mật khẩu này đã được cập nhật tự động trong hệ thống</li>"
+                + "<li>Bạn có thể sử dụng mật khẩu này để đăng nhập ngay</li>"
+                + "<li>Vui lòng đổi mật khẩu sau khi đăng nhập để bảo mật tài khoản</li>"
+                + "</ul>"
+                + "<p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng liên hệ quản trị viên ngay lập tức.</p>"
+                + "<br>"
+                + "<p>Trân trọng,<br>Đội ngũ Minh Việt Education</p>"
+                + "</div>";
+        helper.setText(content, true);
+        mailSender.send(message);
+    } catch (MessagingException e) {
+        throw new RuntimeException("Gửi email thất bại", e);
+    }
+}
+
+@Override
 public User findUserEntityByEmail(String email) {
     return userRepository.findByEmail(email)
             .orElse(null);
@@ -389,6 +429,7 @@ private Integer determineRoleFromContractType(String contractType) {
     return switch (contractType) {
         case "TEACHER" -> 2; // ROLE_TEACHER
         case "STAFF" -> 5;   // ROLE_ACCOUNTANT (for HR and Accountant staff)
+        case "PARENT" -> 7;  // ROLE_PARENT
         default -> 1;       // ROLE_USER (default)
     };
 }

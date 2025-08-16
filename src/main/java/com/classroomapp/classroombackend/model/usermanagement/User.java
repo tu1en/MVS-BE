@@ -95,6 +95,14 @@ public class User {
     @Column(name = "parent_name", columnDefinition = "NVARCHAR(255)")
     private String parentName;
 
+    // Student-specific fields
+    @Column(name = "birth_date")
+    private LocalDate birthDate; // For students, stored directly in User entity
+
+    @Nationalized
+    @Column(name = "school", columnDefinition = "NVARCHAR(255)")
+    private String school;
+
     /**
      * Get the role name as String based on the roleId
      */
@@ -107,6 +115,7 @@ public class User {
             case 4 -> "ADMIN";
             case 5 -> "ACCOUNTANT";
             case 6 -> "TEACHING_ASSISTANT";
+            case 7 -> "PARENT";
             default -> "USER";
         };
     }

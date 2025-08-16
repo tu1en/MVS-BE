@@ -82,6 +82,13 @@ public interface UserService {
     List<UserDto> FindUsersByRole(Integer roleId);
 
     void sendPasswordResetEmail(String email, String resetLink);
+    
+    /**
+     * Gửi email chứa mật khẩu mới cho người dùng
+     * @param email email của người dùng
+     * @param newPassword mật khẩu mới
+     */
+    void sendNewPasswordEmail(String email, String newPassword);
 
     Page<UserDto> findAllUsers(String keyword, Pageable pageable);
 
