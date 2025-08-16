@@ -24,6 +24,7 @@ import com.classroomapp.classroombackend.dto.classroommanagement.ClassroomDto;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.classroomapp.classroombackend.repository.parentmanagement.ParentMessageRepository;
 import com.classroomapp.classroombackend.service.AssignmentService;
 import com.classroomapp.classroombackend.service.AttendanceService;
 import com.classroomapp.classroombackend.service.ClassroomService;
@@ -50,6 +51,9 @@ public class FrontendApiBridgeController {
     
     @Autowired
     private StudentMessageService messageService;
+    
+    @Autowired
+    private ParentMessageRepository parentMessageRepository;
     
     // Removed unused UserService injection
     // @Autowired
@@ -607,6 +611,41 @@ public ResponseEntity<?> getDashboardUnreadMessageCount(Authentication authentic
             return ResponseEntity.ok("Debug: userId = " + userId);
         } catch (Throwable e) {
             return ResponseEntity.ok("Error: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Debug endpoint to check parent messages
+     */
+    @GetMapping("/parent-messages/debug")
+    public ResponseEntity<?> debugParentMessages() {
+        try {
+            long count = parentMessageRepository.count();
+            return ResponseEntity.ok("Parent messages count: " + count);
+        } catch (Throwable e) {
+            return ResponseEntity.ok("Error: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Debug endpoint to trigger parent messages seeding
+     */
+    @GetMapping("/parent-messages/seed")
+    public ResponseEntity<?> seedParentMessages() {
+        try {
+            // Check prerequisites
+            long teacherCount = userRepository.findAllTeachers().size();
+            // Count parent entities manually
+            String result = "Teachers: " + teacherCount + "; ";
+            
+            // Try to count parent messages before seeding
+            long beforeCount = parentMessageRepository.count();
+            result += "Messages before: " + beforeCount + "; ";
+            
+            // Return diagnostic info
+            return ResponseEntity.ok(result + "Ready to debug seeding");
+        } catch (Throwable e) {
+            return ResponseEntity.ok("Error in seeding debug: " + e.getMessage());
         }
     }    /**
      * Get conversation between two users

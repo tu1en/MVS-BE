@@ -1,6 +1,7 @@
 package com.classroomapp.classroombackend.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,7 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.classroomapp.classroombackend.dto.LectureDto;
 import com.classroomapp.classroombackend.dto.ScheduleDto;
+import com.classroomapp.classroombackend.service.ScheduleConflictService;
 import com.classroomapp.classroombackend.service.ScheduleService;
+import com.classroomapp.classroombackend.entity.ScheduleConflict;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ScheduleController {
 
     private final ScheduleService scheduleService;
+    private final ScheduleConflictService scheduleConflictService;
 
     @GetMapping
     public ResponseEntity<List<ScheduleDto>> getAllSchedules() {
@@ -99,6 +103,38 @@ public class ScheduleController {
             log.error("Error creating sample schedules for classroom {}: {}", classroomId, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Lỗi khi tạo lịch học mẫu: " + e.getMessage());
+        }
+    }
+    
+    @PostMapping("/check-conflicts")
+    public ResponseEntity<?> checkScheduleConflicts(@RequestBody Map<String, Object> request) {
+        log.info("POST /api/schedules/check-conflicts - Checking schedule conflicts");
+        try {
+            Long teacherId = request.get("teacherId") != null ? Long.valueOf(request.get("teacherId").toString()) : null;
+            Long roomId = request.get("roomId") != null ? Long.valueOf(request.get("roomId").toString()) : null;
+            String scheduleJson = request.get("scheduleJson") != null ? request.get("scheduleJson").toString() : null;
+            
+            // Kiểm tra trong vòng 1 tháng tới
+            java.time.LocalDate startDate = java.time.LocalDate.now();
+            java.time.LocalDate endDate = startDate.plusMonths(1);
+            
+            List<ScheduleConflict> conflicts = scheduleConflictService.checkScheduleConflicts(
+                roomId, teacherId, scheduleJson, startDate, endDate);
+            
+            Map<String, Object> response = new java.util.HashMap<>();
+            response.put("hasConflicts", !conflicts.isEmpty());
+            response.put("conflictCount", conflicts.size());
+            response.put("conflicts", conflicts);
+            response.put("message", conflicts.isEmpty() ? 
+                "✅ Không có xung đột lịch học" : 
+                "⚠️ Phát hiện " + conflicts.size() + " xung đột lịch học");
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error checking schedule conflicts: {}", e.getMessage(), e);
+            Map<String, Object> errorResponse = new java.util.HashMap<>();
+            errorResponse.put("error", "Lỗi khi kiểm tra xung đột lịch: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 } 

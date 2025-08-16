@@ -23,7 +23,9 @@ import com.classroomapp.classroombackend.repository.LectureRepository;
 import com.classroomapp.classroombackend.repository.ScheduleRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.classroomapp.classroombackend.service.ScheduleConflictService;
 import com.classroomapp.classroombackend.service.ScheduleService;
+import com.classroomapp.classroombackend.entity.ScheduleConflict;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +40,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final ClassroomRepository classroomRepository;
     private final UserRepository userRepository;
     private final LectureRepository lectureRepository;
+    private final ScheduleConflictService scheduleConflictService;
 
     @Override
     public List<ScheduleDto> getSchedulesByClassroomId(Long classroomId) {
@@ -98,6 +101,9 @@ public class ScheduleServiceImpl implements ScheduleService {
     public ScheduleDto createSchedule(ScheduleDto scheduleDto) {
         log.info("Creating new schedule: {}", scheduleDto);
         
+        // Kiểm tra trùng lịch trước khi tạo
+        validateScheduleConflicts(scheduleDto, null);
+        
         Schedule schedule = convertToEntity(scheduleDto);
         Schedule savedSchedule = scheduleRepository.save(schedule);
         
@@ -113,6 +119,9 @@ public class ScheduleServiceImpl implements ScheduleService {
             log.error("Không tìm thấy lịch với ID: {}", id);
             throw new EntityNotFoundException("Không tìm thấy lịch với ID: " + id);
         }
+        
+        // Kiểm tra trùng lịch trước khi cập nhật (loại trừ schedule hiện tại)
+        validateScheduleConflicts(scheduleDto, id);
         
         Schedule schedule = convertToEntity(scheduleDto);
         schedule.setId(id);
@@ -413,5 +422,98 @@ public class ScheduleServiceImpl implements ScheduleService {
         dto.setLectureDate(lecture.getLectureDate());
         dto.setClassroomId(lecture.getClassroom() != null ? lecture.getClassroom().getId() : null);
         return dto;
+    }
+    
+    /**
+     * Kiểm tra xung đột lịch học trước khi tạo hoặc cập nhật
+     * 
+     * @param scheduleDto Lịch học cần kiểm tra
+     * @param excludeId ID lịch học hiện tại (khi update), null khi create
+     * @throws IllegalStateException nếu có xung đột
+     */
+    private void validateScheduleConflicts(ScheduleDto scheduleDto, Long excludeId) {
+        try {
+            log.info("Validating schedule conflicts for teacher: {}, classroom: {}", 
+                    scheduleDto.getTeacherId(), scheduleDto.getClassroomId());
+            
+            // Lấy thông tin classroom để có schedule JSON
+            Classroom classroom = null;
+            if (scheduleDto.getClassroomId() != null) {
+                classroom = classroomRepository.findById(scheduleDto.getClassroomId()).orElse(null);
+            }
+            
+            // Tạo schedule JSON từ ScheduleDto để kiểm tra
+            String scheduleJson = createScheduleJsonFromDto(scheduleDto);
+            
+            // Tính toán ngày bắt đầu và kết thúc để kiểm tra (1 tháng tới)
+            java.time.LocalDate startDate = java.time.LocalDate.now();
+            java.time.LocalDate endDate = startDate.plusMonths(1);
+            
+            // Kiểm tra xung đột với các lịch khác
+            List<ScheduleConflict> conflicts = scheduleConflictService.checkScheduleConflicts(
+                    null, // roomId (có thể null)
+                    scheduleDto.getTeacherId(),
+                    scheduleJson,
+                    startDate,
+                    endDate
+            );
+            
+            // Lọc ra các xung đột không phải từ schedule hiện tại (khi update)
+            if (excludeId != null) {
+                conflicts = conflicts.stream()
+                    .filter(conflict -> conflict.getId() == null || !excludeId.equals(conflict.getId()))
+                    .collect(java.util.stream.Collectors.toList());
+            }
+            
+            // Kiểm tra xung đột giáo viên
+            List<ScheduleConflict> teacherConflicts = conflicts.stream()
+                .filter(conflict -> conflict.getDetails() != null && 
+                        conflict.getDetails().contains("Giáo viên"))
+                .collect(java.util.stream.Collectors.toList());
+                
+            if (!teacherConflicts.isEmpty()) {
+                String conflictMessage = "Giáo viên đã có lịch dạy trùng thời gian:\n" +
+                    teacherConflicts.stream()
+                        .map(c -> "- " + c.getClassName() + " (" + c.getDetails() + ")")
+                        .collect(java.util.stream.Collectors.joining("\n"));
+                        
+                log.warn("Teacher schedule conflict detected: {}", conflictMessage);
+                throw new IllegalStateException("Xung đột lịch giảng dạy: " + conflictMessage);
+            }
+            
+            log.info("✅ No schedule conflicts found for teacher: {}", scheduleDto.getTeacherId());
+            
+        } catch (IllegalStateException e) {
+            // Ném lại exception conflict
+            throw e;
+        } catch (Exception e) {
+            log.error("Error validating schedule conflicts: {}", e.getMessage(), e);
+            // Không block việc tạo lịch nếu có lỗi hệ thống trong việc kiểm tra
+            log.warn("Skipping conflict validation due to system error");
+        }
+    }
+    
+    /**
+     * Tạo JSON schedule string từ ScheduleDto để sử dụng trong conflict checking
+     */
+    private String createScheduleJsonFromDto(ScheduleDto scheduleDto) {
+        try {
+            // Tạo basic schedule JSON với thông tin từ ScheduleDto
+            Integer dayInteger = scheduleDto.getDayAsInteger();
+            String dayName = getDayOfWeekName(dayInteger).toLowerCase();
+            
+            return String.format(
+                "{\"days\": [\"%s\"], \"startTime\": \"%s\", \"endTime\": \"%s\", \"duration\": %d}",
+                dayName,
+                scheduleDto.getStartTime() != null ? scheduleDto.getStartTime().toString() : "08:00",
+                scheduleDto.getEndTime() != null ? scheduleDto.getEndTime().toString() : "10:00",
+                scheduleDto.getEndTime() != null && scheduleDto.getStartTime() != null 
+                    ? java.time.Duration.between(scheduleDto.getStartTime(), scheduleDto.getEndTime()).toMinutes()
+                    : 120
+            );
+        } catch (Exception e) {
+            log.warn("Error creating schedule JSON: {}", e.getMessage());
+            return "{\"days\": [\"monday\"], \"startTime\": \"08:00\", \"endTime\": \"10:00\", \"duration\": 120}";
+        }
     }
 }

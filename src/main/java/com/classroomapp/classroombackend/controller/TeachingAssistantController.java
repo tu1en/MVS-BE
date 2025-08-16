@@ -162,8 +162,9 @@ public class TeachingAssistantController {
             
             // Process each attendance record
             for (AttendanceSubmitDto attendance : attendanceList) {
-                log.info("Processing attendance for student {} with status {}", 
-                    attendance.getStudentId(), attendance.getStatus());
+                log.info("Processing attendance submission for classroom {} with {} records", 
+                    attendance.getClassroomId(), 
+                    attendance.getRecords() != null ? attendance.getRecords().size() : 0);
                 // This would call AttendanceService to save the data
             }
             

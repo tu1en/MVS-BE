@@ -133,6 +133,101 @@ public class ParentMessageServiceImpl implements ParentMessageService {
     }
 
     @Override
+    public ParentMessage sendMessageFromParentToStudent(Long parentId, Long studentId, 
+                                                       String subject, String messageContent) {
+        log.info("Parent {} sending message to student {}", parentId, studentId);
+        
+        // Validate parent has access to student
+        if (!validateParentStudentAccess(parentId, studentId)) {
+            throw new IllegalArgumentException("Parent does not have access to this student");
+        }
+        
+        // For parent-student messages, we set teacherId to null or 0 to indicate no teacher involved
+        ParentMessage message = new ParentMessage(parentId, 0L, studentId, 
+                                                 ParentMessage.SenderType.PARENT, subject, messageContent);
+        
+        ParentMessage savedMessage = messageRepository.save(message);
+        log.info("Message sent from parent to student with ID: {}", savedMessage.getId());
+        
+        return savedMessage;
+    }
+
+    @Override
+    public ParentMessage sendMessageFromStudentToParent(Long studentId, Long parentId, 
+                                                       String subject, String messageContent) {
+        log.info("Student {} sending message to parent {}", studentId, parentId);
+        
+        // Validate parent has access to student
+        if (!validateParentStudentAccess(parentId, studentId)) {
+            throw new IllegalArgumentException("Parent does not have access to this student");
+        }
+        
+        // For student-parent messages, we set teacherId to 0 to indicate no teacher involved
+        ParentMessage message = new ParentMessage(parentId, 0L, studentId, 
+                                                 ParentMessage.SenderType.STUDENT, subject, messageContent);
+        
+        ParentMessage savedMessage = messageRepository.save(message);
+        log.info("Message sent from student to parent with ID: {}", savedMessage.getId());
+        
+        return savedMessage;
+    }
+
+    @Override
+    public ParentMessage sendReplyFromParentToStudent(Long parentId, Long studentId, 
+                                                     String subject, String messageContent, Long replyToId) {
+        log.info("Parent {} sending reply to student {}", parentId, studentId);
+        
+        // Validate parent has access to student
+        if (!validateParentStudentAccess(parentId, studentId)) {
+            throw new IllegalArgumentException("Parent does not have access to this student");
+        }
+        
+        // Validate reply message exists
+        if (!messageRepository.existsById(replyToId)) {
+            throw new IllegalArgumentException("Reply target message not found");
+        }
+        
+        ParentMessage message = new ParentMessage(parentId, 0L, studentId, 
+                                                 ParentMessage.SenderType.PARENT, subject, messageContent, replyToId);
+        
+        ParentMessage savedMessage = messageRepository.save(message);
+        log.info("Reply sent from parent to student with ID: {}", savedMessage.getId());
+        
+        return savedMessage;
+    }
+
+    @Override
+    public ParentMessage sendReplyFromStudentToParent(Long studentId, Long parentId, 
+                                                     String subject, String messageContent, Long replyToId) {
+        log.info("Student {} sending reply to parent {}", studentId, parentId);
+        
+        // Validate parent has access to student
+        if (!validateParentStudentAccess(parentId, studentId)) {
+            throw new IllegalArgumentException("Parent does not have access to this student");
+        }
+        
+        // Validate reply message exists
+        if (!messageRepository.existsById(replyToId)) {
+            throw new IllegalArgumentException("Reply target message not found");
+        }
+        
+        ParentMessage message = new ParentMessage(parentId, 0L, studentId, 
+                                                 ParentMessage.SenderType.STUDENT, subject, messageContent, replyToId);
+        
+        ParentMessage savedMessage = messageRepository.save(message);
+        log.info("Reply sent from student to parent with ID: {}", savedMessage.getId());
+        
+        return savedMessage;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ParentMessage> getParentStudentConversation(Long parentId, Long studentId) {
+        // Get messages between parent and student (teacherId = 0 for parent-student conversations)
+        return messageRepository.findConversation(parentId, 0L, studentId);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<ParentMessage> getConversation(Long parentId, Long teacherId, Long studentId) {
         return messageRepository.findConversation(parentId, teacherId, studentId);
@@ -156,7 +251,7 @@ public class ParentMessageServiceImpl implements ParentMessageService {
                 
                 // Get names
                 String parentName = getParentName(convParentId);
-                String teacherName = getTeacherName(teacherId);
+                String teacherName = teacherId == 0 ? null : getTeacherName(teacherId);
                 String studentName = getStudentName(studentId);
                 
                 // Count unread messages from teacher

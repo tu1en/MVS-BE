@@ -23,12 +23,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
+ * =========================================================
+ * SEEDER ĐÃ BỊ VÔ HIỆU HÓA - CONTRACT/SALARY BACKFILL SEEDER
+ * =========================================================
+ * Seeder này đã được ẩn theo yêu cầu không hiển thị dữ liệu lương cơ bản
+ * Để kích hoạt lại, bỏ comment annotation @Component
+ *
  * Backfill missing contract fields to ensure payroll generation works for all ACTIVE contracts.
  * - Fill missing contractId, status, userId (by email), contractType (infer), salary fields (hourly or gross/net),
  *   working hours/days defaults, fullName/email from user if missing.
  * - Non-destructive: only fills NULL/blank fields; does not override existing values.
  */
-@Component
+// @Component - VÔ HIỆU HÓA THEO YÊU CẦU
 @Order(85)
 @RequiredArgsConstructor
 @Slf4j

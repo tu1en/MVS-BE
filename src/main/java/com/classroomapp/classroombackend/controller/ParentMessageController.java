@@ -302,6 +302,109 @@ public class ParentMessageController {
         }
     }
 
+    /**
+     * Send message to student (child)
+     */
+    @PostMapping("/send-to-student")
+    public ResponseEntity<Map<String, Object>> sendMessageToStudent(
+            @Valid @RequestBody SendStudentMessageRequest request,
+            HttpServletRequest httpRequest) {
+        try {
+            Long parentId = getParentIdFromToken(httpRequest);
+            String token = getTokenFromRequest(httpRequest);
+            
+            // Validate parent has access to student
+            if (!jwtUtil.validateParentChildAccess(token, request.getStudentId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+
+            ParentMessage message = messageService.sendMessageFromParentToStudent(
+                parentId, request.getStudentId(), request.getSubject(), request.getMessageContent()
+            );
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("id", message.getId());
+            response.put("status", "sent");
+            response.put("message", "Tin nhắn đã được gửi thành công tới con");
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid send message to student request: {}", e.getMessage());
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        } catch (Exception e) {
+            log.error("Error sending message to student", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * Send reply to student (child)
+     */
+    @PostMapping("/reply-to-student")
+    public ResponseEntity<Map<String, Object>> sendReplyToStudent(
+            @Valid @RequestBody SendStudentReplyRequest request,
+            HttpServletRequest httpRequest) {
+        try {
+            Long parentId = getParentIdFromToken(httpRequest);
+            String token = getTokenFromRequest(httpRequest);
+            
+            // Validate parent has access to student
+            if (!jwtUtil.validateParentChildAccess(token, request.getStudentId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+
+            ParentMessage message = messageService.sendReplyFromParentToStudent(
+                parentId, request.getStudentId(), request.getSubject(), 
+                request.getMessageContent(), request.getReplyToId()
+            );
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("id", message.getId());
+            response.put("status", "sent");
+            response.put("message", "Phản hồi đã được gửi thành công tới con");
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid send reply to student request: {}", e.getMessage());
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        } catch (Exception e) {
+            log.error("Error sending reply to student", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * Get conversation with student (child)
+     */
+    @GetMapping("/conversations/students/{studentId}")
+    public ResponseEntity<List<ParentMessage>> getStudentConversation(
+            @PathVariable Long studentId,
+            HttpServletRequest httpRequest) {
+        try {
+            Long parentId = getParentIdFromToken(httpRequest);
+            String token = getTokenFromRequest(httpRequest);
+            
+            // Validate parent has access to student
+            if (!jwtUtil.validateParentChildAccess(token, studentId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+
+            List<ParentMessage> messages = messageService.getParentStudentConversation(parentId, studentId);
+            
+            // Mark conversation as read
+            messageService.markConversationAsRead(parentId, 0L, studentId, ParentMessage.SenderType.PARENT);
+            
+            return ResponseEntity.ok(messages);
+        } catch (Exception e) {
+            log.error("Error getting student conversation", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     // Helper methods
 
     private Long getParentIdFromToken(HttpServletRequest request) {
@@ -357,6 +460,42 @@ public class ParentMessageController {
         public Long getTeacherId() { return teacherId; }
         public void setTeacherId(Long teacherId) { this.teacherId = teacherId; }
 
+        public Long getStudentId() { return studentId; }
+        public void setStudentId(Long studentId) { this.studentId = studentId; }
+
+        public String getSubject() { return subject; }
+        public void setSubject(String subject) { this.subject = subject; }
+
+        public String getMessageContent() { return messageContent; }
+        public void setMessageContent(String messageContent) { this.messageContent = messageContent; }
+
+        public Long getReplyToId() { return replyToId; }
+        public void setReplyToId(Long replyToId) { this.replyToId = replyToId; }
+    }
+
+    public static class SendStudentMessageRequest {
+        private Long studentId;
+        private String subject;
+        private String messageContent;
+
+        // Getters and setters
+        public Long getStudentId() { return studentId; }
+        public void setStudentId(Long studentId) { this.studentId = studentId; }
+
+        public String getSubject() { return subject; }
+        public void setSubject(String subject) { this.subject = subject; }
+
+        public String getMessageContent() { return messageContent; }
+        public void setMessageContent(String messageContent) { this.messageContent = messageContent; }
+    }
+
+    public static class SendStudentReplyRequest {
+        private Long studentId;
+        private String subject;
+        private String messageContent;
+        private Long replyToId;
+
+        // Getters and setters
         public Long getStudentId() { return studentId; }
         public void setStudentId(Long studentId) { this.studentId = studentId; }
 

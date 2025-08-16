@@ -39,7 +39,29 @@ public class Notification {
     private Long recipientId;
     
     @Column
-    private String type = "GENERAL"; // GENERAL, URGENT, SYSTEM, ANNOUNCEMENT
+    private String type = "GENERAL"; // GENERAL, URGENT, SYSTEM, ANNOUNCEMENT, ADMIN_ANNOUNCEMENT
+    
+    // New fields for admin notification management
+    @Column
+    private String title; // Notification title
+    
+    @Column
+    private LocalDateTime scheduledAt; // For scheduled notifications
+    
+    @Column
+    private String targetAudience; // ALL, STUDENTS, PARENTS, TEACHERS, ACCOUNTANTS, MANAGERS, SPECIFIC_USER, SPECIFIC_CLASS
+    
+    @Column
+    private String targetDetails; // Additional targeting info (class ID, user ID, etc.)
+    
+    @Column
+    private String status = "PENDING"; // PENDING, SENT, SCHEDULED, FAILED
+    
+    @Column
+    private String priority = "NORMAL"; // LOW, NORMAL, HIGH, URGENT
+    
+    @Column
+    private String createdBy; // Admin who created the notification
     
     @PrePersist
     protected void onCreate() {
@@ -50,12 +72,43 @@ public class Notification {
         this.isRead = true;
     }
     
+    public boolean isScheduled() {
+        return scheduledAt != null && scheduledAt.isAfter(LocalDateTime.now());
+    }
+    
+    public boolean isReadyToSend() {
+        return "SCHEDULED".equals(status) && scheduledAt != null && scheduledAt.isBefore(LocalDateTime.now());
+    }
+    
     // Explicit getters and setters to resolve compilation issues
     public Long getId() { return id; }
     public String getMessage() { return content; }
+    public String getContent() { return content; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public Boolean getIsRead() { return isRead; }
     public String getSender() { return sender; }
+    public Long getRecipientId() { return recipientId; }
+    public String getType() { return type; }
+    public String getTitle() { return title; }
+    public LocalDateTime getScheduledAt() { return scheduledAt; }
+    public String getTargetAudience() { return targetAudience; }
+    public String getTargetDetails() { return targetDetails; }
+    public String getStatus() { return status; }
+    public String getPriority() { return priority; }
+    public String getCreatedBy() { return createdBy; }
     
+    public void setId(Long id) { this.id = id; }
+    public void setContent(String content) { this.content = content; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public void setIsRead(Boolean isRead) { this.isRead = isRead; }
+    public void setSender(String sender) { this.sender = sender; }
+    public void setRecipientId(Long recipientId) { this.recipientId = recipientId; }
+    public void setType(String type) { this.type = type; }
+    public void setTitle(String title) { this.title = title; }
+    public void setScheduledAt(LocalDateTime scheduledAt) { this.scheduledAt = scheduledAt; }
+    public void setTargetAudience(String targetAudience) { this.targetAudience = targetAudience; }
+    public void setTargetDetails(String targetDetails) { this.targetDetails = targetDetails; }
+    public void setStatus(String status) { this.status = status; }
+    public void setPriority(String priority) { this.priority = priority; }
+    public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
 }

@@ -36,6 +36,35 @@ public interface ParentMessageService {
                                       String subject, String messageContent, Long replyToId);
 
     /**
+     * Send message from parent to student
+     */
+    ParentMessage sendMessageFromParentToStudent(Long parentId, Long studentId, 
+                                                String subject, String messageContent);
+
+    /**
+     * Send message from student to parent
+     */
+    ParentMessage sendMessageFromStudentToParent(Long studentId, Long parentId, 
+                                                String subject, String messageContent);
+
+    /**
+     * Send reply message from parent to student
+     */
+    ParentMessage sendReplyFromParentToStudent(Long parentId, Long studentId, 
+                                             String subject, String messageContent, Long replyToId);
+
+    /**
+     * Send reply message from student to parent
+     */
+    ParentMessage sendReplyFromStudentToParent(Long studentId, Long parentId, 
+                                             String subject, String messageContent, Long replyToId);
+
+    /**
+     * Get conversation between parent and student
+     */
+    List<ParentMessage> getParentStudentConversation(Long parentId, Long studentId);
+
+    /**
      * Get conversation between parent and teacher about specific student
      */
     List<ParentMessage> getConversation(Long parentId, Long teacherId, Long studentId);

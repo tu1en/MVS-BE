@@ -21,4 +21,18 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     // Fallback methods for simpler queries
     List<Notification> findByRecipientId(Long recipientId);
     List<Notification> findByTypeAndRecipientId(String type, Long recipientId);
+
+    
+    // New methods for admin notification management
+    List<Notification> findByStatusOrderByScheduledAtAsc(String status);
+    
+    List<Notification> findByTypeAndStatusOrderByCreatedAtDesc(String type, String status);
+    
+    long countByType(String type);
+    
+    long countByTypeAndStatus(String type, String status);
+    
+    List<Notification> findByTargetAudience(String targetAudience);
+    
+    List<Notification> findByStatusAndScheduledAtBefore(String status, java.time.LocalDateTime dateTime);
 }

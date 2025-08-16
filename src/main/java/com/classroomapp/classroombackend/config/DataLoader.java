@@ -31,6 +31,8 @@ import com.classroomapp.classroombackend.model.ExplanationStatus;
 import com.classroomapp.classroombackend.model.JobPosition;
 import com.classroomapp.classroombackend.model.Lecture;
 import com.classroomapp.classroombackend.model.Parent;
+import com.classroomapp.classroombackend.model.ParentMessage;
+import com.classroomapp.classroombackend.model.ParentMessage.SenderType;
 import com.classroomapp.classroombackend.model.RecruitmentApplication;
 import com.classroomapp.classroombackend.model.RecruitmentPlan;
 import com.classroomapp.classroombackend.model.Request;
@@ -77,6 +79,7 @@ import com.classroomapp.classroombackend.repository.classroommanagement.Classroo
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.CourseRepository;
 import com.classroomapp.classroombackend.repository.hrmanagement.EvidenceTemplateRepository;
+import com.classroomapp.classroombackend.repository.parentmanagement.ParentMessageRepository;
 import com.classroomapp.classroombackend.repository.parentmanagement.ParentRepository;
 import com.classroomapp.classroombackend.repository.parentmanagement.StudentParentRepository;
 import com.classroomapp.classroombackend.repository.requestmanagement.RequestRepository;
@@ -188,6 +191,9 @@ private EvidenceTemplateRepository evidenceTemplateRepository;
     @Autowired
     private StudentParentRepository studentParentRepository;
     
+    @Autowired
+    private ParentMessageRepository parentMessageRepository;
+    
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -295,6 +301,11 @@ seedEvidenceTemplates();
         log.info("============== Checking Parent Test Data =============");
         seedParentTestData();
         log.info("============== Parent Test Data Complete ============");
+        
+        // Seed parent-teacher messages
+        log.info("============== Seeding Parent-Teacher Messages =============");
+        seedParentMessages();
+        log.info("============== Parent-Teacher Messages Complete ============");
         
         // Always create attendance explanations test data
         createAttendanceExplanationsData();
@@ -1071,48 +1082,111 @@ seedEvidenceTemplates();
     private void seedSchedules() {
         if (scheduleRepository.count() == 0) {
             List<Classroom> classrooms = classroomRepository.findAll();
+            List<User> teachers = userRepository.findByRoleId(2); // Get all teachers
             
-            for (Classroom classroom : classrooms) {
-                Schedule schedule = new Schedule();
-                schedule.setClassroom(classroom);
-                schedule.setTeacher(classroom.getTeacher());
-                schedule.setDayOfWeek(0); // Monday
-                schedule.setStartTime(LocalTime.of(8, 0));
-                schedule.setEndTime(LocalTime.of(10, 0));
-                schedule.setRoom("Room 101");
-                schedule.setSubject(classroom.getSubject());
-                scheduleRepository.save(schedule);
+            if (classrooms.isEmpty() || teachers.isEmpty()) {
+                log.warn("❌ Cannot seed schedules: classrooms={}, teachers={}", classrooms.size(), teachers.size());
+                return;
             }
             
-            log.info("✅ Created schedules for {} classrooms", classrooms.size());
+            // Create comprehensive schedule data for all classrooms
+            for (int i = 0; i < classrooms.size(); i++) {
+                Classroom classroom = classrooms.get(i);
+                User teacher = teachers.get(i % teachers.size()); // Rotate through available teachers
+                
+                // Create multiple schedules per classroom for different days
+                createScheduleForDay(classroom, teacher, 0, LocalTime.of(8, 0), LocalTime.of(9, 30), "Room 10" + (i % 5 + 1)); // Monday
+                createScheduleForDay(classroom, teacher, 2, LocalTime.of(10, 0), LocalTime.of(11, 30), "Room 10" + (i % 5 + 1)); // Wednesday  
+                createScheduleForDay(classroom, teacher, 4, LocalTime.of(14, 0), LocalTime.of(15, 30), "Room 10" + (i % 5 + 1)); // Friday
+                
+                // Add some Tuesday/Thursday schedules for variety
+                if (i % 2 == 0) {
+                    createScheduleForDay(classroom, teacher, 1, LocalTime.of(9, 0), LocalTime.of(10, 30), "Lab 20" + (i % 3 + 1)); // Tuesday
+                    createScheduleForDay(classroom, teacher, 3, LocalTime.of(15, 0), LocalTime.of(16, 30), "Lab 20" + (i % 3 + 1)); // Thursday
+                }
+            }
+            
+            log.info("✅ Created comprehensive schedules for {} classrooms", classrooms.size());
         } else {
             log.info("✅ Schedules already seeded.");
         }
+    }
+    
+    private void createScheduleForDay(Classroom classroom, User teacher, int dayOfWeek, LocalTime startTime, LocalTime endTime, String room) {
+        Schedule schedule = new Schedule();
+        schedule.setClassroom(classroom);
+        schedule.setTeacher(teacher);
+        schedule.setDayOfWeek(dayOfWeek);
+        schedule.setStartTime(startTime);
+        schedule.setEndTime(endTime);
+        schedule.setRoom(room);
+        schedule.setSubject(classroom.getSubject());
+        
+        // Add materials and meeting URLs based on subject
+        String subjectKey = classroom.getSubject().toLowerCase().replaceAll(" ", "-");
+        schedule.setMaterialsUrl("https://drive.google.com/folder/" + subjectKey + "-materials");
+        schedule.setMeetUrl("https://meet.google.com/" + subjectKey + "-" + dayOfWeek);
+        
+        scheduleRepository.save(schedule);
     }
 
     private void seedTimetableEvents() {
         if (timetableEventRepository.count() == 0) {
             List<Classroom> classrooms = classroomRepository.findAll();
             List<User> users = userRepository.findAll();
+            List<Schedule> schedules = scheduleRepository.findAll();
             
-            for (int i = 0; i < classrooms.size(); i++) {
-                TimetableEvent event = new TimetableEvent();
-                event.setTitle("Regular Class " + (i + 1));
-                event.setDescription("Regular class session for " + classrooms.get(i).getName());
-                event.setStartDatetime(LocalDateTime.now().plusDays(i));
-                event.setEndDatetime(LocalDateTime.now().plusDays(i).plusHours(2));
-                event.setEventType(TimetableEvent.EventType.CLASS);
-                event.setCreatedBy(users.get(i % users.size()).getId());
-                event.setClassroomId(classrooms.get(i).getId());
-                event.setLocation("Room " + (i + 1));
-                event.setIsAllDay(false);
-                event.setReminderMinutes(15);
-                event.setColor("#007bff");
-                event.setIsCancelled(false);
-                timetableEventRepository.save(event);
+            if (classrooms.isEmpty() || users.isEmpty()) {
+                log.warn("❌ Cannot seed timetable events: classrooms={}, users={}", classrooms.size(), users.size());
+                return;
             }
             
-            log.info("✅ Created timetable events for {} classrooms", classrooms.size());
+            // Generate events based on actual schedule data
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime startOfWeek = now.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+            
+            // Create events for the next 4 weeks
+            for (int week = 0; week < 4; week++) {
+                for (Schedule schedule : schedules) {
+                    LocalDateTime eventStart = startOfWeek
+                        .plusWeeks(week)
+                        .plusDays(schedule.getDayOfWeek()) // 0=Monday, 1=Tuesday, etc.
+                        .withHour(schedule.getStartTime().getHour())
+                        .withMinute(schedule.getStartTime().getMinute())
+                        .withSecond(0);
+                    
+                    LocalDateTime eventEnd = startOfWeek
+                        .plusWeeks(week)
+                        .plusDays(schedule.getDayOfWeek())
+                        .withHour(schedule.getEndTime().getHour())
+                        .withMinute(schedule.getEndTime().getMinute())
+                        .withSecond(0);
+                    
+                    // Skip past events
+                    if (eventStart.isBefore(now)) {
+                        continue;
+                    }
+                    
+                    TimetableEvent event = new TimetableEvent();
+                    event.setTitle(schedule.getSubject());
+                    event.setDescription("Lớp học " + schedule.getSubject() + " - " + schedule.getClassroom().getName());
+                    event.setStartDatetime(eventStart);
+                    event.setEndDatetime(eventEnd);
+                    event.setEventType(TimetableEvent.EventType.CLASS);
+                    event.setCreatedBy(schedule.getTeacher().getId());
+                    event.setClassroomId(schedule.getClassroom().getId());
+                    event.setLocation(schedule.getRoom());
+                    event.setIsAllDay(false);
+                    event.setReminderMinutes(15);
+                    event.setColor("#007bff");
+                    event.setIsCancelled(false);
+                    event.setCreatedAt(now);
+                    event.setUpdatedAt(now);
+                    timetableEventRepository.save(event);
+                }
+            }
+            
+            log.info("✅ Created timetable events based on {} schedules for next 4 weeks", schedules.size());
         } else {
             log.info("✅ Timetable events already seeded.");
         }
@@ -2649,7 +2723,7 @@ private void createEvidenceTemplate(String name, String code, String description
     }
 
     /**
-     * Creates timetable events for students so they appear in parent schedule view
+     * Creates timetable events for students based on their actual course schedules
      */
     private void createTimetableEventsForStudents(List<User> studentUsers, List<Course> courses) {
         try {
@@ -2658,78 +2732,258 @@ private void createEvidenceTemplate(String name, String code, String description
                 return;
             }
             
-            // Get classrooms for the events
+            // Get classrooms and schedules for the events
             List<Classroom> classrooms = classroomRepository.findAll();
+            List<Schedule> schedules = scheduleRepository.findAll();
+            
             if (classrooms.isEmpty()) {
                 log.warn("No classrooms available for timetable events");
                 return;
             }
             
-            // Create recurring weekly schedule for each course
             LocalDateTime now = LocalDateTime.now();
             LocalDateTime startOfWeek = now.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
             
-            for (int courseIndex = 0; courseIndex < courses.size(); courseIndex++) {
-                Course course = courses.get(courseIndex);
+            // Create events based on actual schedules if available
+            if (!schedules.isEmpty()) {
+                for (int week = 0; week < 8; week++) { // Create 8 weeks of events
+                    for (Schedule schedule : schedules) {
+                        LocalDateTime eventStart = startOfWeek
+                            .plusWeeks(week)
+                            .plusDays(schedule.getDayOfWeek())
+                            .withHour(schedule.getStartTime().getHour())
+                            .withMinute(schedule.getStartTime().getMinute())
+                            .withSecond(0);
+                        
+                        LocalDateTime eventEnd = startOfWeek
+                            .plusWeeks(week)
+                            .plusDays(schedule.getDayOfWeek())
+                            .withHour(schedule.getEndTime().getHour())
+                            .withMinute(schedule.getEndTime().getMinute())
+                            .withSecond(0);
+                        
+                        // Skip past events
+                        if (eventStart.isBefore(now)) {
+                            continue;
+                        }
+                        
+                        TimetableEvent classEvent = new TimetableEvent();
+                        classEvent.setTitle(schedule.getSubject());
+                        classEvent.setDescription("Lớp học " + schedule.getSubject() + " - " + schedule.getClassroom().getName());
+                        classEvent.setStartDatetime(eventStart);
+                        classEvent.setEndDatetime(eventEnd);
+                        classEvent.setEventType(TimetableEvent.EventType.CLASS);
+                        classEvent.setClassroomId(schedule.getClassroom().getId());
+                        classEvent.setCreatedBy(schedule.getTeacher().getId());
+                        classEvent.setLocation(schedule.getRoom());
+                        classEvent.setColor("#1890ff");
+                        classEvent.setCreatedAt(now);
+                        classEvent.setUpdatedAt(now);
+                        
+                        timetableEventRepository.save(classEvent);
+                        
+                        // Add exam events every 3 weeks
+                        if (week % 3 == 2) {
+                            LocalDateTime examStart = eventStart.plusDays(2).withHour(14);
+                            LocalDateTime examEnd = examStart.plusHours(1);
+                            
+                            TimetableEvent examEvent = new TimetableEvent();
+                            examEvent.setTitle("Kiểm tra " + schedule.getSubject());
+                            examEvent.setDescription("Bài kiểm tra môn " + schedule.getSubject());
+                            examEvent.setStartDatetime(examStart);
+                            examEvent.setEndDatetime(examEnd);
+                            examEvent.setEventType(TimetableEvent.EventType.EXAM);
+                            examEvent.setClassroomId(schedule.getClassroom().getId());
+                            examEvent.setCreatedBy(schedule.getTeacher().getId());
+                            examEvent.setLocation("Phòng thi " + schedule.getRoom().replaceAll("Room", "Exam"));
+                            examEvent.setColor("#f5222d");
+                            examEvent.setCreatedAt(now);
+                            examEvent.setUpdatedAt(now);
+                            
+                            timetableEventRepository.save(examEvent);
+                        }
+                    }
+                }
+                log.info("Created timetable events based on {} schedules for 8 weeks", schedules.size());
+            } else {
+                // Fallback: create basic events for courses
+                log.warn("No schedules found, creating basic events for courses");
+                createBasicTimetableEventsForCourses(courses, classrooms, now);
+            }
+            
+        } catch (Exception e) {
+            log.error("Error creating timetable events: {}", e.getMessage(), e);
+        }
+    }
+    
+    private void createBasicTimetableEventsForCourses(List<Course> courses, List<Classroom> classrooms, LocalDateTime now) {
+        LocalDateTime startOfWeek = now.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+        
+        for (int courseIndex = 0; courseIndex < courses.size(); courseIndex++) {
+            Course course = courses.get(courseIndex);
+            
+            for (int week = 0; week < 4; week++) {
+                int dayOfWeek = (courseIndex % 5); // 0=Monday, 4=Friday
+                int startHour = 8 + (courseIndex % 4); // 8AM, 9AM, 10AM, 11AM
                 
-                // Create events for next 4 weeks
-                for (int week = 0; week < 4; week++) {
-                    // Different schedule for each course
-                    int dayOfWeek = (courseIndex % 5) + 1; // Monday = 1, Friday = 5
-                    int startHour = 8 + (courseIndex % 4); // 8AM, 9AM, 10AM, 11AM
+                LocalDateTime eventStart = startOfWeek
+                    .plusWeeks(week)
+                    .plusDays(dayOfWeek)
+                    .withHour(startHour)
+                    .withMinute(0)
+                    .withSecond(0);
                     
-                    LocalDateTime eventStart = startOfWeek
-                        .plusWeeks(week)
-                        .plusDays(dayOfWeek - 1) // Monday = 0
-                        .withHour(startHour)
-                        .withMinute(0)
-                        .withSecond(0);
+                LocalDateTime eventEnd = eventStart.plusHours(2);
+                
+                if (eventStart.isBefore(now)) {
+                    continue;
+                }
+                
+                TimetableEvent classEvent = new TimetableEvent();
+                classEvent.setTitle(course.getName());
+                classEvent.setDescription("Lớp học " + course.getName());
+                classEvent.setStartDatetime(eventStart);
+                classEvent.setEndDatetime(eventEnd);
+                classEvent.setEventType(TimetableEvent.EventType.CLASS);
+                classEvent.setClassroomId(classrooms.get(courseIndex % classrooms.size()).getId());
+                classEvent.setCreatedBy(1L);
+                classEvent.setLocation("Phòng " + (101 + courseIndex));
+                classEvent.setColor("#1890ff");
+                classEvent.setCreatedAt(now);
+                classEvent.setUpdatedAt(now);
+                
+                timetableEventRepository.save(classEvent);
+            }
+        }
+    }
+    
+    private void seedParentMessages() {
+        try {
+            log.info("🔍 Starting parent messages seeding check...");
+            long existingCount = parentMessageRepository.count();
+            log.info("🔍 Found {} existing parent messages", existingCount);
+            
+            if (existingCount > 0) {
+                log.info("✅ Parent messages already exist, skipping seeding");
+                return;
+            }
+            
+            // Get all teachers
+            log.info("🔍 Getting teachers...");
+            List<User> teachers = userRepository.findAllTeachers();
+            log.info("🔍 Found {} teachers", teachers.size());
+            if (teachers.isEmpty()) {
+                log.warn("⚠️ No teachers found, cannot seed parent messages");
+                return;
+            }
+            
+            // Get all parents
+            log.info("🔍 Getting parents...");
+            List<Parent> parents = parentRepository.findAll();
+            log.info("🔍 Found {} parents", parents.size());
+            if (parents.isEmpty()) {
+                log.warn("⚠️ No parents found, cannot seed parent messages");
+                return;
+            }
+            
+            // Get all student-parent relationships
+            log.info("🔍 Getting student-parent relationships...");
+            List<StudentParent> studentParentRelations = studentParentRepository.findAll();
+            log.info("🔍 Found {} student-parent relationships", studentParentRelations.size());
+            if (studentParentRelations.isEmpty()) {
+                log.warn("⚠️ No student-parent relationships found, cannot seed parent messages");
+                return;
+            }
+            
+            // Sample message subjects and contents for parent-teacher communication
+            String[] messageSubjects = {
+                "Thông báo về tình hình học tập của con",
+                "Cần trao đổi về việc học bài tập về nhà",
+                "Con em có tiến bộ tốt trong môn học",
+                "Cần hỗ trợ thêm cho con trong học tập",
+                "Thông báo về điểm danh và tham gia lớp",
+                "Lịch nghỉ học và bù học",
+                "Tư vấn về định hướng học tập",
+                "Phản hồi về bài kiểm tra gần đây"
+            };
+            
+            String[] teacherMessages = {
+                "Xin chào quý phụ huynh, tôi muốn cập nhật về tình hình học tập của con em trong thời gian qua. Con em đã có những tiến bộ đáng kể trong việc học.",
+                "Con em cần được nhắc nhở thêm về việc làm bài tập về nhà. Mong quý phụ huynh quan tâm hỗ trợ con ở nhà.",
+                "Tôi rất vui mừng thông báo rằng con em đã đạt được kết quả tốt trong bài kiểm tra gần đây. Hãy tiếp tục động viên con.",
+                "Con em có một số khó khăn trong việc theo kịp bài học. Tôi đề xuất chúng ta cùng nhau tìm phương pháp hỗ trợ phù hợp.",
+                "Con em đã tham gia lớp học rất tích cực. Điểm danh đều đặn và tương tác tốt với các bạn trong lớp.",
+                "Thông báo lịch nghỉ học do lễ tết. Lịch bù học sẽ được thông báo cụ thể trong tuần tới.",
+                "Dựa trên khả năng và sở thích của con, tôi có một số gợi ý về định hướng học tập cho con em.",
+                "Kết quả bài kiểm tra cho thấy con em cần ôn tập thêm một số phần. Mong phụ huynh hỗ trợ con ở nhà."
+            };
+            
+            String[] parentMessages = {
+                "Cảm ơn cô/thầy đã quan tâm. Tôi sẽ theo dõi và hỗ trợ con học tập tốt hơn ở nhà.",
+                "Con em có phản ánh gì về bài học không? Tôi muốn hiểu rõ hơn để hỗ trợ con.",
+                "Cảm ơn cô/thầy đã động viên con. Gia đình rất vui mừng về tiến bộ này.",
+                "Tôi sẽ dành thêm thời gian để hỗ trợ con học tập. Xin cô/thầy tư vấn thêm phương pháp học hiệu quả.",
+                "Con em có gặp khó khăn gì trong việc giao tiếp với các bạn không?",
+                "Cảm ơn thông báo. Gia đình sẽ sắp xếp lịch trình phù hợp.",
+                "Tôi rất quan tâm đến định hướng học tập của con. Xin cô/thầy tư vấn chi tiết hơn.",
+                "Tôi sẽ giúp con ôn tập phần này. Có tài liệu nào cô/thầy đề xuất không?"
+            };
+            
+            int messageCount = 0;
+            
+            // Create conversations between each parent and teachers of their children
+            for (StudentParent relation : studentParentRelations) {
+                Parent parent = relation.getParent();
+                User student = relation.getStudent();
+                
+                // Assign 1-2 random teachers to communicate with this parent about their child
+                List<User> studentTeachers = new ArrayList<>();
+                int numTeachers = Math.min(2, teachers.size());
+                for (int t = 0; t < numTeachers; t++) {
+                    studentTeachers.add(teachers.get((parent.getId().intValue() + student.getId().intValue() + t) % teachers.size()));
+                }
+                
+                // Create 2-4 message conversations per parent-teacher pair
+                for (User teacher : studentTeachers.subList(0, Math.min(2, studentTeachers.size()))) {
+                    int conversationLength = 2 + (messageCount % 3); // 2-4 messages per conversation
+                    
+                    for (int i = 0; i < conversationLength; i++) {
+                        boolean isTeacherMessage = (i % 2 == 0); // Alternate between teacher and parent
                         
-                    LocalDateTime eventEnd = eventStart.plusHours(2); // 2-hour classes
-                    
-                    // Create class event
-                    TimetableEvent classEvent = new TimetableEvent();
-                    classEvent.setTitle(course.getName());
-                    classEvent.setDescription("Lớp học " + course.getName());
-                    classEvent.setStartDatetime(eventStart);
-                    classEvent.setEndDatetime(eventEnd);
-                    classEvent.setEventType(TimetableEvent.EventType.CLASS);
-                    classEvent.setClassroomId(classrooms.get(courseIndex % classrooms.size()).getId());
-                    classEvent.setCreatedBy(1L); // Default user
-                    classEvent.setLocation("Phòng " + (101 + courseIndex));
-                    classEvent.setColor("#1890ff");
-                    classEvent.setCreatedAt(LocalDateTime.now());
-                    classEvent.setUpdatedAt(LocalDateTime.now());
-                    
-                    timetableEventRepository.save(classEvent);
-                    
-                    // Create exam event (once every 3 weeks)
-                    if (week % 3 == 2) {
-                        LocalDateTime examStart = eventStart.plusDays(2).withHour(14); // 2 days later at 2 PM
-                        LocalDateTime examEnd = examStart.plusHours(1); // 1-hour exam
+                        ParentMessage message = new ParentMessage();
+                        message.setParentId(parent.getId());
+                        message.setTeacherId(teacher.getId());
+                        message.setStudentId(student.getId());
                         
-                        TimetableEvent examEvent = new TimetableEvent();
-                        examEvent.setTitle("Kiểm tra " + course.getName());
-                        examEvent.setDescription("Bài kiểm tra môn " + course.getName());
-                        examEvent.setStartDatetime(examStart);
-                        examEvent.setEndDatetime(examEnd);
-                        examEvent.setEventType(TimetableEvent.EventType.EXAM);
-                        examEvent.setClassroomId(classrooms.get(courseIndex % classrooms.size()).getId());
-                        examEvent.setCreatedBy(1L);
-                        examEvent.setLocation("Phòng thi " + (201 + courseIndex));
-                        examEvent.setColor("#f5222d");
-                        examEvent.setCreatedAt(LocalDateTime.now());
-                        examEvent.setUpdatedAt(LocalDateTime.now());
+                        if (isTeacherMessage) {
+                            message.setSenderType(SenderType.TEACHER);
+                            message.setSubject(messageSubjects[messageCount % messageSubjects.length]);
+                            message.setMessageContent(teacherMessages[messageCount % teacherMessages.length]);
+                        } else {
+                            message.setSenderType(SenderType.PARENT);
+                            message.setSubject("Re: " + messageSubjects[messageCount % messageSubjects.length]);
+                            message.setMessageContent(parentMessages[messageCount % parentMessages.length]);
+                        }
                         
-                        timetableEventRepository.save(examEvent);
+                        // Set read status (most messages are read, some recent ones unread)
+                        message.setIsRead(messageCount % 4 != 0); // 25% unread
+                        if (message.getIsRead()) {
+                            message.setReadAt(LocalDateTime.now().minusDays(messageCount % 10));
+                        }
+                        
+                        // Set creation time (recent messages)
+                        message.setCreatedAt(LocalDateTime.now().minusDays(messageCount % 30));
+                        
+                        parentMessageRepository.save(message);
+                        messageCount++;
                     }
                 }
             }
             
-            log.info("Created timetable events for {} courses", courses.size());
+            log.info("✅ Created {} parent-teacher messages", messageCount);
             
         } catch (Exception e) {
-            log.error("Error creating timetable events: {}", e.getMessage(), e);
+            log.error("❌ Error seeding parent messages: {}", e.getMessage(), e);
         }
     }
 } 

@@ -159,12 +159,20 @@ public class ParentMessage {
     }
 
     /**
+     * Check if sender is student
+     */
+    public boolean isSentByStudent() {
+        return SenderType.STUDENT.equals(this.senderType);
+    }
+
+    /**
      * Get sender display name
      */
     public String getSenderDisplayName() {
         return switch (this.senderType) {
             case PARENT -> "Phụ huynh";
             case TEACHER -> "Giáo viên";
+            case STUDENT -> "Học sinh";
         };
     }
 
@@ -186,10 +194,9 @@ public class ParentMessage {
                createdAt.isAfter(LocalDateTime.now().minusHours(24));
     }
 
-    // Enums
-
     public enum SenderType {
         PARENT,  // Phụ huynh
-        TEACHER  // Giáo viên
+        TEACHER, // Giáo viên
+        STUDENT  // Học sinh
     }
 }

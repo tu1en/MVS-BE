@@ -474,4 +474,105 @@ public class LectureController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    /**
+     * Quick API to set lecture date for attendance purposes
+     * POST /api/lectures/{lectureId}/set-date
+     */
+    @PostMapping("/lectures/{lectureId}/set-date")
+    public ResponseEntity<String> setLectureDate(@PathVariable Long lectureId, @RequestBody java.util.Map<String, Object> request) {
+        try {
+            Optional<Lecture> lectureOpt = lectureRepository.findById(lectureId);
+            if (!lectureOpt.isPresent()) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            Lecture lecture = lectureOpt.get();
+            String dateStr = (String) request.get("date");
+            
+            LocalDate lectureDate;
+            if (dateStr == null || dateStr.equals("today")) {
+                lectureDate = LocalDate.now();
+            } else {
+                lectureDate = LocalDate.parse(dateStr);
+            }
+            
+            lecture.setLectureDate(lectureDate);
+            lecture.setUpdatedAt(LocalDateTime.now());
+            lectureRepository.save(lecture);
+            
+            String message = "✅ Đã cập nhật ngày cho bài giảng '" + lecture.getTitle() + 
+                           "' thành: " + lectureDate.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            
+            return ResponseEntity.ok(message);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("❌ Lỗi khi cập nhật ngày: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Bulk API to fix all lecture dates for testing
+     * POST /api/lectures/fix-dates-for-testing
+     */
+    @PostMapping("/lectures/fix-dates-for-testing")
+    public ResponseEntity<String> fixLectureDatesForTesting() {
+        try {
+            List<Lecture> allLectures = lectureRepository.findAll();
+            int todayCount = 0, tomorrowCount = 0, yesterdayCount = 0, otherCount = 0;
+            
+            LocalDate today = LocalDate.now();
+            LocalDate yesterday = today.minusDays(1);
+            LocalDate tomorrow = today.plusDays(1);
+            
+            for (Lecture lecture : allLectures) {
+                if (lecture.getLectureDate() == null) {
+                    // Distribute dates for testing different scenarios
+                    long lectureId = lecture.getId();
+                    LocalDate newDate;
+                    
+                    if (lectureId % 4 == 1) {
+                        // 25% get today's date (can attend)
+                        newDate = today;
+                        todayCount++;
+                    } else if (lectureId % 4 == 2) {
+                        // 25% get yesterday (too late)
+                        newDate = yesterday;
+                        yesterdayCount++;
+                    } else if (lectureId % 4 == 3) {
+                        // 25% get tomorrow (too early)
+                        newDate = tomorrow;
+                        tomorrowCount++;
+                    } else {
+                        // 25% get other dates for variety
+                        newDate = today.plusDays((lectureId % 7) - 3); // Range from -3 to +3 days
+                        otherCount++;
+                    }
+                    
+                    lecture.setLectureDate(newDate);
+                    lecture.setUpdatedAt(LocalDateTime.now());
+                    lectureRepository.save(lecture);
+                }
+            }
+            
+            String message = String.format(
+                "✅ Đã cập nhật ngày cho tất cả lectures!\n\n" +
+                "📊 PHÂN BỐ NGÀY:\n" +
+                "🟢 Hôm nay (%s): %d lectures (CÓ THỂ ĐIỂM DANH)\n" +
+                "🔴 Hôm qua (%s): %d lectures (QUÁ MUỘN)\n" +
+                "🔵 Ngày mai (%s): %d lectures (QUÁ SỚM)\n" +
+                "🟡 Ngày khác: %d lectures\n\n" +
+                "💡 Sử dụng những lectures có ngày = hôm nay để test điểm danh!",
+                today.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")), todayCount,
+                yesterday.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")), yesterdayCount,
+                tomorrow.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")), tomorrowCount,
+                otherCount
+            );
+            
+            return ResponseEntity.ok(message);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("❌ Lỗi khi cập nhật dữ liệu test: " + e.getMessage());
+        }
+    }
 }

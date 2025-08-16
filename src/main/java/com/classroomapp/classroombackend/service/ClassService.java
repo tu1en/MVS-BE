@@ -3,6 +3,7 @@ package com.classroomapp.classroombackend.service;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -355,6 +356,36 @@ public class ClassService {
 
         // Trường hợp nâng cao: cập nhật theo danh sách lessonUpdates (mỗi buổi một thời gian riêng)
         if (request.getLessonUpdates() != null && !request.getLessonUpdates().isEmpty()) {
+            // Kiểm tra conflict nội bộ trong lớp trước khi xử lý
+            Map<java.time.LocalDate, java.util.List<java.util.Map.Entry<java.time.LocalTime, java.time.LocalTime>>> dateTimeMap = new java.util.HashMap<>();
+            
+            for (var up : request.getLessonUpdates()) {
+                java.time.LocalDate d = up.getNewDate();
+                java.time.LocalTime st = java.time.LocalTime.parse(up.getNewStartTime());
+                java.time.LocalTime en = java.time.LocalTime.parse(up.getNewEndTime());
+                
+                // Kiểm tra xem có buổi nào khác trong cùng ngày có thời gian chồng lấn không
+                if (dateTimeMap.containsKey(d)) {
+                    for (var existingTimeRange : dateTimeMap.get(d)) {
+                        java.time.LocalTime existingStart = existingTimeRange.getKey();
+                        java.time.LocalTime existingEnd = existingTimeRange.getValue();
+                        
+                        // Kiểm tra overlap: (start1 < end2) && (start2 < end1)
+                        boolean hasOverlap = st.isBefore(existingEnd) && existingStart.isBefore(en);
+                        
+                        if (hasOverlap) {
+                            throw new RuntimeException("Không thể đổi lịch: Buổi học #" + up.getLessonId() + 
+                                " trùng lịch với buổi khác trong cùng ngày " + d + 
+                                " (thời gian: " + st + "-" + en + " chồng lấn với " + existingStart + "-" + existingEnd + ")");
+                        }
+                    }
+                }
+                
+                // Thêm vào map để kiểm tra
+                dateTimeMap.computeIfAbsent(d, k -> new java.util.ArrayList<>())
+                    .add(new java.util.AbstractMap.SimpleEntry<>(st, en));
+            }
+            
             for (var up : request.getLessonUpdates()) {
                 ClassLesson l = classLessonRepository.findById(up.getLessonId())
                         .orElseThrow(() -> new RuntimeException("Không tìm thấy buổi: " + up.getLessonId()));

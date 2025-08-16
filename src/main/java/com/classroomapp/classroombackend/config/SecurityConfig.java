@@ -89,7 +89,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/public/**").permitAll()
                 .requestMatchers("/api/health").permitAll() // Health check endpoint
                 .requestMatchers("/api/v1/health").permitAll() // Health check endpoint v1
-                .requestMatchers("/api/test").permitAll() // Test endpoint
+                .requestMatchers("/api/test/**").permitAll() // Test endpoints
                 .requestMatchers("/api/v1/greetings/hello").permitAll() // Only allow hello endpoint for health check
                 .requestMatchers("/api/greetings/hello").permitAll() // Allow greetings endpoint
                 .requestMatchers("/api/role-requests/**").permitAll()

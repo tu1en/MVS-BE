@@ -26,10 +26,16 @@ import com.classroomapp.classroombackend.repository.hrmanagement.WorkShiftReposi
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 
 /**
+ * =========================================================
+ * SEEDER ĐÃ BỊ VÔ HIỆU HÓA - VIOLATION TEST DATA LOADER
+ * =========================================================
+ * Seeder này đã được ẩn theo yêu cầu không hiển thị dữ liệu lương cơ bản
+ * Để kích hoạt lại, bỏ comment annotation @Component
+ *
  * Data loader for violation detection testing
  * Creates sample data to test the attendance violation workflow
  */
-@Component
+// @Component - VÔ HIỆU HÓA THEO YÊU CẦU
 @Order(999) // Run after main DataLoader
 public class ViolationTestDataLoader implements CommandLineRunner {
 

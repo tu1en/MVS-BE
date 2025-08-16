@@ -41,6 +41,8 @@ import com.classroomapp.classroombackend.service.AttendanceService;
 import com.classroomapp.classroombackend.service.ClassroomSecurityService;
 
 import lombok.RequiredArgsConstructor;
+import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Service
 @RequiredArgsConstructor
@@ -63,63 +65,164 @@ public class AttendanceServiceImpl implements AttendanceService {
     @Override
     @Transactional
     public void submitAttendance(AttendanceSubmitDto submitDto) {
+        System.out.println("=== SUBMIT ATTENDANCE DEBUG ===");
+        System.out.println("Received DTO: " + submitDto);
+        
         // Validate classroom existence
         Classroom classroom = classroomRepository.findById(submitDto.getClassroomId())
                 .orElseThrow(() -> new BusinessLogicException("Classroom not found with ID: " + submitDto.getClassroomId()));
+        
+        System.out.println("Found classroom: " + classroom.getId());
+        
+        // Validate attendance time window (24 hours) - MANDATORY
+        if (submitDto.getLectureId() == null) {
+            throw new BusinessLogicException("Lecture ID là bắt buộc để kiểm tra thời gian điểm danh.");
+        }
+        validateAttendanceTimeWindow(submitDto.getLectureId());
+        
+        // Validate records exist
+        if (submitDto.getRecords() == null || submitDto.getRecords().isEmpty()) {
+            throw new BusinessLogicException("No attendance records provided");
+        }
+        
+        System.out.println("Processing " + submitDto.getRecords().size() + " attendance records");
+
+        // Get the lecture for linking to the session
+        Lecture lecture = lectureRepository.findById(submitDto.getLectureId())
+                .orElseThrow(() -> new BusinessLogicException("Không tìm thấy bài giảng với ID: " + submitDto.getLectureId()));
+        
+        // Create a new session for this attendance submission
+        AttendanceSession session = new AttendanceSession();
+        session.setClassroom(classroom);
+        session.setLecture(lecture); // Link session to lecture
+        session.setCreatedAt(LocalDateTime.now());
+        session.setExpiresAt(LocalDateTime.now().plusHours(1)); // Session expires in 1 hour
+        session.setIsOpen(true);
+        session.setSessionDate(LocalDate.now()); // Set session date to today
+        // Set teacher clock-in time when attendance is submitted - this enables teaching history tracking
+        session.setTeacherClockInTime(LocalDateTime.now());
+        session = attendanceSessionRepository.save(session);
+        
+        System.out.println("Created new session: " + session.getId());
+
+        // Process all attendance records
+        for (AttendanceSubmitDto.AttendanceRecord record : submitDto.getRecords()) {
+            try {
+                System.out.println("Processing record for student: " + record.getStudentId() + ", status: " + record.getStatus());
                 
-        // Validate session existence if provided
-        AttendanceSession session = null;
-        if (submitDto.getSessionId() != null) {
-            session = attendanceSessionRepository.findById(submitDto.getSessionId())
-                    .orElseThrow(() -> new BusinessLogicException("Session not found with ID: " + submitDto.getSessionId()));
+                // Validate student existence
+                User student = userRepository.findById(record.getStudentId())
+                        .orElseThrow(() -> new BusinessLogicException("Student not found with ID: " + record.getStudentId()));
+
+                // Find existing record or create new one
+                Attendance attendance = attendanceRepository.findBySession_IdAndStudent_Id(session.getId(), student.getId())
+                        .orElseGet(Attendance::new);
+
+                attendance.setSession(session);
+                attendance.setStudent(student);
+                attendance.setStatus(AttendanceStatus.valueOf(record.getStatus().toUpperCase()));
+                // Lưu ghi chú nếu có
+                attendance.setNote(record.getNote());
+
+                attendanceRepository.save(attendance);
+                System.out.println("Saved attendance for student: " + student.getId());
+                
+            } catch (Exception e) {
+                System.err.println("Error processing attendance record for student " + record.getStudentId() + ": " + e.getMessage());
+                throw new BusinessLogicException("Failed to process attendance for student " + record.getStudentId() + ": " + e.getMessage());
+            }
         }
+        
+        System.out.println("=== SUBMIT ATTENDANCE COMPLETED ===");
+    }
 
-        // No need to check lecture-classroom relationship as we're not using lectures anymore
-
-        // Create a new session if none exists
-        if (session == null) {
-            session = new AttendanceSession();
-            session.setClassroom(classroom);
-            session.setCreatedAt(LocalDateTime.now());
-            session.setExpiresAt(LocalDateTime.now().plusHours(1)); // Example: session expires in 1 hour
-            session.setIsOpen(true);
-            session.setSessionDate(LocalDate.now()); // Set session date to today
-            // Set teacher clock-in time when attendance is submitted - this enables teaching history tracking
-            session.setTeacherClockInTime(LocalDateTime.now());
-            session = attendanceSessionRepository.save(session);
+    /**
+     * Validate that attendance is being submitted within a reasonable time window
+     * @param lectureId The lecture ID (required)
+     */
+    private void validateAttendanceTimeWindow(Long lectureId) {
+        LocalDateTime now = LocalDateTime.now();
+        
+        System.out.println("=== VALIDATING ATTENDANCE TIME WINDOW ===");
+        System.out.println("Lecture ID: " + lectureId);
+        System.out.println("Current time: " + now);
+        
+        // Lecture ID is mandatory
+        Lecture lecture = lectureRepository.findById(lectureId)
+                .orElseThrow(() -> new BusinessLogicException("Không tìm thấy bài giảng với ID: " + lectureId));
+        
+        System.out.println("Found lecture: " + lecture.getTitle());
+        
+        // Check if lecture has a specific date
+        if (lecture.getLectureDate() == null) {
+            // Option 1: Require teacher to set proper lecture date first
+            throw new BusinessLogicException("Bài giảng chưa có ngày cụ thể. Vui lòng cập nhật ngày cho bài giảng trước khi điểm danh.");
+            
+            // Option 2: Only allow if teacher explicitly confirms today's date
+            // For now, we use strict validation requiring proper lecture scheduling
         }
-
-        // Ensure session is open and not expired if a new one wasn't created
-        if (!session.getIsOpen() ||
-            (session.getExpiresAt() != null && LocalDateTime.now().isAfter(session.getExpiresAt()))) {
-             // Optionally reopen or create new session based on business rules
-             // For this task, we will just throw an error or handle accordingly
-            session.setIsOpen(true); // Reopen for submission
-            session.setExpiresAt(LocalDateTime.now().plusHours(1)); // Extend expiration
-            attendanceSessionRepository.save(session);
+        
+        LocalDate lectureDate = lecture.getLectureDate();
+        System.out.println("Lecture date: " + lectureDate);
+        
+        LocalDateTime lectureStart = null;
+        LocalDateTime lectureEnd = null;
+        
+        // Try to get time from schedule
+        if (lecture.getSchedule() != null && lecture.getSchedule().getStartTime() != null) {
+            lectureStart = lectureDate.atTime(lecture.getSchedule().getStartTime());
+            if (lecture.getSchedule().getEndTime() != null) {
+                lectureEnd = lectureDate.atTime(lecture.getSchedule().getEndTime());
+            }
+            System.out.println("Schedule found - Start: " + lectureStart + ", End: " + lectureEnd);
+        } else {
+            // If no schedule time, use middle of day (12:00) as default
+            lectureStart = lectureDate.atTime(12, 0);
+            System.out.println("No schedule found, using default time: " + lectureStart);
         }
-
-        // Set teacher clock-in time if not already set - this enables teaching history tracking
-        if (session.getTeacherClockInTime() == null) {
-            session.setTeacherClockInTime(LocalDateTime.now());
-            attendanceSessionRepository.save(session);
+        
+        // TEMPORARY: Very strict validation - only allow attendance on the same day
+        LocalDate today = LocalDate.now();
+        if (!lectureDate.equals(today)) {
+            String errorMsg = "🚫 CHỈ CÓ THỂ ĐIỂM DANH TRONG NGÀY HÔM NAY!\n" +
+                "Ngày hôm nay: " + today.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) + "\n" +
+                "Ngày buổi học: " + lectureDate.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) + "\n" +
+                "Validation tạm thời: Chỉ cho phép điểm danh cùng ngày với buổi học.";
+            System.out.println("VALIDATION FAILED: Different date - " + errorMsg);
+            throw new BusinessLogicException(errorMsg);
         }
-
-        // Process single attendance record
-        User student = userRepository.findById(submitDto.getStudentId())
-                .orElseThrow(() -> new BusinessLogicException("Student not found with ID: " + submitDto.getStudentId()));
-
-        // Find existing record or create new one
-        Attendance attendance = attendanceRepository.findBySession_IdAndStudent_Id(session.getId(), student.getId())
-                .orElseGet(Attendance::new);
-
-        attendance.setSession(session);
-        attendance.setStudent(student);
-        attendance.setStatus(AttendanceStatus.valueOf(submitDto.getStatus().toUpperCase()));
-        // Lưu ghi chú nếu có
-        attendance.setNote(submitDto.getNote());
-
-        attendanceRepository.save(attendance);
+        
+        // Original 24-hour window validation (kept for future use)
+        LocalDateTime maxAllowedTime = lectureStart.plusHours(24);
+        LocalDateTime minAllowedTime = lectureStart.minusHours(24);
+        
+        System.out.println("Allowed time window: " + minAllowedTime + " to " + maxAllowedTime);
+        
+        if (now.isBefore(minAllowedTime)) {
+            String errorMsg = "⏰ Không thể điểm danh quá sớm!\n" +
+                "Chỉ có thể điểm danh trong vòng 24 giờ trước buổi học.\n" +
+                "Buổi học: " + lectureDate.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) +
+                (lecture.getSchedule() != null && lecture.getSchedule().getStartTime() != null ? 
+                    " lúc " + lecture.getSchedule().getStartTime().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")) : "") +
+                "\nCó thể điểm danh từ: " + minAllowedTime.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+            System.out.println("VALIDATION FAILED: Too early - " + errorMsg);
+            throw new BusinessLogicException(errorMsg);
+        }
+        
+        if (now.isAfter(maxAllowedTime)) {
+            String errorMsg = "⏰ Không thể điểm danh quá muộn!\n" +
+                "Chỉ có thể điểm danh trong vòng 24 giờ sau buổi học.\n" +
+                "Buổi học: " + lectureDate.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) +
+                (lectureEnd != null ? 
+                    " kết thúc lúc " + lecture.getSchedule().getEndTime().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")) :
+                    (lecture.getSchedule() != null && lecture.getSchedule().getStartTime() != null ? 
+                        " bắt đầu lúc " + lecture.getSchedule().getStartTime().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")) : "")) +
+                "\nĐã hết hạn điểm danh từ: " + maxAllowedTime.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+            System.out.println("VALIDATION FAILED: Too late - " + errorMsg);
+            throw new BusinessLogicException(errorMsg);
+        }
+        
+        System.out.println("✅ VALIDATION PASSED: Attendance within allowed time window");
     }
 
     @Override
