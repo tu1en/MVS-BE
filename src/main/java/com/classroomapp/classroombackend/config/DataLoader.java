@@ -542,7 +542,7 @@ seedEvidenceTemplates();
                 manager.setId(301L);
                 manager.setUsername("manager");
                 manager.setPassword(passwordEncoder.encode("manager123"));
-                manager.setEmail("manager@test.com");
+                manager.setEmail("bigfattyboi1801@gmail.com");
                 manager.setFullName("Manager User");
                 manager.setRoleId(RoleConstants.MANAGER);
                 userRepository.save(manager);
