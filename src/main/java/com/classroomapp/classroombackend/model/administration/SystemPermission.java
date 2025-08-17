@@ -243,7 +243,7 @@ private String name;
         if (canBeModified()) {
             this.isActive = false;
         } else {
-            throw new IllegalStateException("KhÃ´ng thá»ƒ vÃ´ hiá»‡u hÃ³a permission há»‡ thá»‘ng");
+            throw new IllegalStateException("Không thể vô hiệu hóa permission hệ thống");
         }
     }
     

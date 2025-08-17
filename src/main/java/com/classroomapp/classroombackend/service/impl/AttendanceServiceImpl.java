@@ -82,7 +82,7 @@ public class AttendanceServiceImpl implements AttendanceService {
         
         // Validate records exist
         if (submitDto.getRecords() == null || submitDto.getRecords().isEmpty()) {
-            throw new BusinessLogicException("No attendance records provided");
+            throw new BusinessLogicException("Không có bản ghi điểm danh nào được cung cấp");
         }
         
         System.out.println("Processing " + submitDto.getRecords().size() + " attendance records");
@@ -471,7 +471,7 @@ public List<AttendanceResultDto> getSessionResults(Long sessionId) {
                 .orElseThrow(() -> new BusinessLogicException("Attendance session not found"));
 
         if (!classroomSecurityService.isTeacherOfClassroom(user, session.getClassroom().getId())) {
-            throw new BusinessLogicException("You are not authorized to view this attendance session.");
+            throw new BusinessLogicException("Bạn không có quyền xem phiên điểm danh này.");
         }
 
         List<Attendance> records = attendanceRepository.findBySession(session);

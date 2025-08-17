@@ -13,32 +13,32 @@ import lombok.NoArgsConstructor;
 
 /**
  * Service cho Shift Conflict Detection
- * Xá»­ lÃ½ logic phÃ¡t hiá»‡n xung Ä‘á»™t ca lÃ m viá»‡c
+ * Xử lý logic phát hiện xung đột ca làm việc
  */
 public interface ShiftConflictDetectionService {
 
     /**
-     * Kiá»ƒm tra xung Ä‘á»™t thá»i gian cho assignment má»›i
+     * Kiểm tra xung đột thời gian cho assignment mới
      */
     ConflictCheckResult checkTimeConflicts(Long assignedUserId, LocalDate date,
                                           LocalTime startTime, LocalTime endTime,
                                           Long excludeAssignmentId);
 
     /**
-     * Kiá»ƒm tra vi pháº¡m thá»i gian nghá»‰ tá»‘i thiá»ƒu (8 giá» giá»¯a cÃ¡c ca)
+     * Kiểm tra vi phạm thời gian nghỉ tối thiểu (8 giờ giữa các ca)
      */
     ConflictCheckResult checkRestTimeViolations(Long assignedUserId, LocalDate date,
                                                LocalTime startTime, LocalTime endTime,
                                                Long excludeAssignmentId);
 
     /**
-     * Kiá»ƒm tra vi pháº¡m giá»›i háº¡n giá» lÃ m viá»‡c hÃ ng tuáº§n
+     * Kiểm tra vi phạm giới hạn giờ làm việc hàng tuần
      */
     ConflictCheckResult checkWeeklyHourLimits(Long assignedUserId, LocalDate date,
                                              BigDecimal additionalHours);
 
     /**
-     * Kiá»ƒm tra táº¥t cáº£ cÃ¡c loáº¡i xung Ä‘á»™t
+     * Kiểm tra tất cả các loại xung đột
      */
     ConflictCheckResult checkAllConflicts(Long assignedUserId, LocalDate date,
                                          LocalTime startTime, LocalTime endTime,
@@ -46,36 +46,36 @@ public interface ShiftConflictDetectionService {
                                          Long excludeAssignmentId);
 
     /**
-     * Kiá»ƒm tra xung Ä‘á»™t cho swap request
+     * Kiểm tra xung đột cho swap request
      */
     ConflictCheckResult checkSwapConflicts(Long requesterId, Long targetUserId,
                                           ShiftAssignment requesterAssignment,
                                           ShiftAssignment targetAssignment);
 
     /**
-     * TÃ¬m cÃ¡c slot thá»i gian available cho employee
+     * Tìm các slot thời gian available cho employee
      */
     List<AvailableTimeSlot> findAvailableTimeSlots(Long assignedUserId, LocalDate date);
 
     /**
-     * Kiá»ƒm tra employee availability
+     * Kiểm tra employee availability
      */
     boolean isEmployeeAvailable(Long assignedUserId, LocalDate date, LocalTime startTime, LocalTime endTime);
 
     /**
-     * Láº¥y tá»•ng giá» lÃ m viá»‡c trong tuáº§n
+     * Lấy tổng giờ làm việc trong tuần
      */
     BigDecimal getWeeklyWorkingHours(Long assignedUserId, LocalDate weekStartDate);
 
     /**
-     * Láº¥y assignments xung Ä‘á»™t
+     * Lấy assignments xung đột
      */
     List<ShiftAssignment> getConflictingAssignments(Long assignedUserId, LocalDate date,
                                                    LocalTime startTime, LocalTime endTime,
                                                    Long excludeAssignmentId);
 
     /**
-     * Validate assignment trÆ°á»›c khi táº¡o
+     * Validate assignment trước khi tạo
      */
     void validateAssignmentCreation(ShiftAssignment assignment);
 
@@ -88,7 +88,7 @@ public interface ShiftConflictDetectionService {
     // ======================= INNER CLASSES & ENUMS =======================
 
     /**
-     * DTO cho káº¿t quáº£ kiá»ƒm tra xung Ä‘á»™t
+     * DTO cho kết quả kiểm tra xung đột
      */
     @Data
     @NoArgsConstructor
@@ -124,7 +124,7 @@ public interface ShiftConflictDetectionService {
     }
 
     /**
-     * DTO cho chi tiáº¿t xung Ä‘á»™t
+     * DTO cho chi tiết xung đột
      */
     @Data
     @NoArgsConstructor
@@ -136,7 +136,7 @@ public interface ShiftConflictDetectionService {
         private ConflictSeverity severity;
         private String suggestion;
 
-        // âœ… Constructor 4 tham sá»‘ Ä‘á»ƒ sá»­a lá»—i
+        // ✅ Constructor 4 tham số để sửa lỗi
         public ConflictDetail(ConflictType type, String message, ConflictSeverity severity, String suggestion) {
             this.type = type;
             this.message = message;
@@ -144,7 +144,7 @@ public interface ShiftConflictDetectionService {
             this.suggestion = suggestion;
         }
 
-        // âœ… Constructor 3 tham sá»‘ (trÆ°á»ng há»£p khÃ´ng cáº§n suggestion & assignment)
+        // ✅ Constructor 3 tham số (trường hợp không cần suggestion & assignment)
         public ConflictDetail(ConflictType type, String message, ConflictSeverity severity) {
             this.type = type;
             this.message = message;
@@ -176,15 +176,15 @@ public interface ShiftConflictDetectionService {
     }
 
     /**
-     * Enum cho loáº¡i xung Ä‘á»™t
+     * Enum cho loại xung đột
      */
     enum ConflictType {
-        TIME_OVERLAP("Xung Ä‘á»™t thá»i gian"),
-        INSUFFICIENT_REST("KhÃ´ng Ä‘á»§ thá»i gian nghá»‰"),
-        WEEKLY_HOUR_LIMIT("VÆ°á»£t quÃ¡ giá»›i háº¡n giá» lÃ m viá»‡c hÃ ng tuáº§n"),
-        EMPLOYEE_UNAVAILABLE("NhÃ¢n viÃªn khÃ´ng cÃ³ sáºµn"),
-        DUPLICATE_ASSIGNMENT("TrÃ¹ng láº·p phÃ¢n cÃ´ng"),
-        INVALID_TIME_RANGE("Khoáº£ng thá»i gian khÃ´ng há»£p lá»‡");
+        TIME_OVERLAP("Xung đột thời gian"),
+        INSUFFICIENT_REST("Không đủ thời gian nghỉ"),
+        WEEKLY_HOUR_LIMIT("Vượt quá giới hạn giờ làm việc hàng tuần"),
+        EMPLOYEE_UNAVAILABLE("Nhân viên không có sẵn"),
+        DUPLICATE_ASSIGNMENT("Trùng lặp phân công"),
+        INVALID_TIME_RANGE("Khoảng thời gian không hợp lệ");
 
         private final String displayName;
 
@@ -196,13 +196,13 @@ public interface ShiftConflictDetectionService {
     }
 
     /**
-     * Enum cho má»©c Ä‘á»™ nghiÃªm trá»ng
+     * Enum cho mức độ nghiêm trọng
      */
     enum ConflictSeverity {
-        LOW("Tháº¥p", "#52c41a"),
-        MEDIUM("Trung bÃ¬nh", "#faad14"),
+        LOW("Thấp", "#52c41a"),
+        MEDIUM("Trung bình", "#faad14"),
         HIGH("Cao", "#fa8c16"),
-        CRITICAL("NghiÃªm trá»ng", "#ff4d4f");
+        CRITICAL("Nghiêm trọng", "#ff4d4f");
 
         private final String displayName;
         private final String color;

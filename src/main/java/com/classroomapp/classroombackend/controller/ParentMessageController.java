@@ -415,7 +415,7 @@ public class ParentMessageController {
         if (parent.isPresent()) {
             return parent.get().getId();
         } else {
-            throw new IllegalArgumentException("Parent not found for token");
+            throw new IllegalArgumentException("Không tìm thấy phụ huynh cho token");
         }
     }
 
@@ -424,7 +424,7 @@ public class ParentMessageController {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             return authHeader.substring(7);
         }
-        throw new IllegalArgumentException("No valid token found");
+        throw new IllegalArgumentException("Không tìm thấy token hợp lệ");
     }
 
     // DTO Classes

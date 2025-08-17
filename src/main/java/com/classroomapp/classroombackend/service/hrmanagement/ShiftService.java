@@ -43,7 +43,7 @@ public class ShiftService {
      */
     public Shift findById(Long id) {
         return shiftRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Shift not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy ca làm việc với id: " + id));
     }
 
     /**
@@ -92,7 +92,7 @@ public class ShiftService {
      */
     private void validateShift(Shift shift) {
         if (shift.getStartTime() == null || shift.getEndTime() == null) {
-            throw new IllegalArgumentException("Start and end times are required");
+            throw new IllegalArgumentException("Thời gian bắt đầu và kết thúc là bắt buộc");
         }
         
         if (shift.getStartTime().isAfter(shift.getEndTime()) || shift.getStartTime().equals(shift.getEndTime())) {
@@ -104,7 +104,7 @@ public class ShiftService {
         }
         
         if (shift.getName().length() > 100) {
-            throw new IllegalArgumentException("Shift name cannot exceed 100 characters");
+            throw new IllegalArgumentException("Tên ca làm việc không được vượt quá 100 ký tự");
         }
         
         // Check for minimum 1 hour duration
@@ -115,7 +115,7 @@ public class ShiftService {
         
         // Check for maximum 12 hour duration
         if (minutes > 12 * 60) {
-            throw new IllegalArgumentException("Shift duration cannot exceed 12 hours");
+            throw new IllegalArgumentException("Thời lượng ca làm việc không được vượt quá 12 giờ");
         }
     }
 

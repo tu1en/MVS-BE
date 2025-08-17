@@ -119,7 +119,7 @@ public class FirebaseClassroomConfig {
                     log.info("Using default Firebase app as fallback");
                 } catch (IllegalStateException e) {
                     log.error("No Firebase apps available. Firebase features will be disabled.");
-                    throw new RuntimeException("No Firebase apps available", e);
+                    throw new RuntimeException("Không có ứng dụng Firebase nào khả dụng", e);
                 }
             }
             
@@ -128,7 +128,7 @@ public class FirebaseClassroomConfig {
             return database;
         } catch (Exception e) {
             log.error("Failed to create Firebase Database bean for Classroom Management: {}", e.getMessage());
-            throw new RuntimeException("Failed to create Firebase Database bean", e);
+            throw new RuntimeException("Không thể tạo Firebase Database bean", e);
         }
     }
 

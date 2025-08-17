@@ -77,7 +77,7 @@ public class FirebaseConfig {
             // Ensure FirebaseApp is initialized first
             if (FirebaseApp.getApps().isEmpty()) {
                 logger.warn("No Firebase apps found. FirebaseMessaging bean creation skipped.");
-                throw new IllegalStateException("FirebaseApp has not been initialized. Please check your Firebase configuration file and bucket name configuration.");
+                throw new IllegalStateException("FirebaseApp chưa được khởi tạo. Vui lòng kiểm tra file cấu hình Firebase và cấu hình tên bucket.");
             }
             
             // Try to get the classroom-management app
@@ -113,7 +113,7 @@ public class FirebaseConfig {
             // Ensure FirebaseApp is initialized first
             if (FirebaseApp.getApps().isEmpty()) {
                 logger.warn("No Firebase apps found. FirebaseDatabase bean creation skipped.");
-                throw new IllegalStateException("FirebaseApp has not been initialized. Please check your Firebase configuration file and bucket name configuration.");
+                throw new IllegalStateException("FirebaseApp chưa được khởi tạo. Vui lòng kiểm tra file cấu hình Firebase và cấu hình tên bucket.");
             }
             
             // Try to get the classroom-management app

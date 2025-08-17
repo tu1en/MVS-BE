@@ -35,16 +35,16 @@ public class ShiftTemplateServiceImpl implements ShiftTemplateService {
         
         validateTemplate(template);
         
-        // Kiá»ƒm tra template code Ä‘Ã£ tá»“n táº¡i
+        // Kiểm tra template code đã tồn tại
         if (shiftTemplateRepository.existsByTemplateCode(template.getTemplateCode())) {
-            throw new BusinessLogicException("MÃ£ template Ä‘Ã£ tá»“n táº¡i: " + template.getTemplateCode());
+            throw new BusinessLogicException("Mã template đã tồn tại: " + template.getTemplateCode());
         }
         
-        // Kiá»ƒm tra xung Ä‘á»™t thá»i gian
+        // Kiểm tra xung đột thời gian
         List<ShiftTemplate> conflicts = findConflictingTemplates(
             template.getStartTime(), template.getEndTime(), null);
         if (!conflicts.isEmpty()) {
-            log.warn("PhÃ¡t hiá»‡n xung Ä‘á»™t thá»i gian vá»›i {} templates khÃ¡c", conflicts.size());
+            log.warn("Phát hiện xung đột thời gian với {} templates khác", conflicts.size());
         }
         
         // Set default values
@@ -53,31 +53,31 @@ public class ShiftTemplateServiceImpl implements ShiftTemplateService {
         }
         
         ShiftTemplate saved = shiftTemplateRepository.save(template);
-        log.info("ÄÃ£ táº¡o shift template vá»›i ID: {}", saved.getId());
+        log.info("Đã tạo shift template với ID: {}", saved.getId());
         
         return saved;
     }
 
     @Override
     public ShiftTemplate updateTemplate(Long id, ShiftTemplate template) {
-        log.info("Cáº­p nháº­t shift template ID: {}", id);
+        log.info("Cập nhật shift template ID: {}", id);
         
         ShiftTemplate existing = shiftTemplateRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("KhÃ´ng tÃ¬m tháº¥y shift template vá»›i ID: " + id));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy shift template với ID: " + id));
         
         validateTemplate(template);
         
-        // Kiá»ƒm tra template code Ä‘Ã£ tá»“n táº¡i (exclude current)
+        // Kiểm tra template code đã tồn tại (exclude current)
         if (!existing.getTemplateCode().equals(template.getTemplateCode()) &&
             shiftTemplateRepository.existsByTemplateCodeAndIdNot(template.getTemplateCode(), id)) {
-            throw new BusinessLogicException("MÃ£ template Ä‘Ã£ tá»“n táº¡i: " + template.getTemplateCode());
+            throw new BusinessLogicException("Mã template đã tồn tại: " + template.getTemplateCode());
         }
         
-        // Kiá»ƒm tra xung Ä‘á»™t thá»i gian
+        // Kiểm tra xung đột thời gian
         List<ShiftTemplate> conflicts = findConflictingTemplates(
             template.getStartTime(), template.getEndTime(), id);
         if (!conflicts.isEmpty()) {
-            log.warn("PhÃ¡t hiá»‡n xung Ä‘á»™t thá»i gian vá»›i {} templates khÃ¡c", conflicts.size());
+            log.warn("Phát hiện xung đột thời gian với {} templates khác", conflicts.size());
         }
         
         // Update fields
@@ -95,22 +95,22 @@ public class ShiftTemplateServiceImpl implements ShiftTemplateService {
         existing.setSortOrder(template.getSortOrder());
         
         ShiftTemplate updated = shiftTemplateRepository.save(existing);
-        log.info("ÄÃ£ cáº­p nháº­t shift template ID: {}", id);
+        log.info("Đã cập nhật shift template ID: {}", id);
         
         return updated;
     }
 
     @Override
     public void deleteTemplate(Long id) {
-        log.info("XÃ³a shift template ID: {}", id);
+        log.info("Xóa shift template ID: {}", id);
         
         if (!canDeleteTemplate(id)) {
-            throw new BusinessLogicException("KhÃ´ng thá»ƒ xÃ³a template Ä‘ang Ä‘Æ°á»£c sá»­ dá»¥ng");
+            throw new BusinessLogicException("Không thể xóa template đang được sử dụng");
         }
         
         // Soft delete - set inactive
         updateActiveStatus(id, false);
-        log.info("ÄÃ£ Ä‘Ã¡nh dáº¥u inactive shift template ID: {}", id);
+        log.info("Đã đánh dấu inactive shift template ID: {}", id);
     }
 
     @Override
@@ -158,11 +158,11 @@ public class ShiftTemplateServiceImpl implements ShiftTemplateService {
     @Override
     public void validateTemplate(ShiftTemplate template) {
         if (template == null) {
-            throw new BusinessLogicException("Template khÃ´ng Ä‘Æ°á»£c null");
+            throw new BusinessLogicException("Template không được null");
         }
         
         if (!template.isValidShift()) {
-            throw new BusinessLogicException("ThÃ´ng tin ca lÃ m viá»‡c khÃ´ng há»£p lá»‡");
+            throw new BusinessLogicException("Thông tin ca làm việc không hợp lệ");
         }
         
         // Validate break time
@@ -170,18 +170,18 @@ public class ShiftTemplateServiceImpl implements ShiftTemplateService {
             if (!template.getBreakStartTime().isAfter(template.getStartTime()) ||
                 !template.getBreakEndTime().isBefore(template.getEndTime()) ||
                 !template.getBreakStartTime().isBefore(template.getBreakEndTime())) {
-                throw new BusinessLogicException("Thá»i gian nghá»‰ khÃ´ng há»£p lá»‡");
+                throw new BusinessLogicException("Thời gian nghỉ không hợp lệ");
             }
         }
         
         // Validate total hours
         if (template.getTotalHours() == null || template.getTotalHours().compareTo(java.math.BigDecimal.ZERO) <= 0) {
-            throw new BusinessLogicException("Tá»•ng sá»‘ giá» pháº£i lá»›n hÆ¡n 0");
+            throw new BusinessLogicException("Tổng số giờ phải lớn hơn 0");
         }
         
         // Validate template code format
         if (template.getTemplateCode() == null || !template.getTemplateCode().matches("^[A-Z]{2,10}$")) {
-            throw new BusinessLogicException("MÃ£ template pháº£i lÃ  chá»¯ hoa, 2-10 kÃ½ tá»±");
+            throw new BusinessLogicException("Mã template phải là chữ hoa, 2-10 ký tự");
         }
     }
 
@@ -208,18 +208,18 @@ public class ShiftTemplateServiceImpl implements ShiftTemplateService {
     public void updateActiveStatus(Long id, Boolean isActive) {
         int updated = shiftTemplateRepository.updateActiveStatus(id, isActive);
         if (updated == 0) {
-            throw new ResourceNotFoundException("KhÃ´ng tÃ¬m tháº¥y shift template vá»›i ID: " + id);
+            throw new ResourceNotFoundException("Không tìm thấy shift template với ID: " + id);
         }
-        log.info("ÄÃ£ cáº­p nháº­t tráº¡ng thÃ¡i active = {} cho template ID: {}", isActive, id);
+        log.info("Đã cập nhật trạng thái active = {} cho template ID: {}", isActive, id);
     }
 
     @Override
     public void updateSortOrder(Long id, Integer sortOrder) {
         int updated = shiftTemplateRepository.updateSortOrder(id, sortOrder);
         if (updated == 0) {
-            throw new ResourceNotFoundException("KhÃ´ng tÃ¬m tháº¥y shift template vá»›i ID: " + id);
+            throw new ResourceNotFoundException("Không tìm thấy shift template với ID: " + id);
         }
-        log.info("ÄÃ£ cáº­p nháº­t sort order = {} cho template ID: {}", sortOrder, id);
+        log.info("Đã cập nhật sort order = {} cho template ID: {}", sortOrder, id);
     }
 
     @Override
@@ -257,24 +257,24 @@ public class ShiftTemplateServiceImpl implements ShiftTemplateService {
         }
         
         shiftTemplateRepository.saveAll(templates);
-        log.info("ÄÃ£ bulk update {} templates", templates.size());
+        log.info("Đã bulk update {} templates", templates.size());
     }
 
     @Override
     @Transactional(readOnly = true)
     public byte[] exportTemplates(String format) {
         // TODO: Implement export functionality
-        throw new BusinessLogicException("Export functionality chÆ°a Ä‘Æ°á»£c implement");
+        throw new BusinessLogicException("Export functionality chưa được implement");
     }
 
     @Override
     public List<ShiftTemplate> importTemplates(byte[] fileData, String format) {
         // TODO: Implement import functionality
-        throw new BusinessLogicException("Import functionality chÆ°a Ä‘Æ°á»£c implement");
+        throw new BusinessLogicException("Import functionality chưa được implement");
     }
 
     /**
-     * Láº¥y sort order tiáº¿p theo
+     * Lấy sort order tiếp theo
      */
     private Integer getNextSortOrder() {
         List<ShiftTemplate> templates = shiftTemplateRepository.findByIsActiveTrueOrderBySortOrderAsc();

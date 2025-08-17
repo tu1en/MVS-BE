@@ -208,7 +208,7 @@ public class SystemRole {
         if (canBeModified()) {
             this.isActive = false;
         } else {
-            throw new IllegalStateException("KhÃ´ng thá»ƒ vÃ´ hiá»‡u hÃ³a role há»‡ thá»‘ng");
+            throw new IllegalStateException("Không thể vô hiệu hóa role hệ thống");
         }
     }
     

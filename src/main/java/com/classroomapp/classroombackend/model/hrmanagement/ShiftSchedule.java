@@ -148,14 +148,14 @@ public class ShiftSchedule {
     }
 
     /**
-     * Kiá»ƒm tra xem cÃ³ thá»ƒ chá»‰nh sá»­a lá»‹ch khÃ´ng
+     * Kiểm tra xem có thể chỉnh sửa lịch không
      */
     public boolean isEditable() {
         return status == ScheduleStatus.DRAFT;
     }
 
     /**
-     * Kiá»ƒm tra xem cÃ³ thá»ƒ xuáº¥t báº£n lá»‹ch khÃ´ng
+     * Kiểm tra xem có thể xuất bản lịch không
      */
     public boolean canPublish() {
         return status == ScheduleStatus.DRAFT && 
@@ -164,11 +164,11 @@ public class ShiftSchedule {
     }
 
     /**
-     * Xuáº¥t báº£n lá»‹ch
+     * Xuất bản lịch
      */
     public void publish(User publisher) {
         if (!canPublish()) {
-            throw new IllegalStateException("KhÃ´ng thá»ƒ xuáº¥t báº£n lá»‹ch trong tráº¡ng thÃ¡i hiá»‡n táº¡i");
+            throw new IllegalStateException("Không thể xuất bản lịch trong trạng thái hiện tại");
         }
         this.status = ScheduleStatus.PUBLISHED;
         this.publishedBy = publisher;
@@ -176,28 +176,28 @@ public class ShiftSchedule {
     }
 
     /**
-     * LÆ°u trá»¯ lá»‹ch
+     * Lưu trữ lịch
      */
     public void archive() {
         if (status != ScheduleStatus.PUBLISHED) {
-            throw new IllegalStateException("Chá»‰ cÃ³ thá»ƒ lÆ°u trá»¯ lá»‹ch Ä‘Ã£ xuáº¥t báº£n");
+            throw new IllegalStateException("Chỉ có thể lưu trữ lịch đã xuất bản");
         }
         this.status = ScheduleStatus.ARCHIVED;
         this.archivedAt = LocalDateTime.now();
     }
 
     /**
-     * Há»§y lá»‹ch
+     * Hủy lịch
      */
     public void cancel() {
         if (status == ScheduleStatus.ARCHIVED) {
-            throw new IllegalStateException("KhÃ´ng thá»ƒ há»§y lá»‹ch Ä‘Ã£ lÆ°u trá»¯");
+            throw new IllegalStateException("Không thể hủy lịch đã lưu trữ");
         }
         this.status = ScheduleStatus.CANCELLED;
     }
 
     /**
-     * Cáº­p nháº­t sá»‘ lÆ°á»£ng phÃ¢n cÃ´ng
+     * Cập nhật số lượng phân công
      */
     public void updateAssignmentCount() {
         if (assignments != null) {
@@ -206,17 +206,17 @@ public class ShiftSchedule {
     }
 
     /**
-     * Láº¥y thÃ´ng tin hiá»ƒn thá»‹ thá»i gian
+     * Lấy thông tin hiển thị thời gian
      */
     public String getDateRangeDisplay() {
         if (startDate == null || endDate == null) {
-            return "ChÆ°a xÃ¡c Ä‘á»‹nh";
+            return "Chưa xác định";
         }
-        return String.format("%s Ä‘áº¿n %s", startDate.toString(), endDate.toString());
+        return String.format("%s đến %s", startDate.toString(), endDate.toString());
     }
 
     /**
-     * Láº¥y mÃ u hiá»ƒn thá»‹ theo tráº¡ng thÃ¡i
+     * Lấy màu hiển thị theo trạng thái
      */
     public String getStatusColor() {
         switch (status) {
@@ -232,12 +232,12 @@ public class ShiftSchedule {
     @PreUpdate
     private void validateEntity() {
         if (!isValidSchedule()) {
-            throw new IllegalStateException("ThÃ´ng tin lá»‹ch lÃ m viá»‡c khÃ´ng há»£p lá»‡");
+            throw new IllegalStateException("Thông tin lịch làm việc không hợp lệ");
         }
         
         // Auto-generate schedule name if not provided
         if (scheduleName == null || scheduleName.trim().isEmpty()) {
-            scheduleName = String.format("Lá»‹ch %s - %s", 
+            scheduleName = String.format("Lịch %s - %s", 
                                        scheduleType.getDisplayName(), 
                                        getDateRangeDisplay());
         }

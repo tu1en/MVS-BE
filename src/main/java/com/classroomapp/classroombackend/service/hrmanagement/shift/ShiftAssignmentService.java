@@ -11,67 +11,67 @@ import java.util.Optional;
 
 /**
  * Service interface cho Shift Assignment management
- * Cung cáº¥p business logic cho quáº£n lÃ½ phÃ¢n cÃ´ng ca lÃ m viá»‡c
+ * Cung cấp business logic cho quản lý phân công ca làm việc
  */
 public interface ShiftAssignmentService {
 
     /**
-     * Táº¡o assignment má»›i
+     * Tạo assignment mới
      */
     ShiftAssignment createAssignment(ShiftAssignment assignment);
 
     /**
-     * Táº¡o multiple assignments (bulk)
+     * Tạo multiple assignments (bulk)
      */
     List<ShiftAssignment> createBulkAssignments(List<ShiftAssignment> assignments);
 
     /**
-     * Cáº­p nháº­t assignment
+     * Cập nhật assignment
      */
     ShiftAssignment updateAssignment(Long id, ShiftAssignment assignment);
 
     /**
-     * XÃ³a assignment
+     * Xóa assignment
      */
     void deleteAssignment(Long id);
 
     /**
-     * Há»§y assignment
+     * Hủy assignment
      */
     void cancelAssignment(Long id, String reason);
 
     /**
-     * TÃ¬m assignment theo ID
+     * Tìm assignment theo ID
      */
     Optional<ShiftAssignment> findById(Long id);
 
     /**
-     * TÃ¬m assignments theo employee vÃ  ngÃ y
+     * Tìm assignments theo employee và ngày
      */
     List<ShiftAssignment> findByEmployeeAndDate(Long assignedUserId, LocalDate date);
 
     /**
-     * TÃ¬m assignments theo employee trong khoáº£ng thá»i gian
+     * Tìm assignments theo employee trong khoảng thời gian
      */
     List<ShiftAssignment> findByEmployeeAndDateRange(Long assignedUserId, LocalDate startDate, LocalDate endDate);
 
     /**
-     * TÃ¬m assignments theo ngÃ y
+     * Tìm assignments theo ngày
      */
     List<ShiftAssignment> findByDate(LocalDate date);
 
     /**
-     * TÃ¬m assignments theo tuáº§n
+     * Tìm assignments theo tuần
      */
     List<ShiftAssignment> findByWeek(LocalDate weekStart, Long assignedUserId);
 
     /**
-     * TÃ¬m assignments theo thÃ¡ng
+     * Tìm assignments theo tháng
      */
     List<ShiftAssignment> findByMonth(int year, int month, Long assignedUserId);
 
     /**
-     * Search assignments vá»›i filters
+     * Search assignments với filters
      */
     Page<ShiftAssignment> searchAssignments(Long assignedUserId, LocalDate startDate, LocalDate endDate,
                                            ShiftAssignment.AssignmentStatus status,
@@ -89,58 +89,58 @@ public interface ShiftAssignmentService {
     ShiftAssignment checkOut(Long assignmentId, String location);
 
     /**
-     * TÃ¬m assignments cáº§n check-in
+     * Tìm assignments cần check-in
      */
     List<ShiftAssignment> findPendingCheckIns();
 
     /**
-     * TÃ¬m assignments cáº§n check-out
+     * Tìm assignments cần check-out
      */
     List<ShiftAssignment> findPendingCheckOuts();
 
     /**
-     * Validate assignment trÆ°á»›c khi táº¡o
+     * Validate assignment trước khi tạo
      */
     void validateAssignment(ShiftAssignment assignment);
 
     /**
-     * Kiá»ƒm tra xung Ä‘á»™t cho assignment
+     * Kiểm tra xung đột cho assignment
      */
     ShiftConflictDetectionService.ConflictCheckResult checkConflicts(ShiftAssignment assignment);
 
     /**
-     * TÃ­nh tá»•ng giá» lÃ m viá»‡c cá»§a employee
+     * Tính tổng giờ làm việc của employee
      */
     WorkingHoursSummary calculateWorkingHours(Long assignedUserId, LocalDate startDate, LocalDate endDate);
 
     /**
-     * Láº¥y assignments cÃ³ overtime
+     * Lấy assignments có overtime
      */
     List<ShiftAssignment> findOvertimeAssignments(LocalDate startDate, LocalDate endDate);
 
     /**
-     * Láº¥y assignments cÃ³ váº¥n Ä‘á» attendance
+     * Lấy assignments có vấn đề attendance
      */
     List<ShiftAssignment> findAttendanceIssues(LocalDate startDate, LocalDate endDate);
 
     /**
-     * TÃ¬m assignments cÃ³ thá»ƒ swap
+     * Tìm assignments có thể swap
      */
     List<ShiftAssignment> findSwappableAssignments(Long assignedUserId, LocalDate date, Long shiftTemplateId);
 
     /**
-     * Auto-assign shifts cho employees dá»±a trÃªn availability
+     * Auto-assign shifts cho employees dựa trên availability
      */
     List<ShiftAssignment> autoAssignShifts(List<Long> assignedUserIds, LocalDate startDate, LocalDate endDate);
 
     /**
-     * Copy assignments tá»« tuáº§n/thÃ¡ng khÃ¡c
+     * Copy assignments từ tuần/tháng khác
      */
     List<ShiftAssignment> copyAssignments(LocalDate sourceStart, LocalDate sourceEnd, 
                                          LocalDate targetStart, List<Long> assignedUserIds);
 
     /**
-     * Láº¥y thá»‘ng kÃª assignments
+     * Lấy thống kê assignments
      */
     AssignmentStatistics getAssignmentStatistics(LocalDate startDate, LocalDate endDate);
 
@@ -150,7 +150,7 @@ public interface ShiftAssignmentService {
     byte[] exportAssignments(LocalDate startDate, LocalDate endDate, String format);
 
     /**
-     * Gá»­i reminder notifications
+     * Gửi reminder notifications
      */
     void sendShiftReminders(LocalDate date);
 
@@ -160,7 +160,7 @@ public interface ShiftAssignmentService {
     void updateAssignmentStatus(Long id, ShiftAssignment.AssignmentStatus status);
 
     /**
-     * TÃ¬m assignments cá»§a employee trong tuáº§n hiá»‡n táº¡i
+     * Tìm assignments của employee trong tuần hiện tại
      */
     List<ShiftAssignment> findCurrentWeekAssignments(Long assignedUserId);
 

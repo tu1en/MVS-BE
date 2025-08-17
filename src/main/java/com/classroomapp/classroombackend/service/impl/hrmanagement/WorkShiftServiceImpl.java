@@ -36,12 +36,12 @@ public class WorkShiftServiceImpl implements WorkShiftService {
         
         // Validate input
         if (!validateShiftData(createDto)) {
-            throw new IllegalArgumentException("Dá»¯ liá»‡u ca lÃ m viá»‡c khÃ´ng há»£p lá»‡");
+            throw new IllegalArgumentException("Dữ liệu ca làm việc không hợp lệ");
         }
         
         // Check if name already exists
         if (!isShiftNameAvailable(createDto.getName(), null)) {
-            throw new IllegalArgumentException("TÃªn ca lÃ m viá»‡c Ä‘Ã£ tá»“n táº¡i: " + createDto.getName());
+            throw new IllegalArgumentException("Tên ca làm việc đã tồn tại: " + createDto.getName());
         }
         
         // Create new shift
@@ -65,16 +65,16 @@ public class WorkShiftServiceImpl implements WorkShiftService {
         log.info("Updating work shift with ID: {}", id);
         
         WorkShift shift = workShiftRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("KhÃ´ng tÃ¬m tháº¥y ca lÃ m viá»‡c vá»›i ID: " + id));
+            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy ca làm việc với ID: " + id));
         
         // Validate input
         if (!validateShiftData(updateDto)) {
-            throw new IllegalArgumentException("Dá»¯ liá»‡u ca lÃ m viá»‡c khÃ´ng há»£p lá»‡");
+            throw new IllegalArgumentException("Dữ liệu ca làm việc không hợp lệ");
         }
         
         // Check if name is available (excluding current shift)
         if (!isShiftNameAvailable(updateDto.getName(), id)) {
-            throw new IllegalArgumentException("TÃªn ca lÃ m viá»‡c Ä‘Ã£ tá»“n táº¡i: " + updateDto.getName());
+            throw new IllegalArgumentException("Tên ca làm việc đã tồn tại: " + updateDto.getName());
         }
         
         // Update shift data
@@ -94,7 +94,7 @@ public class WorkShiftServiceImpl implements WorkShiftService {
     @Transactional(readOnly = true)
     public WorkShiftDto getShiftById(Long id) {
         WorkShift shift = workShiftRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("KhÃ´ng tÃ¬m tháº¥y ca lÃ m viá»‡c vá»›i ID: " + id));
+            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy ca làm việc với ID: " + id));
         
         return convertToDto(shift);
     }
@@ -127,13 +127,13 @@ public class WorkShiftServiceImpl implements WorkShiftService {
         log.info("Deleting work shift with ID: {}", id);
         
         WorkShift shift = workShiftRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("KhÃ´ng tÃ¬m tháº¥y ca lÃ m viá»‡c vá»›i ID: " + id));
+            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy ca làm việc với ID: " + id));
         
         // Check if shift has active assignments
         long assignmentCount = assignmentRepository.countByWorkShiftIdAndIsActiveTrue(id);
         if (assignmentCount > 0) {
-            throw new IllegalStateException("KhÃ´ng thá»ƒ xÃ³a ca lÃ m viá»‡c Ä‘ang Ä‘Æ°á»£c sá»­ dá»¥ng. " +
-                    "CÃ³ " + assignmentCount + " phÃ¢n cÃ´ng Ä‘ang hoáº¡t Ä‘á»™ng.");
+            throw new IllegalStateException("Không thể xóa ca làm việc đang được sử dụng. " +
+                    "Có " + assignmentCount + " phân công đang hoạt động.");
         }
         
         // Soft delete
@@ -148,7 +148,7 @@ public class WorkShiftServiceImpl implements WorkShiftService {
         log.info("Toggling shift status for ID: {} to {}", id, isActive);
         
         WorkShift shift = workShiftRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("KhÃ´ng tÃ¬m tháº¥y ca lÃ m viá»‡c vá»›i ID: " + id));
+            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy ca làm việc với ID: " + id));
         
         shift.setIsActive(isActive);
         WorkShift updatedShift = workShiftRepository.save(shift);

@@ -88,7 +88,7 @@ public class ClassService {
         
         // Check if class name already exists
         if (classRepository.existsByClassName(request.getClassName())) {
-            throw new RuntimeException("Class name already exists: " + request.getClassName());
+            throw new RuntimeException("Tên lớp đã tồn tại: " + request.getClassName());
         }
         
         // Find course template
@@ -155,7 +155,7 @@ public class ClassService {
         );
         
         if (!conflicts.isEmpty()) {
-            throw new ScheduleConflictException("Schedule conflicts detected", conflicts);
+            throw new ScheduleConflictException("Phát hiện xung đột lịch học", conflicts);
         }
         
         // Create class
@@ -317,7 +317,7 @@ public class ClassService {
                     singleSlot,
                     request.getTargetDate(), request.getTargetDate()
             );
-            if (!conflictsSlot.isEmpty()) throw new ScheduleConflictException("Schedule conflicts detected", conflictsSlot);
+            if (!conflictsSlot.isEmpty()) throw new ScheduleConflictException("Phát hiện xung đột lịch học", conflictsSlot);
 
             // Auto-assign room nếu bật, lấy phòng trống theo đúng 1 ngày
             Room assignedRoom = entity.getRoom();
@@ -399,7 +399,7 @@ public class ClassService {
                         st.toString(), en.toString(), d.getDayOfWeek().name().toLowerCase());
                 List<ScheduleConflict> cfs = scheduleConflictService.checkScheduleConflicts(entity.getId(), null,
                         entity.getTeacher() != null ? entity.getTeacher().getId() : null, one, d, d);
-                if (!cfs.isEmpty()) throw new ScheduleConflictException("Schedule conflicts detected", cfs);
+                if (!cfs.isEmpty()) throw new ScheduleConflictException("Phát hiện xung đột lịch học", cfs);
 
                 // Auto-assign room nếu cần (áp dụng cho cả lớp — phòng classEntity)
                 if (Boolean.TRUE.equals(request.getAutoAssignRoom())) {
@@ -439,7 +439,7 @@ public class ClassService {
                 request.getEndDate()
         );
         if (!conflicts.isEmpty()) {
-            throw new ScheduleConflictException("Schedule conflicts detected", conflicts);
+            throw new ScheduleConflictException("Phát hiện xung đột lịch học", conflicts);
         }
 
         // Auto-assign room nếu bật

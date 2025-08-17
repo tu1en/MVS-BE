@@ -218,7 +218,7 @@ public class TeacherEvaluationController {
     private Long getUserIdFromAuthentication(Authentication authentication) {
         if (authentication == null || !(authentication.getPrincipal() instanceof UserDetails)) {
             log.error("Authentication is null or principal is not UserDetails");
-            throw new RuntimeException("User is not authenticated or user details are not available.");
+            throw new RuntimeException("Người dùng chưa xác thực hoặc không có thông tin chi tiết người dùng.");
         }
 
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();

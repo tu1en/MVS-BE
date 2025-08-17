@@ -201,7 +201,7 @@ public class EnrollmentRequestController {
             return userService.findByUsername(username).getId();
         } catch (Exception e) {
             log.error("Error extracting user ID from authentication", e);
-            throw new RuntimeException("Could not determine user ID");
+            throw new RuntimeException("Không thể xác định ID người dùng");
         }
     }
 }

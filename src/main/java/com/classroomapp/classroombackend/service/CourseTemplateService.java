@@ -355,7 +355,7 @@ public class CourseTemplateService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy mẫu khóa học với id: " + id));
                 
         if (!Boolean.TRUE.equals(courseTemplate.getIsPublic()) || !Boolean.TRUE.equals(courseTemplate.getIsActive())) {
-            throw new RuntimeException("Course template is not available for public enrollment");
+            throw new RuntimeException("Mẫu khóa học không có sẵn để đăng ký công khai");
         }
         
         return convertToPublicDto(courseTemplate);

@@ -448,7 +448,7 @@ public class ParentController {
         
         if (!user.isPresent()) {
             log.error("User not found for username/email: {}", usernameOrEmail);
-            throw new IllegalArgumentException("User not found for token");
+            throw new IllegalArgumentException("Không tìm thấy người dùng cho token");
         }
         
         log.debug("Found user with ID: {}", user.get().getId());
@@ -460,7 +460,7 @@ public class ParentController {
             return parent.get().getId();
         } else {
             log.error("Parent not found for user ID: {}", user.get().getId());
-            throw new IllegalArgumentException("Parent not found for user");
+            throw new IllegalArgumentException("Không tìm thấy phụ huynh cho người dùng");
         }
     }
 
@@ -469,7 +469,7 @@ public class ParentController {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             return authHeader.substring(7);
         }
-        throw new IllegalArgumentException("No valid token found");
+        throw new IllegalArgumentException("Không tìm thấy token hợp lệ");
     }
 
     // DTO Classes

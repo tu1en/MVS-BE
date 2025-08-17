@@ -373,7 +373,7 @@ public class SystemConfiguration {
         if (canBeModified() && !Boolean.TRUE.equals(isRequired)) {
             this.isActive = false;
         } else {
-            throw new IllegalStateException("KhÃ´ng thá»ƒ vÃ´ hiá»‡u hÃ³a cáº¥u hÃ¬nh báº¯t buá»™c hoáº·c há»‡ thá»‘ng");
+            throw new IllegalStateException("Không thể vô hiệu hóa cấu hình bắt buộc hoặc hệ thống");
         }
     }
     

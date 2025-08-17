@@ -10,102 +10,102 @@ import java.util.Optional;
 
 /**
  * Service interface cho Shift Template management
- * Cung cáº¥p business logic cho quáº£n lÃ½ máº«u ca lÃ m viá»‡c
+ * Cung cấp business logic cho quản lý mẫu ca làm việc
  */
 public interface ShiftTemplateService {
 
     /**
-     * Táº¡o shift template má»›i
+     * Tạo shift template mới
      */
     ShiftTemplate createTemplate(ShiftTemplate template);
 
     /**
-     * Cáº­p nháº­t shift template
+     * Cập nhật shift template
      */
     ShiftTemplate updateTemplate(Long id, ShiftTemplate template);
 
     /**
-     * XÃ³a shift template (soft delete - set inactive)
+     * Xóa shift template (soft delete - set inactive)
      */
     void deleteTemplate(Long id);
 
     /**
-     * TÃ¬m template theo ID
+     * Tìm template theo ID
      */
     Optional<ShiftTemplate> findById(Long id);
 
     /**
-     * TÃ¬m template theo code
+     * Tìm template theo code
      */
     Optional<ShiftTemplate> findByCode(String templateCode);
 
     /**
-     * Láº¥y táº¥t cáº£ templates Ä‘ang hoáº¡t Ä‘á»™ng
+     * Lấy tất cả templates đang hoạt động
      */
     List<ShiftTemplate> findAllActiveTemplates();
 
     /**
-     * Search templates vá»›i pagination
+     * Search templates với pagination
      */
     Page<ShiftTemplate> searchTemplates(String search, Boolean isActive, Pageable pageable);
 
     /**
-     * TÃ¬m templates theo khoáº£ng thá»i gian
+     * Tìm templates theo khoảng thời gian
      */
     List<ShiftTemplate> findTemplatesByTimeRange(LocalTime startTime, LocalTime endTime);
 
     /**
-     * TÃ¬m templates cÃ³ thá»ƒ lÃ m tÄƒng ca
+     * Tìm templates có thể làm tăng ca
      */
     List<ShiftTemplate> findOvertimeEligibleTemplates();
 
     /**
-     * Kiá»ƒm tra xung Ä‘á»™t thá»i gian vá»›i templates khÃ¡c
+     * Kiểm tra xung đột thời gian với templates khác
      */
     List<ShiftTemplate> findConflictingTemplates(LocalTime startTime, LocalTime endTime, Long excludeId);
 
     /**
-     * Validate template trÆ°á»›c khi lÆ°u
+     * Validate template trước khi lưu
      */
     void validateTemplate(ShiftTemplate template);
 
     /**
-     * Kiá»ƒm tra xem template cÃ³ thá»ƒ xÃ³a khÃ´ng (khÃ´ng cÃ³ assignments)
+     * Kiểm tra xem template có thể xóa không (không có assignments)
      */
     boolean canDeleteTemplate(Long templateId);
 
     /**
-     * Láº¥y templates Ä‘Æ°á»£c sá»­ dá»¥ng nhiá»u nháº¥t
+     * Lấy templates được sử dụng nhiều nhất
      */
     List<ShiftTemplate> getMostUsedTemplates(int limit);
 
     /**
-     * TÃ¬m templates tÆ°Æ¡ng tá»± (cÃ¹ng thá»i gian)
+     * Tìm templates tương tự (cùng thời gian)
      */
     List<ShiftTemplate> findSimilarTemplates(LocalTime startTime, LocalTime endTime, Long excludeId);
 
     /**
-     * Cáº­p nháº­t tráº¡ng thÃ¡i active
+     * Cập nhật trạng thái active
      */
     void updateActiveStatus(Long id, Boolean isActive);
 
     /**
-     * Cáº­p nháº­t thá»© tá»± sáº¯p xáº¿p
+     * Cập nhật thứ tự sắp xếp
      */
     void updateSortOrder(Long id, Integer sortOrder);
 
     /**
-     * Láº¥y thá»‘ng kÃª templates
+     * Lấy thống kê templates
      */
     TemplateStatistics getTemplateStatistics();
 
     /**
-     * TÃ¬m templates cÃ³ break time
+     * Tìm templates có break time
      */
     List<ShiftTemplate> findTemplatesWithBreak();
 
     /**
-     * TÃ¬m templates available cho employee vÃ  ngÃ y cá»¥ thá»ƒ
+     * Tìm templates available cho employee và ngày cụ thể
      */
     List<ShiftTemplate> findAvailableTemplatesForEmployeeAndDate(Long assignedUserId, java.time.LocalDate date);
 

@@ -158,23 +158,23 @@ public class ParentLeaveNotice {
         switch (type) {
             case LATE:
                 if (arriveAt == null) {
-                    throw new IllegalStateException("LATE notice must have arriveAt time");
+                    throw new IllegalStateException("Thông báo đến muộn phải có thời gian đến");
                 }
                 if (leaveAt != null) {
-                    throw new IllegalStateException("LATE notice cannot have leaveAt time");
+                    throw new IllegalStateException("Thông báo đến muộn không thể có thời gian về");
                 }
                 break;
             case EARLY:
                 if (leaveAt == null) {
-                    throw new IllegalStateException("EARLY notice must have leaveAt time");
+                    throw new IllegalStateException("Thông báo về sớm phải có thời gian về");
                 }
                 if (arriveAt != null) {
-                    throw new IllegalStateException("EARLY notice cannot have arriveAt time");
+                    throw new IllegalStateException("Thông báo về sớm không thể có thời gian đến");
                 }
                 break;
             case FULL_DAY:
                 if (arriveAt != null || leaveAt != null) {
-                    throw new IllegalStateException("FULL_DAY notice cannot have arriveAt or leaveAt times");
+                    throw new IllegalStateException("Thông báo nghỉ cả ngày không thể có thời gian đến hoặc về");
                 }
                 break;
         }

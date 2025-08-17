@@ -86,10 +86,10 @@ public class StaffShiftAssignmentService {
     @Transactional
     public void endAssignmentEarly(Long assignmentId, LocalDate endDate) {
         StaffShiftAssignment assignment = assignmentRepository.findById(assignmentId)
-                .orElseThrow(() -> new RuntimeException("Assignment not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy phân công"));
         
         if (endDate.isBefore(assignment.getEffectiveFrom())) {
-            throw new IllegalArgumentException("End date cannot be before effective from date");
+            throw new IllegalArgumentException("Ngày kết thúc không thể trước ngày hiệu lực từ");
         }
         
         assignment.setEffectiveUntil(endDate);
@@ -109,7 +109,7 @@ public class StaffShiftAssignmentService {
      */
     private void validateAssignment(User staff, Shift shift, LocalDate effectiveFrom, LocalDate effectiveUntil) {
         if (staff == null || shift == null) {
-            throw new IllegalArgumentException("Staff and shift are required");
+            throw new IllegalArgumentException("Nhân viên và ca làm việc là bắt buộc");
         }
         
         if (effectiveFrom == null) {
@@ -124,7 +124,7 @@ public class StaffShiftAssignmentService {
         List<StaffShiftAssignment> existingAssignments = getCurrentAssignments(staff);
         for (StaffShiftAssignment existing : existingAssignments) {
             if (hasOverlap(existing, effectiveFrom, effectiveUntil)) {
-                throw new IllegalArgumentException("Staff already has a conflicting assignment");
+                throw new IllegalArgumentException("Nhân viên đã có phân công xung đột");
             }
         }
     }

@@ -93,7 +93,7 @@ public class AdminNotificationSchedulerService {
         } catch (Exception e) {
             notification.setStatus("FAILED");
             notificationRepository.save(notification);
-            throw new RuntimeException("Failed to send notification: " + e.getMessage());
+            throw new RuntimeException("Gửi thông báo thất bại: " + e.getMessage());
         }
     }
     
@@ -171,7 +171,7 @@ public class AdminNotificationSchedulerService {
                 .orElseThrow(() -> new RuntimeException("Notification not found"));
             
             if ("SENT".equals(notification.getStatus())) {
-                throw new RuntimeException("Notification has already been sent");
+                throw new RuntimeException("Thông báo đã được gửi rồi");
             }
             
             notification.setStatus("PENDING");

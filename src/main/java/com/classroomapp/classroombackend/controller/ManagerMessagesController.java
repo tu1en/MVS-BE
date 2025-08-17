@@ -160,7 +160,7 @@ public class ManagerMessagesController {
     // Helper method to extract user ID from authentication
     private Long getUserIdFromAuthentication(Authentication authentication) {
         if (authentication == null || !(authentication.getPrincipal() instanceof org.springframework.security.core.userdetails.UserDetails)) {
-            throw new RuntimeException("User is not authenticated or user details are not available.");
+            throw new RuntimeException("Người dùng chưa xác thực hoặc không có thông tin chi tiết người dùng.");
         }
 
         org.springframework.security.core.userdetails.UserDetails userDetails = 

@@ -92,7 +92,7 @@ public class JobPositionServiceImpl implements JobPositionService {
         }
         
         JobPosition entity = jobPositionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("JobPosition not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy vị trí công việc"));
         
         Long oldRecruitmentPlanId = entity.getRecruitmentPlan() != null ? entity.getRecruitmentPlan().getId() : null;
         
@@ -140,7 +140,7 @@ public class JobPositionServiceImpl implements JobPositionService {
     @Transactional
     public void deleteJobPosition(Long id) {
         JobPosition entity = jobPositionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("JobPosition not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy vị trí công việc"));
         
         Long recruitmentPlanId = entity.getRecruitmentPlan() != null ? entity.getRecruitmentPlan().getId() : null;
         
@@ -162,7 +162,7 @@ public class JobPositionServiceImpl implements JobPositionService {
     @Transactional(readOnly = true)
     public JobPositionDto getJobPosition(Long id) {
         JobPosition entity = jobPositionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("JobPosition not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy vị trí công việc"));
         JobPositionDto result = modelMapper.map(entity, JobPositionDto.class);
         if (entity.getRecruitmentPlan() != null) {
             result.setRecruitmentPlanId(entity.getRecruitmentPlan().getId());

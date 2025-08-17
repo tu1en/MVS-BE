@@ -33,7 +33,7 @@ public class CourseImportService {
         try {
             // Validate request
             if (request == null) {
-                throw new IllegalArgumentException("Import request cannot be null");
+                throw new IllegalArgumentException("Yêu cầu nhập dữ liệu không được để trống");
             }
             if (request.getFile() == null || request.getFile().isEmpty()) {
             throw new IllegalArgumentException("Cần cung cấp file Excel");

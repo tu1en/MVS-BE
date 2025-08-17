@@ -11,57 +11,57 @@ import java.util.Optional;
 
 /**
  * Service interface cho Shift Swap Request management
- * Cung cáº¥p business logic cho quáº£n lÃ½ yÃªu cáº§u Ä‘á»•i ca
+ * Cung cấp business logic cho quản lý yêu cầu đổi ca
  */
 public interface ShiftSwapService {
 
     /**
-     * Táº¡o swap request má»›i
+     * Tạo swap request mới
      */
     ShiftSwapRequest createSwapRequest(ShiftSwapRequest request);
 
     /**
-     * Cáº­p nháº­t swap request
+     * Cập nhật swap request
      */
     ShiftSwapRequest updateSwapRequest(Long id, ShiftSwapRequest request);
 
     /**
-     * Há»§y swap request
+     * Hủy swap request
      */
     void cancelSwapRequest(Long id, String reason);
 
     /**
-     * TÃ¬m swap request theo ID
+     * Tìm swap request theo ID
      */
     Optional<ShiftSwapRequest> findById(Long id);
 
     /**
-     * TÃ¬m requests theo requester
+     * Tìm requests theo requester
      */
     List<ShiftSwapRequest> findByRequester(Long requesterId);
 
     /**
-     * TÃ¬m requests theo target employee
+     * Tìm requests theo target employee
      */
     List<ShiftSwapRequest> findByTargetEmployee(Long targetUserId);
 
     /**
-     * TÃ¬m requests Ä‘ang chá» pháº£n há»“i tá»« target
+     * Tìm requests đang chờ phản hồi từ target
      */
     List<ShiftSwapRequest> findPendingRequestsForTarget(Long targetUserId);
 
     /**
-     * TÃ¬m requests Ä‘ang chá» phÃª duyá»‡t tá»« manager
+     * Tìm requests đang chờ phê duyệt từ manager
      */
     List<ShiftSwapRequest> findPendingManagerApproval();
 
     /**
-     * TÃ¬m requests kháº©n cáº¥p
+     * Tìm requests khẩn cấp
      */
     List<ShiftSwapRequest> findEmergencyRequests();
 
     /**
-     * Search requests vá»›i filters
+     * Search requests với filters
      */
     Page<ShiftSwapRequest> searchRequests(Long requesterId, Long targetUserId,
                                          ShiftSwapRequest.SwapStatus status,
@@ -70,59 +70,59 @@ public interface ShiftSwapService {
                                          Pageable pageable);
 
     /**
-     * Pháº£n há»“i tá»« target employee
+     * Phản hồi từ target employee
      */
     ShiftSwapRequest respondByTarget(Long requestId, ShiftSwapRequest.TargetResponse response, 
                                     String reason, User targetEmployee);
 
     /**
-     * PhÃª duyá»‡t tá»« manager
+     * Phê duyệt từ manager
      */
     ShiftSwapRequest approveByManager(Long requestId, ShiftSwapRequest.ManagerResponse response,
                                      String reason, User manager);
 
     /**
-     * Validate swap request trÆ°á»›c khi táº¡o
+     * Validate swap request trước khi tạo
      */
     void validateSwapRequest(ShiftSwapRequest request);
 
     /**
-     * Kiá»ƒm tra xung Ä‘á»™t cho swap request
+     * Kiểm tra xung đột cho swap request
      */
     ShiftConflictDetectionService.ConflictCheckResult checkSwapConflicts(ShiftSwapRequest request);
 
     /**
-     * Thá»±c hiá»‡n swap assignments sau khi Ä‘Æ°á»£c phÃª duyá»‡t
+     * Thực hiện swap assignments sau khi được phê duyệt
      */
     void executeSwap(Long requestId);
 
     /**
-     * TÃ¬m requests Ä‘Ã£ háº¿t háº¡n
+     * Tìm requests đã hết hạn
      */
     List<ShiftSwapRequest> findExpiredRequests();
 
     /**
-     * ÄÃ¡nh dáº¥u requests háº¿t háº¡n
+     * Đánh dấu requests hết hạn
      */
     int markExpiredRequests();
 
     /**
-     * TÃ¬m requests cáº§n notification (sáº¯p háº¿t háº¡n)
+     * Tìm requests cần notification (sắp hết hạn)
      */
     List<ShiftSwapRequest> findRequestsNeedingNotification(int hoursBeforeExpiry);
 
     /**
-     * Gá»­i notifications cho swap requests
+     * Gửi notifications cho swap requests
      */
     void sendSwapNotifications(ShiftSwapRequest request, NotificationType type);
 
     /**
-     * Láº¥y thá»‘ng kÃª swap requests
+     * Lấy thống kê swap requests
      */
     SwapStatistics getSwapStatistics(LocalDateTime startTime, LocalDateTime endTime);
 
     /**
-     * TÃ¬m top requesters
+     * Tìm top requesters
      */
     List<Object[]> findTopRequesters(LocalDateTime startTime, LocalDateTime endTime, int limit);
 
@@ -157,13 +157,13 @@ public interface ShiftSwapService {
      * Enum cho notification types
      */
     enum NotificationType {
-        REQUEST_CREATED("YÃªu cáº§u Ä‘á»•i ca má»›i"),
-        REQUEST_ACCEPTED("YÃªu cáº§u Ä‘Æ°á»£c cháº¥p nháº­n"),
-        REQUEST_REJECTED("YÃªu cáº§u bá»‹ tá»« chá»‘i"),
-        REQUEST_APPROVED("YÃªu cáº§u Ä‘Æ°á»£c phÃª duyá»‡t"),
-        REQUEST_CANCELLED("YÃªu cáº§u bá»‹ há»§y"),
-        REQUEST_EXPIRING("YÃªu cáº§u sáº¯p háº¿t háº¡n"),
-        REQUEST_EXPIRED("YÃªu cáº§u Ä‘Ã£ háº¿t háº¡n");
+        REQUEST_CREATED("Yêu cầu đổi ca mới"),
+        REQUEST_ACCEPTED("Yêu cầu được chấp nhận"),
+        REQUEST_REJECTED("Yêu cầu bị từ chối"),
+        REQUEST_APPROVED("Yêu cầu được phê duyệt"),
+        REQUEST_CANCELLED("Yêu cầu bị hủy"),
+        REQUEST_EXPIRING("Yêu cầu sắp hết hạn"),
+        REQUEST_EXPIRED("Yêu cầu đã hết hạn");
 
         private final String displayName;
 

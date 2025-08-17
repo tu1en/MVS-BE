@@ -400,16 +400,16 @@ public class ExplanationAttachmentController {
     
     private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("File is empty");
+            throw new IllegalArgumentException("File trống");
         }
         
         if (file.getSize() > MAX_FILE_SIZE) {
-            throw new IllegalArgumentException("File too large. Maximum size: " + (MAX_FILE_SIZE / (1024 * 1024)) + "MB");
+            throw new IllegalArgumentException("File quá lớn. Kích thước tối đa: " + (MAX_FILE_SIZE / (1024 * 1024)) + "MB");
         }
         
         String filename = file.getOriginalFilename();
         if (filename == null) {
-            throw new IllegalArgumentException("Filename is required");
+            throw new IllegalArgumentException("Tên file là bắt buộc");
         }
         
         String extension = getFileExtension(filename).toLowerCase();
@@ -422,7 +422,7 @@ public class ExplanationAttachmentController {
         }
         
         if (!allowed) {
-            throw new IllegalArgumentException("File type not allowed: " + extension);
+            throw new IllegalArgumentException("Loại file không được phép: " + extension);
         }
     }
     

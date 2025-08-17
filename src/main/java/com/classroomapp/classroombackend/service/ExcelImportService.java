@@ -427,7 +427,7 @@ public class ExcelImportService {
         List<LessonData> lessons = parseExcelFile(file);
         
         if (lessons.isEmpty()) {
-            throw new RuntimeException("No valid lessons found in Excel file");
+            throw new RuntimeException("Không tìm thấy bài học hợp lệ nào trong file Excel");
         }
         
         // Create course template

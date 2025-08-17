@@ -27,8 +27,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Service cho Push Notifications cá»§a Shift Management
- * Gá»­i notifications cho shift assignments, swap requests, schedule changes
+ * Service cho Push Notifications của Shift Management
+ * Gửi notifications cho shift assignments, swap requests, schedule changes
  */
 @Service
 @RequiredArgsConstructor
@@ -41,17 +41,17 @@ public class ShiftNotificationService {
 
     // Notification types
     public enum NotificationType {
-        SHIFT_ASSIGNED("shift_assigned", "Ca lÃ m viá»‡c má»›i", "ðŸ•"),
-        SHIFT_UPDATED("shift_updated", "Ca lÃ m viá»‡c cáº­p nháº­t", "ðŸ“"),
-        SHIFT_CANCELLED("shift_cancelled", "Ca lÃ m viá»‡c bá»‹ há»§y", "âŒ"),
-        SHIFT_REMINDER("shift_reminder", "Nháº¯c nhá»Ÿ ca lÃ m viá»‡c", "â°"),
-        CHECK_IN_REMINDER("check_in_reminder", "Nháº¯c nhá»Ÿ check-in", "ðŸ“"),
-        CHECK_OUT_REMINDER("check_out_reminder", "Nháº¯c nhá»Ÿ check-out", "ðŸ"),
-        SWAP_REQUEST_RECEIVED("swap_request_received", "YÃªu cáº§u Ä‘á»•i ca", "ðŸ”„"),
-        SWAP_REQUEST_APPROVED("swap_request_approved", "Äá»•i ca Ä‘Æ°á»£c phÃª duyá»‡t", "âœ…"),
-        SWAP_REQUEST_REJECTED("swap_request_rejected", "Äá»•i ca bá»‹ tá»« chá»‘i", "âŒ"),
-        SCHEDULE_PUBLISHED("schedule_published", "Lá»‹ch lÃ m viá»‡c má»›i", "ðŸ“…"),
-        SCHEDULE_UPDATED("schedule_updated", "Lá»‹ch lÃ m viá»‡c cáº­p nháº­t", "ðŸ“");
+        SHIFT_ASSIGNED("shift_assigned", "Ca làm việc mới", "🕐"),
+        SHIFT_UPDATED("shift_updated", "Ca làm việc cập nhật", "📝"),
+        SHIFT_CANCELLED("shift_cancelled", "Ca làm việc bị hủy", "❌"),
+        SHIFT_REMINDER("shift_reminder", "Nhắc nhở ca làm việc", "⏰"),
+        CHECK_IN_REMINDER("check_in_reminder", "Nhắc nhở check-in", "📍"),
+        CHECK_OUT_REMINDER("check_out_reminder", "Nhắc nhở check-out", "🏁"),
+        SWAP_REQUEST_RECEIVED("swap_request_received", "Yêu cầu đổi ca", "🔄"),
+        SWAP_REQUEST_APPROVED("swap_request_approved", "Đổi ca được phê duyệt", "✅"),
+        SWAP_REQUEST_REJECTED("swap_request_rejected", "Đổi ca bị từ chối", "❌"),
+        SCHEDULE_PUBLISHED("schedule_published", "Lịch làm việc mới", "📅"),
+        SCHEDULE_UPDATED("schedule_updated", "Lịch làm việc cập nhật", "📝");
 
         private final String code;
         private final String title;
@@ -69,13 +69,13 @@ public class ShiftNotificationService {
     }
 
     /**
-     * Gá»­i notification khi cÃ³ shift assignment má»›i
+     * Gửi notification khi có shift assignment mới
      */
     public CompletableFuture<Void> sendShiftAssignedNotification(ShiftAssignment assignment) {
-        log.info("Sending shift assigned notification for assignment ID: {}", assignment.getId());
+        log.info("Đang gửi thông báo ca làm việc mới cho assignment ID: {}", assignment.getId());
 
         String title = NotificationType.SHIFT_ASSIGNED.getTitle();
-        String body = String.format("Báº¡n Ä‘Æ°á»£c phÃ¢n cÃ´ng ca %s vÃ o ngÃ y %s tá»« %s Ä‘áº¿n %s",
+        String body = String.format("Bạn được phân công ca %s vào ngày %s từ %s đến %s",
                                    assignment.getShiftTemplate().getTemplateName(),
                                    assignment.getAssignmentDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
                                    assignment.getPlannedStartTime().format(DateTimeFormatter.ofPattern("HH:mm")),
@@ -93,13 +93,13 @@ public class ShiftNotificationService {
     }
 
     /**
-     * Gá»­i notification khi shift bá»‹ cáº­p nháº­t
+     * Gửi notification khi shift bị cập nhật
      */
     public CompletableFuture<Void> sendShiftUpdatedNotification(ShiftAssignment assignment) {
-        log.info("Sending shift updated notification for assignment ID: {}", assignment.getId());
+        log.info("Đang gửi thông báo ca làm việc cập nhật cho assignment ID: {}", assignment.getId());
 
         String title = NotificationType.SHIFT_UPDATED.getTitle();
-        String body = String.format("Ca lÃ m viá»‡c %s ngÃ y %s Ä‘Ã£ Ä‘Æ°á»£c cáº­p nháº­t",
+        String body = String.format("Ca làm việc %s ngày %s đã được cập nhật",
                                    assignment.getShiftTemplate().getTemplateName(),
                                    assignment.getAssignmentDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
 
@@ -112,13 +112,13 @@ public class ShiftNotificationService {
     }
 
     /**
-     * Gá»­i notification khi shift bá»‹ há»§y
+     * Gửi notification khi shift bị hủy
      */
     public CompletableFuture<Void> sendShiftCancelledNotification(ShiftAssignment assignment, String reason) {
-        log.info("Sending shift cancelled notification for assignment ID: {}", assignment.getId());
+        log.info("Đang gửi thông báo ca làm việc bị hủy cho assignment ID: {}", assignment.getId());
 
         String title = NotificationType.SHIFT_CANCELLED.getTitle();
-        String body = String.format("Ca lÃ m viá»‡c %s ngÃ y %s Ä‘Ã£ bá»‹ há»§y. LÃ½ do: %s",
+        String body = String.format("Ca làm việc %s ngày %s đã bị hủy. Lý do: %s",
                                    assignment.getShiftTemplate().getTemplateName(),
                                    assignment.getAssignmentDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
                                    reason);
@@ -133,14 +133,14 @@ public class ShiftNotificationService {
     }
 
     /**
-     * Gá»­i reminder notification trÆ°á»›c khi ca báº¯t Ä‘áº§u
+     * Gửi reminder notification trước khi ca bắt đầu
      */
     public CompletableFuture<Void> sendShiftReminderNotification(ShiftAssignment assignment, int minutesBefore) {
-        log.info("Sending shift reminder notification for assignment ID: {} ({} minutes before)", 
+        log.info("Đang gửi thông báo nhắc nhở ca làm việc cho assignment ID: {} ({} phút trước)", 
                 assignment.getId(), minutesBefore);
 
         String title = NotificationType.SHIFT_REMINDER.getTitle();
-        String body = String.format("Ca lÃ m viá»‡c %s sáº½ báº¯t Ä‘áº§u trong %d phÃºt (lÃºc %s)",
+        String body = String.format("Ca làm việc %s sẽ bắt đầu trong %d phút (lúc %s)",
                                    assignment.getShiftTemplate().getTemplateName(),
                                    minutesBefore,
                                    assignment.getPlannedStartTime().format(DateTimeFormatter.ofPattern("HH:mm")));
@@ -155,13 +155,13 @@ public class ShiftNotificationService {
     }
 
     /**
-     * Gá»­i notification nháº¯c nhá»Ÿ check-in
+     * Gửi notification nhắc nhở check-in
      */
     public CompletableFuture<Void> sendCheckInReminderNotification(ShiftAssignment assignment) {
-        log.info("Sending check-in reminder notification for assignment ID: {}", assignment.getId());
+        log.info("Đang gửi thông báo nhắc nhở check-in cho assignment ID: {}", assignment.getId());
 
         String title = NotificationType.CHECK_IN_REMINDER.getTitle();
-        String body = String.format("ÄÃ£ Ä‘áº¿n giá» check-in cho ca %s. Vui lÃ²ng check-in ngay!",
+        String body = String.format("Đã đến giờ check-in cho ca %s. Vui lòng check-in ngay!",
                                    assignment.getShiftTemplate().getTemplateName());
 
         Map<String, String> data = new HashMap<>();
@@ -174,13 +174,13 @@ public class ShiftNotificationService {
     }
 
     /**
-     * Gá»­i notification nháº¯c nhá»Ÿ check-out
+     * Gửi notification nhắc nhở check-out
      */
     public CompletableFuture<Void> sendCheckOutReminderNotification(ShiftAssignment assignment) {
-        log.info("Sending check-out reminder notification for assignment ID: {}", assignment.getId());
+        log.info("Đang gửi thông báo nhắc nhở check-out cho assignment ID: {}", assignment.getId());
 
         String title = NotificationType.CHECK_OUT_REMINDER.getTitle();
-        String body = String.format("ÄÃ£ Ä‘áº¿n giá» check-out cho ca %s. Vui lÃ²ng check-out!",
+        String body = String.format("Đã đến giờ check-out cho ca %s. Vui lòng check-out!",
                                    assignment.getShiftTemplate().getTemplateName());
 
         Map<String, String> data = new HashMap<>();
@@ -193,13 +193,13 @@ public class ShiftNotificationService {
     }
 
     /**
-     * Gá»­i notification khi nháº­n Ä‘Æ°á»£c swap request
+     * Gửi notification khi nhận được swap request
      */
     public CompletableFuture<Void> sendSwapRequestReceivedNotification(ShiftSwapRequest swapRequest) {
-        log.info("Sending swap request received notification for request ID: {}", swapRequest.getId());
+        log.info("Đang gửi thông báo nhận yêu cầu đổi ca cho request ID: {}", swapRequest.getId());
 
         String title = NotificationType.SWAP_REQUEST_RECEIVED.getTitle();
-        String body = String.format("%s muá»‘n Ä‘á»•i ca vá»›i báº¡n. Ca %s ngÃ y %s",
+        String body = String.format("%s muốn đổi ca với bạn. Ca %s ngày %s",
                                    swapRequest.getRequester().getFullName(),
                                    swapRequest.getTargetAssignment().getShiftTemplate().getTemplateName(),
                                    swapRequest.getTargetAssignment().getAssignmentDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
@@ -216,13 +216,13 @@ public class ShiftNotificationService {
     }
 
     /**
-     * Gá»­i notification khi swap request Ä‘Æ°á»£c phÃª duyá»‡t
+     * Gửi notification khi swap request được phê duyệt
      */
     public CompletableFuture<Void> sendSwapRequestApprovedNotification(ShiftSwapRequest swapRequest) {
-        log.info("Sending swap request approved notification for request ID: {}", swapRequest.getId());
+        log.info("Đang gửi thông báo yêu cầu đổi ca được phê duyệt cho request ID: {}", swapRequest.getId());
 
         String title = NotificationType.SWAP_REQUEST_APPROVED.getTitle();
-        String body = String.format("YÃªu cáº§u Ä‘á»•i ca cá»§a báº¡n vá»›i %s Ä‘Ã£ Ä‘Æ°á»£c phÃª duyá»‡t",
+        String body = String.format("Yêu cầu đổi ca của bạn với %s đã được phê duyệt",
                                    swapRequest.getTargetEmployee().getFullName());
 
         Map<String, String> data = new HashMap<>();
@@ -230,7 +230,7 @@ public class ShiftNotificationService {
         data.put("swapRequestId", swapRequest.getId().toString());
         data.put("targetUserName", swapRequest.getTargetEmployee().getFullName());
 
-        // Gá»­i cho cáº£ requester vÃ  target employee
+        // Gửi cho cả requester và target employee
         CompletableFuture<Void> requesterNotification = sendNotificationToUser(swapRequest.getRequester(), title, body, data);
         CompletableFuture<Void> targetNotification = sendNotificationToUser(swapRequest.getTargetEmployee(), title, body, data);
 
@@ -238,13 +238,13 @@ public class ShiftNotificationService {
     }
 
     /**
-     * Gá»­i notification khi swap request bá»‹ tá»« chá»‘i
+     * Gửi notification khi swap request bị từ chối
      */
     public CompletableFuture<Void> sendSwapRequestRejectedNotification(ShiftSwapRequest swapRequest, String reason) {
-        log.info("Sending swap request rejected notification for request ID: {}", swapRequest.getId());
+        log.info("Đang gửi thông báo yêu cầu đổi ca bị từ chối cho request ID: {}", swapRequest.getId());
 
         String title = NotificationType.SWAP_REQUEST_REJECTED.getTitle();
-        String body = String.format("YÃªu cáº§u Ä‘á»•i ca cá»§a báº¡n vá»›i %s Ä‘Ã£ bá»‹ tá»« chá»‘i. LÃ½ do: %s",
+        String body = String.format("Yêu cầu đổi ca của bạn với %s đã bị từ chối. Lý do: %s",
                                    swapRequest.getTargetEmployee().getFullName(),
                                    reason);
 
@@ -258,14 +258,14 @@ public class ShiftNotificationService {
     }
 
     /**
-     * Gá»­i notification khi schedule Ä‘Æ°á»£c publish
+     * Gửi notification khi schedule được publish
      */
     public CompletableFuture<Void> sendSchedulePublishedNotification(ShiftSchedule schedule, List<User> employees) {
-        log.info("Sending schedule published notification for schedule ID: {} to {} employees", 
+        log.info("Đang gửi thông báo lịch làm việc được xuất bản cho schedule ID: {} đến {} nhân viên", 
                 schedule.getId(), employees.size());
 
         String title = NotificationType.SCHEDULE_PUBLISHED.getTitle();
-        String body = String.format("Lá»‹ch lÃ m viá»‡c '%s' tá»« %s Ä‘áº¿n %s Ä‘Ã£ Ä‘Æ°á»£c xuáº¥t báº£n",
+        String body = String.format("Lịch làm việc '%s' từ %s đến %s đã được xuất bản",
                                    schedule.getScheduleName(),
                                    schedule.getStartDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
                                    schedule.getEndDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
@@ -281,7 +281,7 @@ public class ShiftNotificationService {
     }
 
     /**
-     * Gá»­i notification Ä‘áº¿n má»™t user cá»¥ thá»ƒ
+     * Gửi notification đến một user cụ thể
      */
     private CompletableFuture<Void> sendNotificationToUser(User user, String title, String body, Map<String, String> data) {
         CompletableFuture<Void> future = new CompletableFuture<>();
@@ -291,7 +291,7 @@ public class ShiftNotificationService {
             String fcmToken = getFCMTokenForUser(user.getId());
             
             if (fcmToken == null || fcmToken.isEmpty()) {
-                log.warn("No FCM token found for user: {}", user.getId());
+                log.warn("Không tìm thấy FCM token cho user: {}", user.getId());
                 future.complete(null);
                 return future;
             }
@@ -319,7 +319,7 @@ public class ShiftNotificationService {
                 .build();
 
             firebaseMessaging.sendAsync(message).addListener(() -> {
-                log.debug("Successfully sent notification to user: {}", user.getId());
+                log.debug("Đã gửi thông báo thành công đến user: {}", user.getId());
                 
                 // Also save to Firebase for notification history
                 Map<String, Object> notificationData = new HashMap<>();
@@ -334,7 +334,7 @@ public class ShiftNotificationService {
             }, Runnable::run);
 
         } catch (Exception e) {
-            log.error("Error sending notification to user {}: {}", user.getId(), e.getMessage());
+            log.error("Lỗi khi gửi thông báo đến user {}: {}", user.getId(), e.getMessage());
             future.completeExceptionally(e);
         }
 
@@ -342,7 +342,7 @@ public class ShiftNotificationService {
     }
 
     /**
-     * Gá»­i bulk notifications Ä‘áº¿n nhiá»u users
+     * Gửi bulk notifications đến nhiều users
      */
     private CompletableFuture<Void> sendBulkNotifications(List<User> users, String title, String body, Map<String, String> data) {
         CompletableFuture<Void> future = new CompletableFuture<>();
@@ -379,12 +379,12 @@ public class ShiftNotificationService {
             MulticastMessage message = messageBuilder.build();
 
             firebaseMessaging.sendMulticastAsync(message).addListener(() -> {
-                log.debug("Successfully sent bulk notification to {} users", users.size());
+                log.debug("Đã gửi thông báo hàng loạt thành công đến {} users", users.size());
                 future.complete(null);
             }, Runnable::run);
 
         } catch (Exception e) {
-            log.error("Error sending bulk notifications: {}", e.getMessage());
+            log.error("Lỗi khi gửi thông báo hàng loạt: {}", e.getMessage());
             future.completeExceptionally(e);
         }
 
@@ -392,56 +392,56 @@ public class ShiftNotificationService {
     }
 
     /**
-     * Láº¥y FCM token cá»§a user (placeholder - cáº§n implement)
+     * Lấy FCM token của user (placeholder - cần implement)
      */
     private String getFCMTokenForUser(Long userId) {
         // TODO: Implement FCM token retrieval from user device registration
         // This could be stored in database or Redis cache
-        log.debug("Getting FCM token for user: {}", userId);
+        log.debug("Đang lấy FCM token cho user: {}", userId);
         return null; // Placeholder
     }
 
     /**
-     * Scheduled method Ä‘á»ƒ gá»­i shift reminders
+     * Scheduled method để gửi shift reminders
      */
     public void sendScheduledShiftReminders(List<ShiftAssignment> upcomingAssignments, int minutesBefore) {
-        log.info("Sending scheduled shift reminders for {} assignments", upcomingAssignments.size());
+        log.info("Đang gửi nhắc nhở ca làm việc theo lịch cho {} assignments", upcomingAssignments.size());
 
         for (ShiftAssignment assignment : upcomingAssignments) {
             try {
                 sendShiftReminderNotification(assignment, minutesBefore);
             } catch (Exception e) {
-                log.error("Error sending reminder for assignment {}: {}", assignment.getId(), e.getMessage());
+                log.error("Lỗi khi gửi nhắc nhở cho assignment {}: {}", assignment.getId(), e.getMessage());
             }
         }
     }
 
     /**
-     * Scheduled method Ä‘á»ƒ gá»­i check-in reminders
+     * Scheduled method để gửi check-in reminders
      */
     public void sendScheduledCheckInReminders(List<ShiftAssignment> pendingCheckIns) {
-        log.info("Sending scheduled check-in reminders for {} assignments", pendingCheckIns.size());
+        log.info("Đang gửi nhắc nhở check-in theo lịch cho {} assignments", pendingCheckIns.size());
 
         for (ShiftAssignment assignment : pendingCheckIns) {
             try {
                 sendCheckInReminderNotification(assignment);
             } catch (Exception e) {
-                log.error("Error sending check-in reminder for assignment {}: {}", assignment.getId(), e.getMessage());
+                log.error("Lỗi khi gửi nhắc nhở check-in cho assignment {}: {}", assignment.getId(), e.getMessage());
             }
         }
     }
 
     /**
-     * Scheduled method Ä‘á»ƒ gá»­i check-out reminders
+     * Scheduled method để gửi check-out reminders
      */
     public void sendScheduledCheckOutReminders(List<ShiftAssignment> pendingCheckOuts) {
-        log.info("Sending scheduled check-out reminders for {} assignments", pendingCheckOuts.size());
+        log.info("Đang gửi nhắc nhở check-out theo lịch cho {} assignments", pendingCheckOuts.size());
 
         for (ShiftAssignment assignment : pendingCheckOuts) {
             try {
                 sendCheckOutReminderNotification(assignment);
             } catch (Exception e) {
-                log.error("Error sending check-out reminder for assignment {}: {}", assignment.getId(), e.getMessage());
+                log.error("Lỗi khi gửi nhắc nhở check-out cho assignment {}: {}", assignment.getId(), e.getMessage());
             }
         }
     }

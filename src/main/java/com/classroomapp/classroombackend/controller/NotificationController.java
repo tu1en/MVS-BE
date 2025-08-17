@@ -322,7 +322,7 @@ public class NotificationController {
         } catch (Exception e) {
             notification.setStatus("FAILED");
             notificationRepository.save(notification);
-            throw new RuntimeException("Failed to send notification: " + e.getMessage());
+            throw new RuntimeException("Gửi thông báo thất bại: " + e.getMessage());
         }
     }
     

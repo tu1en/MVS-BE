@@ -289,7 +289,7 @@ public class TeacherParentController {
             // Mock implementation - in real system, get from UserService
             return 1L; // Replace with actual teacher ID lookup
         } catch (Exception e) {
-            throw new IllegalArgumentException("Teacher not found for token");
+            throw new IllegalArgumentException("Không tìm thấy giáo viên cho token");
         }
     }
 
@@ -298,6 +298,6 @@ public class TeacherParentController {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             return authHeader.substring(7);
         }
-        throw new IllegalArgumentException("No valid token found");
+        throw new IllegalArgumentException("Không tìm thấy token hợp lệ");
     }
 }
