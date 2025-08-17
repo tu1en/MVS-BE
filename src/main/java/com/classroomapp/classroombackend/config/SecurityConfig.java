@@ -143,8 +143,11 @@ public class SecurityConfig {
                 .requestMatchers("/api/assignments/**").authenticated()
                 .requestMatchers("/api/timetable/**").authenticated()
 
-                // Contracts - manager only
-                .requestMatchers("/api/contracts/**").hasRole("MANAGER")
+                // Contracts - granular access: Accountant + Manager can GET/POST/PUT, only Manager can DELETE
+                .requestMatchers(HttpMethod.GET, "/api/contracts/**").hasAnyRole("MANAGER", "ACCOUNTANT")
+                .requestMatchers(HttpMethod.POST, "/api/contracts/**").hasAnyRole("MANAGER", "ACCOUNTANT")
+                .requestMatchers(HttpMethod.PUT, "/api/contracts/**").hasAnyRole("MANAGER", "ACCOUNTANT")
+                .requestMatchers(HttpMethod.DELETE, "/api/contracts/**").hasRole("MANAGER")
 
                 // Role-based endpoints
                 .requestMatchers("/api/manager/requests/**").hasRole("MANAGER")

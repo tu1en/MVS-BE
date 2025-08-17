@@ -36,6 +36,9 @@ public interface ContractService {
     // Thống kê hợp đồng
     ContractStatsDto getContractStats();
     
-    // Tạo dữ liệu test hợp đồng
-    void createTestContracts();
+    // Gia hạn hợp đồng (đặt lại ngày bắt đầu và kết thúc)
+    ContractDto renewContract(Long contractId);
+
+    // Tạo hợp đồng cho tất cả giáo viên active (không trùng), gán lương theo giờ trong khoảng chỉ định
+    List<ContractDto> createContractsForActiveTeachers(Long minHourly, Long maxHourly, boolean dryRun);
 }

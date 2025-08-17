@@ -152,6 +152,19 @@ public class ContractController {
         }
     }
 
+    // Gia hạn hợp đồng
+    @PutMapping("/{id}/renew")
+    public ResponseEntity<ContractDto> renewContract(@PathVariable Long id) {
+        log.info("PUT /api/contracts/{}/renew - Renewing contract", id);
+        try {
+            ContractDto renewedContract = contractService.renewContract(id);
+            return ResponseEntity.ok(renewedContract);
+        } catch (Exception e) {
+            log.error("Error renewing contract {}: ", id, e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
     // Cập nhật trạng thái hợp đồng thủ công (để test)
     @PostMapping("/update-status")
     public ResponseEntity<String> updateContractStatuses() {
@@ -166,27 +179,20 @@ public class ContractController {
         }
     }
 
-    @PostMapping("/create-test-data")
-    public ResponseEntity<String> createTestData() {
+    // Tạo hợp đồng hàng loạt cho giáo viên đang active (không trùng), gán lương theo giờ trong khoảng
+    @PostMapping(value = "/teachers/bulk-create", produces = "application/json;charset=UTF-8")
+    public ResponseEntity<List<ContractDto>> bulkCreateTeacherContracts(
+            @RequestParam(value = "minHourly", required = false) Long minHourly,
+            @RequestParam(value = "maxHourly", required = false) Long maxHourly,
+            @RequestParam(value = "dryRun", defaultValue = "false") boolean dryRun) {
+        log.info("POST /api/contracts/teachers/bulk-create - minHourly: {}, maxHourly: {}, dryRun: {}",
+                minHourly, maxHourly, dryRun);
         try {
-            contractService.createTestContracts();
-            return ResponseEntity.ok("Test contracts created successfully");
+            List<ContractDto> created = contractService.createContractsForActiveTeachers(minHourly, maxHourly, dryRun);
+            return ResponseEntity.ok(created);
         } catch (Exception e) {
-            log.error("Error creating test contracts: ", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error creating test contracts: " + e.getMessage());
-        }
-    }
-
-    @GetMapping("/create-test-data-public")
-    public ResponseEntity<String> createTestDataPublic() {
-        try {
-            contractService.createTestContracts();
-            return ResponseEntity.ok("✅ 5 Test contracts created successfully! Refresh your frontend.");
-        } catch (Exception e) {
-            log.error("Error creating test contracts: ", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("❌ Error: " + e.getMessage());
+            log.error("Error bulk-creating teacher contracts: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }

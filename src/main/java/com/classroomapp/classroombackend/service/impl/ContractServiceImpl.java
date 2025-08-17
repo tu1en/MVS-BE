@@ -3,7 +3,7 @@ package com.classroomapp.classroombackend.service.impl;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -19,8 +19,12 @@ import com.classroomapp.classroombackend.dto.RecruitmentApplicationDto;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
 import com.classroomapp.classroombackend.model.Contract;
 import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.entity.ClassLesson;
+import com.classroomapp.classroombackend.entity.ClassEntity;
 import com.classroomapp.classroombackend.repository.ContractRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.classroomapp.classroombackend.repository.ClassLessonRepository;
+import com.classroomapp.classroombackend.repository.ClassRepository;
 import com.classroomapp.classroombackend.service.ContractService;
 import com.classroomapp.classroombackend.service.InterviewScheduleService;
 import com.classroomapp.classroombackend.service.RecruitmentApplicationService;
@@ -41,6 +45,8 @@ public class ContractServiceImpl implements ContractService {
     private final InterviewScheduleService interviewScheduleService;
     private final RecruitmentApplicationService recruitmentApplicationService;
     private final UserService userService;
+    private final ClassLessonRepository classLessonRepository;
+    private final ClassRepository classRepository;
 
     @Override
     public List<ContractDto> getContractsByType(String contractType) {
@@ -140,7 +146,7 @@ public class ContractServiceImpl implements ContractService {
         }
         
         if (hasHourly && hasGrossNet) {
-            throw new IllegalArgumentException("Không thể đồng thời có lương theo giờ và lương gross/net. Chúng loại trừ nhau");
+            throw new IllegalArgumentException("Không thể đồng thầm có lương theo giờ và lương gross/net. Chúng loại trừ nhau");
         }
         
         // If gross/net is provided, both should be provided (they go together)
@@ -155,7 +161,8 @@ public class ContractServiceImpl implements ContractService {
             contract.setSalary(contract.getGrossSalary().doubleValue());
         }
         
-        // Start date validation removed - dates no longer required for contract creation
+        // Set contract start and end dates
+        setContractDates(contract, user);
         
         Contract savedContract = contractRepository.save(contract);
         log.info("Contract created successfully with id: {}", savedContract.getId());
@@ -530,6 +537,107 @@ public class ContractServiceImpl implements ContractService {
         offerData.setHourlySalary(null);     // Không có lương theo giờ cho nhân viên
     }
     
+    /**
+     * Set contract start and end dates based on contract type and teacher's earliest lesson
+     */
+    private void setContractDates(Contract contract, User user) {
+        log.info("Setting contract dates for contract type: {}", contract.getContractType());
+        
+        LocalDate startDate = null;
+        
+        if ("TEACHER".equals(contract.getContractType())) {
+            // For teacher contracts, find earliest lesson date
+            startDate = findEarliestTeachingDate(user != null ? user.getId() : contract.getUserId());
+            log.info("Teacher contract - earliest teaching date: {}", startDate);
+        }
+        
+        // If no teaching date found or not a teacher, use current date
+        if (startDate == null) {
+            startDate = LocalDate.now();
+            log.info("Using current date as contract start date: {}", startDate);
+        }
+        
+        // Set contract start date
+        contract.setStartDate(startDate);
+        
+        // Set contract end date (90 days from start date)
+        LocalDate endDate = startDate.plusDays(90);
+        contract.setEndDate(endDate);
+        
+        log.info("Contract dates set - Start: {}, End: {}", startDate, endDate);
+    }
+    
+    /**
+     * Find the earliest teaching date for a teacher based on their lessons and classes
+     */
+    private LocalDate findEarliestTeachingDate(Long teacherId) {
+        if (teacherId == null) {
+            log.warn("Teacher ID is null, cannot find earliest teaching date");
+            return null;
+        }
+        
+        log.info("Finding earliest teaching date for teacher ID: {}", teacherId);
+        
+        // First, try to find earliest actual lesson date
+        List<ClassLesson> lessons = classLessonRepository.findByTeacherIdOrderByActualDateAsc(teacherId);
+        if (!lessons.isEmpty()) {
+            LocalDate earliestLessonDate = lessons.get(0).getActualDate();
+            if (earliestLessonDate != null) {
+                log.info("Found earliest lesson date: {} for teacher ID: {}", earliestLessonDate, teacherId);
+                return earliestLessonDate;
+            }
+        }
+        
+        // Fallback: find earliest class start date for this teacher
+        List<ClassEntity> classes = classRepository.findByTeacherIdOrderByCreatedAtDesc(teacherId);
+        LocalDate earliestClassDate = null;
+        for (ClassEntity classEntity : classes) {
+            if (classEntity.getStartDate() != null) {
+                if (earliestClassDate == null || classEntity.getStartDate().isBefore(earliestClassDate)) {
+                    earliestClassDate = classEntity.getStartDate();
+                }
+            }
+        }
+        
+        if (earliestClassDate != null) {
+            log.info("Found earliest class start date: {} for teacher ID: {}", earliestClassDate, teacherId);
+            return earliestClassDate;
+        }
+        
+        log.info("No teaching dates found for teacher ID: {}", teacherId);
+        return null;
+    }
+    
+    /**
+     * Automatically update contract status based on end date.
+     * EXPIRED: endDate < today
+     * NEAR_EXPIRY: 0 <= daysUntilEnd <= 30
+     * ACTIVE: daysUntilEnd > 30
+     */
+    private void updateContractStatusBasedOnEndDate(Contract contract) {
+        try {
+            if (contract == null) return;
+            LocalDate endDate = contract.getEndDate();
+            if (endDate == null) return;
+            LocalDate today = LocalDate.now();
+            String newStatus;
+            if (endDate.isBefore(today)) {
+                newStatus = "EXPIRED";
+            } else {
+                long days = ChronoUnit.DAYS.between(today, endDate);
+                newStatus = (days <= 30) ? "NEAR_EXPIRY" : "ACTIVE";
+            }
+            if (newStatus != null && !newStatus.equals(contract.getStatus())) {
+                contract.setStatus(newStatus);
+                // Persist the status change so subsequent reads reflect it
+                contractRepository.save(contract);
+                log.info("Auto-updated contract ID {} status to {} based on end date {}", contract.getId(), newStatus, endDate);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to auto-update contract status for ID {}: {}", contract != null ? contract.getId() : null, e.getMessage());
+        }
+    }
+    
     private String generateNextContractId() {
         // Lấy ngày hiện tại
         LocalDate today = LocalDate.now();
@@ -608,6 +716,31 @@ public class ContractServiceImpl implements ContractService {
                                   activeContracts, expiredContracts);
     }
 
+    @Override
+    public ContractDto renewContract(Long contractId) {
+        log.info("Renewing contract with id: {}", contractId);
+        
+        Contract existingContract = contractRepository.findById(contractId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hợp đồng với ID: " + contractId));
+        
+        // Set new start date to current date (renewal date)
+        LocalDate renewalDate = LocalDate.now();
+        existingContract.setStartDate(renewalDate);
+        
+        // Set new end date (90 days from renewal date)
+        LocalDate newEndDate = renewalDate.plusDays(90);
+        existingContract.setEndDate(newEndDate);
+        
+        // Reset status to ACTIVE
+        existingContract.setStatus("ACTIVE");
+        
+        Contract renewedContract = contractRepository.save(existingContract);
+        log.info("Contract renewed successfully - ID: {}, New start date: {}, New end date: {}", 
+                contractId, renewalDate, newEndDate);
+        
+        return convertToDto(renewedContract);
+    }
+
     private Contract convertToEntity(ContractDto contractDto) {
         Contract contract = new Contract();
         contract.setId(contractDto.getId());
@@ -627,7 +760,9 @@ public class ContractServiceImpl implements ContractService {
         contract.setHourlySalary(contractDto.getHourlySalary());
         
         contract.setWorkingHours(contractDto.getWorkingHours());
-        // Date field mapping removed
+        // Contract duration fields
+        contract.setStartDate(contractDto.getStartDate());
+        contract.setEndDate(contractDto.getEndDate());
         contract.setStatus(contractDto.getStatus());
         contract.setContractTerms(contractDto.getContractTerms());
         contract.setCreatedBy(contractDto.getCreatedBy());
@@ -649,10 +784,72 @@ public class ContractServiceImpl implements ContractService {
         return contract;
     }
 
+    @Override
+    public List<ContractDto> createContractsForActiveTeachers(Long minHourly, Long maxHourly, boolean dryRun) {
+        log.info("[BULK-TEACHERS] Start {} for active teachers. Range: {} - {} VND/hour", dryRun ? "DRY-RUN" : "CREATE", minHourly, maxHourly);
+        long min = (minHourly == null || minHourly <= 0) ? 300000L : minHourly;
+        long max = (maxHourly == null || maxHourly <= 0) ? 600000L : maxHourly;
+        if (max < min) { long tmp = max; max = min; min = tmp; }
+
+        List<User> teachers = userRepository.findActiveTeachers();
+        List<ContractDto> results = new java.util.ArrayList<>();
+        int skippedExisting = 0;
+
+        for (User u : teachers) {
+            if (u == null || u.getId() == null) continue;
+            // Skip if the user already has any contract
+            if (contractRepository.existsByUserId(u.getId())) { skippedExisting++; continue; }
+
+            long hourly = min + (long) (Math.random() * (max - min + 1));
+            ContractDto dto = new ContractDto();
+            dto.setUserId(u.getId());
+            dto.setFullName(u.getFullName());
+            dto.setEmail(u.getEmail());
+            dto.setPhoneNumber(u.getPhoneNumber());
+            dto.setContractType("TEACHER");
+            dto.setPosition("Teacher");
+            dto.setHourlySalary(hourly);
+            dto.setGrossSalary(null);
+            dto.setNetSalary(null);
+            dto.setStatus("ACTIVE");
+
+            if (dryRun) {
+                // Simulate contract creation without persisting
+                Contract entity = convertToEntity(dto);
+                String previewId = generateNextContractId();
+                entity.setContractId(previewId);
+                setContractDates(entity, u);
+
+                // Build preview DTO manually to avoid convertToDto (which may persist status changes)
+                ContractDto preview = new ContractDto();
+                preview.setUserId(entity.getUserId());
+                preview.setContractId(entity.getContractId());
+                preview.setFullName(entity.getFullName());
+                preview.setEmail(entity.getEmail());
+                preview.setPhoneNumber(entity.getPhoneNumber());
+                preview.setContractType(entity.getContractType());
+                preview.setPosition(entity.getPosition());
+                preview.setHourlySalary(entity.getHourlySalary());
+                preview.setStatus(entity.getStatus());
+                preview.setStartDate(entity.getStartDate());
+                preview.setEndDate(entity.getEndDate());
+                results.add(preview);
+            } else {
+                // Persist using existing validated flow
+                ContractDto created = createContract(dto);
+                results.add(created);
+            }
+        }
+
+        log.info("[BULK-TEACHERS] {} complete. Total teachers: {}, created: {}, skipped(existing): {}",
+                dryRun ? "DRY-RUN" : "CREATE", teachers.size(), results.size(), skippedExisting);
+        return results;
+    }
+
     private ContractDto convertToDto(Contract contract) {
         // Auto-update contract status based on end date before converting
         updateContractStatusBasedOnEndDate(contract);
-        
+
         ContractDto dto = new ContractDto();
         dto.setId(contract.getId());
         dto.setUserId(contract.getUserId());
@@ -690,107 +887,11 @@ public class ContractServiceImpl implements ContractService {
         dto.setWorkSchedule(contract.getWorkSchedule());
         dto.setWorkShifts(contract.getWorkShifts());
         dto.setWorkDays(contract.getWorkDays());
+        
+        // Contract duration fields
+        dto.setStartDate(contract.getStartDate());
+        dto.setEndDate(contract.getEndDate());
         return dto;
     }
-    
-    /**
-     * Auto-update contract status - simplified without end date dependency
-     * All contracts remain ACTIVE by default since date-based expiry is removed
-     */
-    private void updateContractStatusBasedOnEndDate(Contract contract) {
-        // Date-based status updates removed - contracts remain ACTIVE by default
-        // Status changes now handled manually through contract management UI
-        log.debug("Contract status auto-update disabled - manual status management only");
-    }
 
-    @Override
-    public void createTestContracts() {
-        log.info("Creating test contract data");
-        
-        // Xóa tất cả hợp đồng test cũ (nếu có)
-        contractRepository.deleteAll();
-        
-        LocalDate today = LocalDate.now();
-        
-        // 1. Hợp đồng ACTIVE (còn lâu mới hết hạn)
-        Contract contract1 = new Contract();
-        contract1.setUserId(1001L);
-        contract1.setContractId("010825"); // Contract ID mẫu
-        contract1.setFullName("Nguyễn Văn An");
-        contract1.setEmail("nguyen.van.an@example.com");
-        contract1.setPhoneNumber("0987654321");
-        contract1.setContractType("TEACHER");
-        contract1.setPosition("Giáo viên Toán");
-        contract1.setDepartment("Phòng Giáo vụ");
-        contract1.setSalary(15000000.0);
-        contract1.setWorkingHours("ca sáng (7:30-9:30)");
-        contract1.setStatus("ACTIVE");
-        contractRepository.save(contract1);
-        
-        // 2. Hợp đồng ACTIVE (sắp gần hết hạn - còn 20 ngày)
-        Contract contract2 = new Contract();
-        contract2.setUserId(1002L);
-        contract2.setContractId("020825"); // Contract ID mẫu
-        contract2.setFullName("Trần Thị Bình");
-        contract2.setEmail("tran.thi.binh@example.com");
-        contract2.setPhoneNumber("0976543210");
-        contract2.setContractType("ACCOUNTANT");
-        contract2.setPosition("Nhân viên Kế toán");
-        contract2.setDepartment("Phòng Tài chính");
-        contract2.setSalary(12000000.0);
-        contract2.setWorkingHours("ca chiều (14:30-16:30)");
-        // Date fields removed from test data
-        contract2.setStatus("ACTIVE");
-        contractRepository.save(contract2);
-        
-        // 3. Hợp đồng NEAR_EXPIRY (gần hết hạn - còn 10 ngày)
-        Contract contract3 = new Contract();
-        contract3.setUserId(1003L);
-        contract3.setContractId("030825"); // Contract ID mẫu
-        contract3.setFullName("Lê Minh Cường");
-        contract3.setEmail("le.minh.cuong@example.com");
-        contract3.setPhoneNumber("0965432109");
-        contract3.setContractType("TEACHER");
-        contract3.setPosition("Giáo viên Lý");
-        contract3.setDepartment("Phòng Giáo vụ");
-        contract3.setSalary(16000000.0);
-        contract3.setWorkingHours("ca tối (19:20-21:20)");
-        // Date fields removed from test data
-        contract3.setStatus("NEAR_EXPIRY");
-        contractRepository.save(contract3);
-        
-        // 4. Hợp đồng NEAR_EXPIRY (gần hết hạn - còn 5 ngày)
-        Contract contract4 = new Contract();
-        contract4.setUserId(1004L);
-        contract4.setContractId("040825"); // Contract ID mẫu
-        contract4.setFullName("Phạm Thị Dung");
-        contract4.setEmail("pham.thi.dung@example.com");
-        contract4.setPhoneNumber("0954321098");
-        contract4.setContractType("ACCOUNTANT");
-        contract4.setPosition("Nhân viên Hành chính");
-        contract4.setDepartment("Phòng Hành chính");
-        contract4.setSalary(11000000.0);
-        contract4.setWorkingHours("ca sáng (7:30-9:30)");
-        // Date fields removed from test data
-        contract4.setStatus("NEAR_EXPIRY");
-        contractRepository.save(contract4);
-        
-        // 5. Hợp đồng EXPIRED (đã hết hạn - hết hạn 3 ngày trước)
-        Contract contract5 = new Contract();
-        contract5.setUserId(1005L);
-        contract5.setContractId("050825"); // Contract ID mẫu
-        contract5.setFullName("Hoàng Văn Em");
-        contract5.setEmail("hoang.van.em@example.com");
-        contract5.setPhoneNumber("0943210987");
-        contract5.setContractType("TEACHER");
-        contract5.setPosition("Giáo viên Hóa");
-        contract5.setDepartment("Phòng Giáo vụ");
-        contract5.setSalary(17000000.0);
-        contract5.setWorkingHours("ca chiều (14:30-16:30)");
-        // Date fields removed from test data
-        contract5.setStatus("EXPIRED");
-        contractRepository.save(contract5);
-        
-        log.info("Created 5 test contracts successfully");
-    }
 }

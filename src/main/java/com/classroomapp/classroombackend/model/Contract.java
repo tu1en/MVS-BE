@@ -65,6 +65,12 @@ public class Contract {
     @Column(name = "working_hours", columnDefinition = "NVARCHAR(255)")
     private String workingHours;
 
+    // Contract duration fields
+    @Column(name = "start_date")
+    private LocalDate startDate; // Contract start date (earliest lesson date for teachers)
+
+    @Column(name = "end_date")
+    private LocalDate endDate; // Contract expiry date (startDate + 90 days)
 
     @Column(name = "status", nullable = false, columnDefinition = "NVARCHAR(50)")
     private String status; // "ACTIVE", "EXPIRED", "TERMINATED"

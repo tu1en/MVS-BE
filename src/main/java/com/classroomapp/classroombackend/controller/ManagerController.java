@@ -69,7 +69,7 @@ public class ManagerController {
                 put("department", currentUser.getDepartment());
                 // Include position and birthDate from contract if available
                 put("position", contract != null ? contract.getPosition() : "");
-                put("birthDate", contract != null ? contract.getBirthDate() : null);
+                put("birthDate", currentUser.getBirthDate());
             }});
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
@@ -136,7 +136,7 @@ public class ManagerController {
             }
             
             if (birthDate != null) {
-                contract.setBirthDate(birthDate);
+                currentUser.setBirthDate(birthDate);
             }
             if (profileData.get("position") instanceof String) {
                 contract.setPosition((String) profileData.get("position"));

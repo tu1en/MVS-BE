@@ -98,9 +98,9 @@ public class AccountantController {
                 // Show username as accountantId (display-only)
                 put("accountantId", currentUser.getUsername());
                 put("department", currentUser.getDepartment());
-                // Include position and birthDate from active contract if available
+                // Include position from contract if available; birthDate from user
                 put("position", contract != null ? contract.getPosition() : "");
-                put("birthDate", contract != null ? contract.getBirthDate() : null);
+                put("birthDate", currentUser.getBirthDate());
             }});
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
@@ -131,7 +131,7 @@ public class AccountantController {
             if (profileData.get("department") instanceof String) {
                 currentUser.setDepartment((String) profileData.get("department"));
             }
-            // Update birthDate and position on active contract if provided
+            // Update birthDate on user if provided
             LocalDate birthDate = null;
             if (profileData.containsKey("birthDate") && profileData.get("birthDate") instanceof String) {
                 try { birthDate = LocalDate.parse((String) profileData.get("birthDate")); } catch (Exception ignored) {}
@@ -167,7 +167,7 @@ public class AccountantController {
             }
             
             if (birthDate != null) {
-                contract.setBirthDate(birthDate);
+                currentUser.setBirthDate(birthDate);
             }
             if (profileData.get("position") instanceof String) {
                 contract.setPosition((String) profileData.get("position"));
