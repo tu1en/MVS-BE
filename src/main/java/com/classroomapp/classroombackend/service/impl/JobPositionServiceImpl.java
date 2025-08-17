@@ -2,6 +2,7 @@ package com.classroomapp.classroombackend.service.impl;
 
 import com.classroomapp.classroombackend.dto.JobPositionDto;
 import com.classroomapp.classroombackend.model.JobPosition;
+import com.classroomapp.classroombackend.model.RecruitmentPlan;
 import com.classroomapp.classroombackend.repository.JobPositionRepository;
 import com.classroomapp.classroombackend.repository.RecruitmentApplicationRepository;
 import com.classroomapp.classroombackend.service.JobPositionService;
@@ -11,6 +12,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -181,8 +183,8 @@ public class JobPositionServiceImpl implements JobPositionService {
         
         return jobPositionRepository.findAll().stream()
                 .filter(job -> job.getRecruitmentPlan() != null && 
-                              job.getRecruitmentPlan().getStatus() == com.classroomapp.classroombackend.model.RecruitmentPlan.Status.OPEN &&
-                              job.getRecruitmentPlan().getStartDate().isBefore(java.time.LocalDate.now().plusDays(1))) // Chỉ hiển thị kế hoạch đã mở và ngày bắt đầu đã đến
+                              job.getRecruitmentPlan().getStatus() == RecruitmentPlan.Status.OPEN &&
+                              job.getRecruitmentPlan().getStartDate().isBefore(LocalDate.now().plusDays(1))) // Chỉ hiển thị kế hoạch đã mở và ngày bắt đầu đã đến
                 .map(entity -> {
                     JobPositionDto dto = modelMapper.map(entity, JobPositionDto.class);
                     if (entity.getRecruitmentPlan() != null) {
@@ -199,7 +201,13 @@ public class JobPositionServiceImpl implements JobPositionService {
     @Override
     @Transactional(readOnly = true)
     public List<JobPositionDto> getAllJobPositionsWithoutFilter() {
+        // Tự động scan và đóng kế hoạch tương lai trước khi lọc
+        recruitmentPlanService.scanAndCloseFuturePlans();
+        
         return jobPositionRepository.findAll().stream()
+                .filter(job -> job.getRecruitmentPlan() != null && 
+                              job.getRecruitmentPlan().getStatus() == RecruitmentPlan.Status.OPEN &&
+                              job.getRecruitmentPlan().getStartDate().isBefore(LocalDate.now().plusDays(1))) // Chỉ hiển thị kế hoạch đã mở và ngày bắt đầu đã đến
                 .map(entity -> {
                     JobPositionDto dto = modelMapper.map(entity, JobPositionDto.class);
                     if (entity.getRecruitmentPlan() != null) {
