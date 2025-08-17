@@ -12,7 +12,7 @@ import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSe
 @Repository
 public interface AttendanceSessionRepository extends JpaRepository<AttendanceSession, Long> {
     List<AttendanceSession> findByClassroomId(Long classroomId);
-    Optional<AttendanceSession> findByLectureId(Long lectureId);
+    Optional<AttendanceSession> findTopByLectureIdOrderByCreatedAtDesc(Long lectureId);
 
     
     Optional<AttendanceSession> findByClassroomIdAndIsOpenTrue(Long classroomId);

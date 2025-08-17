@@ -347,7 +347,7 @@ public List<AttendanceResultDto> getSessionResults(Long sessionId) {
                 .map(enrollment -> enrollment.getUser())
                 .collect(Collectors.toList());
 
-        Optional<AttendanceSession> sessionOpt = attendanceSessionRepository.findByLectureId(lectureId);
+        Optional<AttendanceSession> sessionOpt = attendanceSessionRepository.findTopByLectureIdOrderByCreatedAtDesc(lectureId);
 
         if (sessionOpt.isEmpty()) {
             return studentsInClass.stream()

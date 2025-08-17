@@ -7,8 +7,8 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.classroomapp.classroombackend.model.usermanagement.Role;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.DependsOn;
@@ -53,7 +53,6 @@ import com.classroomapp.classroombackend.model.classroommanagement.ClassroomEnro
 import com.classroomapp.classroombackend.model.classroommanagement.Course;
 // Thêm import này vào đầu DataLoader.java
 import com.classroomapp.classroombackend.model.hrmanagement.EvidenceTemplate;
-import com.classroomapp.classroombackend.model.usermanagement.Role;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.AccomplishmentRepository;
 import com.classroomapp.classroombackend.repository.AnnouncementRepository;
@@ -93,7 +92,7 @@ import jakarta.persistence.PersistenceContext;
     @Order(1) // Run first since we removed DatabaseCleanupService
     @DependsOn("entityManagerFactory") // Wait for JPA to be initialized
 public class DataLoader implements CommandLineRunner {
-    private static final Logger log = LoggerFactory.getLogger(DataLoader.class);
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(DataLoader.class);
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -225,11 +224,15 @@ private EvidenceTemplateRepository evidenceTemplateRepository;
             // Comment out automatic enrollment seeding - manager sẽ thêm học viên thủ công
             // seedClassroomEnrollments();
             
-            // Seed schedules
-            seedSchedules();
-            
-            // Seed timetable events
-            seedTimetableEvents();
+                    // Seed schedules
+        log.info("============== Seeding Schedules ==============");
+        seedSchedules();
+        log.info("============== Schedule Seeding Complete ==============");
+        
+        // Seed timetable events
+        log.info("============== Seeding Timetable Events ==============");
+        seedTimetableEvents();
+        log.info("============== Timetable Events Seeding Complete ==============");
             
             // Seed role requests
             seedRequests();
@@ -954,33 +957,33 @@ seedEvidenceTemplates();
     private void seedCourses() {
         if (courseRepository.count() == 0) {
             Course math = new Course();
-            math.setName("Advanced Mathematics");
-            math.setDescription("A comprehensive study of mathematical concepts and their applications.");
+            math.setName("Toán học nâng cao");
+            math.setDescription("Nghiên cứu toàn diện về các khái niệm toán học và ứng dụng của chúng.");
             courseRepository.save(math);
 
             Course history = new Course();
-            history.setName("World History");
-            history.setDescription("A survey of major historical events from ancient civilizations to the modern era.");
+            history.setName("Lịch sử thế giới");
+            history.setDescription("Khảo sát các sự kiện lịch sử quan trọng từ các nền văn minh cổ đại đến thời hiện đại.");
             courseRepository.save(history);
 
             Course literature = new Course();
-            literature.setName("Vietnamese Literature");
-            literature.setDescription("An exploration of Vietnamese literary works throughout history.");
+            literature.setName("Ngữ văn Việt Nam");
+            literature.setDescription("Khám phá các tác phẩm văn học Việt Nam xuyên suốt lịch sử.");
             courseRepository.save(literature);
 
             Course english = new Course();
-            english.setName("Communicative English");
-            english.setDescription("Developing English communication skills for an international environment.");
+            english.setName("Tiếng Anh giao tiếp");
+            english.setDescription("Phát triển kỹ năng giao tiếp tiếng Anh cho môi trường quốc tế.");
             courseRepository.save(english);
 
             Course cs = new Course();
-            cs.setName("Computer Science");
-            cs.setDescription("Fundamental concepts of computer science and programming.");
+            cs.setName("Khoa học máy tính");
+            cs.setDescription("Các khái niệm cơ bản về khoa học máy tính và lập trình.");
             courseRepository.save(cs);
 
             Course physics = new Course();
-            physics.setName("General Physics");
-            physics.setDescription("An introduction to the fundamental principles of physics.");
+            physics.setName("Vật lý đại cương");
+            physics.setDescription("Giới thiệu về các nguyên lý cơ bản của vật lý.");
             courseRepository.save(physics);
 
             log.info("✅ Created 6 sample courses.");
@@ -1030,8 +1033,8 @@ seedEvidenceTemplates();
             // Create classrooms with specific teachers and courses
             for (int i = 0; i < Math.min(teachers.size(), courses.size()); i++) {
                 Classroom classroom = new Classroom();
-                classroom.setName("Class " + (i + 1));
-                classroom.setDescription("Classroom for " + courses.get(i).getName());
+                classroom.setName("Lớp " + (i + 1));
+                classroom.setDescription("Lớp cho môn học: " + courses.get(i).getName());
                 
                 // Ensure teacher@test.com is assigned to classroom 1
                 if (i == 0) {
@@ -1043,7 +1046,7 @@ seedEvidenceTemplates();
                 }
                 
                 classroom.setSubject(courses.get(i).getName());
-                classroom.setSection("Section " + (char)('A' + i)); // Add section: A, B, C, etc.
+                classroom.setSection("" + (char)('A' + i)); // Add section: A, B, C, etc.
                 classroom.setCourseId(courses.get(i).getId());
                 
                 Classroom savedClassroom = classroomRepository.save(classroom);
@@ -1091,28 +1094,25 @@ seedEvidenceTemplates();
     private void seedSchedules() {
         if (scheduleRepository.count() == 0) {
             List<Classroom> classrooms = classroomRepository.findAll();
-            List<User> teachers = userRepository.findByRoleId(2); // Get all teachers
+            List<User> teachers = userRepository.findByRoleId(RoleConstants.TEACHER);
+            List<Room> rooms = roomRepository.findAll();
             
-            if (classrooms.isEmpty() || teachers.isEmpty()) {
-                log.warn("❌ Cannot seed schedules: classrooms={}, teachers={}", classrooms.size(), teachers.size());
+            if (classrooms.isEmpty() || teachers.isEmpty() || rooms.isEmpty()) {
+                log.warn("❌ Cannot seed schedules: classrooms={}, teachers={}, rooms={}", 
+                    classrooms.size(), teachers.size(), rooms.size());
                 return;
             }
             
-            // Create comprehensive schedule data for all classrooms
+            log.info("🔄 Creating comprehensive schedules for {} classrooms", classrooms.size());
+            
+            // Create detailed schedules for each classroom
             for (int i = 0; i < classrooms.size(); i++) {
                 Classroom classroom = classrooms.get(i);
-                User teacher = teachers.get(i % teachers.size()); // Rotate through available teachers
+                User teacher = teachers.get(i % teachers.size());
+                Room room = rooms.get(i % rooms.size());
                 
-                // Create multiple schedules per classroom for different days
-                createScheduleForDay(classroom, teacher, 0, LocalTime.of(8, 0), LocalTime.of(9, 30), "Room 10" + (i % 5 + 1)); // Monday
-                createScheduleForDay(classroom, teacher, 2, LocalTime.of(10, 0), LocalTime.of(11, 30), "Room 10" + (i % 5 + 1)); // Wednesday  
-                createScheduleForDay(classroom, teacher, 4, LocalTime.of(14, 0), LocalTime.of(15, 30), "Room 10" + (i % 5 + 1)); // Friday
-                
-                // Add some Tuesday/Thursday schedules for variety
-                if (i % 2 == 0) {
-                    createScheduleForDay(classroom, teacher, 1, LocalTime.of(9, 0), LocalTime.of(10, 30), "Lab 20" + (i % 3 + 1)); // Tuesday
-                    createScheduleForDay(classroom, teacher, 3, LocalTime.of(15, 0), LocalTime.of(16, 30), "Lab 20" + (i % 3 + 1)); // Thursday
-                }
+                // Create weekly schedule for each classroom
+                createWeeklySchedule(classroom, teacher, room, i);
             }
             
             log.info("✅ Created comprehensive schedules for {} classrooms", classrooms.size());
@@ -1121,45 +1121,75 @@ seedEvidenceTemplates();
         }
     }
     
-    private void createScheduleForDay(Classroom classroom, User teacher, int dayOfWeek, LocalTime startTime, LocalTime endTime, String room) {
+    private void createWeeklySchedule(Classroom classroom, User teacher, Room room, int classroomIndex) {
+        // Monday - Friday schedule
+        String[] days = {"Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6"};
+        int[] dayOfWeek = {0, 1, 2, 3, 4}; // Monday = 0, Tuesday = 1, etc.
+        
+        for (int day = 0; day < days.length; day++) {
+            // Morning session: 8:00 - 9:30
+            createScheduleForDay(classroom, teacher, dayOfWeek[day], 
+                LocalTime.of(8, 0), LocalTime.of(9, 30), room.getRoomCode(), "Ca sáng");
+            
+            // Afternoon session: 14:00 - 15:30  
+            createScheduleForDay(classroom, teacher, dayOfWeek[day], 
+                LocalTime.of(14, 0), LocalTime.of(15, 30), room.getRoomCode(), "Ca chiều");
+            
+            // Evening session for some classrooms (alternate days)
+            if (classroomIndex % 2 == 0 && day % 2 == 0) {
+                createScheduleForDay(classroom, teacher, dayOfWeek[day], 
+                    LocalTime.of(18, 0), LocalTime.of(19, 30), room.getRoomCode(), "Ca tối");
+            }
+        }
+        
+        log.info("✅ Created weekly schedule for {} with teacher {} in room {}", 
+            classroom.getName(), teacher.getFullName(), room.getRoomCode());
+    }
+    
+    private void createScheduleForDay(Classroom classroom, User teacher, int dayOfWeek, LocalTime startTime, LocalTime endTime, String roomCode, String sessionType) {
         Schedule schedule = new Schedule();
         schedule.setClassroom(classroom);
         schedule.setTeacher(teacher);
         schedule.setDayOfWeek(dayOfWeek);
         schedule.setStartTime(startTime);
         schedule.setEndTime(endTime);
-        schedule.setRoom(room);
+        schedule.setRoom(roomCode);
         schedule.setSubject(classroom.getSubject());
         
         // Add materials and meeting URLs based on subject
         String subjectKey = classroom.getSubject().toLowerCase().replaceAll(" ", "-");
         schedule.setMaterialsUrl("https://drive.google.com/folder/" + subjectKey + "-materials");
-        schedule.setMeetUrl("https://meet.google.com/" + subjectKey + "-" + dayOfWeek);
+        schedule.setMeetUrl("https://meet.google.com/" + subjectKey + "-" + dayOfWeek + "-" + sessionType.toLowerCase().replaceAll(" ", ""));
+        
+        // Note: Schedule model doesn't have description field
+        // schedule.setDescription(sessionType + " - " + classroom.getSubject() + " - " + classroom.getName());
         
         scheduleRepository.save(schedule);
     }
 
     private void seedTimetableEvents() {
         if (timetableEventRepository.count() == 0) {
-            List<Classroom> classrooms = classroomRepository.findAll();
-            List<User> users = userRepository.findAll();
             List<Schedule> schedules = scheduleRepository.findAll();
             
-            if (classrooms.isEmpty() || users.isEmpty()) {
-                log.warn("❌ Cannot seed timetable events: classrooms={}, users={}", classrooms.size(), users.size());
+            if (schedules.isEmpty()) {
+                log.warn("❌ Cannot seed timetable events: no schedules found");
                 return;
             }
+            
+            log.info("🔄 Creating timetable events based on {} schedules", schedules.size());
             
             // Generate events based on actual schedule data
             LocalDateTime now = LocalDateTime.now();
             LocalDateTime startOfWeek = now.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+            
+            int eventCount = 0;
             
             // Create events for the next 4 weeks
             for (int week = 0; week < 4; week++) {
                 for (Schedule schedule : schedules) {
                     LocalDateTime eventStart = startOfWeek
                         .plusWeeks(week)
-                        .plusDays(schedule.getDayOfWeek()) // 0=Monday, 1=Tuesday, etc.
+                        .plusDays(schedule.getDayOfWeek())
                         .withHour(schedule.getStartTime().getHour())
                         .withMinute(schedule.getStartTime().getMinute())
                         .withSecond(0);
@@ -1177,8 +1207,8 @@ seedEvidenceTemplates();
                     }
                     
                     TimetableEvent event = new TimetableEvent();
-                    event.setTitle(schedule.getSubject());
-                    event.setDescription("Lớp học " + schedule.getSubject() + " - " + schedule.getClassroom().getName());
+                    event.setTitle(schedule.getSubject() + " - " + schedule.getClassroom().getName());
+                    event.setDescription("Lớp học " + schedule.getSubject() + " - " + schedule.getClassroom().getName() + " - Phòng: " + schedule.getRoom());
                     event.setStartDatetime(eventStart);
                     event.setEndDatetime(eventEnd);
                     event.setEventType(TimetableEvent.EventType.CLASS);
@@ -1191,11 +1221,13 @@ seedEvidenceTemplates();
                     event.setIsCancelled(false);
                     event.setCreatedAt(now);
                     event.setUpdatedAt(now);
+                    
                     timetableEventRepository.save(event);
+                    eventCount++;
                 }
             }
             
-            log.info("✅ Created timetable events based on {} schedules for next 4 weeks", schedules.size());
+            log.info("✅ Created {} timetable events for next 4 weeks", eventCount);
         } else {
             log.info("✅ Timetable events already seeded.");
         }
@@ -1523,17 +1555,94 @@ seedEvidenceTemplates();
     private void seedLectures(List<Classroom> classrooms) {
         if (lectureRepository.count() == 0) {
             for (Classroom classroom : classrooms) {
-                Lecture lecture = new Lecture();
-                lecture.setTitle("Introduction to " + classroom.getName());
-                // lecture.setDescription("First lecture of the course"); // Không có description
-                lecture.setClassroom(classroom);
-                // Không set startTime, endTime, status nếu không có
-                lectureRepository.save(lecture);
+                String subject = classroom.getSubject();
+                List<Lecture> lectures = createLecturesForSubject(subject, classroom);
+                
+                for (Lecture lecture : lectures) {
+                    lectureRepository.save(lecture);
+                }
             }
-            log.info("✅ Created lectures for {} classrooms", classrooms.size());
+            log.info("✅ Created detailed lectures for {} classrooms", classrooms.size());
         } else {
             log.info("✅ Lectures already seeded.");
         }
+    }
+    
+    private List<Lecture> createLecturesForSubject(String subject, Classroom classroom) {
+        List<Lecture> lectures = new ArrayList<>();
+        
+        switch (subject) {
+            case "Toán học nâng cao":
+                lectures.add(createLecture("Chương 1: Hàm số và đồ thị", "Khái niệm hàm số, các loại hàm số cơ bản, vẽ đồ thị", classroom, 1));
+                lectures.add(createLecture("Chương 2: Phương trình và bất phương trình", "Giải phương trình bậc nhất, bậc hai, bất phương trình", classroom, 2));
+                lectures.add(createLecture("Chương 3: Hình học không gian", "Các khối đa diện, thể tích, diện tích bề mặt", classroom, 3));
+                lectures.add(createLecture("Chương 4: Đạo hàm và ứng dụng", "Định nghĩa đạo hàm, quy tắc tính đạo hàm, ứng dụng", classroom, 4));
+                lectures.add(createLecture("Chương 5: Tích phân và ứng dụng", "Định nghĩa tích phân, các phương pháp tính tích phân", classroom, 5));
+                break;
+                
+            case "Lịch sử thế giới":
+                lectures.add(createLecture("Chương 1: Các nền văn minh cổ đại", "Ai Cập, Lưỡng Hà, Ấn Độ, Trung Quốc cổ đại", classroom, 1));
+                lectures.add(createLecture("Chương 2: Hy Lạp và La Mã cổ đại", "Văn hóa, chính trị, nghệ thuật Hy Lạp - La Mã", classroom, 2));
+                lectures.add(createLecture("Chương 3: Thời kỳ Trung cổ", "Chế độ phong kiến, các cuộc Thập tự chinh", classroom, 3));
+                lectures.add(createLecture("Chương 4: Thời kỳ Phục hưng", "Văn hóa, nghệ thuật, khoa học thời Phục hưng", classroom, 4));
+                lectures.add(createLecture("Chương 5: Cách mạng công nghiệp", "Những thay đổi kinh tế, xã hội thế kỷ 18-19", classroom, 5));
+                break;
+                
+            case "Ngữ văn Việt Nam":
+                lectures.add(createLecture("Chương 1: Văn học dân gian", "Truyện cổ tích, ca dao, tục ngữ Việt Nam", classroom, 1));
+                lectures.add(createLecture("Chương 2: Văn học trung đại", "Văn học chữ Hán, chữ Nôm thời phong kiến", classroom, 2));
+                lectures.add(createLecture("Chương 3: Văn học hiện đại", "Văn học từ đầu thế kỷ 20 đến 1945", classroom, 3));
+                lectures.add(createLecture("Chương 4: Văn học kháng chiến", "Văn học thời kỳ kháng chiến chống Pháp, Mỹ", classroom, 4));
+                lectures.add(createLecture("Chương 5: Văn học đương đại", "Văn học từ 1975 đến nay", classroom, 5));
+                break;
+                
+            case "Tiếng Anh giao tiếp":
+                lectures.add(createLecture("Unit 1: Greetings and Introductions", "Chào hỏi, giới thiệu bản thân và người khác", classroom, 1));
+                lectures.add(createLecture("Unit 2: Daily Activities", "Mô tả các hoạt động hàng ngày", classroom, 2));
+                lectures.add(createLecture("Unit 3: Family and Friends", "Từ vựng và cấu trúc về gia đình, bạn bè", classroom, 3));
+                lectures.add(createLecture("Unit 4: Shopping and Services", "Giao tiếp khi mua sắm và sử dụng dịch vụ", classroom, 4));
+                lectures.add(createLecture("Unit 5: Travel and Transportation", "Từ vựng và cấu trúc về du lịch, giao thông", classroom, 5));
+                break;
+                
+            case "Khoa học máy tính":
+                lectures.add(createLecture("Chương 1: Giới thiệu về máy tính", "Lịch sử, cấu trúc và nguyên lý hoạt động của máy tính", classroom, 1));
+                lectures.add(createLecture("Chương 2: Hệ điều hành", "Windows, Linux, macOS và các chức năng cơ bản", classroom, 2));
+                lectures.add(createLecture("Chương 3: Lập trình cơ bản", "Giới thiệu về thuật toán và lập trình", classroom, 3));
+                lectures.add(createLecture("Chương 4: Mạng máy tính", "Internet, mạng LAN, bảo mật thông tin", classroom, 4));
+                lectures.add(createLecture("Chương 5: Ứng dụng thực tế", "Word, Excel, PowerPoint và các ứng dụng khác", classroom, 5));
+                break;
+                
+            case "Vật lý đại cương":
+                lectures.add(createLecture("Chương 1: Cơ học", "Chuyển động, lực, năng lượng và định luật Newton", classroom, 1));
+                lectures.add(createLecture("Chương 2: Nhiệt học", "Nhiệt độ, nhiệt lượng, các định luật nhiệt động lực học", classroom, 2));
+                lectures.add(createLecture("Chương 3: Điện học", "Điện tích, điện trường, dòng điện và mạch điện", classroom, 3));
+                lectures.add(createLecture("Chương 4: Quang học", "Ánh sáng, gương, thấu kính và các hiện tượng quang học", classroom, 4));
+                lectures.add(createLecture("Chương 5: Vật lý hạt nhân", "Cấu trúc nguyên tử, phóng xạ và năng lượng hạt nhân", classroom, 5));
+                break;
+                
+            default:
+                // Fallback cho các môn học khác
+                lectures.add(createLecture("Bài 1: Giới thiệu môn học", "Tổng quan về môn học " + subject, classroom, 1));
+                lectures.add(createLecture("Bài 2: Nội dung cơ bản", "Các kiến thức cơ bản của môn học", classroom, 2));
+                lectures.add(createLecture("Bài 3: Thực hành", "Các bài tập và thực hành", classroom, 3));
+                break;
+        }
+        
+        return lectures;
+    }
+    
+    private Lecture createLecture(String title, String description, Classroom classroom, int order) {
+        Lecture lecture = new Lecture();
+        lecture.setTitle(title);
+        lecture.setContent(description); // Sử dụng content thay vì description
+        lecture.setClassroom(classroom);
+        // Tạo ngày khác nhau cho các bài giảng để test validation
+        // order 1,2 = hôm qua, hôm nay | order 3,4,5 = ngày mai và các ngày sau
+        lecture.setLectureDate(LocalDate.now().plusDays(order - 2)); // order 1=-1, order 2=0 (today), order 3=+1, etc.
+        // lecture.setOrder(order); // Không có field order
+        // lecture.setStatus("ACTIVE"); // Không có field status
+        // lecture.setCreatedAt(LocalDateTime.now().minusDays(order)); // Không có field createdAt
+        return lecture;
     }
 
     private void seedAssignments() {
@@ -1542,7 +1651,7 @@ seedEvidenceTemplates();
             for (Classroom classroom : classrooms) {
                 Assignment assignment = new Assignment();
                 assignment.setClassroom(classroom);
-                assignment.setTitle("Assignment 1");
+                assignment.setTitle("Bài tập số 1");
                 assignment.setDueDate(LocalDateTime.now().plusDays(7)); // Set dueDate to 7 days in the future
                 assignmentRepository.save(assignment);
             }
@@ -2395,48 +2504,76 @@ private void createEvidenceTemplate(String name, String code, String description
         List<User> parentUsers = new ArrayList<>();
         
         // Parent 1: Trần Văn Nam (will have 2 children)
-        User parent1 = new User();
-        parent1.setUsername("parent_tran_van_nam");
-        parent1.setPassword(passwordEncoder.encode("password123"));
-        parent1.setEmail("tran.van.nam@email.com");
-        parent1.setFullName("Trần Văn Nam");
-        parent1.setPhoneNumber("0901234567");
-        parent1.setRoleId(RoleConstants.PARENT);
-        parent1.setStatus("active");
-        parentUsers.add(userRepository.save(parent1));
+        String email1 = "tran.van.nam@email.com";
+        if (!userRepository.existsByEmail(email1)) {
+            User parent1 = new User();
+            parent1.setUsername("parent_tran_van_nam");
+            parent1.setPassword(passwordEncoder.encode("password123"));
+            parent1.setEmail(email1);
+            parent1.setFullName("Trần Văn Nam");
+            parent1.setPhoneNumber("0901234567");
+            parent1.setRoleId(RoleConstants.PARENT);
+            parent1.setStatus("active");
+            parentUsers.add(userRepository.save(parent1));
+            log.info("✅ Created parent user: " + email1);
+        } else {
+            parentUsers.add(userRepository.findByEmail(email1).orElse(null));
+            log.info("ℹ️ Parent user already exists: " + email1);
+        }
         
         // Parent 2: Nguyễn Thị Lan (will have 1 child)
-        User parent2 = new User();
-        parent2.setUsername("parent_nguyen_thi_lan");
-        parent2.setPassword(passwordEncoder.encode("password123"));
-        parent2.setEmail("nguyen.thi.lan@email.com");
-        parent2.setFullName("Nguyễn Thị Lan");
-        parent2.setPhoneNumber("0912345678");
-        parent2.setRoleId(RoleConstants.PARENT);
-        parent2.setStatus("active");
-        parentUsers.add(userRepository.save(parent2));
+        String email2 = "nguyen.thi.lan@email.com";
+        if (!userRepository.existsByEmail(email2)) {
+            User parent2 = new User();
+            parent2.setUsername("parent_nguyen_thi_lan");
+            parent2.setPassword(passwordEncoder.encode("password123"));
+            parent2.setEmail(email2);
+            parent2.setFullName("Nguyễn Thị Lan");
+            parent2.setPhoneNumber("0912345678");
+            parent2.setRoleId(RoleConstants.PARENT);
+            parent2.setStatus("active");
+            parentUsers.add(userRepository.save(parent2));
+            log.info("✅ Created parent user: " + email2);
+        } else {
+            parentUsers.add(userRepository.findByEmail(email2).orElse(null));
+            log.info("ℹ️ Parent user already exists: " + email2);
+        }
         
         // Parent 3: Lê Minh Đức (will have 1 child)
-        User parent3 = new User();
-        parent3.setUsername("parent_le_minh_duc");
-        parent3.setPassword(passwordEncoder.encode("password123"));
-        parent3.setEmail("le.minh.duc@email.com");
-        parent3.setFullName("Lê Minh Đức");
-        parent3.setPhoneNumber("0923456789");
-        parent3.setRoleId(RoleConstants.PARENT);
-        parent3.setStatus("active");
-        parentUsers.add(userRepository.save(parent3));
+        String email3 = "le.minh.duc@email.com";
+        if (!userRepository.existsByEmail(email3)) {
+            User parent3 = new User();
+            parent3.setUsername("parent_le_minh_duc");
+            parent3.setPassword(passwordEncoder.encode("password123"));
+            parent3.setEmail(email3);
+            parent3.setFullName("Lê Minh Đức");
+            parent3.setPhoneNumber("0923456789");
+            parent3.setRoleId(RoleConstants.PARENT);
+            parent3.setStatus("active");
+            parentUsers.add(userRepository.save(parent3));
+            log.info("✅ Created parent user: " + email3);
+        } else {
+            parentUsers.add(userRepository.findByEmail(email3).orElse(null));
+            log.info("ℹ️ Parent user already exists: " + email3);
+        }
         
         // Parent 4: Phạm Thị Mai (will have 1 child)
-        User parent4 = new User();
-        parent4.setUsername("parent_pham_thi_mai");
-        parent4.setPassword(passwordEncoder.encode("password123"));
-        parent4.setEmail("pham.thi.mai@email.com");
-        parent4.setFullName("Phạm Thị Mai");
-        parent4.setPhoneNumber("0934567890");
-        parent4.setRoleId(RoleConstants.PARENT);
-        parent4.setStatus("active");
-        parentUsers.add(userRepository.save(parent4));
+        String email4 = "pham.thi.mai@email.com";
+        if (!userRepository.existsByEmail(email4)) {
+            User parent4 = new User();
+            parent4.setUsername("parent_pham_thi_mai");
+            parent4.setPassword(passwordEncoder.encode("password123"));
+            parent4.setEmail(email4);
+            parent4.setFullName("Phạm Thị Mai");
+            parent4.setPhoneNumber("0934567890");
+            parent4.setRoleId(RoleConstants.PARENT);
+            parent4.setStatus("active");
+            parentUsers.add(userRepository.save(parent4));
+            log.info("✅ Created parent user: " + email4);
+        } else {
+            parentUsers.add(userRepository.findByEmail(email4).orElse(null));
+            log.info("ℹ️ Parent user already exists: " + email4);
+        }
         
         return parentUsers;
     }
@@ -2445,69 +2582,104 @@ private void createEvidenceTemplate(String name, String code, String description
         List<User> studentUsers = new ArrayList<>();
         
         // Student 1: Child of Trần Văn Nam
-        User student1 = new User();
-        student1.setUsername("student_tran_minh_anh");
-        student1.setPassword(passwordEncoder.encode("password123"));
-        student1.setEmail("tran.minh.anh@student.edu.vn");
-        student1.setFullName("Trần Minh Anh");
-        student1.setPhoneNumber("0987654321");
-        student1.setRoleId(RoleConstants.STUDENT);
-        student1.setParentPhone("0901234567");
-        student1.setParentName("Trần Văn Nam");
-        student1.setStatus("active");
-        studentUsers.add(userRepository.save(student1));
+        String studentEmail1 = "tran.minh.anh@student.edu.vn";
+        if (!userRepository.existsByEmail(studentEmail1)) {
+            User student1 = new User();
+            student1.setUsername("student_tran_minh_anh");
+            student1.setPassword(passwordEncoder.encode("password123"));
+            student1.setEmail(studentEmail1);
+            student1.setFullName("Trần Minh Anh");
+            student1.setPhoneNumber("0987654321");
+            student1.setRoleId(RoleConstants.STUDENT);
+            student1.setParentPhone("0901234567");
+            student1.setParentName("Trần Văn Nam");
+            student1.setStatus("active");
+            studentUsers.add(userRepository.save(student1));
+            log.info("✅ Created student user: " + studentEmail1);
+        } else {
+            studentUsers.add(userRepository.findByEmail(studentEmail1).orElse(null));
+            log.info("ℹ️ Student user already exists: " + studentEmail1);
+        }
         
         // Student 2: Another child of Trần Văn Nam
-        User student2 = new User();
-        student2.setUsername("student_tran_thu_ha");
-        student2.setPassword(passwordEncoder.encode("password123"));
-        student2.setEmail("tran.thu.ha@student.edu.vn");
-        student2.setFullName("Trần Thu Hà");
-        student2.setPhoneNumber("0976543210");
-        student2.setRoleId(RoleConstants.STUDENT);
-        student2.setParentPhone("0901234567");
-        student2.setParentName("Trần Văn Nam");
-        student2.setStatus("active");
-        studentUsers.add(userRepository.save(student2));
+        String studentEmail2 = "tran.thu.ha@student.edu.vn";
+        if (!userRepository.existsByEmail(studentEmail2)) {
+            User student2 = new User();
+            student2.setUsername("student_tran_thu_ha");
+            student2.setPassword(passwordEncoder.encode("password123"));
+            student2.setEmail(studentEmail2);
+            student2.setFullName("Trần Thu Hà");
+            student2.setPhoneNumber("0976543210");
+            student2.setRoleId(RoleConstants.STUDENT);
+            student2.setParentPhone("0901234567");
+            student2.setParentName("Trần Văn Nam");
+            student2.setStatus("active");
+            studentUsers.add(userRepository.save(student2));
+            log.info("✅ Created student user: " + studentEmail2);
+        } else {
+            studentUsers.add(userRepository.findByEmail(studentEmail2).orElse(null));
+            log.info("ℹ️ Student user already exists: " + studentEmail2);
+        }
         
         // Student 3: Child of Nguyễn Thị Lan
-        User student3 = new User();
-        student3.setUsername("student_nguyen_hoang_long");
-        student3.setPassword(passwordEncoder.encode("password123"));
-        student3.setEmail("nguyen.hoang.long@student.edu.vn");
-        student3.setFullName("Nguyễn Hoàng Long");
-        student3.setPhoneNumber("0965432109");
-        student3.setRoleId(RoleConstants.STUDENT);
-        student3.setParentPhone("0912345678");
-        student3.setParentName("Nguyễn Thị Lan");
-        student3.setStatus("active");
-        studentUsers.add(userRepository.save(student3));
+        String studentEmail3 = "nguyen.hoang.long@student.edu.vn";
+        if (!userRepository.existsByEmail(studentEmail3)) {
+            User student3 = new User();
+            student3.setUsername("student_nguyen_hoang_long");
+            student3.setPassword(passwordEncoder.encode("password123"));
+            student3.setEmail(studentEmail3);
+            student3.setFullName("Nguyễn Hoàng Long");
+            student3.setPhoneNumber("0965432109");
+            student3.setRoleId(RoleConstants.STUDENT);
+            student3.setParentPhone("0912345678");
+            student3.setParentName("Nguyễn Thị Lan");
+            student3.setStatus("active");
+            studentUsers.add(userRepository.save(student3));
+            log.info("✅ Created student user: " + studentEmail3);
+        } else {
+            studentUsers.add(userRepository.findByEmail(studentEmail3).orElse(null));
+            log.info("ℹ️ Student user already exists: " + studentEmail3);
+        }
         
         // Student 4: Child of Lê Minh Đức
-        User student4 = new User();
-        student4.setUsername("student_le_thi_hong");
-        student4.setPassword(passwordEncoder.encode("password123"));
-        student4.setEmail("le.thi.hong@student.edu.vn");
-        student4.setFullName("Lê Thị Hồng");
-        student4.setPhoneNumber("0954321098");
-        student4.setRoleId(RoleConstants.STUDENT);
-        student4.setParentPhone("0923456789");
-        student4.setParentName("Lê Minh Đức");
-        student4.setStatus("active");
-        studentUsers.add(userRepository.save(student4));
+        String studentEmail4 = "le.thi.hong@student.edu.vn";
+        if (!userRepository.existsByEmail(studentEmail4)) {
+            User student4 = new User();
+            student4.setUsername("student_le_thi_hong");
+            student4.setPassword(passwordEncoder.encode("password123"));
+            student4.setEmail(studentEmail4);
+            student4.setFullName("Lê Thị Hồng");
+            student4.setPhoneNumber("0954321098");
+            student4.setRoleId(RoleConstants.STUDENT);
+            student4.setParentPhone("0923456789");
+            student4.setParentName("Lê Minh Đức");
+            student4.setStatus("active");
+            studentUsers.add(userRepository.save(student4));
+            log.info("✅ Created student user: " + studentEmail4);
+        } else {
+            studentUsers.add(userRepository.findByEmail(studentEmail4).orElse(null));
+            log.info("ℹ️ Student user already exists: " + studentEmail4);
+        }
         
         // Student 5: Child of Phạm Thị Mai
-        User student5 = new User();
-        student5.setUsername("student_pham_van_duc");
-        student5.setPassword(passwordEncoder.encode("password123"));
-        student5.setEmail("pham.van.duc@student.edu.vn");
-        student5.setFullName("Phạm Văn Đức");
-        student5.setPhoneNumber("0943210987");
-        student5.setRoleId(RoleConstants.STUDENT);
-        student5.setParentPhone("0934567890");
-        student5.setParentName("Phạm Thị Mai");
-        student5.setStatus("active");
-        studentUsers.add(userRepository.save(student5));
+        String studentEmail5 = "pham.van.duc@student.edu.vn";
+        if (!userRepository.existsByEmail(studentEmail5)) {
+            User student5 = new User();
+            student5.setUsername("student_pham_van_duc");
+            student5.setPassword(passwordEncoder.encode("password123"));
+            student5.setEmail(studentEmail5);
+            student5.setFullName("Phạm Văn Đức");
+            student5.setPhoneNumber("0943210987");
+            student5.setRoleId(RoleConstants.STUDENT);
+            student5.setParentPhone("0934567890");
+            student5.setParentName("Phạm Thị Mai");
+            student5.setStatus("active");
+            studentUsers.add(userRepository.save(student5));
+            log.info("✅ Created student user: " + studentEmail5);
+        } else {
+            studentUsers.add(userRepository.findByEmail(studentEmail5).orElse(null));
+            log.info("ℹ️ Student user already exists: " + studentEmail5);
+        }
         
         return studentUsers;
     }

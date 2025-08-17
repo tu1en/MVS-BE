@@ -4,6 +4,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.TextStyle;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import com.classroomapp.classroombackend.dto.LectureDto;
 import com.classroomapp.classroombackend.dto.ScheduleDto;
 import com.classroomapp.classroombackend.dto.TimetableEventDto;
+import com.classroomapp.classroombackend.entity.ScheduleConflict;
 import com.classroomapp.classroombackend.model.Lecture;
 import com.classroomapp.classroombackend.model.Schedule;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
@@ -25,7 +27,6 @@ import com.classroomapp.classroombackend.repository.classroommanagement.Classroo
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.ScheduleConflictService;
 import com.classroomapp.classroombackend.service.ScheduleService;
-import com.classroomapp.classroombackend.entity.ScheduleConflict;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -59,9 +60,13 @@ public class ScheduleServiceImpl implements ScheduleService {
                 schedule.getSubject());
         }
         
-        return schedules.stream()
+        List<ScheduleDto> dtos = schedules.stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
+        
+
+        
+        return dtos;
     }
 
     @Override
@@ -204,6 +209,14 @@ public class ScheduleServiceImpl implements ScheduleService {
         if (schedule.getEndTime() != null) {
             dto.setEnd(schedule.getEndTime().toString().substring(0, 5)); // "HH:MM"
         }
+        
+        // Convert LocalTime to ISO string for frontend compatibility
+        if (schedule.getStartTime() != null) {
+            dto.setStartTimeString(schedule.getStartTime().toString().substring(0, 5)); // Format as "HH:MM"
+        }
+        if (schedule.getEndTime() != null) {
+            dto.setEndTimeString(schedule.getEndTime().toString().substring(0, 5)); // Format as "HH:MM"
+        }
 
         dto.setRoom(schedule.getRoom());
         dto.setLocation(schedule.getRoom()); // Map room to location for compatibility
@@ -218,6 +231,16 @@ public class ScheduleServiceImpl implements ScheduleService {
         
         if (schedule.getTeacher() != null) {
             dto.setTeacherName(schedule.getTeacher().getFullName());
+        }
+        
+        // Calculate and set the next occurrence date based on dayOfWeek
+        if (dayOfWeekInt != null) {
+            LocalDate nextDate = calculateNextOccurrenceDate(dayOfWeekInt);
+            dto.setDate(nextDate); // Set the calculated date for frontend
+            dto.setClassDate(nextDate); // Also set classDate for compatibility
+            
+            log.info("✅ Schedule {}: dayOfWeek={} → calculated date={}", 
+                schedule.getId(), dayOfWeekInt, nextDate);
         }
         
         return dto;
@@ -515,5 +538,43 @@ public class ScheduleServiceImpl implements ScheduleService {
             log.warn("Error creating schedule JSON: {}", e.getMessage());
             return "{\"days\": [\"monday\"], \"startTime\": \"08:00\", \"endTime\": \"10:00\", \"duration\": 120}";
         }
+    }
+    
+    /**
+     * Tính toán ngày tiếp theo của thứ trong tuần được chỉ định
+     * @param dayOfWeek Integer: 0=Monday, 1=Tuesday, ..., 6=Sunday
+     * @return LocalDate của ngày tiếp theo
+     */
+    private LocalDate calculateNextOccurrenceDate(Integer dayOfWeek) {
+        if (dayOfWeek == null) {
+            return null;
+        }
+        
+        LocalDate today = LocalDate.now();
+        
+        // Chuyển đổi từ format 0=Monday sang DayOfWeek enum
+        DayOfWeek targetDayOfWeek;
+        switch (dayOfWeek) {
+            case 0: targetDayOfWeek = DayOfWeek.MONDAY; break;
+            case 1: targetDayOfWeek = DayOfWeek.TUESDAY; break;
+            case 2: targetDayOfWeek = DayOfWeek.WEDNESDAY; break;
+            case 3: targetDayOfWeek = DayOfWeek.THURSDAY; break;
+            case 4: targetDayOfWeek = DayOfWeek.FRIDAY; break;
+            case 5: targetDayOfWeek = DayOfWeek.SATURDAY; break;
+            case 6: targetDayOfWeek = DayOfWeek.SUNDAY; break;
+            default: targetDayOfWeek = DayOfWeek.MONDAY; break;
+        }
+        
+        // Tìm ngày tiếp theo của thứ được chỉ định
+        LocalDate nextDate = today.with(TemporalAdjusters.nextOrSame(targetDayOfWeek));
+        
+        // Nếu ngày hôm nay đã là thứ được chỉ định, lấy tuần tiếp theo
+        if (nextDate.isEqual(today)) {
+            nextDate = today.with(TemporalAdjusters.next(targetDayOfWeek));
+        }
+        
+
+        
+        return nextDate;
     }
 }

@@ -1,7 +1,10 @@
 package com.classroomapp.classroombackend.dto;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalTime;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -35,9 +38,11 @@ public class ScheduleDto {
     private String dayName;
 
     @NotNull(message = "Start time is required")
+    @JsonFormat(pattern = "HH:mm")
     private LocalTime startTime;
 
     @NotNull(message = "End time is required")
+    @JsonFormat(pattern = "HH:mm")
     private LocalTime endTime;
 
     @NotBlank(message = "Location is required")
@@ -49,6 +54,16 @@ public class ScheduleDto {
     private Integer studentCount;
     private String notes;
     private boolean isRecurring;
+    
+    // Date fields for frontend compatibility
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate date; // Next occurrence date calculated from dayOfWeek
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate classDate; // Alias for date field
+    
+    // String representations of time for frontend compatibility
+    private String startTimeString; // ISO string format of startTime
+    private String endTimeString; // ISO string format of endTime
 
     // Legacy constructor that takes LocalTime for start and end and formats them
     public ScheduleDto(Long id, Long teacherId, String teacherName, Long classroomId, String className,

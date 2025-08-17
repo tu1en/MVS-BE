@@ -27,6 +27,7 @@ import com.classroomapp.classroombackend.dto.LectureDto;
 import com.classroomapp.classroombackend.dto.LectureMaterialDto;
 import com.classroomapp.classroombackend.model.Lecture;
 import com.classroomapp.classroombackend.model.LectureMaterial;
+import com.classroomapp.classroombackend.model.Schedule;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.repository.LectureMaterialRepository;
 import com.classroomapp.classroombackend.repository.LectureRepository;
@@ -67,6 +68,21 @@ public class LectureController {
             dto.setLectureDate(lecture.getLectureDate());
             dto.setClassroomId(lecture.getClassroom().getId());
             
+            // Populate time fields from schedule if available
+            if (lecture.getSchedule() != null) {
+                Schedule schedule = lecture.getSchedule();
+                
+                // Calculate the correct date from schedule's dayOfWeek
+                LocalDate scheduleDate = calculateNextOccurrenceDate(schedule.getDayOfWeek());
+                
+                if (schedule.getStartTime() != null) {
+                    dto.setStartTime(LocalDateTime.of(scheduleDate, schedule.getStartTime()));
+                }
+                if (schedule.getEndTime() != null) {
+                    dto.setEndTime(LocalDateTime.of(scheduleDate, schedule.getEndTime()));
+                }
+            }
+            
             // Get materials for this lecture
             List<LectureMaterial> materials = lectureMaterialRepository.findByLectureId(lecture.getId());
             List<LectureMaterialDto> materialDtos = new ArrayList<>();
@@ -104,6 +120,21 @@ public class LectureController {
             dto.setContent(lecture.getContent());
             dto.setLectureDate(lecture.getLectureDate());
             dto.setClassroomId(lecture.getClassroom().getId());
+            
+            // Populate time fields from schedule if available
+            if (lecture.getSchedule() != null) {
+                Schedule schedule = lecture.getSchedule();
+                
+                // Calculate the correct date from schedule's dayOfWeek
+                LocalDate scheduleDate = calculateNextOccurrenceDate(schedule.getDayOfWeek());
+                
+                if (schedule.getStartTime() != null) {
+                    dto.setStartTime(LocalDateTime.of(scheduleDate, schedule.getStartTime()));
+                }
+                if (schedule.getEndTime() != null) {
+                    dto.setEndTime(LocalDateTime.of(scheduleDate, schedule.getEndTime()));
+                }
+            }
             
             // Get materials for this lecture
             List<LectureMaterial> materials = lectureMaterialRepository.findByLectureId(lecture.getId());
@@ -574,5 +605,41 @@ public class LectureController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("❌ Lỗi khi cập nhật dữ liệu test: " + e.getMessage());
         }
+    }
+    
+    /**
+     * Tính toán ngày tiếp theo của thứ trong tuần được chỉ định
+     * @param dayOfWeek Integer: 0=Monday, 1=Tuesday, ..., 6=Sunday
+     * @return LocalDate của ngày tiếp theo
+     */
+    private LocalDate calculateNextOccurrenceDate(Integer dayOfWeek) {
+        if (dayOfWeek == null) {
+            return LocalDate.now(); // Fallback to today if no day specified
+        }
+        
+        LocalDate today = LocalDate.now();
+        
+        // Chuyển đổi từ format 0=Monday sang DayOfWeek enum
+        java.time.DayOfWeek targetDayOfWeek;
+        switch (dayOfWeek) {
+            case 0: targetDayOfWeek = java.time.DayOfWeek.MONDAY; break;
+            case 1: targetDayOfWeek = java.time.DayOfWeek.TUESDAY; break;
+            case 2: targetDayOfWeek = java.time.DayOfWeek.WEDNESDAY; break;
+            case 3: targetDayOfWeek = java.time.DayOfWeek.THURSDAY; break;
+            case 4: targetDayOfWeek = java.time.DayOfWeek.FRIDAY; break;
+            case 5: targetDayOfWeek = java.time.DayOfWeek.SATURDAY; break;
+            case 6: targetDayOfWeek = java.time.DayOfWeek.SUNDAY; break;
+            default: targetDayOfWeek = java.time.DayOfWeek.MONDAY; break;
+        }
+        
+        // Tìm ngày tiếp theo của thứ được chỉ định
+        LocalDate nextDate = today.with(java.time.temporal.TemporalAdjusters.nextOrSame(targetDayOfWeek));
+        
+        // Nếu ngày hôm nay đã là thứ được chỉ định, lấy tuần tiếp theo
+        if (nextDate.isEqual(today)) {
+            nextDate = today.with(java.time.temporal.TemporalAdjusters.next(targetDayOfWeek));
+        }
+        
+        return nextDate;
     }
 }
