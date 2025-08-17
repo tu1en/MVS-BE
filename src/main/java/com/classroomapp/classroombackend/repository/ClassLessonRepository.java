@@ -40,6 +40,9 @@ public interface ClassLessonRepository extends JpaRepository<ClassLesson, Long> 
     @Query("SELECT cl FROM ClassLesson cl WHERE cl.classEntity.id IN (SELECT c.id FROM ClassEntity c WHERE c.teacher.id = :teacherId)")
     List<ClassLesson> findByTeacherId(@Param("teacherId") Long teacherId);
     
+    @Query("SELECT cl FROM ClassLesson cl WHERE cl.classEntity.id IN (SELECT c.id FROM ClassEntity c WHERE c.teacher.id = :teacherId) AND cl.actualDate IS NOT NULL ORDER BY cl.actualDate ASC")
+    List<ClassLesson> findByTeacherIdOrderByActualDateAsc(@Param("teacherId") Long teacherId);
+    
     List<ClassLesson> findByStatusOrderByActualDateAsc(LessonStatus status);
     
     @Query("SELECT cl FROM ClassLesson cl WHERE cl.actualDate IS NULL AND cl.classEntity.status = 'ACTIVE'")

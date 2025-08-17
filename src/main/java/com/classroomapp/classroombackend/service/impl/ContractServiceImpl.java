@@ -3,7 +3,6 @@ package com.classroomapp.classroombackend.service.impl;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -19,8 +18,12 @@ import com.classroomapp.classroombackend.dto.RecruitmentApplicationDto;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
 import com.classroomapp.classroombackend.model.Contract;
 import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.entity.ClassLesson;
+import com.classroomapp.classroombackend.entity.ClassEntity;
 import com.classroomapp.classroombackend.repository.ContractRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.classroomapp.classroombackend.repository.ClassLessonRepository;
+import com.classroomapp.classroombackend.repository.ClassRepository;
 import com.classroomapp.classroombackend.service.ContractService;
 import com.classroomapp.classroombackend.service.InterviewScheduleService;
 import com.classroomapp.classroombackend.service.RecruitmentApplicationService;
@@ -41,6 +44,8 @@ public class ContractServiceImpl implements ContractService {
     private final InterviewScheduleService interviewScheduleService;
     private final RecruitmentApplicationService recruitmentApplicationService;
     private final UserService userService;
+    private final ClassLessonRepository classLessonRepository;
+    private final ClassRepository classRepository;
 
     @Override
     public List<ContractDto> getContractsByType(String contractType) {
@@ -155,7 +160,8 @@ public class ContractServiceImpl implements ContractService {
             contract.setSalary(contract.getGrossSalary().doubleValue());
         }
         
-        // Start date validation removed - dates no longer required for contract creation
+        // Set contract start and end dates
+        setContractDates(contract, user);
         
         Contract savedContract = contractRepository.save(contract);
         log.info("Contract created successfully with id: {}", savedContract.getId());
@@ -530,6 +536,77 @@ public class ContractServiceImpl implements ContractService {
         offerData.setHourlySalary(null);     // Không có lương theo giờ cho nhân viên
     }
     
+    /**
+     * Set contract start and end dates based on contract type and teacher's earliest lesson
+     */
+    private void setContractDates(Contract contract, User user) {
+        log.info("Setting contract dates for contract type: {}", contract.getContractType());
+        
+        LocalDate startDate = null;
+        
+        if ("TEACHER".equals(contract.getContractType())) {
+            // For teacher contracts, find earliest lesson date
+            startDate = findEarliestTeachingDate(user != null ? user.getId() : contract.getUserId());
+            log.info("Teacher contract - earliest teaching date: {}", startDate);
+        }
+        
+        // If no teaching date found or not a teacher, use current date
+        if (startDate == null) {
+            startDate = LocalDate.now();
+            log.info("Using current date as contract start date: {}", startDate);
+        }
+        
+        // Set contract start date
+        contract.setStartDate(startDate);
+        
+        // Set contract end date (90 days from start date)
+        LocalDate endDate = startDate.plusDays(90);
+        contract.setEndDate(endDate);
+        
+        log.info("Contract dates set - Start: {}, End: {}", startDate, endDate);
+    }
+    
+    /**
+     * Find the earliest teaching date for a teacher based on their lessons and classes
+     */
+    private LocalDate findEarliestTeachingDate(Long teacherId) {
+        if (teacherId == null) {
+            log.warn("Teacher ID is null, cannot find earliest teaching date");
+            return null;
+        }
+        
+        log.info("Finding earliest teaching date for teacher ID: {}", teacherId);
+        
+        // First, try to find earliest actual lesson date
+        List<ClassLesson> lessons = classLessonRepository.findByTeacherIdOrderByActualDateAsc(teacherId);
+        if (!lessons.isEmpty()) {
+            LocalDate earliestLessonDate = lessons.get(0).getActualDate();
+            if (earliestLessonDate != null) {
+                log.info("Found earliest lesson date: {} for teacher ID: {}", earliestLessonDate, teacherId);
+                return earliestLessonDate;
+            }
+        }
+        
+        // Fallback: find earliest class start date for this teacher
+        List<ClassEntity> classes = classRepository.findByTeacherIdOrderByCreatedAtDesc(teacherId);
+        LocalDate earliestClassDate = null;
+        for (ClassEntity classEntity : classes) {
+            if (classEntity.getStartDate() != null) {
+                if (earliestClassDate == null || classEntity.getStartDate().isBefore(earliestClassDate)) {
+                    earliestClassDate = classEntity.getStartDate();
+                }
+            }
+        }
+        
+        if (earliestClassDate != null) {
+            log.info("Found earliest class start date: {} for teacher ID: {}", earliestClassDate, teacherId);
+            return earliestClassDate;
+        }
+        
+        log.info("No teaching dates found for teacher ID: {}", teacherId);
+        return null;
+    }
+    
     private String generateNextContractId() {
         // Lấy ngày hiện tại
         LocalDate today = LocalDate.now();
@@ -608,6 +685,31 @@ public class ContractServiceImpl implements ContractService {
                                   activeContracts, expiredContracts);
     }
 
+    @Override
+    public ContractDto renewContract(Long contractId) {
+        log.info("Renewing contract with id: {}", contractId);
+        
+        Contract existingContract = contractRepository.findById(contractId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hợp đồng với ID: " + contractId));
+        
+        // Set new start date to current date (renewal date)
+        LocalDate renewalDate = LocalDate.now();
+        existingContract.setStartDate(renewalDate);
+        
+        // Set new end date (90 days from renewal date)
+        LocalDate newEndDate = renewalDate.plusDays(90);
+        existingContract.setEndDate(newEndDate);
+        
+        // Reset status to ACTIVE
+        existingContract.setStatus("ACTIVE");
+        
+        Contract renewedContract = contractRepository.save(existingContract);
+        log.info("Contract renewed successfully - ID: {}, New start date: {}, New end date: {}", 
+                contractId, renewalDate, newEndDate);
+        
+        return convertToDto(renewedContract);
+    }
+
     private Contract convertToEntity(ContractDto contractDto) {
         Contract contract = new Contract();
         contract.setId(contractDto.getId());
@@ -627,7 +729,9 @@ public class ContractServiceImpl implements ContractService {
         contract.setHourlySalary(contractDto.getHourlySalary());
         
         contract.setWorkingHours(contractDto.getWorkingHours());
-        // Date field mapping removed
+        // Contract duration fields
+        contract.setStartDate(contractDto.getStartDate());
+        contract.setEndDate(contractDto.getEndDate());
         contract.setStatus(contractDto.getStatus());
         contract.setContractTerms(contractDto.getContractTerms());
         contract.setCreatedBy(contractDto.getCreatedBy());
@@ -690,17 +794,29 @@ public class ContractServiceImpl implements ContractService {
         dto.setWorkSchedule(contract.getWorkSchedule());
         dto.setWorkShifts(contract.getWorkShifts());
         dto.setWorkDays(contract.getWorkDays());
+        
+        // Contract duration fields
+        dto.setStartDate(contract.getStartDate());
+        dto.setEndDate(contract.getEndDate());
+        dto.setContractStartDate(contract.getStartDate()); // Set computed field from persistent startDate
+        
         return dto;
     }
     
     /**
-     * Auto-update contract status - simplified without end date dependency
-     * All contracts remain ACTIVE by default since date-based expiry is removed
+     * Auto-update contract status based on end date
+     * Contracts are marked as EXPIRED if current date is past endDate
      */
     private void updateContractStatusBasedOnEndDate(Contract contract) {
-        // Date-based status updates removed - contracts remain ACTIVE by default
-        // Status changes now handled manually through contract management UI
-        log.debug("Contract status auto-update disabled - manual status management only");
+        if (contract.getEndDate() != null) {
+            LocalDate today = LocalDate.now();
+            if (today.isAfter(contract.getEndDate()) && !"EXPIRED".equals(contract.getStatus())) {
+                log.info("Contract {} has expired (end date: {}), updating status to EXPIRED", 
+                        contract.getContractId(), contract.getEndDate());
+                contract.setStatus("EXPIRED");
+                contractRepository.save(contract);
+            }
+        }
     }
 
     @Override

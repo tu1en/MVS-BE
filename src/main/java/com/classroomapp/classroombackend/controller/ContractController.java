@@ -152,6 +152,19 @@ public class ContractController {
         }
     }
 
+    // Gia hạn hợp đồng
+    @PutMapping("/{id}/renew")
+    public ResponseEntity<ContractDto> renewContract(@PathVariable Long id) {
+        log.info("PUT /api/contracts/{}/renew - Renewing contract", id);
+        try {
+            ContractDto renewedContract = contractService.renewContract(id);
+            return ResponseEntity.ok(renewedContract);
+        } catch (Exception e) {
+            log.error("Error renewing contract {}: ", id, e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
     // Cập nhật trạng thái hợp đồng thủ công (để test)
     @PostMapping("/update-status")
     public ResponseEntity<String> updateContractStatuses() {

@@ -36,6 +36,9 @@ public interface ContractService {
     // Thống kê hợp đồng
     ContractStatsDto getContractStats();
     
+    // Gia hạn hợp đồng (đặt lại ngày bắt đầu và kết thúc)
+    ContractDto renewContract(Long contractId);
+    
     // Tạo dữ liệu test hợp đồng
     void createTestContracts();
 }

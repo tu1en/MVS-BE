@@ -47,4 +47,12 @@ public class ContractDto {
     private String workSchedule; // Thời gian làm việc (combined schedule description)
     private String workShifts; // Ca làm việc (morning, afternoon, evening)
     private String workDays; // Ngày trong tuần (Monday, Tuesday, etc.)
+
+    // --- CONTRACT DURATION FIELDS ---
+    private LocalDate startDate; // Contract start date (persistent field)
+    private LocalDate endDate; // Contract expiry date (persistent field)
+    
+    // --- COMPUTED FIELD ---
+    // Ngày bắt đầu hợp đồng (tự động tính theo buổi dạy đầu tiên của giáo viên)
+    private LocalDate contractStartDate;
 }
