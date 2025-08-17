@@ -86,6 +86,8 @@ import com.classroomapp.classroombackend.repository.requestmanagement.RequestRep
 import com.classroomapp.classroombackend.repository.usermanagement.RoleRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 
+import com.classroomapp.classroombackend.service.ContractService;
+
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
@@ -100,6 +102,9 @@ public class DataLoader implements CommandLineRunner {
     
     @Autowired
     private UserRepository userRepository;
+    
+    @Autowired
+    private ContractService contractService;
     
     @Autowired
     private com.classroomapp.classroombackend.repository.TeacherEvaluationRepository teacherEvaluationRepository;
@@ -287,6 +292,38 @@ seedEvidenceTemplates();
 
         // Ensure there are enough teachers for demo even when DB already has data
         ensureMinimumTeachers(24);
+        // Make sure any teacher without status is activated for demo visibility
+        try {
+            List<User> teachers = userRepository.findByRoleId(RoleConstants.TEACHER);
+            int activated = 0;
+            for (User t : teachers) {
+                if (t.getStatus() == null || t.getStatus().isBlank()) {
+                    t.setStatus("active");
+                    userRepository.save(t);
+                    activated++;
+                }
+            }
+            if (activated > 0) {
+                log.info("✅ Activated {} teacher accounts missing status", activated);
+            }
+        } catch (Exception e) {
+            log.warn("⚠️ Could not normalize teacher statuses: {}", e.getMessage());
+        }
+        // Create contracts for active teachers without contracts (300k - 600k VND/hour)
+        try {
+            contractService.createContractsForActiveTeachers(300000L, 600000L, false);
+            log.info("✅ Seeded contracts for active teachers without existing contracts");
+        } catch (Exception e) {
+            log.error("❌ Error seeding teacher contracts: {}", e.getMessage(), e);
+        }
+        // Post-seed normalization sweep to fix legacy data inconsistencies
+        try {
+            normalizeUserPhones();
+            normalizeContractsData();
+            log.info("✅ Post-seed normalization complete: user phones and contract salaries standardized");
+        } catch (Exception e) {
+            log.error("❌ Error during post-seed normalization: {}", e.getMessage(), e);
+        }
         // Ensure sample requests and blogs are seeded if missing
         // These methods are idempotent and will skip if data already exists
         seedRequests();
@@ -423,6 +460,131 @@ seedEvidenceTemplates();
                 log.info("✅ Created {} additional test recruitment applications.", testApplicants.length);
             }
         }
+    }
+
+    /**
+     * Normalize all user phone numbers to Vietnamese 10-digit format if possible.
+     * - Converts +84 / 84 prefixes to 0
+     * - Keeps only digits
+     * - Validates prefixes: 03x, 05x, 07x, 08x, 09x
+     */
+    private void normalizeUserPhones() {
+        try {
+            List<User> users = userRepository.findAll();
+            int updated = 0;
+            for (User u : users) {
+                boolean changed = false;
+                if (u.getPhoneNumber() != null && !u.getPhoneNumber().isBlank()) {
+                    String normalized = normalizeVietnamPhone(u.getPhoneNumber());
+                    if (normalized != null && !normalized.equals(u.getPhoneNumber())) {
+                        u.setPhoneNumber(normalized);
+                        changed = true;
+                    }
+                }
+                if (u.getParentPhone() != null && !u.getParentPhone().isBlank()) {
+                    String normalized = normalizeVietnamPhone(u.getParentPhone());
+                    if (normalized != null && !normalized.equals(u.getParentPhone())) {
+                        u.setParentPhone(normalized);
+                        changed = true;
+                    }
+                }
+                if (changed) {
+                    userRepository.save(u);
+                    updated++;
+                }
+            }
+            if (updated > 0) {
+                log.info("📞 Normalized phone numbers for {} users", updated);
+            } else {
+                log.info("📞 No user phone numbers required normalization");
+            }
+        } catch (Exception e) {
+            log.warn("⚠️ Failed to normalize user phones: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Normalize existing contracts:
+     * - Normalize phone numbers
+     * - Round hourlySalary to nearest 10,000 VND
+     * - If no hourlySalary but legacy salary present, round legacy salary to nearest 10,000 VND
+     */
+    private void normalizeContractsData() {
+        try {
+            List<Contract> contracts = contractRepository.findAll();
+            int updated = 0;
+            for (Contract c : contracts) {
+                boolean changed = false;
+
+                // Normalize phone number
+                if (c.getPhoneNumber() != null && !c.getPhoneNumber().isBlank()) {
+                    String normalized = normalizeVietnamPhone(c.getPhoneNumber());
+                    if (normalized != null && !normalized.equals(c.getPhoneNumber())) {
+                        c.setPhoneNumber(normalized);
+                        changed = true;
+                    }
+                }
+
+                // Round hourly salary if present
+                if (c.getHourlySalary() != null && c.getHourlySalary() > 0) {
+                    long rounded = roundToNearest(c.getHourlySalary(), 10_000L);
+                    if (!Long.valueOf(rounded).equals(c.getHourlySalary())) {
+                        c.setHourlySalary(rounded);
+                        changed = true;
+                    }
+                } else if (c.getSalary() != null && c.getSalary() > 0) {
+                    // Fallback: round legacy salary field
+                    Double rounded = roundDoubleToNearest(c.getSalary(), 10_000L);
+                    if (!rounded.equals(c.getSalary())) {
+                        c.setSalary(rounded);
+                        changed = true;
+                    }
+                }
+
+                if (changed) {
+                    contractRepository.save(c);
+                    updated++;
+                }
+            }
+            if (updated > 0) {
+                log.info("📑 Normalized {} contracts (phones and salaries)", updated);
+            } else {
+                log.info("📑 No contracts required normalization");
+            }
+        } catch (Exception e) {
+            log.warn("⚠️ Failed to normalize contracts: {}", e.getMessage());
+        }
+    }
+
+    // Helpers
+    private String normalizeVietnamPhone(String input) {
+        try {
+            String digits = input.replaceAll("[^0-9]", "");
+            if (digits.startsWith("84")) {
+                digits = "0" + digits.substring(2);
+            }
+            if (digits.length() == 10 && digits.charAt(0) == '0') {
+                char second = digits.charAt(1);
+                if (second == '3' || second == '5' || second == '7' || second == '8' || second == '9') {
+                    return digits;
+                }
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private long roundToNearest(long value, long unit) {
+        if (unit <= 0) return value;
+        long half = unit / 2;
+        return ((value + half) / unit) * unit;
+    }
+
+    private Double roundDoubleToNearest(Double value, long unit) {
+        if (value == null) return null;
+        long rounded = Math.round(value / unit) * unit;
+        return (double) rounded;
     }
 
     private void cleanupDuplicateSubmissions() {
@@ -738,45 +900,8 @@ seedEvidenceTemplates();
                     u.setEmail(t[1]);
                     u.setFullName(t[2]);
 
-    // Tạo hợp đồng ACTIVE cho giáo viên để đồng bộ bộ lọc môn/ca/cấp
-    try {
-        Contract c = new Contract();
-        // Generate 6-digit contract ID: 2-digit monthly sequence + MMYY
-        LocalDate today = LocalDate.now();
-        LocalDate startOfMonth = today.withDayOfMonth(1);
-        LocalDate endOfMonth = startOfMonth.plusMonths(1);
-        Long contractsThisMonth = contractRepository
-            .countByCreatedAtBetween(startOfMonth.atStartOfDay(), endOfMonth.atStartOfDay());
-        String sequence = String.format("%02d", contractsThisMonth + 1);
-        String dateFormat = String.format("%02d%02d", today.getMonthValue(), today.getYear() % 100);
-        c.setContractId(sequence + dateFormat);
-        c.setUserId(u.getId());
-        c.setFullName(u.getFullName());
-        c.setEmail(u.getEmail());
-        c.setPhoneNumber("09" + (int)(10000000 + Math.random()*89999999));
-        c.setContractType("TEACHER");
-        c.setPosition("Giáo viên " + t[3]);
-        c.setDepartment(t[3]);
-        c.setSalary(15000000.0 + (int)(Math.random()*6000000));
-        // Giáo viên: thêm đơn giá theo giờ để phục vụ tính lương theo giờ
-                        // Giáo viên: thêm đơn giá theo giờ để phục vụ tính lương theo giờ
-                        try {
-                            long hourly = 120_000L + (long)(Math.random() * 100_000L); // 120k - 220k VND/giờ
-                            c.setHourlySalary(hourly);
-                        } catch (Exception ignored) {}
-                        // ngẫu nhiên ca làm việc
-                        String[] shifts = new String[]{"ca sáng (07:30-09:30)", "ca chiều (13:30-15:30)", "ca tối (18:00-20:00)"};
-                        c.setWorkingHours(shifts[(int)(Math.random()*shifts.length)]);
-                        // Date fields removed from seed (startDate/endDate)
-                        c.setStatus("ACTIVE");
-                        c.setSubject(t[3]);
-                        // phân bổ cấp học 10/11/12
-                        String[] levels = new String[]{"10","11","12"};
-                        c.setClassLevel(levels[(int)(Math.random()*levels.length)]);
-                        contractRepository.save(c);
-                    } catch (Exception e) {
-                        log.warn("Could not create contract for {}: {}", u.getEmail(), e.getMessage());
-                    }
+                    // Removed: previously created ACTIVE teacher contracts for demo filters.
+                    // Per requirement, no automatic test contract data should be generated here.
                 }
 
                 // Create accountant user
@@ -2049,35 +2174,14 @@ seedEvidenceTemplates();
                 u.setDepartment(department);
                 u.setHireDate(LocalDate.now().minusMonths((idx % 24) + 1));
                 User saved = userRepository.save(u);
-
-                // Also create an ACTIVE contract so teacher appears in availability filters
-                try {
-                    Contract c = new Contract();
-                    c.setContractId("CT" + saved.getId() + "_" + System.currentTimeMillis());
-                    c.setUserId(saved.getId());
-                    c.setFullName(saved.getFullName());
-                    c.setEmail(saved.getEmail());
-                    c.setPhoneNumber("09" + (int)(10_000_000 + Math.random() * 89_999_999));
-                    c.setContractType("TEACHER");
-                    c.setPosition("Giáo viên " + department);
-                    c.setDepartment(department);
-                    c.setSalary(15_000_000.0 + (int)(Math.random() * 6_000_000));
-                    long hourly = 120_000L + (long)(Math.random() * 100_000L);
-                    try { c.setHourlySalary(hourly); } catch (Exception ignored) {}
-                    String[] shifts = new String[]{
-                        "ca sáng (07:30-09:30)", "ca chiều (13:30-15:30)", "ca tối (18:00-20:00)"
-                    };
-                    c.setWorkingHours(shifts[(int)(Math.random() * shifts.length)]);
-                    // Bỏ setStartDate và setEndDate vì không cần thiết
-                    c.setStatus("ACTIVE");
-                    c.setSubject(department);
-                    String[] levels = new String[]{"10","11","12"};
-                    c.setClassLevel(levels[(int)(Math.random() * levels.length)]);
-                    contractRepository.save(c);
-                } catch (Exception e) {
-                    log.warn("Could not create contract for {}: {}", email, e.getMessage());
+                // Ensure seeded teachers are active so they appear in filters
+                if (saved.getStatus() == null || saved.getStatus().isBlank()) {
+                    saved.setStatus("active");
+                    userRepository.save(saved);
                 }
 
+                // Removed: creating ACTIVE contracts for seeded teachers.
+                // Per requirement, do not auto-generate any test contract data here.
                 created++;
                 idx++;
             }

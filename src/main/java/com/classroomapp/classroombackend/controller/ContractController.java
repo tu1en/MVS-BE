@@ -179,27 +179,20 @@ public class ContractController {
         }
     }
 
-    @PostMapping("/create-test-data")
-    public ResponseEntity<String> createTestData() {
+    // Tạo hợp đồng hàng loạt cho giáo viên đang active (không trùng), gán lương theo giờ trong khoảng
+    @PostMapping(value = "/teachers/bulk-create", produces = "application/json;charset=UTF-8")
+    public ResponseEntity<List<ContractDto>> bulkCreateTeacherContracts(
+            @RequestParam(value = "minHourly", required = false) Long minHourly,
+            @RequestParam(value = "maxHourly", required = false) Long maxHourly,
+            @RequestParam(value = "dryRun", defaultValue = "false") boolean dryRun) {
+        log.info("POST /api/contracts/teachers/bulk-create - minHourly: {}, maxHourly: {}, dryRun: {}",
+                minHourly, maxHourly, dryRun);
         try {
-            contractService.createTestContracts();
-            return ResponseEntity.ok("Test contracts created successfully");
+            List<ContractDto> created = contractService.createContractsForActiveTeachers(minHourly, maxHourly, dryRun);
+            return ResponseEntity.ok(created);
         } catch (Exception e) {
-            log.error("Error creating test contracts: ", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error creating test contracts: " + e.getMessage());
-        }
-    }
-
-    @GetMapping("/create-test-data-public")
-    public ResponseEntity<String> createTestDataPublic() {
-        try {
-            contractService.createTestContracts();
-            return ResponseEntity.ok("✅ 5 Test contracts created successfully! Refresh your frontend.");
-        } catch (Exception e) {
-            log.error("Error creating test contracts: ", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("❌ Error: " + e.getMessage());
+            log.error("Error bulk-creating teacher contracts: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }

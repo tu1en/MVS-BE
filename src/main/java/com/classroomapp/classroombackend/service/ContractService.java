@@ -38,7 +38,7 @@ public interface ContractService {
     
     // Gia hạn hợp đồng (đặt lại ngày bắt đầu và kết thúc)
     ContractDto renewContract(Long contractId);
-    
-    // Tạo dữ liệu test hợp đồng
-    void createTestContracts();
+
+    // Tạo hợp đồng cho tất cả giáo viên active (không trùng), gán lương theo giờ trong khoảng chỉ định
+    List<ContractDto> createContractsForActiveTeachers(Long minHourly, Long maxHourly, boolean dryRun);
 }
