@@ -390,8 +390,16 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mật khẩu mới không được trùng với mật khẩu cũ");
         }
         
+        if (newPassword.length() < 8) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mật khẩu mới phải có ít nhất 8 ký tự");
+        }
+        
         if (newPassword.length() > 50) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mật khẩu mới không được vượt quá 50 ký tự");
+        }
+        
+        if (!newPassword.matches(".*[A-Z].*")) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mật khẩu mới phải có ít nhất 1 ký tự viết hoa");
         }
         
         // Tìm user theo email (vì JWT token sử dụng email làm subject)
