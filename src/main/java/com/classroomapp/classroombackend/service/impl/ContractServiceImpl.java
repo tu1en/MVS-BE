@@ -4,7 +4,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -532,26 +534,63 @@ public class ContractServiceImpl implements ContractService {
         // Lấy ngày hiện tại
         LocalDate today = LocalDate.now();
         
-        // Tạo start và end của tháng để đếm hợp đồng trong tháng
-        LocalDate startOfMonth = today.withDayOfMonth(1);
-        LocalDate endOfMonth = startOfMonth.plusMonths(1);
-        LocalDateTime startOfMonthDateTime = startOfMonth.atStartOfDay();
-        LocalDateTime endOfMonthDateTime = endOfMonth.atStartOfDay();
+        // Tạo MM/YYYY format cho ID mới
+        String monthYear = String.format("%02d/%04d", today.getMonthValue(), today.getYear());
         
-        // Đếm số hợp đồng đã tạo trong tháng hiện tại
-        Long contractsThisMonth = contractRepository.countByCreatedAtBetween(startOfMonthDateTime, endOfMonthDateTime);
+        // Lấy tất cả hợp đồng hiện tại để kiểm tra mã đã dùng
+        List<Contract> allContracts = contractRepository.findAll();
         
-        // Tạo sequence number 2 chữ số (bắt đầu từ 01)
-        String sequence = String.format("%02d", contractsThisMonth + 1);
+        // Thu thập các mã 2 chữ số đã dùng cho tháng/năm này
+        Set<String> usedCodes = new HashSet<>();
+        String contractIdPrefix = "HĐLĐ-CT36-";
+        String targetMonthYear = monthYear;
         
-        // Tạo phần tháng năm (MMYY) - 4 chữ số cuối
-        String dateFormat = String.format("%02d%02d", today.getMonthValue(), today.getYear() % 100);
+        for (Contract contract : allContracts) {
+            String contractId = contract.getContractId();
+            if (contractId != null && contractId.startsWith(contractIdPrefix)) {
+                // Parse format: HĐLĐ-CT36-XXMM/YYYY
+                String suffix = contractId.substring(contractIdPrefix.length());
+                if (suffix.length() >= 7) { // XX + MM/YYYY = 7 chars minimum
+                    String code = suffix.substring(0, 2);
+                    String idMonthYear = suffix.substring(2);
+                    if (targetMonthYear.equals(idMonthYear)) {
+                        usedCodes.add(code);
+                    }
+                }
+            }
+        }
         
-        // Kết hợp thành Contract ID: sequence(2 digits) + MMYY(4 digits) = 6 digits total
-        String contractId = sequence + dateFormat;
+        // Tìm mã 2 chữ số chưa dùng (10-99)
+        String uniqueCode = null;
+        for (int i = 10; i <= 99; i++) {
+            String code = String.format("%02d", i);
+            if (!usedCodes.contains(code)) {
+                uniqueCode = code;
+                break;
+            }
+        }
         
-        log.info("Generated Contract ID: {} (sequence: {}, month/year: {}) for date: {}", 
-                contractId, sequence, dateFormat, today);
+        // Nếu hết mã 10-99, dùng 00-09
+        if (uniqueCode == null) {
+            for (int i = 0; i <= 9; i++) {
+                String code = String.format("%02d", i);
+                if (!usedCodes.contains(code)) {
+                    uniqueCode = code;
+                    break;
+                }
+            }
+        }
+        
+        // Fallback: random nếu hết mã
+        if (uniqueCode == null) {
+            uniqueCode = String.format("%02d", (int)(Math.random() * 90) + 10);
+        }
+        
+        // Tạo Contract ID theo format mới: HĐLĐ-CT36-XXMM/YYYY
+        String contractId = contractIdPrefix + uniqueCode + monthYear;
+        
+        log.info("Generated Contract ID: {} (code: {}, month/year: {}) for date: {}", 
+                contractId, uniqueCode, monthYear, today);
         return contractId;
     }
 
