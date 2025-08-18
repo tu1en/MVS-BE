@@ -1,5 +1,6 @@
 package com.classroomapp.classroombackend.controller;
 
+import java.net.http.HttpHeaders;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.HashMap;
@@ -21,7 +22,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.http.HttpHeaders;
 
 import com.classroomapp.classroombackend.model.Parent;
 import com.classroomapp.classroombackend.model.ParentLeaveNotice;
@@ -33,7 +33,6 @@ import com.classroomapp.classroombackend.service.ParentLeaveNoticeService;
 import com.classroomapp.classroombackend.service.ParentService;
 
 import io.jsonwebtoken.Claims;
-
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -192,6 +191,76 @@ public class ParentController {
             return ResponseEntity.ok(notices);
         } catch (Exception e) {
             log.error("Error getting leave notices for parent", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * Create leave notice (alternative endpoint without childId in path)
+     */
+    @PostMapping("/leave-notices")
+    public ResponseEntity<Map<String, Object>> createLeaveNoticeGeneral(
+            @Valid @RequestBody CreateLeaveNoticeRequest request,
+            HttpServletRequest httpRequest) {
+        try {
+            Long parentId = getParentIdFromToken(httpRequest);
+            String token = getTokenFromRequest(httpRequest);
+            
+            // Get childId from request body instead of path variable
+            Long childId = request.getStudentId();
+            if (childId == null) {
+                log.warn("StudentId is null in request body");
+                return ResponseEntity.badRequest().build();
+            }
+            
+            // Validate parent has access to this child
+            log.info("Validating parent access to child. ParentId: {}, ChildId: {}", parentId, childId);
+            boolean hasAccess = jwtUtil.validateParentChildAccess(token, childId);
+            log.info("Parent access validation result: {}", hasAccess);
+            if (!hasAccess) {
+                log.warn("Parent {} does not have access to student {}", parentId, childId);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+
+            ParentLeaveNotice notice;
+            
+            switch (request.getType()) {
+                case "FULL_DAY":
+                    notice = leaveNoticeService.createFullDayNotice(
+                        parentId, childId, request.getDate(), 
+                        ParentLeaveNotice.ReasonCode.valueOf(request.getReasonCode()), 
+                        request.getNote()
+                    );
+                    break;
+                case "LATE":
+                    notice = leaveNoticeService.createLateNotice(
+                        parentId, childId, request.getDate(), request.getArriveAt(),
+                        ParentLeaveNotice.ReasonCode.valueOf(request.getReasonCode()), 
+                        request.getNote()
+                    );
+                    break;
+                case "EARLY":
+                    notice = leaveNoticeService.createEarlyNotice(
+                        parentId, childId, request.getDate(), request.getLeaveAt(),
+                        ParentLeaveNotice.ReasonCode.valueOf(request.getReasonCode()), 
+                        request.getNote()
+                    );
+                    break;
+                default:
+                    return ResponseEntity.badRequest().build();
+            }
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("id", notice.getId());
+            response.put("status", notice.getStatus());
+            response.put("message", "Leave notice created successfully");
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid leave notice request: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Error creating leave notice", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -474,6 +543,7 @@ public class ParentController {
 
     // DTO Classes
     public static class CreateLeaveNoticeRequest {
+        private Long studentId; // ID of the child/student
         private String type; // FULL_DAY, LATE, EARLY
         private LocalDate date;
         private LocalTime arriveAt; // For LATE type
@@ -482,6 +552,9 @@ public class ParentController {
         private String note;
 
         // Getters and setters
+        public Long getStudentId() { return studentId; }
+        public void setStudentId(Long studentId) { this.studentId = studentId; }
+
         public String getType() { return type; }
         public void setType(String type) { this.type = type; }
 

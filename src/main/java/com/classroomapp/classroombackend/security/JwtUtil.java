@@ -247,9 +247,15 @@ public class JwtUtil {
     public boolean hasAccessToChild(String token, Long childId) {
         try {
             Integer roleId = getRoleFromToken(token);
+            log.info("Checking child access - RoleId: {}, ChildId: {}", roleId, childId);
             
             // Non-parent roles don't use childIds (admins, teachers, etc.)
-            if (roleId == null || !RoleConstants.isParentRole(roleId)) {
+            if (roleId == null) {
+                log.warn("RoleId is null in token");
+                return false;
+            }
+            if (!RoleConstants.isParentRole(roleId)) {
+                log.warn("RoleId {} is not parent role (expected: {})", roleId, RoleConstants.PARENT);
                 return false;
             }
             

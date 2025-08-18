@@ -91,9 +91,8 @@ public class ParentLeaveNotice {
     @JsonBackReference
     private Parent parent;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "student_id", insertable = false, updatable = false)
-    @JsonBackReference
     private User student;
 
     @ManyToOne(fetch = FetchType.LAZY)

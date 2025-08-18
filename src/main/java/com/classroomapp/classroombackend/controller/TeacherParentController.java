@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.classroomapp.classroombackend.model.ParentLeaveNotice;
+import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.security.JwtUtil;
 import com.classroomapp.classroombackend.service.ParentLeaveNoticeService;
 import com.classroomapp.classroombackend.service.UserService;
@@ -54,7 +55,7 @@ public class TeacherParentController {
      * Query by date and optionally classId
      */
     @GetMapping("/leave-notices")
-    public ResponseEntity<List<ParentLeaveNotice>> getLeaveNotices(
+    public ResponseEntity<List<LeaveNoticeWithStudentDTO>> getLeaveNotices(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) Long classId,
             HttpServletRequest request) {
@@ -70,10 +71,31 @@ public class TeacherParentController {
                 notices = leaveNoticeService.getPendingNotices();
             }
 
+            // Convert to DTO with student names
+            List<LeaveNoticeWithStudentDTO> noticesWithStudentInfo = notices.stream()
+                .map(notice -> {
+                    // Get student name from UserService
+                    String studentName = "Học sinh không xác định";
+                    try {
+                        var student = userService.getUserById(notice.getStudentId());
+                        if (student.isPresent()) {
+                            User user = student.get();
+                            studentName = user.getFullName() != null ? user.getFullName() : 
+                                         user.getName() != null ? user.getName() : 
+                                         "Học sinh ID: " + notice.getStudentId();
+                        }
+                    } catch (Exception e) {
+                        log.warn("Could not get student name for studentId: {}", notice.getStudentId());
+                    }
+                    
+                    return new LeaveNoticeWithStudentDTO(notice, studentName);
+                })
+                .collect(java.util.stream.Collectors.toList());
+
             // TODO: Filter by teacher's classes/students
             // This would require additional service methods to get teacher's students
             
-            return ResponseEntity.ok(notices);
+            return ResponseEntity.ok(noticesWithStudentInfo);
         } catch (Exception e) {
             log.error("Error getting leave notices for teacher", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -299,5 +321,89 @@ public class TeacherParentController {
             return authHeader.substring(7);
         }
         throw new IllegalArgumentException("Không tìm thấy token hợp lệ");
+    }
+
+    // DTO for leave notices with student information
+    public static class LeaveNoticeWithStudentDTO {
+        private Long id;
+        private Long parentId;
+        private Long studentId;
+        private String studentName;
+        private ParentLeaveNotice.NoticeType type;
+        private LocalDate date;
+        private LocalTime arriveAt;
+        private LocalTime leaveAt;
+        private ParentLeaveNotice.ReasonCode reasonCode;
+        private String note;
+        private ParentLeaveNotice.NoticeStatus status;
+        private LocalDateTime createdAt;
+        private LocalDateTime updatedAt;
+        private LocalDateTime ackAt;
+        private Long ackByUserId;
+
+        // Constructor
+        public LeaveNoticeWithStudentDTO(ParentLeaveNotice notice, String studentName) {
+            this.id = notice.getId();
+            this.parentId = notice.getParentId();
+            this.studentId = notice.getStudentId();
+            this.studentName = studentName;
+            this.type = notice.getType();
+            this.date = notice.getDate();
+            this.arriveAt = notice.getArriveAt();
+            this.leaveAt = notice.getLeaveAt();
+            this.reasonCode = notice.getReasonCode();
+            this.note = notice.getNote();
+            this.status = notice.getStatus();
+            this.createdAt = notice.getCreatedAt();
+            this.updatedAt = notice.getUpdatedAt();
+            this.ackAt = notice.getAckAt();
+            this.ackByUserId = notice.getAckByUserId();
+        }
+
+        // Getters and setters
+        public Long getId() { return id; }
+        public void setId(Long id) { this.id = id; }
+
+        public Long getParentId() { return parentId; }
+        public void setParentId(Long parentId) { this.parentId = parentId; }
+
+        public Long getStudentId() { return studentId; }
+        public void setStudentId(Long studentId) { this.studentId = studentId; }
+
+        public String getStudentName() { return studentName; }
+        public void setStudentName(String studentName) { this.studentName = studentName; }
+
+        public ParentLeaveNotice.NoticeType getType() { return type; }
+        public void setType(ParentLeaveNotice.NoticeType type) { this.type = type; }
+
+        public LocalDate getDate() { return date; }
+        public void setDate(LocalDate date) { this.date = date; }
+
+        public LocalTime getArriveAt() { return arriveAt; }
+        public void setArriveAt(LocalTime arriveAt) { this.arriveAt = arriveAt; }
+
+        public LocalTime getLeaveAt() { return leaveAt; }
+        public void setLeaveAt(LocalTime leaveAt) { this.leaveAt = leaveAt; }
+
+        public ParentLeaveNotice.ReasonCode getReasonCode() { return reasonCode; }
+        public void setReasonCode(ParentLeaveNotice.ReasonCode reasonCode) { this.reasonCode = reasonCode; }
+
+        public String getNote() { return note; }
+        public void setNote(String note) { this.note = note; }
+
+        public ParentLeaveNotice.NoticeStatus getStatus() { return status; }
+        public void setStatus(ParentLeaveNotice.NoticeStatus status) { this.status = status; }
+
+        public LocalDateTime getCreatedAt() { return createdAt; }
+        public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+        public LocalDateTime getUpdatedAt() { return updatedAt; }
+        public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+        public LocalDateTime getAckAt() { return ackAt; }
+        public void setAckAt(LocalDateTime ackAt) { this.ackAt = ackAt; }
+
+        public Long getAckByUserId() { return ackByUserId; }
+        public void setAckByUserId(Long ackByUserId) { this.ackByUserId = ackByUserId; }
     }
 }
