@@ -1,15 +1,14 @@
 package com.classroomapp.classroombackend.service.impl;
 
+import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -122,7 +121,14 @@ public class AssignmentServiceImpl implements AssignmentService {
             log.info("Security check passed: User {} is authorized to create assignments in classroom {}",
                     teacher.getUsername(), classroom.getId());
 
-            Assignment assignment = modelMapper.map(createAssignmentDto, Assignment.class);
+            // Tránh mọi khả năng ModelMapper ánh xạ sai trường id → luôn tạo entity mới
+            Assignment assignment = new Assignment();
+            assignment.setId(null); // ép Hibernate INSERT thay vì UPDATE
+            assignment.setTitle(createAssignmentDto.getTitle());
+            assignment.setDescription(createAssignmentDto.getDescription());
+            assignment.setRichTextContent(createAssignmentDto.getRichTextContent());
+            assignment.setDueDate(createAssignmentDto.getDueDate());
+            assignment.setPoints(createAssignmentDto.getPoints());
             assignment.setClassroom(classroom);
             log.info("Created assignment entity: title={}, dueDate={}, points={}",
                     assignment.getTitle(), assignment.getDueDate(), assignment.getPoints());
