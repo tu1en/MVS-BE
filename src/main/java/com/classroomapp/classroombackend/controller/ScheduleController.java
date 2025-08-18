@@ -137,4 +137,17 @@ public class ScheduleController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
+    
+    @PostMapping("/link-with-lectures")
+    public ResponseEntity<String> linkSchedulesWithLectures() {
+        log.info("POST /api/schedules/link-with-lectures - Linking schedules with lectures");
+        try {
+            String result = scheduleService.linkSchedulesWithLectures();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Error linking schedules with lectures: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Lỗi khi link schedules với lectures: " + e.getMessage());
+        }
+    }
 } 

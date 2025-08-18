@@ -72,4 +72,9 @@ public interface ScheduleService {
      * Get lectures associated with a specific schedule
      */
     List<LectureDto> getLecturesByScheduleId(Long scheduleId);
+    
+    /**
+     * Link existing schedules with lectures for testing
+     */
+    String linkSchedulesWithLectures();
 }

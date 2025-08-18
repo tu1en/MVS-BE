@@ -1,29 +1,36 @@
 package com.classroomapp.classroombackend.service.impl;
 
-import com.classroomapp.classroombackend.dto.request.CreateInvoiceDto;
-import com.classroomapp.classroombackend.dto.request.UpdateInvoiceStatusDto;
-import com.classroomapp.classroombackend.model.*;
-import com.classroomapp.classroombackend.model.usermanagement.User;
-import com.classroomapp.classroombackend.model.usermanagement.Role;
-import com.classroomapp.classroombackend.repository.*;
-import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
-import com.classroomapp.classroombackend.service.ManagerBillingService;
-import com.classroomapp.classroombackend.service.BillingNotificationService;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.classroomapp.classroombackend.dto.request.CreateInvoiceDto;
+import com.classroomapp.classroombackend.dto.request.UpdateInvoiceStatusDto;
+import com.classroomapp.classroombackend.model.Invoice;
+import com.classroomapp.classroombackend.model.InvoiceItem;
+import com.classroomapp.classroombackend.model.Payment;
+import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.InvoiceItemRepository;
+import com.classroomapp.classroombackend.repository.InvoiceRepository;
+import com.classroomapp.classroombackend.repository.PaymentRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.classroomapp.classroombackend.service.BillingNotificationService;
+import com.classroomapp.classroombackend.service.ManagerBillingService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
@@ -100,7 +107,7 @@ public class ManagerBillingServiceImpl implements ManagerBillingService {
                 .dueDate(invoiceDto.getDueDate())
                 .totalAmount(totalAmount)
                 .paidAmount(BigDecimal.ZERO)
-                .status(Invoice.InvoiceStatus.PENDING)
+                .status(Invoice.InvoiceStatus.valueOf(invoiceDto.getStatus()))
                 .note(invoiceDto.getNote())
                 .documentPath(documentPath)
                 .createdAt(LocalDateTime.now())

@@ -2,6 +2,7 @@ package com.classroomapp.classroombackend.service.impl;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.TextStyle;
 import java.time.temporal.TemporalAdjusters;
@@ -179,10 +180,25 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     public List<TimetableEventDto> getTimetableForUser(Long userId, LocalDate startDate, LocalDate endDate) {
-        // This method converts Schedule entities to TimetableEventDto for calendar display
-        // For now, return empty list - this would need proper implementation based on requirements
         log.info("Getting timetable for user {} from {} to {}", userId, startDate, endDate);
-        return new ArrayList<>();
+        
+        // Get schedules for the teacher
+        List<Schedule> schedules = scheduleRepository.findByTeacherId(userId);
+        log.info("Found {} schedules for teacher ID: {}", schedules.size(), userId);
+        
+        List<TimetableEventDto> timetableEvents = new ArrayList<>();
+        
+        // Convert each schedule to timetable events
+        for (Schedule schedule : schedules) {
+            TimetableEventDto event = convertScheduleToTimetableEvent(schedule);
+            if (event != null) {
+                timetableEvents.add(event);
+                log.debug("Created timetable event: {}", event);
+            }
+        }
+        
+        log.info("Returning {} timetable events for user {}", timetableEvents.size(), userId);
+        return timetableEvents;
     }
 
     private ScheduleDto convertToDto(Schedule schedule) {
@@ -565,16 +581,151 @@ public class ScheduleServiceImpl implements ScheduleService {
             default: targetDayOfWeek = DayOfWeek.MONDAY; break;
         }
         
-        // Tìm ngày tiếp theo của thứ được chỉ định
+        // Tìm ngày gần nhất của thứ được chỉ định (có thể là hôm nay hoặc trong tuần này)
         LocalDate nextDate = today.with(TemporalAdjusters.nextOrSame(targetDayOfWeek));
         
-        // Nếu ngày hôm nay đã là thứ được chỉ định, lấy tuần tiếp theo
-        if (nextDate.isEqual(today)) {
+        // Nếu ngày đó đã qua trong tuần này, lấy tuần tiếp theo
+        // Chỉ tính ngày trong tương lai hoặc hôm nay
+        if (nextDate.isBefore(today)) {
             nextDate = today.with(TemporalAdjusters.next(targetDayOfWeek));
         }
         
 
         
         return nextDate;
+    }
+    
+    /**
+     * Convert Schedule to TimetableEventDto for frontend compatibility
+     */
+    private TimetableEventDto convertScheduleToTimetableEvent(Schedule schedule) {
+        if (schedule == null) {
+            return null;
+        }
+        
+        TimetableEventDto event = new TimetableEventDto();
+        
+        // Basic information
+        event.setId(schedule.getId());
+        event.setDay(schedule.getDayOfWeek()); // 0=Monday, 1=Tuesday, etc.
+        event.setDayName(getDayOfWeekName(schedule.getDayOfWeek()));
+        
+        // Time information
+        if (schedule.getStartTime() != null) {
+            event.setStart(schedule.getStartTime().toString().substring(0, 5)); // "HH:MM"
+        }
+        if (schedule.getEndTime() != null) {
+            event.setEnd(schedule.getEndTime().toString().substring(0, 5)); // "HH:MM"
+        }
+        
+        // Classroom and subject information
+        if (schedule.getClassroom() != null) {
+            event.setClassName(schedule.getClassroom().getName());
+            event.setClassroomId(schedule.getClassroom().getId());
+        }
+        event.setSubject(schedule.getSubject());
+        event.setRoom(schedule.getRoom());
+        
+        // Teacher information
+        if (schedule.getTeacher() != null) {
+            event.setTeacherName(schedule.getTeacher().getFullName());
+            event.setTeacherId(schedule.getTeacher().getId());
+        }
+        
+        // Links
+        event.setMaterialsUrl(schedule.getMaterialsUrl());
+        event.setMeetUrl(schedule.getMeetUrl());
+        
+        // Lecture relationship
+        if (schedule.getLecture() != null) {
+            event.setLectureId(schedule.getLecture().getId());
+        }
+        
+        // Calculate next occurrence date
+        if (schedule.getDayOfWeek() != null) {
+            LocalDate nextDate = calculateNextOccurrenceDate(schedule.getDayOfWeek());
+            event.setDate(nextDate);
+            
+            // Create proper datetime objects for the frontend
+            if (schedule.getStartTime() != null) {
+                event.setStartDatetime(LocalDateTime.of(nextDate, schedule.getStartTime()));
+            }
+            if (schedule.getEndTime() != null) {
+                event.setEndDatetime(LocalDateTime.of(nextDate, schedule.getEndTime()));
+            }
+        }
+        
+        // Set frontend-compatible fields
+        event.setTitle(schedule.getSubject());
+        event.setDescription(schedule.getSubject());
+        event.setLocation(schedule.getRoom());
+        event.setClassroomName(schedule.getClassroom() != null ? schedule.getClassroom().getName() : null);
+        event.setColor("#1890ff"); // Default blue color
+        
+        log.debug("Converted schedule {} to timetable event: day={}, class={}, subject={}, lectureId={}", 
+            schedule.getId(), event.getDay(), event.getClassName(), event.getSubject(), event.getLectureId());
+        
+        return event;
+    }
+    
+    @Override
+    public String linkSchedulesWithLectures() {
+        log.info("Starting to link schedules with lectures...");
+        
+        List<Schedule> allSchedules = scheduleRepository.findAll();
+        List<Lecture> allLectures = lectureRepository.findAll();
+        
+        log.info("Found {} schedules and {} lectures to process", allSchedules.size(), allLectures.size());
+        
+        int linkedCount = 0;
+        StringBuilder result = new StringBuilder();
+        result.append("🔗 LINKING SCHEDULES WITH LECTURES\n\n");
+        
+        for (Schedule schedule : allSchedules) {
+            if (schedule.getLecture() == null && schedule.getClassroom() != null) {
+                // Tìm lecture phù hợp cho schedule này
+                List<Lecture> lecturesForClassroom = allLectures.stream()
+                    .filter(lecture -> lecture.getClassroom() != null && 
+                            lecture.getClassroom().getId().equals(schedule.getClassroom().getId()))
+                    .toList();
+                
+                if (!lecturesForClassroom.isEmpty()) {
+                    // Chọn lecture đầu tiên cho đơn giản
+                    Lecture selectedLecture = lecturesForClassroom.get(0);
+                    schedule.setLecture(selectedLecture);
+                    scheduleRepository.save(schedule);
+                    linkedCount++;
+                    
+                    log.info("Linked schedule {} (classroom: {}) with lecture {} ({})", 
+                        schedule.getId(), 
+                        schedule.getClassroom().getName(),
+                        selectedLecture.getId(), 
+                        selectedLecture.getTitle());
+                        
+                    result.append(String.format("✅ Schedule %d (%s) → Lecture %d (%s)\n",
+                        schedule.getId(),
+                        schedule.getSubject(),
+                        selectedLecture.getId(),
+                        selectedLecture.getTitle()));
+                } else {
+                    log.warn("No lectures found for classroom {} in schedule {}", 
+                        schedule.getClassroom().getName(), schedule.getId());
+                        
+                    result.append(String.format("⚠️ Schedule %d (%s) - No lectures available for classroom %s\n",
+                        schedule.getId(),
+                        schedule.getSubject(),
+                        schedule.getClassroom().getName()));
+                }
+            }
+        }
+        
+        result.append(String.format("\n📊 SUMMARY:\n"));
+        result.append(String.format("🔗 Successfully linked: %d schedules\n", linkedCount));
+        result.append(String.format("📚 Total schedules: %d\n", allSchedules.size()));
+        result.append(String.format("📖 Total lectures: %d\n", allLectures.size()));
+        
+        String finalResult = result.toString();
+        log.info("Linking completed. Result: {}", finalResult);
+        return finalResult;
     }
 }

@@ -4,6 +4,7 @@ import java.time.LocalTime;
 
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.model.Lecture;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -57,6 +58,10 @@ public class Schedule {
     @Column(name = "meet_url")
     private String meetUrl;
     
+    @ManyToOne
+    @JoinColumn(name = "lecture_id")
+    private Lecture lecture;
+    
     // For calculating shift or period of day
     public String getPeriod() {
         if (startTime.isBefore(LocalTime.of(12, 0))) {
@@ -89,4 +94,6 @@ public class Schedule {
     public void setClassroom(Classroom classroom) { this.classroom = classroom; }
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+    public Lecture getLecture() { return lecture; }
+    public void setLecture(Lecture lecture) { this.lecture = lecture; }
 } 

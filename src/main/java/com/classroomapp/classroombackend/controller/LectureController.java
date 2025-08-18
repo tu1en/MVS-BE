@@ -57,7 +57,16 @@ public class LectureController {
     // Get all lectures for a classroom - Changed endpoint to avoid conflict with CourseController
     @GetMapping("/lectures/classroom/{classroomId}")
     public ResponseEntity<List<LectureDto>> getLecturesByClassroom(@PathVariable Long classroomId) {
+        System.out.println("🔍 [LectureController] Getting lectures for classroom: " + classroomId);
         List<Lecture> lectures = lectureRepository.findByClassroomId(classroomId);
+        System.out.println("🔍 [LectureController] Found " + lectures.size() + " lectures");
+        
+        for (Lecture lecture : lectures) {
+            System.out.println("🔍 [LectureController] Lecture: ID=" + lecture.getId() + 
+                              ", Title=" + lecture.getTitle() + 
+                              ", Date=" + lecture.getLectureDate());
+        }
+        
         List<LectureDto> lectureDtos = new ArrayList<>();
         
         for (Lecture lecture : lectures) {
@@ -72,14 +81,14 @@ public class LectureController {
             if (lecture.getSchedule() != null) {
                 Schedule schedule = lecture.getSchedule();
                 
-                // Calculate the correct date from schedule's dayOfWeek
-                LocalDate scheduleDate = calculateNextOccurrenceDate(schedule.getDayOfWeek());
+                // Use the actual lecture date for start/end times
+                LocalDate actualLectureDate = lecture.getLectureDate();
                 
-                if (schedule.getStartTime() != null) {
-                    dto.setStartTime(LocalDateTime.of(scheduleDate, schedule.getStartTime()));
+                if (schedule.getStartTime() != null && actualLectureDate != null) {
+                    dto.setStartTime(LocalDateTime.of(actualLectureDate, schedule.getStartTime()));
                 }
-                if (schedule.getEndTime() != null) {
-                    dto.setEndTime(LocalDateTime.of(scheduleDate, schedule.getEndTime()));
+                if (schedule.getEndTime() != null && actualLectureDate != null) {
+                    dto.setEndTime(LocalDateTime.of(actualLectureDate, schedule.getEndTime()));
                 }
             }
             

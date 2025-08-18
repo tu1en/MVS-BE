@@ -1,12 +1,12 @@
 package com.classroomapp.classroombackend.dto.request;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.*;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
+import lombok.Data;
 
 @Data
 public class CreateInvoiceDto {
@@ -29,6 +29,11 @@ public class CreateInvoiceDto {
     @Valid
     @NotEmpty(message = "Phải có ít nhất một khoản phí")
     private List<InvoiceItemDto> items;
+
+    @NotBlank(message = "Trạng thái hóa đơn không được để trống")
+    @Pattern(regexp = "^(PENDING|PAID|PARTIAL|OVERDUE|CANCELLED)$", 
+             message = "Trạng thái phải là PENDING, PAID, PARTIAL, OVERDUE hoặc CANCELLED")
+    private String status;
 
     @Data
     public static class InvoiceItemDto {

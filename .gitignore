@@ -55,3 +55,31 @@ buildNumber.properties
 uploads/
 # Test-only controller – do not commit
 **/SMSTestController.java
+
+# ------------------------------------------------------------------
+# 10. File cấu hình và tài liệu tạm thời
+.editorconfig
+TEACHER_SALARY_IMPLEMENTATION.md
+TROUBLESHOOTING.md
+build-safe.bat
+check-imports.ps1
+fix-imports.bat
+import-template.txt
+start-application.bat
+nul
+
+# 11. Thư mục cấu hình tạm thời
+src/main/java/com/classroomapp/classroombackend/config/a/
+
+# 12. File tạm thời và test
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+
+# 13. File log và debug
+*.log.*
+debug.log
+error.log

@@ -31,6 +31,7 @@ import com.classroomapp.classroombackend.model.ExplanationStatus;
 import com.classroomapp.classroombackend.model.JobPosition;
 import com.classroomapp.classroombackend.model.Lecture;
 import com.classroomapp.classroombackend.model.Parent;
+import com.classroomapp.classroombackend.model.ParentLeaveNotice;
 import com.classroomapp.classroombackend.model.ParentMessage;
 import com.classroomapp.classroombackend.model.ParentMessage.SenderType;
 import com.classroomapp.classroombackend.model.RecruitmentApplication;
@@ -46,7 +47,6 @@ import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
 import com.classroomapp.classroombackend.model.assignmentmanagement.Submission;
 import com.classroomapp.classroombackend.model.attendancemanagement.Attendance;
 import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSession;
-import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceStatus;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.classroommanagement.ClassroomEnrollment;
 import com.classroomapp.classroombackend.model.classroommanagement.ClassroomEnrollmentId;
@@ -78,13 +78,13 @@ import com.classroomapp.classroombackend.repository.classroommanagement.Classroo
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.CourseRepository;
 import com.classroomapp.classroombackend.repository.hrmanagement.EvidenceTemplateRepository;
+import com.classroomapp.classroombackend.repository.parentmanagement.ParentLeaveNoticeRepository;
 import com.classroomapp.classroombackend.repository.parentmanagement.ParentMessageRepository;
 import com.classroomapp.classroombackend.repository.parentmanagement.ParentRepository;
 import com.classroomapp.classroombackend.repository.parentmanagement.StudentParentRepository;
 import com.classroomapp.classroombackend.repository.requestmanagement.RequestRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.RoleRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
-
 import com.classroomapp.classroombackend.service.ContractService;
 
 import jakarta.persistence.EntityManager;
@@ -198,6 +198,9 @@ private EvidenceTemplateRepository evidenceTemplateRepository;
     @Autowired
     private ParentMessageRepository parentMessageRepository;
     
+    @Autowired
+    private ParentLeaveNoticeRepository parentLeaveNoticeRepository;
+    
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -206,6 +209,10 @@ private EvidenceTemplateRepository evidenceTemplateRepository;
     public void run(String... args) throws Exception {
         // Clean up duplicate submissions first
         cleanupDuplicateSubmissions();
+        
+        // Clean up duplicate schedules and timetable events
+        cleanupDuplicateSchedules();
+        cleanupDuplicateTimetableEvents();
         
         List<Classroom> classrooms;
         if (userRepository.count() == 0) {
@@ -229,15 +236,15 @@ private EvidenceTemplateRepository evidenceTemplateRepository;
             // Comment out automatic enrollment seeding - manager sẽ thêm học viên thủ công
             // seedClassroomEnrollments();
             
-                    // Seed schedules
-        log.info("============== Seeding Schedules ==============");
-        seedSchedules();
-        log.info("============== Schedule Seeding Complete ==============");
-        
-        // Seed timetable events
-        log.info("============== Seeding Timetable Events ==============");
-        seedTimetableEvents();
-        log.info("============== Timetable Events Seeding Complete ==============");
+            // Seed schedules
+            log.info("============== Seeding Schedules ==============");
+            seedSchedules();
+            log.info("============== Schedule Seeding Complete ==============");
+            
+            // Seed timetable events
+            log.info("============== Seeding Timetable Events ==============");
+            seedTimetableEvents();
+            log.info("============== Timetable Events Seeding Complete ==============");
             
             // Seed role requests
             seedRequests();
@@ -291,6 +298,19 @@ seedEvidenceTemplates();
         } else {
             log.info("Database already has users. Skipping main seeding.");
             classrooms = classroomRepository.findAll();
+            
+            // Check if schedules and timetable events need to be created
+            if (scheduleRepository.count() == 0) {
+                log.info("============== Creating Missing Schedules ==============");
+                seedSchedules();
+                log.info("============== Schedule Creation Complete ==============");
+            }
+            
+            if (timetableEventRepository.count() == 0) {
+                log.info("============== Creating Missing Timetable Events ==============");
+                seedTimetableEvents();
+                log.info("============== Timetable Events Creation Complete ==============");
+            }
         }
 
         // Ensure there are enough teachers for demo even when DB already has data
@@ -694,10 +714,11 @@ seedEvidenceTemplates();
                 student.setRoleId(RoleConstants.STUDENT);
                 student.setParentPhone("+84901234567");
                 student.setParentName("Phụ huynh Student");
+                student.setStatus("active");
                 userRepository.save(student);
                 log.info("✅ Created student user with ID: " + student.getId());
 
-                // Create main teacher user
+                // Create main teacher user - Fixed to ensure proper creation
                 User teacher = new User();
                 teacher.setId(201L);
                 teacher.setUsername("teacher");
@@ -710,8 +731,16 @@ seedEvidenceTemplates();
                 teacher.setHireDate(LocalDate.now().minusYears(2));
                 teacher.setAnnualLeaveBalance(12);
                 teacher.setLeaveResetDate(LocalDate.now().plusMonths(6));
-                userRepository.save(teacher);
-                log.info("✅ Created teacher user with ID: " + teacher.getId());
+                teacher.setStatus("active");
+                User savedTeacher = userRepository.save(teacher);
+                log.info("✅ Created teacher user with ID: {} and email: {}", savedTeacher.getId(), savedTeacher.getEmail());
+                
+                // Verify teacher was created
+                if (userRepository.findByEmail("teacher@test.com").isPresent()) {
+                    log.info("✅ Verified teacher@test.com exists in database");
+                } else {
+                    log.error("❌ Failed to verify teacher@test.com in database");
+                }
 
                 // Create manager user
                 User manager = new User();
@@ -721,6 +750,7 @@ seedEvidenceTemplates();
                 manager.setEmail("bigfattyboi1801@gmail.com");
                 manager.setFullName("Manager User");
                 manager.setRoleId(RoleConstants.MANAGER);
+                manager.setStatus("active");
                 userRepository.save(manager);
 
                 // Create admin user
@@ -731,6 +761,7 @@ seedEvidenceTemplates();
                 admin.setEmail("admin@test.com");
                 admin.setFullName("Administrator");
                 admin.setRoleId(RoleConstants.ADMIN);
+                admin.setStatus("active");
                 userRepository.save(admin);
 
                 // Create parent user
@@ -741,6 +772,7 @@ seedEvidenceTemplates();
                 parent.setEmail("parent@test.com");
                 parent.setFullName("Parent User");
                 parent.setRoleId(RoleConstants.PARENT);
+                parent.setStatus("active");
                 userRepository.save(parent);
 
                 // Create subject-specific teachers
@@ -756,6 +788,7 @@ seedEvidenceTemplates();
                 mathTeacher.setHireDate(LocalDate.now().minusYears(3));
                 mathTeacher.setAnnualLeaveBalance(4);
                 mathTeacher.setLeaveResetDate(LocalDate.now().plusMonths(8));
+                mathTeacher.setStatus("active");
                 userRepository.save(mathTeacher);
 
                 User litTeacher = new User();
@@ -770,6 +803,7 @@ seedEvidenceTemplates();
                 litTeacher.setHireDate(LocalDate.now().minusYears(1));
                 litTeacher.setAnnualLeaveBalance(-3);
                 litTeacher.setLeaveResetDate(LocalDate.now().plusMonths(3));
+                litTeacher.setStatus("active");
                 userRepository.save(litTeacher);
 
                 User engTeacher = new User();
@@ -784,6 +818,7 @@ seedEvidenceTemplates();
                 engTeacher.setHireDate(LocalDate.now().minusYears(4));
                 engTeacher.setAnnualLeaveBalance(8);
                 engTeacher.setLeaveResetDate(LocalDate.now().plusMonths(10));
+                engTeacher.setStatus("active");
                 userRepository.save(engTeacher);
 
                 // Create additional test students
@@ -796,6 +831,7 @@ seedEvidenceTemplates();
                 student1.setRoleId(RoleConstants.STUDENT);
                 student1.setParentPhone("+84987654321");
                 student1.setParentName("Phạm Thị Hoa");
+                student1.setStatus("active");
                 userRepository.save(student1);
 
                 User student2 = new User();
@@ -807,6 +843,7 @@ seedEvidenceTemplates();
                 student2.setRoleId(RoleConstants.STUDENT);
                 student2.setParentPhone("+84976543210");
                 student2.setParentName("Mrs. Johnson");
+                student2.setStatus("active");
                 userRepository.save(student2);
 
                 User student3 = new User();
@@ -818,6 +855,7 @@ seedEvidenceTemplates();
                 student3.setRoleId(RoleConstants.STUDENT);
                 student3.setParentPhone("+84965432109");
                 student3.setParentName("Mr. Wilson");
+                student3.setStatus("active");
                 userRepository.save(student3);
 
                 User student4 = new User();
@@ -829,6 +867,7 @@ seedEvidenceTemplates();
                 student4.setRoleId(RoleConstants.STUDENT);
                 student4.setParentPhone("+84954321098");
                 student4.setParentName("Mrs. Davis");
+                student4.setStatus("active");
                 userRepository.save(student4);
 
                 User student5 = new User();
@@ -840,6 +879,7 @@ seedEvidenceTemplates();
                 student5.setRoleId(RoleConstants.STUDENT);
                 student5.setParentPhone("+84943210987");
                 student5.setParentName("Mr. Chen");
+                student5.setStatus("active");
                 userRepository.save(student5);
 
                 // Additional teachers
@@ -855,6 +895,7 @@ seedEvidenceTemplates();
                 extraTeacher1.setHireDate(LocalDate.now().minusYears(5));
                 extraTeacher1.setAnnualLeaveBalance(9);
                 extraTeacher1.setLeaveResetDate(LocalDate.now().plusMonths(4));
+                extraTeacher1.setStatus("active");
                 userRepository.save(extraTeacher1);
 
                 User extraTeacher2 = new User();
@@ -869,6 +910,7 @@ seedEvidenceTemplates();
                 extraTeacher2.setHireDate(LocalDate.now().minusMonths(6));
                 extraTeacher2.setAnnualLeaveBalance(12);
                 extraTeacher2.setLeaveResetDate(LocalDate.now().plusMonths(6));
+                extraTeacher2.setStatus("active");
                 userRepository.save(extraTeacher2);
 
                 // ===== Thêm bộ giáo viên theo chuẩn cấp 3 (Toán, Lý, Hóa, Văn, Anh, Sinh) =====
@@ -902,9 +944,14 @@ seedEvidenceTemplates();
                     u.setPassword(passwordEncoder.encode("teacher123"));
                     u.setEmail(t[1]);
                     u.setFullName(t[2]);
-
-                    // Removed: previously created ACTIVE teacher contracts for demo filters.
-                    // Per requirement, no automatic test contract data should be generated here.
+                    u.setRoleId(RoleConstants.TEACHER);
+                    u.setDepartment(t[3]);
+                    u.setStatus("active");
+                    u.setHireDate(LocalDate.now().minusMonths((int)(Math.random() * 24) + 1));
+                    u.setAnnualLeaveBalance(12);
+                    u.setLeaveResetDate(LocalDate.now().plusMonths(6));
+                    userRepository.save(u);
+                    log.info("✅ Created teacher: {} ({})", t[2], t[3]);
                 }
 
                 // Create accountant user
@@ -918,6 +965,7 @@ seedEvidenceTemplates();
                 accountant.setPhoneNumber("0901122334");
                 accountant.setDepartment("Kế toán viên");
                 accountant.setHireDate(LocalDate.of(2025, 7, 1));
+                accountant.setStatus("active");
                 userRepository.save(accountant);
 
                 log.info("✅ Created accountant user with ID: " + accountant.getId());
@@ -933,6 +981,7 @@ seedEvidenceTemplates();
                 teachingAssistant1.setPhoneNumber("0912345689");
                 teachingAssistant1.setDepartment("Trợ giảng Toán");
                 teachingAssistant1.setHireDate(LocalDate.now().minusMonths(6));
+                teachingAssistant1.setStatus("active");
                 userRepository.save(teachingAssistant1);
 
                 User teachingAssistant2 = new User();
@@ -945,6 +994,7 @@ seedEvidenceTemplates();
                 teachingAssistant2.setPhoneNumber("0987654322");
                 teachingAssistant2.setDepartment("Trợ giảng Văn");
                 teachingAssistant2.setHireDate(LocalDate.now().minusMonths(3));
+                teachingAssistant2.setStatus("active");
                 userRepository.save(teachingAssistant2);
 
                 log.info("✅ Created Teaching Assistant users");
@@ -1309,8 +1359,8 @@ seedEvidenceTemplates();
             
             int eventCount = 0;
             
-            // Create events for the next 4 weeks
-            for (int week = 0; week < 4; week++) {
+            // Create events for the next 8 weeks (instead of 4) to cover all needs
+            for (int week = 0; week < 8; week++) {
                 for (Schedule schedule : schedules) {
                     LocalDateTime eventStart = startOfWeek
                         .plusWeeks(week)
@@ -1331,28 +1381,47 @@ seedEvidenceTemplates();
                         continue;
                     }
                     
-                    TimetableEvent event = new TimetableEvent();
-                    event.setTitle(schedule.getSubject() + " - " + schedule.getClassroom().getName());
-                    event.setDescription("Lớp học " + schedule.getSubject() + " - " + schedule.getClassroom().getName() + " - Phòng: " + schedule.getRoom());
-                    event.setStartDatetime(eventStart);
-                    event.setEndDatetime(eventEnd);
-                    event.setEventType(TimetableEvent.EventType.CLASS);
-                    event.setCreatedBy(schedule.getTeacher().getId());
-                    event.setClassroomId(schedule.getClassroom().getId());
-                    event.setLocation(schedule.getRoom());
-                    event.setIsAllDay(false);
-                    event.setReminderMinutes(15);
-                    event.setColor("#007bff");
-                    event.setIsCancelled(false);
-                    event.setCreatedAt(now);
-                    event.setUpdatedAt(now);
+                    TimetableEvent classEvent = new TimetableEvent();
+                    classEvent.setTitle(schedule.getSubject());
+                    classEvent.setDescription("Lớp học " + schedule.getSubject() + " - " + schedule.getClassroom().getName());
+                    classEvent.setStartDatetime(eventStart);
+                    classEvent.setEndDatetime(eventEnd);
+                    classEvent.setEventType(TimetableEvent.EventType.CLASS);
+                    classEvent.setClassroomId(schedule.getClassroom().getId());
+                    classEvent.setCreatedBy(schedule.getTeacher().getId());
+                    classEvent.setLocation(schedule.getRoom());
+                    classEvent.setColor("#1890ff");
+                    classEvent.setCreatedAt(now);
+                    classEvent.setUpdatedAt(now);
                     
-                    timetableEventRepository.save(event);
+                    timetableEventRepository.save(classEvent);
                     eventCount++;
+                    
+                    // Add exam events every 3 weeks
+                    if (week % 3 == 2) {
+                        LocalDateTime examStart = eventStart.plusDays(2).withHour(14);
+                        LocalDateTime examEnd = examStart.plusHours(1);
+                        
+                        TimetableEvent examEvent = new TimetableEvent();
+                        examEvent.setTitle("Kiểm tra " + schedule.getSubject());
+                        examEvent.setDescription("Bài kiểm tra môn " + schedule.getSubject());
+                        examEvent.setStartDatetime(examStart);
+                        examEvent.setEndDatetime(examEnd);
+                        examEvent.setEventType(TimetableEvent.EventType.EXAM);
+                        examEvent.setClassroomId(schedule.getClassroom().getId());
+                        examEvent.setCreatedBy(schedule.getTeacher().getId());
+                        examEvent.setLocation("Phòng thi " + schedule.getRoom().replaceAll("Room", "Exam"));
+                        examEvent.setColor("#f5222d");
+                        examEvent.setCreatedAt(now);
+                        examEvent.setUpdatedAt(now);
+                        
+                        timetableEventRepository.save(examEvent);
+                        eventCount++;
+                    }
                 }
             }
             
-            log.info("✅ Created {} timetable events for next 4 weeks", eventCount);
+            log.info("✅ Created {} timetable events for {} weeks", eventCount, 8);
         } else {
             log.info("✅ Timetable events already seeded.");
         }
@@ -1946,7 +2015,7 @@ seedEvidenceTemplates();
                     Attendance attendance = new Attendance();
                     attendance.setSession(session);
                     attendance.setStudent(student);
-                    attendance.setStatus(AttendanceStatus.PRESENT);
+                    attendance.setStatus(com.classroomapp.classroombackend.model.attendancemanagement.AttendanceStatus.PRESENT);
                     attendanceRepository.save(attendance);
                 }
             }
@@ -2594,8 +2663,12 @@ private void createEvidenceTemplate(String name, String code, String description
             log.info("✅ Created attendance data for parent testing");
             
             // Create timetable events for students
-            createTimetableEventsForStudents(studentUsers, parentTestCourses);
-            log.info("✅ Created timetable events for students");
+            // createTimetableEventsForStudents(studentUsers, parentTestCourses);
+            log.info("✅ Skipped duplicate timetable events creation for students (already handled in main seeding)");
+            
+            // Create sample leave notices
+            createSampleLeaveNotices(parents, studentUsers);
+            log.info("✅ Created sample leave notices for testing");
             
             log.info("🎉 Parent role seeder data creation completed successfully!");
             
@@ -2990,12 +3063,12 @@ private void createEvidenceTemplate(String name, String code, String description
             // Randomize attendance status
             int rand = student.getId().intValue() % 100;
             if (rand < 80) {
-                attendance.setStatus(AttendanceStatus.PRESENT);
+                attendance.setStatus(com.classroomapp.classroombackend.model.attendancemanagement.AttendanceStatus.PRESENT);
             } else if (rand < 95) {
-                attendance.setStatus(AttendanceStatus.LATE);
+                attendance.setStatus(com.classroomapp.classroombackend.model.attendancemanagement.AttendanceStatus.LATE);
                 attendance.setNote("Đến muộn 10 phút");
             } else {
-                attendance.setStatus(AttendanceStatus.ABSENT);
+                attendance.setStatus(com.classroomapp.classroombackend.model.attendancemanagement.AttendanceStatus.ABSENT);
                 attendance.setNote("Vắng không phép");
             }
             
@@ -3091,8 +3164,8 @@ private void createEvidenceTemplate(String name, String code, String description
                 log.info("Created timetable events based on {} schedules for 8 weeks", schedules.size());
             } else {
                 // Fallback: create basic events for courses
-                log.warn("No schedules found, creating basic events for courses");
-                createBasicTimetableEventsForCourses(courses, classrooms, now);
+                // createBasicTimetableEventsForCourses(courses, classrooms, now);
+                log.warn("Skipped basic timetable events creation (already handled in main seeding)");
             }
             
         } catch (Exception e) {
@@ -3268,6 +3341,128 @@ private void createEvidenceTemplate(String name, String code, String description
             
         } catch (Exception e) {
             log.error("❌ Error seeding parent messages: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Clean up duplicate schedules by keeping only one record per unique combination
+     */
+    private void cleanupDuplicateSchedules() {
+        try {
+            log.info("🔄 Cleaning up duplicate schedules...");
+            
+            // Delete duplicate schedules keeping the one with lowest ID
+            String deleteDuplicatesSQL = """
+                DELETE s1 FROM schedules s1
+                INNER JOIN schedules s2 ON 
+                    s1.id > s2.id 
+                    AND s1.start_time = s2.start_time 
+                    AND s1.end_time = s2.end_time
+                    AND s1.classroom_id = s2.classroom_id
+                    AND s1.subject = s2.subject
+                    AND s1.day_of_week = s2.day_of_week
+                """;
+            
+            int deletedCount = jdbcTemplate.update(deleteDuplicatesSQL);
+            log.info("✅ Cleaned up {} duplicate schedules", deletedCount);
+            
+        } catch (Exception e) {
+            log.error("❌ Error cleaning up duplicate schedules: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Clean up duplicate timetable events by keeping only one record per unique combination
+     */
+    private void cleanupDuplicateTimetableEvents() {
+        try {
+            log.info("🔄 Cleaning up duplicate timetable events...");
+            
+            // Since we have duplicate data from multiple seeding methods, 
+            // let's clear all and re-seed properly
+            if (timetableEventRepository.count() > 0) {
+                log.info("🗑️ Clearing all existing timetable events to prevent duplicates...");
+                timetableEventRepository.deleteAll();
+                log.info("✅ Cleared all timetable events");
+            } else {
+                log.info("✅ No existing timetable events to clean up");
+            }
+            
+        } catch (Exception e) {
+            log.error("❌ Error cleaning up duplicate timetable events: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Create sample leave notices for testing teacher leave-notices page
+     */
+    private void createSampleLeaveNotices(List<Parent> parents, List<User> studentUsers) {
+        if (parentLeaveNoticeRepository.count() > 0) {
+            log.info("ℹ️ Leave notices already exist, skipping creation");
+            return;
+        }
+        
+        try {
+            LocalDate today = LocalDate.now();
+            LocalDateTime now = LocalDateTime.now();
+            
+            // Create leave notices for different scenarios
+            for (int i = 0; i < Math.min(parents.size(), studentUsers.size()); i++) {
+                Parent parent = parents.get(i);
+                User student = studentUsers.get(i);
+                
+                // Leave notice for today (pending)
+                ParentLeaveNotice todayNotice = new ParentLeaveNotice();
+                todayNotice.setParentId(parent.getId());
+                todayNotice.setStudentId(student.getId());
+                todayNotice.setDate(today);
+                todayNotice.setType(ParentLeaveNotice.NoticeType.FULL_DAY);
+                todayNotice.setReasonCode(ParentLeaveNotice.ReasonCode.SICK);
+                todayNotice.setNote("Em bị sốt cao, xin phép nghỉ học");
+                todayNotice.setStatus(ParentLeaveNotice.NoticeStatus.SENT);
+                todayNotice.setCreatedAt(now.minusHours(2));
+                todayNotice.setUpdatedAt(now.minusHours(2));
+                parentLeaveNoticeRepository.save(todayNotice);
+                
+                // Leave notice for tomorrow (pending)
+                if (i < 2) {
+                    ParentLeaveNotice tomorrowNotice = new ParentLeaveNotice();
+                    tomorrowNotice.setParentId(parent.getId());
+                    tomorrowNotice.setStudentId(student.getId());
+                    tomorrowNotice.setDate(today.plusDays(1));
+                    tomorrowNotice.setType(ParentLeaveNotice.NoticeType.LATE);
+                    tomorrowNotice.setArriveAt(LocalTime.of(9, 30));
+                    tomorrowNotice.setReasonCode(ParentLeaveNotice.ReasonCode.EMERGENCY);
+                    tomorrowNotice.setNote("Gia đình có việc đột xuất, em sẽ đến trường muộn");
+                    tomorrowNotice.setStatus(ParentLeaveNotice.NoticeStatus.DELIVERED);
+                    tomorrowNotice.setCreatedAt(now.minusHours(1));
+                    tomorrowNotice.setUpdatedAt(now.minusHours(1));
+                    parentLeaveNoticeRepository.save(tomorrowNotice);
+                }
+                
+                // Leave notice for yesterday (acknowledged)
+                if (i < 3) {
+                    ParentLeaveNotice yesterdayNotice = new ParentLeaveNotice();
+                    yesterdayNotice.setParentId(parent.getId());
+                    yesterdayNotice.setStudentId(student.getId());
+                    yesterdayNotice.setDate(today.minusDays(1));
+                    yesterdayNotice.setType(ParentLeaveNotice.NoticeType.EARLY);
+                    yesterdayNotice.setLeaveAt(LocalTime.of(14, 30));
+                    yesterdayNotice.setReasonCode(ParentLeaveNotice.ReasonCode.APPOINTMENT);
+                    yesterdayNotice.setNote("Em có lịch khám bác sĩ");
+                    yesterdayNotice.setStatus(ParentLeaveNotice.NoticeStatus.ACKNOWLEDGED);
+                    yesterdayNotice.setAckAt(now.minusDays(1).plusHours(1));
+                    yesterdayNotice.setAckByUserId(1L); // Assume teacher user ID
+                    yesterdayNotice.setCreatedAt(now.minusDays(1));
+                    yesterdayNotice.setUpdatedAt(now.minusDays(1).plusHours(1));
+                    parentLeaveNoticeRepository.save(yesterdayNotice);
+                }
+            }
+            
+            log.info("✅ Created {} sample leave notices", parentLeaveNoticeRepository.count());
+            
+        } catch (Exception e) {
+            log.error("❌ Error creating sample leave notices: {}", e.getMessage(), e);
         }
     }
 } 
