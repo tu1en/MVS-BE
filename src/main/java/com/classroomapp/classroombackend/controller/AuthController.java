@@ -127,6 +127,17 @@ public class AuthController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
             }
 
+            // Enforce account status: only allow ACTIVE accounts
+            String status = user.getStatus();
+            if (status == null || !"active".equalsIgnoreCase(status)) {
+                Map<String, String> errorResponse = new HashMap<>();
+                String message = "locked".equalsIgnoreCase(status)
+                        ? "Tài khoản đã bị khóa"
+                        : "Tài khoản chưa được kích hoạt hoặc không hợp lệ";
+                errorResponse.put("error", message);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+            }
+
             Map<String, String> response = new HashMap<>();
 
             // Chuyển đổi roleId thành tên vai trò để thêm vào token
@@ -163,6 +174,9 @@ public class AuthController {
             response.put("roleId", user.getRoleId().toString());
             response.put("token", token);
             response.put("userId", user.getId().toString());
+            // Include username and email for frontend display
+            response.put("username", user.getUsername());
+            response.put("email", user.getEmail());
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -171,7 +185,9 @@ public class AuthController {
             errorResponse.put("error", "Đăng nhập thất bại: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
-    }    /**
+    }
+
+    /**
      * Request password reset
      * 
      * @param request password reset information
@@ -234,7 +250,9 @@ public class AuthController {
         log.info("Password reset confirmation received");
         authService.resetPassword(passwordConfirmation);
         return ResponseEntity.ok("Password reset successfully.");
-    }    /**
+    }
+
+    /**
      * Authenticate with Google ID token
      * 
      * @param credentials Google authentication information
@@ -287,7 +305,19 @@ public class AuthController {
         
         User user = userRepository.findByEmail(email).get();
         log.info("User found with email {}, role: {}", email, user.getRoleId());
-        
+
+        // Enforce account status: only allow ACTIVE accounts
+        String status = user.getStatus();
+        if (status == null || !"active".equalsIgnoreCase(status)) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("message", "locked".equalsIgnoreCase(status)
+                    ? "Tài khoản đã bị khóa"
+                    : "Tài khoản chưa được kích hoạt hoặc không hợp lệ");
+            error.put("email", email);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+        }
+
         // Generate JWT
         String roleName = jwtUtil.convertRoleIdToName(user.getRoleId());
         Map<String, Object> claims = new HashMap<>();
@@ -310,7 +340,10 @@ public class AuthController {
         response.put("roleId", user.getRoleId().toString());
         response.put("token", token);
         response.put("userId", user.getId().toString());
-        
+        // Include username and email for frontend display
+        response.put("username", user.getUsername());
+        response.put("email", user.getEmail());
+
         return ResponseEntity.ok(response);
     }
 

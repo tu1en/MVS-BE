@@ -856,11 +856,34 @@ public class ContractServiceImpl implements ContractService {
         dto.setContractId(contract.getContractId());
         dto.setFullName(contract.getFullName());
         dto.setEmail(contract.getEmail());
-        dto.setPhoneNumber(contract.getPhoneNumber());
+        // Phone fallback: if contract phone is missing, try fetching from linked User
+        String phone = contract.getPhoneNumber();
+        if (phone == null || phone.trim().isEmpty()) {
+            try {
+                User u = null;
+                if (contract.getUserId() != null && contract.getUserId() < 999999999L) {
+                    u = userRepository.findById(contract.getUserId()).orElse(null);
+                }
+                if (u == null && contract.getEmail() != null && !contract.getEmail().trim().isEmpty()) {
+                    u = userRepository.findByEmail(contract.getEmail()).orElse(null);
+                }
+                if (u != null && u.getPhoneNumber() != null && !u.getPhoneNumber().trim().isEmpty()) {
+                    phone = u.getPhoneNumber();
+                }
+            } catch (Exception e) {
+                log.warn("Phone fallback failed for contract ID {}: {}", contract.getId(), e.getMessage());
+            }
+        }
+        dto.setPhoneNumber(phone);
         dto.setContractType(contract.getContractType());
         dto.setPosition(contract.getPosition());
         dto.setDepartment(contract.getDepartment());
-        dto.setSalary(contract.getSalary());
+        // Round legacy salary to whole number for consistent display
+        if (contract.getSalary() != null) {
+            dto.setSalary((double) Math.round(contract.getSalary()));
+        } else {
+            dto.setSalary(null);
+        }
         
         // Map separate salary fields from Offer Management
         dto.setGrossSalary(contract.getGrossSalary());

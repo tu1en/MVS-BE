@@ -20,7 +20,6 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * JWT authentication filter for validating tokens in request header
@@ -28,7 +27,6 @@ import lombok.extern.slf4j.Slf4j;
  * and set up security context if the token is valid.
  */
 @Component
-@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
@@ -88,6 +86,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 // Kiểm tra nếu người dùng hợp lệ và có thể xác thực
                 if (userDetails != null) {
+                    // Enforce account status on every request
+                    if (!userDetails.isAccountNonLocked() || !userDetails.isEnabled()) {
+                        log.warn("JWT Filter - User account not allowed. Locked: {}, Enabled: {} for subject {}",
+                                !userDetails.isAccountNonLocked(), userDetails.isEnabled(), subject);
+                        // Do not set authentication; proceed without authenticated context
+                        filterChain.doFilter(request, response);
+                        return;
+                    }
                     // Tạo đối tượng xác thực với UserDetails làm principal
                     UsernamePasswordAuthenticationToken authentication = 
                             new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
