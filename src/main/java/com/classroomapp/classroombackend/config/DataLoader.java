@@ -915,25 +915,25 @@ seedEvidenceTemplates();
 
                 // ===== Thêm bộ giáo viên theo chuẩn cấp 3 (Toán, Lý, Hóa, Văn, Anh, Sinh) =====
                 String[][] teacherSeeds = new String[][]{
-                    // username, email, fullName, department
-                    {"toan_gv1","toan1@school.vn","Nguyễn Đức Toàn","Toán"},
-                    {"toan_gv2","toan2@school.vn","Phạm Hải Long","Toán"},
-                    {"toan_gv3","toan3@school.vn","Lê Minh Quân","Toán"},
-                    {"ly_gv1","ly1@school.vn","Trần Quốc Huy","Vật lý"},
-                    {"ly_gv2","ly2@school.vn","Đỗ Thanh Tùng","Vật lý"},
-                    {"ly_gv3","ly3@school.vn","Ngô Nhật Nam","Vật lý"},
-                    {"hoa_gv1","hoa1@school.vn","Vũ Hồng Phúc","Hóa học"},
-                    {"hoa_gv2","hoa2@school.vn","Bùi Thanh Hà","Hóa học"},
-                    {"hoa_gv3","hoa3@school.vn","Phan Anh Dũng","Hóa học"},
-                    {"van_gv1","van1@school.vn","Phạm Thu Hà","Ngữ văn"},
-                    {"van_gv2","van2@school.vn","Nguyễn Thị Hồng","Ngữ văn"},
-                    {"van_gv3","van3@school.vn","Hoàng Thị Trang","Ngữ văn"},
-                    {"anh_gv1","anh1@school.vn","Lê Hồng Sơn","Tiếng Anh"},
-                    {"anh_gv2","anh2@school.vn","Tạ Bích Ngọc","Tiếng Anh"},
-                    {"anh_gv3","anh3@school.vn","Phạm Khánh Linh","Tiếng Anh"},
-                    {"sinh_gv1","sinh1@school.vn","Đặng Quỳnh Chi","Sinh học"},
-                    {"sinh_gv2","sinh2@school.vn","Trịnh Văn Thái","Sinh học"},
-                    {"sinh_gv3","sinh3@school.vn","Nguyễn Tú Anh","Sinh học"}
+                    // username, email, fullName, department, phone
+                    {"toan_gv1","toan1@school.vn","Nguyễn Đức Toàn","Toán","0901001001"},
+                    {"toan_gv2","toan2@school.vn","Phạm Hải Long","Toán","0901001002"},
+                    {"toan_gv3","toan3@school.vn","Lê Minh Quân","Toán","0901001003"},
+                    {"ly_gv1","ly1@school.vn","Trần Quốc Huy","Vật lý","0912002001"},
+                    {"ly_gv2","ly2@school.vn","Đỗ Thanh Tùng","Vật lý","0912002002"},
+                    {"ly_gv3","ly3@school.vn","Ngô Nhật Nam","Vật lý","0912002003"},
+                    {"hoa_gv1","hoa1@school.vn","Vũ Hồng Phúc","Hóa học","0903003001"},
+                    {"hoa_gv2","hoa2@school.vn","Bùi Thanh Hà","Hóa học","0903003002"},
+                    {"hoa_gv3","hoa3@school.vn","Phan Anh Dũng","Hóa học","0903003003"},
+                    {"van_gv1","van1@school.vn","Phạm Thu Hà","Ngữ văn","0934004001"},
+                    {"van_gv2","van2@school.vn","Nguyễn Thị Hồng","Ngữ văn","0934004002"},
+                    {"van_gv3","van3@school.vn","Hoàng Thị Trang","Ngữ văn","0934004003"},
+                    {"anh_gv1","anh1@school.vn","Lê Hồng Sơn","Tiếng Anh","0975005001"},
+                    {"anh_gv2","anh2@school.vn","Tạ Bích Ngọc","Tiếng Anh","0975005002"},
+                    {"anh_gv3","anh3@school.vn","Phạm Khánh Linh","Tiếng Anh","0975005003"},
+                    {"sinh_gv1","sinh1@school.vn","Đặng Quỳnh Chi","Sinh học","0986006001"},
+                    {"sinh_gv2","sinh2@school.vn","Trịnh Văn Thái","Sinh học","0986006002"},
+                    {"sinh_gv3","sinh3@school.vn","Nguyễn Tú Anh","Sinh học","0986006003"}
                 };
 
                 long nextId = 600L; // tránh trùng ID đã dùng ở trên
@@ -946,6 +946,7 @@ seedEvidenceTemplates();
                     u.setFullName(t[2]);
                     u.setRoleId(RoleConstants.TEACHER);
                     u.setDepartment(t[3]);
+                    u.setPhoneNumber(t[4]);
                     u.setStatus("active");
                     u.setHireDate(LocalDate.now().minusMonths((int)(Math.random() * 24) + 1));
                     u.setAnnualLeaveBalance(12);
@@ -958,6 +959,7 @@ seedEvidenceTemplates();
                 User accountant = new User();
                 accountant.setId(501L);
                 accountant.setUsername("acc");
+                // ... (rest of the code remains the same)
                 accountant.setPassword(passwordEncoder.encode("acc123"));
                 accountant.setEmail("accountant@test.com");
                 accountant.setFullName("Nguyễn Thị Kế Toán");
