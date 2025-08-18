@@ -1,6 +1,8 @@
 package com.classroomapp.classroombackend.controller;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,12 +79,11 @@ public class TeacherParentController {
                     // Get student name from UserService
                     String studentName = "Học sinh không xác định";
                     try {
-                        var student = userService.getUserById(notice.getStudentId());
-                        if (student.isPresent()) {
-                            User user = student.get();
-                            studentName = user.getFullName() != null ? user.getFullName() : 
-                                         user.getName() != null ? user.getName() : 
-                                         "Học sinh ID: " + notice.getStudentId();
+                        User user = userService.findById(notice.getStudentId());
+                        if (user != null) {
+                            studentName = (user.getFullName() != null && !user.getFullName().isBlank())
+                                    ? user.getFullName()
+                                    : (user.getUsername() != null ? user.getUsername() : ("Học sinh ID: " + notice.getStudentId()));
                         }
                     } catch (Exception e) {
                         log.warn("Could not get student name for studentId: {}", notice.getStudentId());
