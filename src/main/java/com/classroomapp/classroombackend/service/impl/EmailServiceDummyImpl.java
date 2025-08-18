@@ -168,4 +168,16 @@ public class EmailServiceDummyImpl implements EmailService {
         }
         return "Unknown";
     }
+
+    @Override
+    public void sendInterviewScheduleUpdatedEmail(String to, String name, String jobTitle, String interviewTime) {
+        log.info("DUMMY EMAIL SERVICE: Would send interview schedule updated email to {} ({}) - Job Title: {}, New Interview Time: {}",
+                to, name, jobTitle, interviewTime);
+    }
+
+    @Override
+    public void sendOfferResendEmailPartTime(String to, String name, String jobTitle, Integer hourlyRate) {
+        log.info("DUMMY EMAIL SERVICE: Would send part-time offer email to {} ({}) - Job Title: {}, Hourly Rate: {} VNĐ/giờ",
+                to, name, jobTitle, hourlyRate);
+    }
 }

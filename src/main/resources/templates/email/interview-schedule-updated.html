@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+        .header {
+            background-color: #fa8c16;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .content {
+            padding: 20px;
+        }
+        .schedule-info {
+            background-color: #fff7e6;
+            border: 1px solid #ffd591;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .important {
+            color: #fa8c16;
+            font-weight: bold;
+        }
+        .update-notice {
+            background-color: #f6ffed;
+            border: 1px solid #b7eb8f;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔄 Cập nhật lịch phỏng vấn</h1>
+    </div>
+    <div class="content">
+        <p>Kính gửi <span th:text="${name}"></span>,</p>
+        
+        <div class="update-notice">
+            <p><strong>⚠️ THÔNG BÁO QUAN TRỌNG:</strong></p>
+            <p>Lịch phỏng vấn của bạn đã được cập nhật với thời gian mới.</p>
+        </div>
+        
+        <p>Vị trí ứng tuyển: <span class="important" th:text="${jobTitle}"></span></p>
+        
+        <div class="schedule-info">
+            <p><strong>📅 Lịch phỏng vấn mới:</strong></p>
+            <p><strong>Thời gian:</strong> <span class="important" th:text="${interviewTime}"></span></p>
+            <p><strong>Địa điểm:</strong> Văn phòng Minh Việt Education</p>
+        </div>
+        
+        <p class="important">Vui lòng có mặt trước giờ phỏng vấn 15 phút để chuẩn bị.</p>
+        
+        <p><strong>Lưu ý:</strong></p>
+        <ul>
+            <li>Mang theo CV và các giấy tờ liên quan</li>
+            <li>Trang phục lịch sự, chuyên nghiệp</li>
+            <li>Chuẩn bị sẵn sàng cho các câu hỏi phỏng vấn</li>
+        </ul>
+        
+        <p>Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi ngay.</p>
+        
+        <p>Chúc bạn may mắn và thành công!</p>
+        <p>Trân trọng,<br>
+        Đội ngũ Minh Việt Education</p>
+    </div>
+    <div class="footer">
+        <p>&copy; Minh Việt Education 2025 Đã đăng ký bản quyền.</p>
+    </div>
+</body>
+</html>

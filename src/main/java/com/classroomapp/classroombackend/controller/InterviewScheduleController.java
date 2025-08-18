@@ -190,6 +190,11 @@ public class InterviewScheduleController {
         System.out.println("No conflicts, updating schedule...");
         InterviewScheduleDto updated = interviewService.update(id, start, end);
         System.out.println("Schedule updated successfully: " + updated.getId());
+        
+        // Gửi email thông báo lịch phỏng vấn mới
+        String interviewTime = start.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) + " - " + end.format(DateTimeFormatter.ofPattern("HH:mm"));
+        emailService.sendInterviewScheduleUpdatedEmail(updated.getApplicantEmail(), updated.getApplicantName(), updated.getJobTitle(), interviewTime);
+        
         return ResponseEntity.ok(updated);
     }
 
@@ -273,6 +278,22 @@ public class InterviewScheduleController {
                 interview.getJobTitle(), 
                 request.getOffer(),
                 request.getSalaryDetails()
+            );
+        }
+        
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/resend-offer-part-time")
+    public ResponseEntity<?> resendOfferPartTime(@PathVariable Long id, @RequestBody PartTimeOfferRequest request) {
+        // Lấy thông tin interview để gửi email part-time
+        InterviewScheduleDto interview = interviewService.getById(id);
+        if (interview != null) {
+            emailService.sendOfferResendEmailPartTime(
+                interview.getApplicantEmail(), 
+                interview.getApplicantName(), 
+                interview.getJobTitle(), 
+                request.getHourlyRate()
             );
         }
         
@@ -471,6 +492,13 @@ class NetToGrossRequest {
     
     public int getNumberOfDependents() { return numberOfDependents; }
     public void setNumberOfDependents(int numberOfDependents) { this.numberOfDependents = numberOfDependents; }
+}
+
+class PartTimeOfferRequest {
+    private Integer hourlyRate;
+    
+    public Integer getHourlyRate() { return hourlyRate; }
+    public void setHourlyRate(Integer hourlyRate) { this.hourlyRate = hourlyRate; }
 } 
 
 class AccountCheckResponse {

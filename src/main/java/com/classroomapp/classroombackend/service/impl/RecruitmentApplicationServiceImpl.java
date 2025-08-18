@@ -5,6 +5,7 @@ import com.classroomapp.classroombackend.model.JobPosition;
 import com.classroomapp.classroombackend.model.RecruitmentApplication;
 import com.classroomapp.classroombackend.repository.JobPositionRepository;
 import com.classroomapp.classroombackend.repository.RecruitmentApplicationRepository;
+import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.FileStorageService;
 import com.classroomapp.classroombackend.service.RecruitmentApplicationService;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 public class RecruitmentApplicationServiceImpl implements RecruitmentApplicationService {
     private final RecruitmentApplicationRepository recruitmentRepo;
     private final JobPositionRepository jobPositionRepo;
+    private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
     private final ModelMapper modelMapper = new ModelMapper();
 
@@ -33,14 +35,35 @@ public class RecruitmentApplicationServiceImpl implements RecruitmentApplication
         if (fullName == null || fullName.trim().isEmpty()) {
             throw new RuntimeException("Vui lòng nhập họ và tên");
         }
+        
+        // Validate full name length
+        if (fullName.trim().length() < 2 || fullName.trim().length() > 100) {
+            throw new RuntimeException("Họ và tên phải từ 2 đến 100 ký tự");
+        }
         if (email == null || email.trim().isEmpty()) {
             throw new RuntimeException("Vui lòng nhập email");
         }
+        
+        // Validate email format
+        if (!email.trim().matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+            throw new RuntimeException("Định dạng email không hợp lệ");
+        }
+        
         if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
             throw new RuntimeException("Vui lòng nhập số điện thoại");
         }
+        
+        // Validate phone number format (Vietnamese format)
+        if (!phoneNumber.trim().matches("^0[3|5|7|8|9][0-9]{8}$")) {
+            throw new RuntimeException("Số điện thoại phải bắt đầu bằng 03, 05, 07, 08 hoặc 09 và có 10 chữ số");
+        }
         if (address == null || address.trim().isEmpty()) {
             throw new RuntimeException("Vui lòng nhập địa chỉ");
+        }
+        
+        // Validate address length
+        if (address.trim().length() < 10 || address.trim().length() > 500) {
+            throw new RuntimeException("Địa chỉ phải từ 10 đến 500 ký tự");
         }
         
         // Validate CV file is required
@@ -62,16 +85,20 @@ public class RecruitmentApplicationServiceImpl implements RecruitmentApplication
         JobPosition job = jobPositionRepo.findById(jobPositionId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy vị trí tuyển dụng"));
         
-        // Kiểm tra email trùng lặp - không cho phép cùng email nộp đơn ứng tuyển lại
-        boolean emailExists = recruitmentRepo.existsByEmail(email.trim());
-        if (emailExists) {
-            throw new RuntimeException("Email này đã được sử dụng để nộp đơn ứng tuyển trước đó. Mỗi email chỉ được nộp đơn một lần!");
+        // Kiểm tra email có trùng với email đã có sẵn trong hệ thống hoặc đã nộp đơn ứng tuyển
+        boolean userEmailExists = userRepository.existsByEmail(email.trim());
+        boolean recruitmentEmailExists = recruitmentRepo.existsByEmail(email.trim());
+        
+        if (userEmailExists || recruitmentEmailExists) {
+            throw new RuntimeException("Email này đã được sử dụng. Vui lòng sử dụng email khác để nộp đơn ứng tuyển!");
         }
         
-        // Kiểm tra số điện thoại trùng lặp - không cho phép cùng số điện thoại nộp đơn ứng tuyển lại
-        boolean phoneExists = recruitmentRepo.existsByPhoneNumber(phoneNumber.trim());
-        if (phoneExists) {
-            throw new RuntimeException("Số điện thoại này đã được sử dụng để nộp đơn ứng tuyển trước đó. Mỗi số điện thoại chỉ được nộp đơn một lần!");
+        // Kiểm tra số điện thoại có trùng với số điện thoại đã có sẵn trong hệ thống hoặc đã nộp đơn ứng tuyển
+        boolean userPhoneExists = userRepository.existsByPhoneNumber(phoneNumber.trim());
+        boolean recruitmentPhoneExists = recruitmentRepo.existsByPhoneNumber(phoneNumber.trim());
+        
+        if (userPhoneExists || recruitmentPhoneExists) {
+            throw new RuntimeException("Số điện thoại này đã được sử dụng. Vui lòng sử dụng số điện thoại khác để nộp đơn ứng tuyển!");
         }
         
         // Save CV file to Firebase Storage

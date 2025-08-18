@@ -321,4 +321,26 @@ public void sendEnrollmentRejectionNotification(String to, String studentName, S
         }
     }
 
+    @Override
+    public void sendInterviewScheduleUpdatedEmail(String to, String name, String jobTitle, String interviewTime) {
+        String subject = "🔄 Cập nhật lịch phỏng vấn vị trí: " + jobTitle;
+        Context context = new Context();
+        context.setVariable("name", name);
+        context.setVariable("jobTitle", jobTitle);
+        context.setVariable("interviewTime", interviewTime);
+        String body = templateEngine.process("email/interview-schedule-updated", context);
+        sendEmail(to, subject, body);
+    }
+
+    @Override
+    public void sendOfferResendEmailPartTime(String to, String name, String jobTitle, Integer hourlyRate) {
+        String subject = "💰 Thông Báo Offer Part-Time - " + jobTitle;
+        Context context = new Context();
+        context.setVariable("name", name);
+        context.setVariable("jobTitle", jobTitle);
+        context.setVariable("hourlyRate", hourlyRate);
+        String body = templateEngine.process("email/offer-resend-part-time", context);
+        sendEmail(to, subject, body);
+    }
+
 } 

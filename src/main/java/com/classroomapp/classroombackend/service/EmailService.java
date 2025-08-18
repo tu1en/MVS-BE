@@ -178,4 +178,22 @@ public interface EmailService {
      * @param payrollResult Calculated payroll result for the period
      */
     void sendPayrollConfirmationEmail(String to, String fullName, com.classroomapp.classroombackend.model.hrmanagement.PayrollResult payrollResult);
+
+    /**
+     * Gửi email thông báo lịch phỏng vấn đã được cập nhật
+     * @param to Địa chỉ email ứng viên
+     * @param name Tên ứng viên
+     * @param jobTitle Vị trí ứng tuyển
+     * @param interviewTime Thời gian phỏng vấn mới
+     */
+    void sendInterviewScheduleUpdatedEmail(String to, String name, String jobTitle, String interviewTime);
+
+    /**
+     * Gửi email offer part-time cho ứng viên
+     * @param to Địa chỉ email ứng viên
+     * @param name Tên ứng viên
+     * @param jobTitle Vị trí ứng tuyển
+     * @param hourlyRate Lương theo giờ
+     */
+    void sendOfferResendEmailPartTime(String to, String name, String jobTitle, Integer hourlyRate);
 }
