@@ -31,8 +31,8 @@ public class JobPositionServiceImpl implements JobPositionService {
         if (dto.getTitle() != null && dto.getTitle().length() > 50) {
             throw new IllegalArgumentException("Vị trí tối đa 50 ký tự!");
         }
-        if (dto.getDescription() != null && dto.getDescription().length() > 200) {
-            throw new IllegalArgumentException("Mô tả tối đa 200 ký tự!");
+        if (dto.getDescription() != null && dto.getDescription().length() > 500) {
+            throw new IllegalArgumentException("Mô tả tối đa 500 ký tự!");
         }
         // Validation cho số lượng
         if (dto.getQuantity() == null || dto.getQuantity() < 1) {
@@ -82,8 +82,8 @@ public class JobPositionServiceImpl implements JobPositionService {
         if (dto.getTitle() != null && dto.getTitle().length() > 50) {
             throw new IllegalArgumentException("Vị trí tối đa 50 ký tự!");
         }
-        if (dto.getDescription() != null && dto.getDescription().length() > 200) {
-            throw new IllegalArgumentException("Mô tả tối đa 200 ký tự!");
+        if (dto.getDescription() != null && dto.getDescription().length() > 500) {
+            throw new IllegalArgumentException("Mô tả tối đa 500 ký tự!");
         }
         // Validation cho số lượng
         if (dto.getQuantity() == null || dto.getQuantity() < 1) {
