@@ -161,6 +161,9 @@ public class ContractServiceImpl implements ContractService {
             contract.setSalary(contract.getGrossSalary().doubleValue());
         }
         
+        // Set contract status to PENDING by default for new contracts
+        contract.setStatus("PENDING");
+
         // Set contract start and end dates
         setContractDates(contract, user);
         
@@ -198,7 +201,7 @@ public class ContractServiceImpl implements ContractService {
         // Date validation removed - start/end dates no longer required for contract updates
         
         // Log which fields are being restricted from update
-        log.info("Contract update - Preserving read-only fields: fullName, email, phoneNumber, contractType, position, department, salary, workingHours, offer, evaluation, grossSalary, netSalary, hourlySalary (salary fields completely removed from edit form)");
+        log.info("Contract update - Preserving read-only fields: fullName, email, phoneNumber, contractType, position, department, salary, workingHours, offer, evaluation, grossSalary, netSalary (hourlySalary only editable right after renewal)");
         
         // ONLY UPDATE EDITABLE FIELDS (as per frontend restrictions):
         // - birthDate, citizenId, address, qualification, subject, educationLevel
@@ -241,6 +244,36 @@ public class ContractServiceImpl implements ContractService {
         
         if (contractDto.getWorkDays() != null) {
             existingContract.setWorkDays(contractDto.getWorkDays());
+        }
+        
+        // Allow updating hourly salary ONLY right after renewal
+        // Rule: status must be ACTIVE AND startDate must equal today (renew set startDate = today)
+        if (contractDto.getHourlySalary() != null) {
+            LocalDate today = LocalDate.now();
+            boolean justRenewed =
+                "ACTIVE".equals(existingContract.getStatus()) &&
+                existingContract.getStartDate() != null &&
+                existingContract.getStartDate().isEqual(today);
+
+            if (!justRenewed) {
+                log.warn("Denied hourlySalary update for contract {} - Only allowed immediately after renewal (ACTIVE + startDate = today)", existingContract.getId());
+                throw new IllegalStateException("Chỉ được phép cập nhật lương theo giờ ngay sau khi 'Ký lại' (trạng thái ACTIVE và ngày bắt đầu bằng hôm nay). Hãy bấm 'Ký lại' trước.");
+            }
+
+            Long newHourly = contractDto.getHourlySalary();
+            if (newHourly != null && newHourly > 0) {
+                existingContract.setHourlySalary(newHourly);
+                // Clear gross/net when hourly is used
+                existingContract.setGrossSalary(null);
+                existingContract.setNetSalary(null);
+                // Sync legacy salary field for backward compatibility
+                existingContract.setSalary(newHourly.doubleValue());
+                log.info("Updated hourlySalary to {} VND/hour after renewal (cleared gross/net, synced salary)", newHourly);
+            } else {
+                // If provided 0 or null -> clear hourly salary
+                existingContract.setHourlySalary(null);
+                log.info("Cleared hourlySalary after renewal due to non-positive value in payload");
+            }
         }
         
         // Update comments field (editable)
@@ -541,30 +574,21 @@ public class ContractServiceImpl implements ContractService {
      * Set contract start and end dates based on contract type and teacher's earliest lesson
      */
     private void setContractDates(Contract contract, User user) {
-        log.info("Setting contract dates for contract type: {}", contract.getContractType());
-        
-        LocalDate startDate = null;
-        
-        if ("TEACHER".equals(contract.getContractType())) {
-            // For teacher contracts, find earliest lesson date
-            startDate = findEarliestTeachingDate(user != null ? user.getId() : contract.getUserId());
-            log.info("Teacher contract - earliest teaching date: {}", startDate);
-        }
-        
-        // If no teaching date found or not a teacher, use current date
+        log.info("Setting contract dates with fixed 90-day duration (new = default 01/09 current year).");
+
+        // Rule: endDate must be exactly 90 days after startDate
+        LocalDate startDate = contract.getStartDate();
         if (startDate == null) {
-            startDate = LocalDate.now();
-            log.info("Using current date as contract start date: {}", startDate);
+            // For NEW contracts: default start to September 1st of the current year
+            LocalDate today = LocalDate.now();
+            startDate = LocalDate.of(today.getYear(), 9, 1);
         }
-        
-        // Set contract start date
-        contract.setStartDate(startDate);
-        
-        // Set contract end date (90 days from start date)
         LocalDate endDate = startDate.plusDays(90);
+
+        contract.setStartDate(startDate);
         contract.setEndDate(endDate);
-        
-        log.info("Contract dates set - Start: {}, End: {}", startDate, endDate);
+
+        log.info("Contract dates set - Start: {}, End (+90d): {}", startDate, endDate);
     }
     
     /**
@@ -618,8 +642,16 @@ public class ContractServiceImpl implements ContractService {
         try {
             if (contract == null) return;
             LocalDate endDate = contract.getEndDate();
+            LocalDate startDate = contract.getStartDate();
             if (endDate == null) return;
             LocalDate today = LocalDate.now();
+            // Preserve PENDING status for future contracts
+            if ("PENDING".equals(contract.getStatus())) {
+                if (startDate != null && startDate.isAfter(today)) {
+                    // Do not override PENDING if it hasn't started yet
+                    return;
+                }
+            }
             String newStatus;
             if (endDate.isBefore(today)) {
                 newStatus = "EXPIRED";
@@ -731,7 +763,7 @@ public class ContractServiceImpl implements ContractService {
         LocalDate newEndDate = renewalDate.plusDays(90);
         existingContract.setEndDate(newEndDate);
         
-        // Reset status to ACTIVE
+        // Reset status to ACTIVE upon renewal
         existingContract.setStatus("ACTIVE");
         
         Contract renewedContract = contractRepository.save(existingContract);
@@ -840,13 +872,110 @@ public class ContractServiceImpl implements ContractService {
                 results.add(created);
             }
         }
+        // After creating contracts in this run, assign the required status/date distribution to the first 24 created
+        if (!dryRun) {
+            List<Contract> createdContracts = results.stream()
+                    .filter(r -> r != null && r.getId() != null)
+                    .map(r -> contractRepository.findById(r.getId()).orElse(null))
+                    .filter(c -> c != null)
+                    .collect(Collectors.toList());
+
+            int total = Math.min(24, createdContracts.size());
+            if (total > 0) {
+                LocalDate today = LocalDate.now();
+                for (int i = 0; i < total; i++) {
+                    Contract c = createdContracts.get(i);
+                    if (i < 10) {
+                        // 10 ACTIVE: start 30 days ago, 90-day duration
+                        LocalDate s = today.minusDays(30);
+                        c.setStartDate(s);
+                        c.setEndDate(s.plusDays(90));
+                        c.setStatus("ACTIVE");
+                    } else if (i < 15) {
+                        // 5 EXPIRED: ended 30 days ago, 90-day duration
+                        LocalDate s = today.minusDays(120); // end = s+90 = today-30
+                        c.setStartDate(s);
+                        c.setEndDate(s.plusDays(90));
+                        c.setStatus("EXPIRED");
+                    } else if (i < 20) {
+                        // 5 NEAR_EXPIRY: end in 15 days, 90-day duration
+                        LocalDate s = today.minusDays(75); // end = s+90 = today+15
+                        c.setStartDate(s);
+                        c.setEndDate(s.plusDays(90));
+                        c.setStatus("NEAR_EXPIRY");
+                    } else if (i < 24) {
+                        // 4 PENDING (future start), 90-day duration
+                        LocalDate s = today.plusDays(30);
+                        c.setStartDate(s);
+                        c.setEndDate(s.plusDays(90));
+                        c.setStatus("PENDING");
+                    }
+                    contractRepository.save(c);
+                }
+                log.info("[BULK-TEACHERS] Applied status/date distribution (each 90-day) to {} newly created contracts (max 24 this run)", total);
+            } else {
+                log.info("[BULK-TEACHERS] No newly created contracts to apply status/date distribution.");
+            }
+        }
 
         log.info("[BULK-TEACHERS] {} complete. Total teachers: {}, created: {}, skipped(existing): {}",
                 dryRun ? "DRY-RUN" : "CREATE", teachers.size(), results.size(), skippedExisting);
         return results;
     }
 
+    @Override
+    public void reseedContractStatuses() {
+        log.info("RESEEDING CONTRACT STATUSES FOR DEMO");
+        List<Contract> contracts = contractRepository.findAll();
+
+        if (contracts.size() < 24) {
+            log.warn("Cannot reseed, found only {} contracts, need at least 24.", contracts.size());
+            return;
+        }
+
+        LocalDate today = LocalDate.now();
+
+        // 10 ACTIVE contracts
+        for (int i = 0; i < 10; i++) {
+            Contract contract = contracts.get(i);
+            contract.setStartDate(today.minusMonths(2));
+            contract.setEndDate(today.plusYears(1));
+            contract.setStatus("ACTIVE");
+            contractRepository.save(contract);
+        }
+
+        // 5 EXPIRED contracts
+        for (int i = 10; i < 15; i++) {
+            Contract contract = contracts.get(i);
+            contract.setStartDate(today.minusYears(1));
+            contract.setEndDate(today.minusMonths(1));
+            contract.setStatus("EXPIRED");
+            contractRepository.save(contract);
+        }
+
+        // 5 NEAR_EXPIRY contracts
+        for (int i = 15; i < 20; i++) {
+            Contract contract = contracts.get(i);
+            contract.setStartDate(today.minusMonths(11));
+            contract.setEndDate(today.plusDays(15));
+            contract.setStatus("NEAR_EXPIRY");
+            contractRepository.save(contract);
+        }
+
+        // 4 PENDING contracts
+        for (int i = 20; i < 24; i++) {
+            Contract contract = contracts.get(i);
+            contract.setStartDate(today.plusMonths(1));
+            contract.setEndDate(today.plusYears(1).plusMonths(1));
+            contract.setStatus("PENDING");
+            contractRepository.save(contract);
+        }
+
+        log.info("Successfully reseeded statuses for 24 contracts.");
+    }
+
     private ContractDto convertToDto(Contract contract) {
+        if (contract == null) return null;
         // Auto-update contract status based on end date before converting
         updateContractStatusBasedOnEndDate(contract);
 

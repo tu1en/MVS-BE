@@ -34,7 +34,7 @@ import lombok.extern.slf4j.Slf4j;
  *   working hours/days defaults, fullName/email from user if missing.
  * - Non-destructive: only fills NULL/blank fields; does not override existing values.
  */
-// @Component - VÔ HIỆU HÓA THEO YÊU CẦU
+@Component // KÍCH HOẠT TẠM THỜI ĐỂ LÀM TRÒN LƯƠNG
 @Order(85)
 @RequiredArgsConstructor
 @Slf4j
@@ -53,6 +53,17 @@ public class ContractBackfillSeeder implements CommandLineRunner {
         AtomicInteger updated = new AtomicInteger(0);
         for (Contract c : contracts) {
             boolean changed = false;
+
+            // Round base salary to nearest 100,000 VND (one-time data cleanup)
+            if (c.getSalary() != null && c.getSalary() > 0) {
+                final long unit = 10_000L;
+                final double original = c.getSalary();
+                final long roundedLong = Math.round(original / unit) * unit;
+                if (Double.compare(original, (double) roundedLong) != 0) {
+                    c.setSalary((double) roundedLong);
+                    changed = true;
+                }
+            }
 
             // Ensure contractId
             if (isBlank(c.getContractId())) {

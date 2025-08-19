@@ -41,4 +41,7 @@ public interface ContractService {
 
     // Tạo hợp đồng cho tất cả giáo viên active (không trùng), gán lương theo giờ trong khoảng chỉ định
     List<ContractDto> createContractsForActiveTeachers(Long minHourly, Long maxHourly, boolean dryRun);
+
+    // Reseed contract statuses for demo purposes
+    void reseedContractStatuses();
 }

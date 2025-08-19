@@ -179,6 +179,20 @@ public class ContractController {
         }
     }
 
+    // Temporary endpoint to reseed contract statuses for demo
+    @PostMapping("/reseed-statuses")
+    public ResponseEntity<String> reseedContractStatuses() {
+        log.info("POST /api/contracts/reseed-statuses - Reseeding contract statuses for demo");
+        try {
+            contractService.reseedContractStatuses();
+            return ResponseEntity.ok("Contract statuses reseeded successfully for 24 contracts.");
+        } catch (Exception e) {
+            log.error("Error reseeding contract statuses: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error reseeding contract statuses: " + e.getMessage());
+        }
+    }
+
     // Tạo hợp đồng hàng loạt cho giáo viên đang active (không trùng), gán lương theo giờ trong khoảng
     @PostMapping(value = "/teachers/bulk-create", produces = "application/json;charset=UTF-8")
     public ResponseEntity<List<ContractDto>> bulkCreateTeacherContracts(

@@ -2,6 +2,7 @@ package com.classroomapp.classroombackend.model;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -67,13 +68,15 @@ public class Contract {
 
     // Contract duration fields
     @Column(name = "start_date")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate startDate; // Contract start date (earliest lesson date for teachers)
 
     @Column(name = "end_date")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate endDate; // Contract expiry date (startDate + 90 days)
 
     @Column(name = "status", nullable = false, columnDefinition = "NVARCHAR(50)")
-    private String status; // "ACTIVE", "EXPIRED", "TERMINATED"
+        private String status; // "PENDING", "ACTIVE", "EXPIRED", "TERMINATED"
 
     @Column(name = "contract_terms", columnDefinition = "NVARCHAR(MAX)")
     private String contractTerms;
@@ -89,6 +92,7 @@ public class Contract {
 
     // --- CUSTOM FIELDS FOR VIETNAMESE CONTRACT ---
     @Column(name = "birth_date")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate birthDate;
 
     @Column(name = "citizen_id", length = 20)

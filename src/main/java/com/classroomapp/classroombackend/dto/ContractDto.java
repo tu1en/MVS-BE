@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 @Data
 @NoArgsConstructor
@@ -36,6 +37,7 @@ public class ContractDto {
     private Long hourlySalary; // Lương theo giờ từ Quản lý Offer
 
     // --- CUSTOM FIELDS FOR VIETNAMESE CONTRACT ---
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate birthDate;
     private String citizenId; // Số CCCD
     private String address;
@@ -49,10 +51,13 @@ public class ContractDto {
     private String workDays; // Ngày trong tuần (Monday, Tuesday, etc.)
 
     // --- CONTRACT DURATION FIELDS ---
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate startDate; // Contract start date (persistent field)
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate endDate; // Contract expiry date (persistent field)
     
     // --- COMPUTED FIELD ---
     // Ngày bắt đầu hợp đồng (tự động tính theo buổi dạy đầu tiên của giáo viên)
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate contractStartDate;
 }
