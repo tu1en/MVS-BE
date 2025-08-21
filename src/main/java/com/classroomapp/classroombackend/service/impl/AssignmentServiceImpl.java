@@ -45,8 +45,23 @@ import com.classroomapp.classroombackend.security.CustomUserDetails;
 import com.classroomapp.classroombackend.service.AssignmentService;
 import com.classroomapp.classroombackend.service.ClassroomSecurityService;
 
+import java.nio.file.AccessDeniedException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.security.authentication.InsufficientAuthenticationException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Lazy
@@ -85,7 +100,7 @@ public class AssignmentServiceImpl implements AssignmentService {
 
     @Override
     @Transactional
-    public AssignmentDto CreateAssignment(CreateAssignmentDto createAssignmentDto, String teacherUsername) {
+    public AssignmentDto CreateAssignment(CreateAssignmentDto createAssignmentDto, String teacherUsername) throws Exception {
         log.info("AssignmentServiceImpl.CreateAssignment called with classroomId: {}, teacherUsername: {}",
                 createAssignmentDto.getClassroomId(), teacherUsername);
         log.info("Assignment creation data: title={}, dueDate={}, points={}",

@@ -180,7 +180,7 @@ public class PayrollGenerationServiceImpl implements PayrollGenerationService {
                 teacherSalaryCalculationService.calculateSalaryFromTeachingHistory(
                     user.getId(), periodStart, periodEnd, contract);
             
-            // Chuyển đổi kết quả sang PayrollResult
+            // Chuyển đổi kết quả sang PayrollResult - dùng constructor mới cho teacher
             PayrollResult payrollResult = new PayrollResult(
                 user.getId(),
                 user.getFullName(),
@@ -190,7 +190,8 @@ public class PayrollGenerationServiceImpl implements PayrollGenerationService {
                 contract.getSalary() != null ? new BigDecimal(contract.getSalary()) : BigDecimal.ZERO, // contractSalary
                 salaryResult.getTotalSalary(), // proratedGrossSalary
                 salaryResult.getTotalSalary(), // netSalary (giáo viên không có BHXH)
-                null // calculationResult
+                null, // calculationResult
+                salaryResult.getTotalTeachingHours() // actualTeachingHours - giờ dạy thực tế
             );
             
             log.info("✅ Teacher payroll generated: {} VND for {} hours", 

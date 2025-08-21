@@ -25,7 +25,7 @@ public interface AssignmentService {
     AssignmentDto GetAssignmentById(Long id);
     
     // Create a new assignment
-    AssignmentDto CreateAssignment(CreateAssignmentDto createAssignmentDto, String teacherUsername);
+    AssignmentDto CreateAssignment(CreateAssignmentDto createAssignmentDto, String teacherUsername) throws Exception;
     
     // Update an existing assignment
     AssignmentDto UpdateAssignment(Long id, CreateAssignmentDto updateAssignmentDto);

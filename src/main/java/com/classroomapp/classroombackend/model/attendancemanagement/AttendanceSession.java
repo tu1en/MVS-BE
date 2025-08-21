@@ -88,8 +88,23 @@ public class AttendanceSession {
     @Column(name = "teacher_clock_in_time", nullable = true)
     private LocalDateTime teacherClockInTime;
 
+    @Column(name = "teacher_clock_out_time", nullable = true)
+    private LocalDateTime teacherClockOutTime;
+
+    @ManyToOne(fetch = jakarta.persistence.FetchType.LAZY)
+    @JoinColumn(name = "makeup_request_id", nullable = true)
+    private MakeupAttendanceRequest makeupRequest;
+
     public void setTeacherClockInTime(LocalDateTime teacherClockInTime) {
         this.teacherClockInTime = teacherClockInTime;
+    }
+
+    public void setTeacherClockOutTime(LocalDateTime teacherClockOutTime) {
+        this.teacherClockOutTime = teacherClockOutTime;
+    }
+
+    public LocalDateTime getTeacherClockOutTime() {
+        return teacherClockOutTime;
     }
 
     public SessionStatus getStatus() {

@@ -90,20 +90,30 @@ public class AttendanceServiceImpl implements AttendanceService {
         // Get the lecture for linking to the session
         Lecture lecture = lectureRepository.findById(submitDto.getLectureId())
                 .orElseThrow(() -> new BusinessLogicException("Không tìm thấy bài giảng với ID: " + submitDto.getLectureId()));
-        
-        // Create a new session for this attendance submission
-        AttendanceSession session = new AttendanceSession();
-        session.setClassroom(classroom);
-        session.setLecture(lecture); // Link session to lecture
-        session.setCreatedAt(LocalDateTime.now());
-        session.setExpiresAt(LocalDateTime.now().plusHours(1)); // Session expires in 1 hour
-        session.setIsOpen(true);
-        session.setSessionDate(LocalDate.now()); // Set session date to today
-        // Set teacher clock-in time when attendance is submitted - this enables teaching history tracking
-        session.setTeacherClockInTime(LocalDateTime.now());
-        session = attendanceSessionRepository.save(session);
-        
-        System.out.println("Created new session: " + session.getId());
+
+        // Check if session already exists for this lecture today
+        LocalDate today = LocalDate.now();
+        Optional<AttendanceSession> existingSession = attendanceSessionRepository
+                .findByLectureIdAndSessionDate(submitDto.getLectureId(), today);
+
+        AttendanceSession session;
+        if (existingSession.isPresent()) {
+            session = existingSession.get();
+            System.out.println("Using existing session: " + session.getId());
+        } else {
+            // Create a new session for this attendance submission
+            session = new AttendanceSession();
+            session.setClassroom(classroom);
+            session.setLecture(lecture); // Link session to lecture
+            session.setCreatedAt(LocalDateTime.now());
+            session.setExpiresAt(LocalDateTime.now().plusHours(1)); // Session expires in 1 hour
+            session.setIsOpen(true);
+            session.setSessionDate(today); // Set session date to today
+            // Set teacher clock-in time when attendance is submitted - this enables teaching history tracking
+            session.setTeacherClockInTime(LocalDateTime.now());
+            session = attendanceSessionRepository.save(session);
+            System.out.println("Created new session: " + session.getId());
+        }
 
         // Process all attendance records
         for (AttendanceSubmitDto.AttendanceRecord record : submitDto.getRecords()) {

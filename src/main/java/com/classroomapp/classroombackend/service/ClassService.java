@@ -1,20 +1,5 @@
 package com.classroomapp.classroombackend.service;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.classroomapp.classroombackend.dto.ClassDto;
 import com.classroomapp.classroombackend.dto.CloneClassRequest;
 import com.classroomapp.classroombackend.dto.CreateClassRequest;
@@ -35,8 +20,23 @@ import com.classroomapp.classroombackend.repository.CourseTemplateRepository;
 import com.classroomapp.classroombackend.repository.LessonTemplateRepository;
 import com.classroomapp.classroombackend.repository.RoomRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ClassService {
@@ -626,6 +626,7 @@ public class ClassService {
                 entity.setTuitionFee(fee);
             } catch (Exception ignored) {}
         }
+        // introVideoUrl field removed - not available in ClassEntity
 
         entity = classRepository.save(entity);
         return convertToDto(entity);
@@ -839,7 +840,15 @@ public class ClassService {
         
         if (classEntity.getTeacher() != null) {
             dto.setTeacherId(classEntity.getTeacher().getId());
-            dto.setTeacherName(classEntity.getTeacher().getFullName());
+            // Fix: Use fullName if available, fallback to username, then role description
+            String teacherName = classEntity.getTeacher().getFullName();
+            if (teacherName == null || teacherName.trim().isEmpty()) {
+                teacherName = classEntity.getTeacher().getUsername();
+                if (teacherName == null || teacherName.trim().isEmpty()) {
+                    teacherName = "Giảng viên " + classEntity.getTeacher().getId();
+                }
+            }
+            dto.setTeacherName(teacherName);
         }
         
         if (classEntity.getRoom() != null) {
@@ -858,6 +867,7 @@ public class ClassService {
         dto.setCreatedAt(classEntity.getCreatedAt());
         dto.setIsPublic(classEntity.getIsPublic());
         dto.setTuitionFee(classEntity.getTuitionFee());
+        // introVideoUrl field removed - not available in ClassEntity
         
         return dto;
     }
