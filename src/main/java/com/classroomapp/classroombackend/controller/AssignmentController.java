@@ -134,7 +134,7 @@ public class AssignmentController {
     @PostMapping
     @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<AssignmentDto> CreateAssignment(@RequestBody CreateAssignmentDto createAssignmentDto,
-                                                         java.security.Principal principal) {
+                                                         java.security.Principal principal) throws Exception {
         String teacherUsername = principal != null ? principal.getName() : null;
         return new ResponseEntity<>(assignmentService.CreateAssignment(createAssignmentDto, teacherUsername), HttpStatus.CREATED);
     }

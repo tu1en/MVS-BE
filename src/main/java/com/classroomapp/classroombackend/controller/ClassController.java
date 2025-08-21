@@ -1,12 +1,25 @@
 package com.classroomapp.classroombackend.controller;
 
+import com.classroomapp.classroombackend.dto.ApiResponse;
+import com.classroomapp.classroombackend.dto.CheckScheduleRequest;
+import com.classroomapp.classroombackend.dto.ClassDto;
+import com.classroomapp.classroombackend.dto.CloneClassRequest;
+import com.classroomapp.classroombackend.dto.CreateClassRequest;
+import com.classroomapp.classroombackend.dto.RescheduleRequest;
+import com.classroomapp.classroombackend.entity.ScheduleConflict;
+import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.service.ClassService;
+import com.classroomapp.classroombackend.service.ClassStatusSchedulerService;
+import com.classroomapp.classroombackend.service.ClassroomService;
+import com.classroomapp.classroombackend.service.ScheduleConflictService;
+
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import jakarta.validation.Valid;  // Changed from javax.validation
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,25 +34,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.classroomapp.classroombackend.dto.ApiResponse;
-import com.classroomapp.classroombackend.dto.CheckScheduleRequest;
-import com.classroomapp.classroombackend.dto.ClassDto;
-import com.classroomapp.classroombackend.dto.CloneClassRequest;
-import com.classroomapp.classroombackend.dto.CreateClassRequest;
-import com.classroomapp.classroombackend.dto.RescheduleRequest;
-import com.classroomapp.classroombackend.entity.ScheduleConflict;
-import com.classroomapp.classroombackend.service.ClassService;
-import com.classroomapp.classroombackend.service.ClassStatusSchedulerService;
-import com.classroomapp.classroombackend.service.ScheduleConflictService;
-
-import jakarta.validation.Valid;  // Changed from javax.validation
-
 @RestController
 @RequestMapping("/api/classes")
 @CrossOrigin(origins = "*")
 public class ClassController {
     
-    private static final Logger logger = LoggerFactory.getLogger(ClassController.class);
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(ClassController.class);
     
     @Autowired
     private ClassService classService;
@@ -49,6 +49,9 @@ public class ClassController {
     
     @Autowired
     private com.classroomapp.classroombackend.service.TeacherAvailabilityService teacherAvailabilityService;
+
+    @Autowired
+    private ClassroomService classroomService;
     
     /**
      * Create new class from template
@@ -462,19 +465,89 @@ public class ClassController {
     @GetMapping("/{classId}/students")
     public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getClassStudents(@PathVariable Long classId) {
         try {
-            // TODO: Implement actual student enrollment service
-            // For now, return empty list since we removed fake enrollment
-            List<Map<String, Object>> students = List.of();
-            
-            logger.info("Fetched {} students for class {}", students.size(), classId);
+            logger.info("Fetching students for classroom ID: {}", classId);
+
+            // Get students from classroom service
+            List<User> enrolledStudents = classroomService.getStudentsInClassroom(classId);
+
+            // Convert to Map format for frontend compatibility
+            List<Map<String, Object>> students = enrolledStudents.stream()
+                .map(student -> {
+                    Map<String, Object> studentMap = new HashMap<>();
+                    studentMap.put("id", student.getId());
+                    studentMap.put("fullName", student.getFullName());
+                    studentMap.put("username", student.getUsername());
+                    studentMap.put("email", student.getEmail());
+                    studentMap.put("phoneNumber", student.getPhoneNumber());
+                    studentMap.put("status", student.getStatus());
+                    return studentMap;
+                })
+                .collect(Collectors.toList());
+
+            logger.info("Successfully fetched {} students for classroom {}", students.size(), classId);
             return ResponseEntity.ok(ApiResponse.success(students));
         } catch (Exception e) {
-            logger.error("Error fetching class students: {}", e.getMessage());
+            logger.error("Error fetching students for classroom {}: {}", classId, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                     .body(ApiResponse.error("Lỗi lấy danh sách học viên: " + e.getMessage()));
         }
     }
     
+    /**
+     * Debug endpoint to check enrollment data for Math course
+     */
+    @GetMapping("/debug/math-enrollments")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> debugMathEnrollments() {
+        try {
+            logger.info("🔍 DEBUG: Checking Math course enrollment data");
+
+            Map<String, Object> debugInfo = new HashMap<>();
+
+            // Find Math classroom by name
+            List<com.classroomapp.classroombackend.model.classroommanagement.Classroom> mathClassrooms =
+                classroomService.SearchClassroomsByName("Toán học 12").stream()
+                .map(dto -> {
+                    // Convert DTO back to entity for debugging
+                    com.classroomapp.classroombackend.model.classroommanagement.Classroom classroom =
+                        new com.classroomapp.classroombackend.model.classroommanagement.Classroom();
+                    classroom.setId(dto.getId());
+                    classroom.setName(dto.getName());
+                    return classroom;
+                })
+                .collect(Collectors.toList());
+
+            debugInfo.put("mathClassroomsFound", mathClassrooms.size());
+            debugInfo.put("mathClassrooms", mathClassrooms.stream()
+                .map(c -> Map.of("id", c.getId(), "name", c.getName()))
+                .collect(Collectors.toList()));
+
+            if (!mathClassrooms.isEmpty()) {
+                Long mathClassroomId = mathClassrooms.get(0).getId();
+                debugInfo.put("selectedMathClassroomId", mathClassroomId);
+
+                // Get enrolled students
+                List<User> enrolledStudents = classroomService.getStudentsInClassroom(mathClassroomId);
+                debugInfo.put("enrolledStudentsCount", enrolledStudents.size());
+                debugInfo.put("enrolledStudents", enrolledStudents.stream()
+                    .map(student -> Map.of(
+                        "id", student.getId(),
+                        "fullName", student.getFullName(),
+                        "username", student.getUsername(),
+                        "email", student.getEmail(),
+                        "roleId", student.getRoleId()
+                    ))
+                    .collect(Collectors.toList()));
+            }
+
+            logger.info("🔍 DEBUG: Math enrollment data: {}", debugInfo);
+            return ResponseEntity.ok(ApiResponse.success(debugInfo));
+        } catch (Exception e) {
+            logger.error("🚨 DEBUG: Error checking Math enrollments: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .body(ApiResponse.error("Debug error: " + e.getMessage()));
+        }
+    }
+
     /**
      * Enroll a student in a class
      */

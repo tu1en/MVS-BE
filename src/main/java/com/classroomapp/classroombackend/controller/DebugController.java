@@ -15,6 +15,8 @@ import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.ScheduleRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
+import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceSessionRepository;
+import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSession;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,6 +28,7 @@ public class DebugController {
     private final UserRepository userRepository;
     private final ScheduleRepository scheduleRepository;
     private final ClassroomRepository classroomRepository;
+    private final AttendanceSessionRepository attendanceSessionRepository;
 
     @GetMapping("/users")
     public ResponseEntity<?> getAllUsers() {
@@ -306,6 +309,99 @@ public class DebugController {
             return ResponseEntity.ok(result.toString());
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Lỗi: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Create test attendance sessions for payroll testing
+     */
+    @PostMapping("/create-test-attendance-sessions")
+    public ResponseEntity<String> createTestAttendanceSessions() {
+        try {
+            // Find teacher with ID 2
+            User teacher = userRepository.findById(2L)
+                    .orElseThrow(() -> new RuntimeException("Teacher with ID 2 not found"));
+
+            // Find classroom with ID 1
+            Classroom classroom = classroomRepository.findById(1L)
+                    .orElseThrow(() -> new RuntimeException("Classroom with ID 1 not found"));
+
+            StringBuilder result = new StringBuilder();
+            result.append("Creating test attendance sessions for payroll testing...\n");
+
+            // Create 3 attendance sessions in January 2024
+            java.time.LocalDate[] dates = {
+                java.time.LocalDate.of(2024, 1, 15),
+                java.time.LocalDate.of(2024, 1, 20),
+                java.time.LocalDate.of(2024, 1, 25)
+            };
+
+            for (java.time.LocalDate date : dates) {
+                AttendanceSession session = new AttendanceSession();
+                session.setClassroom(classroom);
+                session.setSessionDate(date);
+                session.setTeacherClockInTime(date.atTime(9, 0)); // 9:00 AM
+                // Note: teacherClockOutTime will be calculated as clockInTime + 1.5 hours
+                session.setCreatedAt(date.atTime(9, 0));
+                session.setExpiresAt(date.atTime(11, 0));
+                session.setIsOpen(false); // Session completed
+
+                attendanceSessionRepository.save(session);
+                result.append("Created session for date: ").append(date).append(" (1.5 hours)\n");
+            }
+
+            result.append("\nTotal: 3 sessions × 1.5 hours = 4.5 hours for January 2024\n");
+            result.append("Teacher: ").append(teacher.getFullName()).append(" (ID: ").append(teacher.getId()).append(")\n");
+            result.append("Classroom: ").append(classroom.getName()).append(" (ID: ").append(classroom.getId()).append(")\n");
+
+            return ResponseEntity.ok(result.toString());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error creating test attendance sessions: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Simple test endpoint to verify debug controller is working
+     */
+    @GetMapping("/test")
+    public ResponseEntity<String> testEndpoint() {
+        return ResponseEntity.ok("Debug controller is working! Current time: " + java.time.LocalDateTime.now());
+    }
+
+    /**
+     * Force create attendance sessions with SQL for payroll testing
+     */
+    @PostMapping("/force-create-attendance-sessions")
+    public ResponseEntity<String> forceCreateAttendanceSessions() {
+        try {
+            StringBuilder result = new StringBuilder();
+            result.append("Force creating attendance sessions with teacherClockInTime...\n");
+
+            // Create 3 attendance sessions in January 2024 with teacher clock-in times
+            java.time.LocalDate[] dates = {
+                java.time.LocalDate.of(2024, 1, 15),
+                java.time.LocalDate.of(2024, 1, 20),
+                java.time.LocalDate.of(2024, 1, 25)
+            };
+
+            for (java.time.LocalDate date : dates) {
+                AttendanceSession session = new AttendanceSession();
+                session.setClassroom(classroomRepository.findById(1L).orElse(null));
+                session.setSessionDate(date);
+                session.setTeacherClockInTime(date.atTime(9, 0)); // 9:00 AM
+                // Note: teacherClockOutTime will be calculated as clockInTime + 1.5 hours
+                session.setCreatedAt(date.atTime(9, 0));
+                session.setExpiresAt(date.atTime(11, 0));
+                session.setIsOpen(false); // Session completed
+
+                attendanceSessionRepository.save(session);
+                result.append("✅ Created session for ").append(date).append(" (1.5 hours)\n");
+            }
+
+            result.append("\nTotal: 3 sessions × 1.5 hours = 4.5 hours for January 2024\n");
+            return ResponseEntity.ok(result.toString());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error: " + e.getMessage());
         }
     }
 }

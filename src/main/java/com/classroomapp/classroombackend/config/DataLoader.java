@@ -7,6 +7,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 import com.classroomapp.classroombackend.model.usermanagement.Role;
 
@@ -91,7 +92,7 @@ import com.classroomapp.classroombackend.service.ContractService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
-@Component
+// @Component - Temporarily disabled for payroll testing
     @Order(1) // Run first since we removed DatabaseCleanupService
     @DependsOn("entityManagerFactory") // Wait for JPA to be initialized
 public class DataLoader implements CommandLineRunner {
@@ -208,6 +209,8 @@ private EvidenceTemplateRepository evidenceTemplateRepository;
     @Override
     @Transactional
     public void run(String... args) throws Exception {
+        log.info("🚫 DataLoader temporarily disabled for payroll testing");
+        return; // Disable DataLoader temporarily
         // Clean up duplicate submissions first
         cleanupDuplicateSubmissions();
         
@@ -369,7 +372,18 @@ seedEvidenceTemplates();
         log.info("============== Parent-Teacher Messages Complete ============");
         
         // Always create attendance explanations test data
-        createAttendanceExplanationsData();
+        try {
+            createAttendanceExplanationsData();
+        } catch (Exception e) {
+            log.warn("⚠️ Error creating attendance explanations: {}", e.getMessage());
+        }
+
+        // Always ensure attendance sessions with teacher clock-in times exist for payroll testing
+        try {
+            forceCreateTestAttendanceSessionsForPayroll();
+        } catch (Exception e) {
+            log.warn("⚠️ Error creating test attendance sessions: {}", e.getMessage());
+        }
 
         // Always run the submission seeder to add new test data
         log.info("============== Checking for new submissions to seed ==============");
@@ -1006,6 +1020,23 @@ seedEvidenceTemplates();
                 userRepository.save(teachingAssistant2);
 
                 log.info("✅ Created Teaching Assistant users");
+
+                // Create the specific user that frontend is looking for
+                User specificTeacher = new User();
+                specificTeacher.setId(1001L);
+                specificTeacher.setUsername("lethihuong.ql");
+                specificTeacher.setPassword(passwordEncoder.encode("teacher123"));
+                specificTeacher.setEmail("lethihuong.ql@thptnguyentrai.edu.vn");
+                specificTeacher.setFullName("Lê Thị Hương");
+                specificTeacher.setRoleId(RoleConstants.TEACHER);
+                specificTeacher.setPhoneNumber("0912345678");
+                specificTeacher.setDepartment("Quản lý");
+                specificTeacher.setHireDate(LocalDate.now().minusYears(2));
+                specificTeacher.setAnnualLeaveBalance(12);
+                specificTeacher.setLeaveResetDate(LocalDate.now().plusMonths(6));
+                specificTeacher.setStatus("active");
+                userRepository.save(specificTeacher);
+                log.info("✅ Created specific teacher user: lethihuong.ql@thptnguyentrai.edu.vn");
 
                 log.info("✅ Created users with standardized, explicit IDs.");
 
@@ -2015,6 +2046,9 @@ seedEvidenceTemplates();
     }
 
     private void seedAttendance() {
+        // First, create attendance sessions with teacher clock-in times for payroll testing
+        seedAttendanceSessionsForPayroll();
+
         if (attendanceRepository.count() == 0) {
             List<User> students = userRepository.findByRoleId(RoleConstants.STUDENT);
             List<AttendanceSession> sessions = attendanceSessionRepository.findAll();
@@ -2030,6 +2064,108 @@ seedEvidenceTemplates();
             log.info("✅ Created attendance records for {} students in {} sessions", students.size(), sessions.size());
         } else {
             log.info("✅ Attendance already seeded.");
+        }
+    }
+
+    private void seedAttendanceSessionsForPayroll() {
+        // Always create test attendance sessions for payroll testing (force creation)
+        log.info("🔄 FORCE Creating attendance sessions with teacher clock-in times for payroll testing...");
+
+        // Delete existing test sessions first to avoid duplicates
+        List<AttendanceSession> existingSessions = attendanceSessionRepository.findAll().stream()
+                .filter(s -> s.getTeacherClockInTime() != null && s.getSessionDate() != null &&
+                           s.getSessionDate().getYear() == 2024 && s.getSessionDate().getMonthValue() == 1)
+                .collect(Collectors.toList());
+
+        if (!existingSessions.isEmpty()) {
+            attendanceSessionRepository.deleteAll(existingSessions);
+            log.info("🗑️ Deleted {} existing test sessions", existingSessions.size());
+        }
+            log.info("🔄 Creating attendance sessions with teacher clock-in times for payroll testing...");
+
+            // Find teacher with ID 2 and classroom with ID 1
+            User teacher = userRepository.findById(2L).orElse(null);
+            Classroom classroom = classroomRepository.findById(1L).orElse(null);
+
+            if (teacher != null && classroom != null) {
+                // Create 3 attendance sessions in January 2024
+                LocalDate[] dates = {
+                    LocalDate.of(2024, 1, 15),
+                    LocalDate.of(2024, 1, 20),
+                    LocalDate.of(2024, 1, 25)
+                };
+
+                for (LocalDate date : dates) {
+                    AttendanceSession session = new AttendanceSession();
+                    session.setClassroom(classroom);
+                    session.setSessionDate(date);
+                    session.setTeacherClockInTime(date.atTime(9, 0)); // 9:00 AM
+                    // Note: teacherClockOutTime will be calculated as clockInTime + 1.5 hours
+                    session.setCreatedAt(date.atTime(9, 0));
+                    session.setExpiresAt(date.atTime(11, 0));
+                    session.setIsOpen(false); // Session completed
+
+                    attendanceSessionRepository.save(session);
+                    log.info("✅ Created attendance session for date: {} (1.5 hours)", date);
+                }
+
+                log.info("✅ Created 3 attendance sessions × 1.5 hours = 4.5 hours for January 2024");
+                log.info("✅ Teacher: {} (ID: {})", teacher.getFullName(), teacher.getId());
+                log.info("✅ Classroom: {} (ID: {})", classroom.getName(), classroom.getId());
+            } else {
+                log.warn("⚠️ Could not find teacher (ID: 2) or classroom (ID: 1) for attendance session seeding");
+            }
+    }
+
+    private void forceCreateTestAttendanceSessionsForPayroll() {
+        log.info("🚀 FORCE Creating test attendance sessions for payroll testing...");
+
+        try {
+            // Find teacher with ID 2 and classroom with ID 1
+            User teacher = userRepository.findById(2L).orElse(null);
+            Classroom classroom = classroomRepository.findById(1L).orElse(null);
+
+            if (teacher != null && classroom != null) {
+                // Delete existing test sessions first
+                List<AttendanceSession> existingSessions = attendanceSessionRepository.findAll().stream()
+                        .filter(s -> s.getTeacherClockInTime() != null && s.getSessionDate() != null &&
+                                   s.getSessionDate().getYear() == 2024 && s.getSessionDate().getMonthValue() == 1)
+                        .collect(Collectors.toList());
+
+                if (!existingSessions.isEmpty()) {
+                    attendanceSessionRepository.deleteAll(existingSessions);
+                    log.info("🗑️ Deleted {} existing test sessions", existingSessions.size());
+                }
+
+                // Create 3 attendance sessions in January 2024 with teacher clock-in times
+                LocalDate[] dates = {
+                    LocalDate.of(2024, 1, 15),
+                    LocalDate.of(2024, 1, 20),
+                    LocalDate.of(2024, 1, 25)
+                };
+
+                for (LocalDate date : dates) {
+                    AttendanceSession session = new AttendanceSession();
+                    session.setClassroom(classroom);
+                    session.setSessionDate(date);
+                    session.setTeacherClockInTime(date.atTime(9, 0)); // 9:00 AM
+                    // Note: teacherClockOutTime will be calculated as clockInTime + 1.5 hours
+                    session.setCreatedAt(date.atTime(9, 0));
+                    session.setExpiresAt(date.atTime(11, 0));
+                    session.setIsOpen(false); // Session completed
+
+                    attendanceSessionRepository.save(session);
+                    log.info("✅ FORCE Created attendance session for date: {} (1.5 hours)", date);
+                }
+
+                log.info("🎉 FORCE Created 3 attendance sessions × 1.5 hours = 4.5 hours for January 2024");
+                log.info("🎯 Teacher: {} (ID: {})", teacher.getFullName(), teacher.getId());
+                log.info("🏫 Classroom: {} (ID: {})", classroom.getName(), classroom.getId());
+            } else {
+                log.warn("⚠️ Could not find teacher (ID: 2) or classroom (ID: 1) for FORCE attendance session creation");
+            }
+        } catch (Exception e) {
+            log.error("❌ Error in forceCreateTestAttendanceSessionsForPayroll: {}", e.getMessage(), e);
         }
     }
 
@@ -3300,7 +3436,13 @@ private void createEvidenceTemplate(String name, String code, String description
             for (StudentParent relation : studentParentRelations) {
                 Parent parent = relation.getParent();
                 User student = relation.getStudent();
-                
+
+                // Skip if parent or student is null
+                if (parent == null || student == null) {
+                    log.warn("⚠️ Skipping null parent or student in studentParent relationship");
+                    continue;
+                }
+
                 // Assign 1-2 random teachers to communicate with this parent about their child
                 List<User> studentTeachers = new ArrayList<>();
                 int numTeachers = Math.min(2, teachers.size());

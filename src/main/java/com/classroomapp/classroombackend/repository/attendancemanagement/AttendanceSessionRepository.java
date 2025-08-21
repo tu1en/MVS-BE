@@ -1,4 +1,5 @@
 package com.classroomapp.classroombackend.repository.attendancemanagement;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -53,4 +54,12 @@ public interface AttendanceSessionRepository extends JpaRepository<AttendanceSes
             @Param("endTime") LocalDateTime endTime);
 
     long countByClassroomIdIn(List<Long> classroomIds);
+
+    /**
+     * Tìm session theo lecture ID và ngày
+     * @param lectureId ID của lecture
+     * @param sessionDate Ngày của session
+     * @return Session nếu tồn tại
+     */
+    Optional<AttendanceSession> findByLectureIdAndSessionDate(Long lectureId, LocalDate sessionDate);
 }

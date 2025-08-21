@@ -1,17 +1,17 @@
 package com.classroomapp.classroombackend.config;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.core.annotation.Order;
-import org.springframework.stereotype.Component;
 
 import com.classroomapp.classroombackend.model.AttendanceLog;
 import com.classroomapp.classroombackend.repository.AttendanceLogRepository;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
 
 /**
  * Simple data loader for populating attendance data on application startup
@@ -43,7 +43,7 @@ public class SimpleAttendanceDataLoader implements CommandLineRunner {
     private void loadAttendanceData() {
         // Create sample users data
         String[] userNames = {
-            "Nguyễn Văn An", "Trần Thị Bình", "Lê Văn Cường", "Phạm Thị Dung",
+            "Lê Quý Thịnh", "Trần Thị Bình", "Lê Văn Cường", "Phạm Thị Dung",
             "Hoàng Văn Em", "Võ Thị Phương", "Đặng Văn Giang", "Bùi Thị Hoa",
             "Lý Văn Inh", "Ngô Thị Khánh"
         };
