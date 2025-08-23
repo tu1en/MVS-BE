@@ -1,5 +1,6 @@
 package com.classroomapp.classroombackend.service.impl;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -117,7 +118,17 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
     public void updateHourlyRate(Long id, String hourlyRate) {
         InterviewSchedule entity = interviewRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy lịch phỏng vấn"));
-        entity.setHourlyRate(new java.math.BigDecimal(hourlyRate));
+        
+        // Validation: Tối thiểu 23,800 VNĐ/giờ, tối đa 5,000,000 VNĐ/giờ
+        BigDecimal rate = new java.math.BigDecimal(hourlyRate);
+        if (rate.compareTo(new java.math.BigDecimal("23800")) < 0) {
+            throw new IllegalArgumentException("Lương theo giờ tối thiểu là 23,800 VNĐ/giờ!");
+        }
+        if (rate.compareTo(new java.math.BigDecimal("5000000")) > 0) {
+            throw new IllegalArgumentException("Lương theo giờ tối đa là 5,000,000 VNĐ/giờ!");
+        }
+        
+        entity.setHourlyRate(rate);
         interviewRepo.save(entity);
     }
 
