@@ -39,6 +39,9 @@ public interface ContractService {
     // Gia hạn hợp đồng (đặt lại ngày bắt đầu và kết thúc)
     ContractDto renewContract(Long contractId);
 
+    // Ký hợp đồng (PENDING -> ACTIVE, đặt ngày bắt đầu = hôm nay, kết thúc +90 ngày)
+    ContractDto signContract(Long contractId);
+
     // Tạo hợp đồng cho tất cả giáo viên active (không trùng), gán lương theo giờ trong khoảng chỉ định
     List<ContractDto> createContractsForActiveTeachers(Long minHourly, Long maxHourly, boolean dryRun);
 

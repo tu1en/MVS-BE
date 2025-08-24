@@ -562,14 +562,34 @@ public class ContractServiceImpl implements ContractService {
             return 100000L; // Default fallback
         }
     }
-    
-     private void setDefaultStaffSalary(ContractDto offerData) {
-        log.info("⚠️ SETTING: Default staff salary");
-        offerData.setGrossSalary(15000000L); // 15 triệu VND gross
-        offerData.setNetSalary(12000000L);   // 12 triệu VND net
-        offerData.setHourlySalary(null);     // Không có lương theo giờ cho nhân viên
+
+    private void setDefaultStaffSalary(ContractDto offerData) {
+        log.info("⚠️ SETTING: Default staff salary payload (gross/net), clearing hourly");
+        Long gross = 15000000L; // 15,000,000 VND gross
+        offerData.setGrossSalary(gross);
+        offerData.setHourlySalary(null); // mutually exclusive with gross/net
+        try {
+            TopCVCalculation.SalaryCalculationResult res =
+                TopCVCalculation.calculateFromGrossToNet(new BigDecimal(gross), 0);
+            if (res != null && res.getNetSalary() != null) {
+                offerData.setNetSalary(res.getNetSalary().longValue());
+            } else {
+                long net = new BigDecimal(gross)
+                    .multiply(new BigDecimal("0.85"))
+                    .setScale(0, RoundingMode.HALF_UP)
+                    .longValue();
+                offerData.setNetSalary(net);
+            }
+        } catch (Exception ex) {
+            long net = new BigDecimal(gross)
+                .multiply(new BigDecimal("0.85"))
+                .setScale(0, RoundingMode.HALF_UP)
+                .longValue();
+            offerData.setNetSalary(net);
+            log.warn("Failed to compute net salary from gross using TopCVCalculation: {}. Applied fallback 85%.", ex.getMessage());
+        }
     }
-    
+
     /**
      * Set contract start and end dates based on contract type and teacher's earliest lesson
      */
@@ -577,11 +597,17 @@ public class ContractServiceImpl implements ContractService {
         log.info("Setting contract dates with fixed 90-day duration (new = default 01/09 current year).");
 
         // Rule: endDate must be exactly 90 days after startDate
+        LocalDate today = LocalDate.now();
+        LocalDate septFirst = LocalDate.of(today.getYear(), 9, 1);
         LocalDate startDate = contract.getStartDate();
-        if (startDate == null) {
-            // For NEW contracts: default start to September 1st of the current year
-            LocalDate today = LocalDate.now();
-            startDate = LocalDate.of(today.getYear(), 9, 1);
+
+        String status = contract.getStatus() != null ? contract.getStatus().trim().toUpperCase() : "";
+        // For NEW (PENDING) contracts: force start date to September 1st of the current year
+        if ("PENDING".equals(status)) {
+            startDate = septFirst;
+        } else if (startDate == null) {
+            // Fallback default
+            startDate = septFirst;
         }
         LocalDate endDate = startDate.plusDays(90);
 
@@ -590,7 +616,7 @@ public class ContractServiceImpl implements ContractService {
 
         log.info("Contract dates set - Start: {}, End (+90d): {}", startDate, endDate);
     }
-    
+
     /**
      * Find the earliest teaching date for a teacher based on their lessons and classes
      */
@@ -604,7 +630,7 @@ public class ContractServiceImpl implements ContractService {
         
         // First, try to find earliest actual lesson date
         List<ClassLesson> lessons = classLessonRepository.findByTeacherIdOrderByActualDateAsc(teacherId);
-        if (!lessons.isEmpty()) {
+        if (lessons != null && !lessons.isEmpty()) {
             LocalDate earliestLessonDate = lessons.get(0).getActualDate();
             if (earliestLessonDate != null) {
                 log.info("Found earliest lesson date: {} for teacher ID: {}", earliestLessonDate, teacherId);
@@ -631,7 +657,7 @@ public class ContractServiceImpl implements ContractService {
         log.info("No teaching dates found for teacher ID: {}", teacherId);
         return null;
     }
-    
+
     /**
      * Automatically update contract status based on end date.
      * EXPIRED: endDate < today
@@ -773,6 +799,39 @@ public class ContractServiceImpl implements ContractService {
         return convertToDto(renewedContract);
     }
 
+    @Override
+    public ContractDto signContract(Long contractId) {
+        log.info("Signing contract with id: {}", contractId);
+        Contract contract = contractRepository.findById(contractId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hợp đồng với ID: " + contractId));
+
+        String currentStatus = contract.getStatus() != null ? contract.getStatus().trim().toUpperCase() : "";
+        if (!"PENDING".equals(currentStatus)) {
+            log.warn("Cannot sign contract {} because status is {} (expected PENDING)", contractId, currentStatus);
+            throw new IllegalStateException("Chỉ có thể ký hợp đồng ở trạng thái PENDING");
+        }
+
+        LocalDate today = LocalDate.now();
+        LocalDate septFirst = LocalDate.of(today.getYear(), 9, 1);
+
+        // For new (PENDING) contracts: start date is fixed to 01/09 of the current year
+        contract.setStartDate(septFirst);
+        contract.setEndDate(septFirst.plusDays(90));
+
+        // Status becomes ACTIVE only on or after the start date (01/09)
+        if (!today.isBefore(septFirst)) {
+            contract.setStatus("ACTIVE");
+        } else {
+            // Keep as PENDING until the start date arrives
+            contract.setStatus("PENDING");
+        }
+
+        Contract saved = contractRepository.save(contract);
+        log.info("Contract signed successfully - ID: {}, Start: {}, End: {}, Status: {}", 
+                contractId, saved.getStartDate(), saved.getEndDate(), saved.getStatus());
+        return convertToDto(saved);
+    }
+
     private Contract convertToEntity(ContractDto contractDto) {
         Contract contract = new Contract();
         contract.setId(contractDto.getId());
@@ -844,6 +903,51 @@ public class ContractServiceImpl implements ContractService {
             dto.setGrossSalary(null);
             dto.setNetSalary(null);
             dto.setStatus("ACTIVE");
+            // Set personal data from User entity
+            dto.setBirthDate(u.getBirthDate());
+            dto.setCitizenId(u.getCitizenId());
+            dto.setAddress(u.getAddress());
+            // Set default qualification and subject based on department
+            String department = u.getDepartment();
+            if (department != null) {
+                if (department.contains("Toán")) {
+                    dto.setQualification("Cử nhân Toán học");
+                    dto.setSubject("Toán");
+                    dto.setClassLevel("Lớp 10, 11, 12");
+                } else if (department.contains("Vật lý")) {
+                    dto.setQualification("Cử nhân Vật lý");
+                    dto.setSubject("Vật lý");
+                    dto.setClassLevel("Lớp 10, 11, 12");
+                } else if (department.contains("Hóa")) {
+                    dto.setQualification("Cử nhân Hóa học");
+                    dto.setSubject("Hóa học");
+                    dto.setClassLevel("Lớp 10, 11, 12");
+                } else if (department.contains("Ngữ văn")) {
+                    dto.setQualification("Cử nhân Ngữ văn");
+                    dto.setSubject("Ngữ văn");
+                    dto.setClassLevel("Lớp 10, 11, 12");
+                } else if (department.contains("Tiếng Anh")) {
+                    dto.setQualification("Cử nhân Ngoại ngữ");
+                    dto.setSubject("Tiếng Anh");
+                    dto.setClassLevel("Lớp 10, 11, 12");
+                } else if (department.contains("Sinh")) {
+                    dto.setQualification("Cử nhân Sinh học");
+                    dto.setSubject("Sinh học");
+                    dto.setClassLevel("Lớp 10, 11, 12");
+                } else {
+                    dto.setQualification("Cử nhân");
+                    dto.setSubject("Giảng dạy");
+                    dto.setClassLevel("Lớp 10, 11, 12");
+                }
+            } else {
+                dto.setQualification("Cử nhân");
+                dto.setSubject("Giảng dạy");
+                dto.setClassLevel("Lớp 10, 11, 12");
+            }
+            // Set default work schedule
+            dto.setWorkShifts("morning,afternoon");
+            dto.setWorkDays("monday,tuesday,wednesday,thursday,friday");
+            dto.setWorkSchedule("Thứ 2-6, ca sáng và chiều");
 
             if (dryRun) {
                 // Simulate contract creation without persisting
@@ -854,6 +958,7 @@ public class ContractServiceImpl implements ContractService {
 
                 // Build preview DTO manually to avoid convertToDto (which may persist status changes)
                 ContractDto preview = new ContractDto();
+                preview.setId(entity.getId());
                 preview.setUserId(entity.getUserId());
                 preview.setContractId(entity.getContractId());
                 preview.setFullName(entity.getFullName());
@@ -861,26 +966,49 @@ public class ContractServiceImpl implements ContractService {
                 preview.setPhoneNumber(entity.getPhoneNumber());
                 preview.setContractType(entity.getContractType());
                 preview.setPosition(entity.getPosition());
+                preview.setDepartment(entity.getDepartment());
+                preview.setSalary(entity.getSalary());
+                preview.setGrossSalary(entity.getGrossSalary());
+                preview.setNetSalary(entity.getNetSalary());
                 preview.setHourlySalary(entity.getHourlySalary());
+                preview.setWorkingHours(entity.getWorkingHours());
                 preview.setStatus(entity.getStatus());
+                preview.setContractTerms(entity.getContractTerms());
                 preview.setStartDate(entity.getStartDate());
                 preview.setEndDate(entity.getEndDate());
+                preview.setCreatedBy(entity.getCreatedBy());
+                preview.setCreatedAt(entity.getCreatedAt());
+                preview.setUpdatedAt(entity.getUpdatedAt());
+                // Set personal data from User entity
+                preview.setBirthDate(u.getBirthDate());
+                preview.setCitizenId(u.getCitizenId());
+                preview.setAddress(u.getAddress());
+                // Set qualification and subject data from the DTO
+                preview.setQualification(dto.getQualification());
+                preview.setSubject(dto.getSubject());
+                preview.setClassLevel(dto.getClassLevel());
+                preview.setWorkShifts(dto.getWorkShifts());
+                preview.setWorkDays(dto.getWorkDays());
+                preview.setWorkSchedule(dto.getWorkSchedule());
                 results.add(preview);
             } else {
-                // Persist using existing validated flow
+                // Actually create the contract
                 ContractDto created = createContract(dto);
                 results.add(created);
             }
         }
-        // After creating contracts in this run, assign the required status/date distribution to the first 24 created
-        if (!dryRun) {
-            List<Contract> createdContracts = results.stream()
-                    .filter(r -> r != null && r.getId() != null)
-                    .map(r -> contractRepository.findById(r.getId()).orElse(null))
-                    .filter(c -> c != null)
-                    .collect(Collectors.toList());
 
-            int total = Math.min(24, createdContracts.size());
+        // Apply status/date distribution for actual creation (not dry-run)
+        if (!dryRun && !results.isEmpty()) {
+            List<Long> userIds = results.stream().map(ContractDto::getUserId).collect(Collectors.toList());
+            List<Contract> createdContracts = new java.util.ArrayList<>();
+            for (Long userId : userIds) {
+                List<Contract> userContracts = contractRepository.findByUserIdOrderByCreatedAtDesc(userId);
+                if (!userContracts.isEmpty()) {
+                    createdContracts.add(userContracts.get(0)); // Get the first contract for this user
+                }
+            }
+            int total = createdContracts.size();
             if (total > 0) {
                 LocalDate today = LocalDate.now();
                 for (int i = 0; i < total; i++) {

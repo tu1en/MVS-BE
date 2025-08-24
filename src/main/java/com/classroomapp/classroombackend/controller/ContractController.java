@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -63,7 +64,7 @@ public class ContractController {
 
     // Tạo hợp đồng mới
     @PostMapping
-    public ResponseEntity<ContractDto> createContract(@RequestBody ContractDto contractDto) {
+    public ResponseEntity<ContractDto> createContract(@Valid @RequestBody ContractDto contractDto) {
         log.info("POST /api/contracts - Creating new contract for user: {}", contractDto.getFullName());
         try {
             ContractDto createdContract = contractService.createContract(contractDto);
@@ -76,7 +77,7 @@ public class ContractController {
 
     // Cập nhật hợp đồng
     @PutMapping("/{id}")
-    public ResponseEntity<ContractDto> updateContract(@PathVariable Long id, @RequestBody ContractDto contractDto) {
+    public ResponseEntity<ContractDto> updateContract(@PathVariable Long id, @Valid @RequestBody ContractDto contractDto) {
         log.info("PUT /api/contracts/{} - Updating contract", id);
         try {
             ContractDto updatedContract = contractService.updateContract(id, contractDto);
@@ -161,6 +162,19 @@ public class ContractController {
             return ResponseEntity.ok(renewedContract);
         } catch (Exception e) {
             log.error("Error renewing contract {}: ", id, e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
+    // Ký hợp đồng (PENDING -> ACTIVE)
+    @PutMapping("/{id}/sign")
+    public ResponseEntity<ContractDto> signContract(@PathVariable Long id) {
+        log.info("PUT /api/contracts/{}/sign - Signing contract", id);
+        try {
+            ContractDto signed = contractService.signContract(id);
+            return ResponseEntity.ok(signed);
+        } catch (Exception e) {
+            log.error("Error signing contract {}: ", id, e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
     }

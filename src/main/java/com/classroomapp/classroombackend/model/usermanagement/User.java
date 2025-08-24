@@ -103,6 +103,14 @@ public class User {
     @Column(name = "school", columnDefinition = "NVARCHAR(255)")
     private String school;
 
+    // Additional personal information fields
+    @Column(name = "citizen_id", length = 12)
+    private String citizenId; // 12-digit CCCD number
+
+    @Nationalized
+    @Column(name = "address", columnDefinition = "NVARCHAR(500)")
+    private String address;
+
     /**
      * Get the role name as String based on the roleId
      */

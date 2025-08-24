@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import com.classroomapp.classroombackend.model.usermanagement.Role;
 
@@ -915,25 +916,25 @@ seedEvidenceTemplates();
 
                 // ===== Thêm bộ giáo viên theo chuẩn cấp 3 (Toán, Lý, Hóa, Văn, Anh, Sinh) =====
                 String[][] teacherSeeds = new String[][]{
-                    // username, email, fullName, department, phone
-                    {"toan_gv1","toan1@school.vn","Nguyễn Đức Toàn","Toán","0901001001"},
-                    {"toan_gv2","toan2@school.vn","Phạm Hải Long","Toán","0901001002"},
-                    {"toan_gv3","toan3@school.vn","Lê Minh Quân","Toán","0901001003"},
-                    {"ly_gv1","ly1@school.vn","Trần Quốc Huy","Vật lý","0912002001"},
-                    {"ly_gv2","ly2@school.vn","Đỗ Thanh Tùng","Vật lý","0912002002"},
-                    {"ly_gv3","ly3@school.vn","Ngô Nhật Nam","Vật lý","0912002003"},
-                    {"hoa_gv1","hoa1@school.vn","Vũ Hồng Phúc","Hóa học","0903003001"},
-                    {"hoa_gv2","hoa2@school.vn","Bùi Thanh Hà","Hóa học","0903003002"},
-                    {"hoa_gv3","hoa3@school.vn","Phan Anh Dũng","Hóa học","0903003003"},
-                    {"van_gv1","van1@school.vn","Phạm Thu Hà","Ngữ văn","0934004001"},
-                    {"van_gv2","van2@school.vn","Nguyễn Thị Hồng","Ngữ văn","0934004002"},
-                    {"van_gv3","van3@school.vn","Hoàng Thị Trang","Ngữ văn","0934004003"},
-                    {"anh_gv1","anh1@school.vn","Lê Hồng Sơn","Tiếng Anh","0975005001"},
-                    {"anh_gv2","anh2@school.vn","Tạ Bích Ngọc","Tiếng Anh","0975005002"},
-                    {"anh_gv3","anh3@school.vn","Phạm Khánh Linh","Tiếng Anh","0975005003"},
-                    {"sinh_gv1","sinh1@school.vn","Đặng Quỳnh Chi","Sinh học","0986006001"},
-                    {"sinh_gv2","sinh2@school.vn","Trịnh Văn Thái","Sinh học","0986006002"},
-                    {"sinh_gv3","sinh3@school.vn","Nguyễn Tú Anh","Sinh học","0986006003"}
+                    // username, email, fullName, department, phone, birthDate, citizenId, address
+                    {"toan_gv1","toan1@school.vn","Nguyễn Đức Toàn","Toán","0901001001","1985-03-15","037185123456","Thanh Hóa"},
+                    {"toan_gv2","toan2@school.vn","Phạm Hải Long","Toán","0901001002","1982-07-22","037182234567","Thanh Hóa"},
+                    {"toan_gv3","toan3@school.vn","Lê Minh Quân","Toán","0901001003","1988-11-08","037188345678","Thanh Hóa"},
+                    {"ly_gv1","ly1@school.vn","Trần Quốc Huy","Vật lý","0912002001","1984-05-12","037184456789","Thanh Hóa"},
+                    {"ly_gv2","ly2@school.vn","Đỗ Thanh Tùng","Vật lý","0912002002","1987-09-30","037187567890","Thanh Hóa"},
+                    {"ly_gv3","ly3@school.vn","Ngô Nhật Nam","Vật lý","0912002003","1983-12-18","037183678901","Thanh Hóa"},
+                    {"hoa_gv1","hoa1@school.vn","Vũ Hồng Phúc","Hóa học","0903003001","1986-02-25","037186789012","Thanh Hóa"},
+                    {"hoa_gv2","hoa2@school.vn","Bùi Thanh Hà","Hóa học","0903003002","1989-06-14","037289890123","Thanh Hóa"},
+                    {"hoa_gv3","hoa3@school.vn","Phan Anh Dũng","Hóa học","0903003003","1981-10-07","037181901234","Thanh Hóa"},
+                    {"van_gv1","van1@school.vn","Phạm Thu Hà","Ngữ văn","0934004001","1990-04-20","037290012345","Thanh Hóa"},
+                    {"van_gv2","van2@school.vn","Nguyễn Thị Hồng","Ngữ văn","0934004002","1985-08-16","037285123456","Thanh Hóa"},
+                    {"van_gv3","van3@school.vn","Hoàng Thị Trang","Ngữ văn","0934004003","1992-01-11","037292234567","Thanh Hóa"},
+                    {"anh_gv1","anh1@school.vn","Lê Hồng Sơn","Tiếng Anh","0975005001","1987-03-28","037187345678","Thanh Hóa"},
+                    {"anh_gv2","anh2@school.vn","Tạ Bích Ngọc","Tiếng Anh","0975005002","1991-07-05","037291456789","Thanh Hóa"},
+                    {"anh_gv3","anh3@school.vn","Phạm Khánh Linh","Tiếng Anh","0975005003","1988-11-23","037288567890","Thanh Hóa"},
+                    {"sinh_gv1","sinh1@school.vn","Đặng Quỳnh Chi","Sinh học","0986006001","1986-09-12","037286678901","Thanh Hóa"},
+                    {"sinh_gv2","sinh2@school.vn","Trịnh Văn Thái","Sinh học","0986006002","1984-12-03","037184789012","Thanh Hóa"},
+                    {"sinh_gv3","sinh3@school.vn","Nguyễn Tú Anh","Sinh học","0986006003","1993-05-17","037293890123","Thanh Hóa"}
                 };
 
                 long nextId = 600L; // tránh trùng ID đã dùng ở trên
@@ -947,12 +948,17 @@ seedEvidenceTemplates();
                     u.setRoleId(RoleConstants.TEACHER);
                     u.setDepartment(t[3]);
                     u.setPhoneNumber(t[4]);
+                    // Parse and set new fields: birthDate, citizenId, address
+                    u.setBirthDate(LocalDate.parse(t[5])); // birthDate from seed data
+                    u.setCitizenId(t[6]); // citizenId from seed data
+                    u.setAddress(t[7]); // address from seed data
                     u.setStatus("active");
                     u.setHireDate(LocalDate.now().minusMonths((int)(Math.random() * 24) + 1));
                     u.setAnnualLeaveBalance(12);
                     u.setLeaveResetDate(LocalDate.now().plusMonths(6));
                     userRepository.save(u);
-                    log.info("✅ Created teacher: {} ({})", t[2], t[3]);
+                    log.info("✅ Created teacher: {} ({}) - Born: {}, CCCD: {}, Address: {}", 
+                            t[2], t[3], t[5], t[6], t[7]);
                 }
 
                 // Create accountant user
@@ -3467,4 +3473,56 @@ private void createEvidenceTemplate(String name, String code, String description
             log.error("❌ Error creating sample leave notices: {}", e.getMessage(), e);
         }
     }
-} 
+
+    /**
+     * Generate a random birth date before year 2000
+     */
+    private LocalDate generateBirthDate() {
+        Random random = new Random();
+        // Generate birth year between 1960 and 1999
+        int year = 1960 + random.nextInt(40);
+        int month = 1 + random.nextInt(12);
+        int day = 1 + random.nextInt(28); // Use 28 to avoid invalid dates
+        return LocalDate.of(year, month, day);
+    }
+
+    /**
+     * Generate a valid 12-digit CCCD number
+     * Format: 3-digit province code + 1-digit gender code + 2-digit birth year + 6 random digits
+     */
+    private String generateCCCD(LocalDate birthDate, String fullName) {
+        Random random = new Random();
+        
+        // Province code for Thanh Hóa: 037
+        String provinceCode = "037";
+        
+        // Gender code: determine from name (simple heuristic)
+        String genderCode = determineGenderFromName(fullName) ? "1" : "2"; // 1=male, 2=female
+        
+        // Birth year code (last 2 digits of birth year)
+        String birthYearCode = String.format("%02d", birthDate.getYear() % 100);
+        
+        // 6 random digits
+        String randomDigits = String.format("%06d", random.nextInt(1000000));
+        
+        return provinceCode + genderCode + birthYearCode + randomDigits;
+    }
+
+    /**
+     * Simple heuristic to determine gender from Vietnamese name
+     */
+    private boolean determineGenderFromName(String fullName) {
+        if (fullName == null) return true; // default to male
+        
+        String lowerName = fullName.toLowerCase();
+        // Common Vietnamese female name indicators
+        String[] femaleIndicators = {"thị", "hà", "hồng", "trang", "ngọc", "linh", "chi", "anh"};
+        
+        for (String indicator : femaleIndicators) {
+            if (lowerName.contains(indicator)) {
+                return false; // female
+            }
+        }
+        return true; // default to male
+    }
+}
