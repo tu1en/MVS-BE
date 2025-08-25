@@ -22,7 +22,7 @@ public class AttendanceVerificationLog {
     private StaffAttendanceLog attendanceLog;
     
     @Enumerated(EnumType.STRING)
-    @Column(name = "verification_type")
+    @Column(name = "verification_type", columnDefinition = "NVARCHAR(255)")
     private VerificationType verificationType;
     
     @Column(name = "gps_latitude")
@@ -40,23 +40,23 @@ public class AttendanceVerificationLog {
     @Column(name = "location_distance")
     private Integer locationDistance;
     
-    @Column(name = "public_ip")
+    @Column(name = "public_ip", columnDefinition = "NVARCHAR(255)")
     private String publicIp;
-    
+
     @Column(name = "network_verified")
     private boolean networkVerified;
-    
-    @Column(name = "network_name")
+
+    @Column(name = "network_name", columnDefinition = "NVARCHAR(255)")
     private String networkName;
     
     @Column(name = "user_agent", columnDefinition = "NVARCHAR(500)")
     private String userAgent;
     
-    @Column(name = "device_fingerprint")
+    @Column(name = "device_fingerprint", columnDefinition = "NVARCHAR(255)")
     private String deviceFingerprint;
-    
+
     @Enumerated(EnumType.STRING)
-    @Column(name = "verification_status")
+    @Column(name = "verification_status", columnDefinition = "NVARCHAR(255)")
     private VerificationStatus verificationStatus;
     
     @Column(name = "failure_reason", columnDefinition = "NVARCHAR(500)")

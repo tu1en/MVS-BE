@@ -33,26 +33,26 @@ public class User {
     private Long id;
 
     @NotBlank
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, columnDefinition = "NVARCHAR(255)")
     private String username;
 
     @NotBlank
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
     private String password;
 
     @NotBlank
     @Email
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, columnDefinition = "NVARCHAR(255)")
     private String email;
 
     @Nationalized
     @Column(name = "full_name", columnDefinition = "NVARCHAR(255)")
     private String fullName;
 
-    @Column(name = "phone_number", length = 20)
+    @Column(name = "phone_number", length = 20, columnDefinition = "NVARCHAR(20)")
     private String phoneNumber;
 
-    @Column(name = "gender", length = 16)
+    @Column(name = "gender", length = 16, columnDefinition = "NVARCHAR(16)")
     private String gender; // MALE, FEMALE, OTHER (nullable)
 
     @Column(name = "role_id")

@@ -2,7 +2,7 @@ package com.classroomapp.classroombackend.service;
 
 import org.springframework.web.multipart.MultipartFile;
 
-import com.classroomapp.classroombackend.dto.FileUploadResponse;
+import com.classroomapp.classroombackend.dto.common.FileUploadResponse;
 
 public interface FileStorageService {
     /**

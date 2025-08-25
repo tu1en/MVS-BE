@@ -90,6 +90,32 @@ public class AttendanceController {
     }
 
     /**
+     * Gets the attendance status information for a specific lecture.
+     * This endpoint provides status information like overall status, makeup approval, etc.
+     * Accessible only by users with the 'TEACHER' role.
+     */
+    @GetMapping("/lecture/{lectureId}/status")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<Map<String, Object>> getAttendanceStatusForLecture(
+            @PathVariable Long lectureId,
+            @RequestParam Long classroomId) {
+        try {
+            // Get attendance status information for the lecture
+            Map<String, Object> status = attendanceService.getAttendanceStatusForLecture(lectureId, classroomId);
+            return ResponseEntity.ok(status);
+        } catch (Exception e) {
+            // Return a default status if there's an error
+            Map<String, Object> defaultStatus = new HashMap<>();
+            defaultStatus.put("overallStatus", "NOT_TAKEN");
+            defaultStatus.put("totalStudents", 0);
+            defaultStatus.put("presentCount", 0);
+            defaultStatus.put("absentCount", 0);
+            defaultStatus.put("makeupApproved", false);
+            return ResponseEntity.ok(defaultStatus);
+        }
+    }
+
+    /**
      * Gets the personal attendance history for the currently authenticated student in a specific classroom.
      * Accessible by any authenticated user for their own record.
      */

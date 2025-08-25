@@ -400,7 +400,8 @@ public class CourseTemplateSeeder implements CommandLineRunner {
         // Get available rooms
         List<Room> rooms = roomRepository.findAll();
         List<User> teachers = userRepository.findAll().stream()
-            .limit(5) // Use first 5 users as teachers
+            .filter(user -> user.getRoleId() != null && user.getRoleId() == 2) // Only TEACHER role (roleId = 2)
+            .limit(5) // Use first 5 teachers
             .toList();
         
         if (rooms.isEmpty() || teachers.isEmpty()) {

@@ -46,26 +46,26 @@ public class AuditLog {
     @JoinColumn(name = "user_id")
     private User user;
     
-    @Column(name = "username", length = 100)
+    @Column(name = "username", length = 100, columnDefinition = "NVARCHAR(100)")
     private String username;
-    
-    @Column(name = "session_id", length = 100)
+
+    @Column(name = "session_id", length = 100, columnDefinition = "NVARCHAR(100)")
     private String sessionId;
-    
+
     @Enumerated(EnumType.STRING)
-    @Column(name = "action", length = 30, nullable = false)
+    @Column(name = "action", length = 30, nullable = false, columnDefinition = "NVARCHAR(30)")
     private AuditAction action;
-    
-    @Column(name = "entity_type", length = 100)
+
+    @Column(name = "entity_type", length = 100, columnDefinition = "NVARCHAR(100)")
     private String entityType;
-    
-    @Column(name = "entity_id", length = 100)
+
+    @Column(name = "entity_id", length = 100, columnDefinition = "NVARCHAR(100)")
     private String entityId;
-    
-    @Column(name = "entity_name", length = 200)
+
+    @Column(name = "entity_name", length = 200, columnDefinition = "NVARCHAR(200)")
     private String entityName;
-    
-    @Column(name = "description", length = 1000)
+
+    @Column(name = "description", length = 1000, columnDefinition = "NVARCHAR(1000)")
     private String description;
     
     @Column(name = "old_values", columnDefinition = "TEXT")
@@ -74,16 +74,16 @@ public class AuditLog {
     @Column(name = "new_values", columnDefinition = "TEXT")
     private String newValues; // JSON string
     
-    @Column(name = "ip_address", length = 45)
+    @Column(name = "ip_address", length = 45, columnDefinition = "NVARCHAR(45)")
     private String ipAddress;
-    
-    @Column(name = "user_agent", length = 500)
+
+    @Column(name = "user_agent", length = 500, columnDefinition = "NVARCHAR(500)")
     private String userAgent;
-    
-    @Column(name = "request_url", length = 500)
+
+    @Column(name = "request_url", length = 500, columnDefinition = "NVARCHAR(500)")
     private String requestUrl;
-    
-    @Column(name = "request_method", length = 10)
+
+    @Column(name = "request_method", length = 10, columnDefinition = "NVARCHAR(10)")
     private String requestMethod;
     
     @Column(name = "response_status")
@@ -93,20 +93,20 @@ public class AuditLog {
     private Long executionTimeMs;
     
     @Enumerated(EnumType.STRING)
-    @Column(name = "severity", length = 20, nullable = false)
+    @Column(name = "severity", length = 20, nullable = false, columnDefinition = "NVARCHAR(20)")
     private AuditSeverity severity = AuditSeverity.INFO;
-    
+
     @Enumerated(EnumType.STRING)
-    @Column(name = "category", length = 30, nullable = false)
+    @Column(name = "category", length = 30, nullable = false, columnDefinition = "NVARCHAR(30)")
     private AuditCategory category = AuditCategory.GENERAL;
-    
-    @Column(name = "module", length = 50)
+
+    @Column(name = "module", length = 50, columnDefinition = "NVARCHAR(50)")
     private String module;
-    
+
     @Column(name = "success", columnDefinition = "BIT DEFAULT 1")
     private Boolean success = true;
-    
-    @Column(name = "error_message", length = 1000)
+
+    @Column(name = "error_message", length = 1000, columnDefinition = "NVARCHAR(1000)")
     private String errorMessage;
     
     @Column(name = "additional_data", columnDefinition = "NVARCHAR(MAX)")

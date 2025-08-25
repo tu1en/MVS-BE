@@ -15,6 +15,7 @@ import com.classroomapp.classroombackend.dto.ClassDto;
 import com.classroomapp.classroombackend.dto.response.PublicCourseTemplateDto;
 import com.classroomapp.classroombackend.entity.ClassEntity;
 import com.classroomapp.classroombackend.repository.ClassRepository;
+import com.classroomapp.classroombackend.service.ClassService;
 import com.classroomapp.classroombackend.service.CourseTemplateService;
 
 import lombok.RequiredArgsConstructor;
@@ -30,9 +31,10 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 public class PublicCourseController {
-    
+
     private final CourseTemplateService courseTemplateService;
     private final ClassRepository classRepository;
+    private final ClassService classService;
     
     /**
      * Get all public course templates with optional filtering
@@ -79,23 +81,15 @@ public class PublicCourseController {
     @GetMapping("/by-class")
     public ResponseEntity<List<ClassDto>> getPublicClasses() {
         try {
-            List<ClassEntity> classes = classRepository.findByIsPublicTrueOrderByCreatedAtDesc();
-            List<ClassDto> result = classes.stream().map(c -> {
-                ClassDto dto = new ClassDto();
-                dto.setId(c.getId());
-                dto.setCourseTemplateId(c.getCourseTemplate() != null ? c.getCourseTemplate().getId() : null);
-                dto.setCourseTemplateName(c.getCourseTemplate() != null ? c.getCourseTemplate().getName() : null);
-                dto.setClassName(c.getClassName());
-                dto.setDescription(c.getDescription());
-                dto.setMaxStudents(c.getMaxStudents());
-                dto.setCurrentStudents(c.getCurrentStudents());
-                dto.setStatus(c.getStatus().name());
-                dto.setCreatedAt(c.getCreatedAt());
-                dto.setIsPublic(c.getIsPublic());
-                dto.setTuitionFee(c.getTuitionFee());
-                return dto;
-            }).collect(Collectors.toList());
-            return ResponseEntity.ok(result);
+            // ✅ FIX: Use ClassService to ensure consistent data mapping including teacherName and classLessons
+            List<ClassDto> allClasses = classService.getAllClasses();
+
+            // Filter only public classes
+            List<ClassDto> publicClasses = allClasses.stream()
+                    .filter(dto -> Boolean.TRUE.equals(dto.getIsPublic()))
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(publicClasses);
         } catch (Exception e) {
             log.error("Error fetching public classes", e);
             return ResponseEntity.internalServerError().build();
@@ -108,20 +102,15 @@ public class PublicCourseController {
     @GetMapping("/by-class/{id}")
     public ResponseEntity<ClassDto> getPublicClassDetail(@PathVariable Long id) {
         try {
-            ClassEntity c = classRepository.findByIdAndIsPublicTrue(id)
-                    .orElseThrow(() -> new RuntimeException("Class not found or not public"));
-            ClassDto dto = new ClassDto();
-            dto.setId(c.getId());
-            dto.setCourseTemplateId(c.getCourseTemplate() != null ? c.getCourseTemplate().getId() : null);
-            dto.setCourseTemplateName(c.getCourseTemplate() != null ? c.getCourseTemplate().getName() : null);
-            dto.setClassName(c.getClassName());
-            dto.setDescription(c.getDescription());
-            dto.setMaxStudents(c.getMaxStudents());
-            dto.setCurrentStudents(c.getCurrentStudents());
-            dto.setStatus(c.getStatus().name());
-            dto.setCreatedAt(c.getCreatedAt());
-            dto.setIsPublic(c.getIsPublic());
-            dto.setTuitionFee(c.getTuitionFee());
+            // ✅ FIX: Use ClassService to ensure consistent data mapping including classLessons
+            ClassDto dto = classService.getClassById(id);
+
+            // Verify the class is public before returning
+            if (!Boolean.TRUE.equals(dto.getIsPublic())) {
+                log.warn("Class {} is not public", id);
+                return ResponseEntity.notFound().build();
+            }
+
             return ResponseEntity.ok(dto);
         } catch (RuntimeException e) {
             log.warn("Public class not found: {}", id);

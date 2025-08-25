@@ -49,7 +49,7 @@ public class Schedule {
     @Column(name = "room", length = 50)
     private String room;
     
-    @Column(name = "subject", length = 100, nullable = false)
+    @Column(name = "subject", length = 100, nullable = false, columnDefinition = "NVARCHAR(100)")
     private String subject;
     
     @Column(name = "materials_url")

@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -71,6 +72,13 @@ public class AttendanceSessionController {
         AttendanceSession closedSession = attendanceService.closeSession(sessionId);
         AttendanceSessionDto sessionDto = mapToDto(closedSession);
         return ResponseEntity.ok(sessionDto);
+    }
+
+    @DeleteMapping("/{sessionId}")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<Void> deleteSession(@PathVariable Long sessionId) {
+        attendanceService.deleteSession(sessionId);
+        return ResponseEntity.noContent().build();
     }
 
     private AttendanceSessionDto mapToDto(AttendanceSession session) {

@@ -428,9 +428,10 @@ public UserDto activateUserAndAssignRole(String email, String contractType) {
 private Integer determineRoleFromContractType(String contractType) {
     return switch (contractType) {
         case "TEACHER" -> 2; // ROLE_TEACHER
-        case "STAFF" -> 5;   // ROLE_ACCOUNTANT (for HR and Accountant staff)
+        // COMMENTED OUT: Non-teacher contract types to focus on teacher contracts only
+        // case "STAFF" -> 5;   // ROLE_ACCOUNTANT (for HR and Accountant staff)
         case "PARENT" -> 7;  // ROLE_PARENT
-        default -> 1;       // ROLE_USER (default)
+        default -> 2;       // Default to TEACHER for simplicity in test environment
     };
 }
 }

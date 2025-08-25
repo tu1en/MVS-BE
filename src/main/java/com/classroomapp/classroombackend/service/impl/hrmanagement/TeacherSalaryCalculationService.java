@@ -11,26 +11,26 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.classroomapp.classroombackend.model.AttendanceLog;
 import com.classroomapp.classroombackend.model.Contract;
 import com.classroomapp.classroombackend.model.Schedule;
-import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSession;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
+import com.classroomapp.classroombackend.repository.AttendanceLogRepository;
 import com.classroomapp.classroombackend.repository.ScheduleRepository;
-import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceSessionRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * Service để tính lương giáo viên dựa trên lịch sử giảng dạy
- * Thay vì sử dụng StaffAttendanceLog, sử dụng AttendanceSession để tính
+ * Sử dụng AttendanceLog để tính lương dựa trên thời gian check-in/check-out
  */
 @Service
 @Slf4j
 public class TeacherSalaryCalculationService {
 
     @Autowired
-    private AttendanceSessionRepository attendanceSessionRepository;
+    private AttendanceLogRepository attendanceLogRepository;
     
     @Autowired
     private ScheduleRepository scheduleRepository;
@@ -59,14 +59,14 @@ public class TeacherSalaryCalculationService {
                 teacherId, periodStart, periodEnd);
         
         try {
-            // 1. Lấy lịch sử giảng dạy trong kỳ lương
-            List<AttendanceSession> teachingSessions = getTeachingSessionsInPeriod(teacherId, periodStart, periodEnd);
-            
+            // 1. Lấy lịch sử attendance trong kỳ lương
+            List<AttendanceLog> attendanceLogs = getAttendanceLogsInPeriod(teacherId, periodStart, periodEnd);
+
             // 2. Lấy lịch giảng dạy của giáo viên
             List<Schedule> teacherSchedules = scheduleRepository.findByTeacherId(teacherId);
-            
+
             // 3. Tính toán giờ làm việc
-            TeachingWorkSummary workSummary = calculateTeachingWork(teachingSessions, teacherSchedules, periodStart, periodEnd);
+            TeachingWorkSummary workSummary = calculateTeachingWorkFromAttendance(attendanceLogs, teacherSchedules, periodStart, periodEnd);
             
             // 4. Tính lương
             BigDecimal totalSalary = calculateTotalSalary(workSummary, contract);
@@ -95,73 +95,89 @@ public class TeacherSalaryCalculationService {
     }
     
     /**
-     * Lấy lịch sử giảng dạy trong kỳ lương
+     * Lấy lịch sử attendance trong kỳ lương
      */
-    private List<AttendanceSession> getTeachingSessionsInPeriod(Long teacherId, LocalDate periodStart, LocalDate periodEnd) {
-        // Lấy tất cả classroom của giáo viên
-        List<Classroom> teacherClassrooms = classroomRepository.findByTeacherId(teacherId);
-        List<Long> classroomIds = teacherClassrooms.stream()
-                .map(Classroom::getId)
-                .collect(Collectors.toList());
-        
-        if (classroomIds.isEmpty()) {
-            log.warn("⚠️ Teacher {} has no classrooms assigned", teacherId);
-            return List.of();
-        }
-        
-        // Lấy các phiên điểm danh có teacherClockInTime trong kỳ lương
-        return attendanceSessionRepository.findByClassroomIdInAndTeacherClockInTimeBetween(
-                classroomIds, 
-                periodStart.atStartOfDay(), 
-                periodEnd.atTime(23, 59, 59)
+    private List<AttendanceLog> getAttendanceLogsInPeriod(Long teacherId, LocalDate periodStart, LocalDate periodEnd) {
+        // Lấy attendance logs của giáo viên trong kỳ lương
+        List<AttendanceLog> logs = attendanceLogRepository.findByUserIdAndDateBetween(
+                teacherId,
+                periodStart,
+                periodEnd
         );
+
+        log.info("📊 Found {} attendance logs for teacher {} in period {} to {}",
+                logs.size(), teacherId, periodStart, periodEnd);
+
+        return logs;
     }
     
     /**
-     * Tính toán giờ làm việc từ lịch sử giảng dạy
+     * Tính toán giờ làm việc từ attendance logs
      */
-    private TeachingWorkSummary calculateTeachingWork(
-            List<AttendanceSession> teachingSessions, 
-            List<Schedule> teacherSchedules, 
-            LocalDate periodStart, 
+    private TeachingWorkSummary calculateTeachingWorkFromAttendance(
+            List<AttendanceLog> attendanceLogs,
+            List<Schedule> teacherSchedules,
+            LocalDate periodStart,
             LocalDate periodEnd) {
-        
+
         TeachingWorkSummary summary = new TeachingWorkSummary();
-        
-        // Nhóm các phiên theo ngày
-        Map<LocalDate, List<AttendanceSession>> sessionsByDate = teachingSessions.stream()
-                .collect(Collectors.groupingBy(AttendanceSession::getSessionDate));
-        
+
+        // Nhóm các attendance logs theo ngày
+        Map<LocalDate, List<AttendanceLog>> logsByDate = attendanceLogs.stream()
+                .collect(Collectors.groupingBy(AttendanceLog::getDate));
+
         // Tính toán cho từng ngày
         for (LocalDate date = periodStart; !date.isAfter(periodEnd); date = date.plusDays(1)) {
-            List<AttendanceSession> daySessions = sessionsByDate.get(date);
-            
-            if (daySessions != null && !daySessions.isEmpty()) {
-                // Tính số slot giảng dạy trong ngày
-                int slotsInDay = daySessions.size();
-                double hoursInDay = slotsInDay * SLOT_DURATION_HOURS;
-                
-                // Phân loại ngày thường/cuối tuần
-                DayOfWeek dayOfWeek = date.getDayOfWeek();
-                boolean isWeekend = dayOfWeek.getValue() >= 6; // Thứ 7, Chủ nhật
-                
-                if (isWeekend) {
-                    summary.addWeekendHours(hoursInDay);
-                    summary.addWeekendDays(1);
-                } else {
-                    summary.addWeekdayHours(hoursInDay);
-                    summary.addWeekdayDays(1);
+            List<AttendanceLog> dayLogs = logsByDate.get(date);
+
+            if (dayLogs != null && !dayLogs.isEmpty()) {
+                // Tính tổng giờ làm việc trong ngày từ check-in/check-out
+                double hoursInDay = calculateHoursFromLogs(dayLogs);
+
+                if (hoursInDay > 0) {
+                    // Phân loại ngày thường/cuối tuần
+                    DayOfWeek dayOfWeek = date.getDayOfWeek();
+                    boolean isWeekend = dayOfWeek.getValue() >= 6; // Thứ 7, Chủ nhật
+
+                    if (isWeekend) {
+                        summary.addWeekendHours(hoursInDay);
+                        summary.addWeekendDays(1);
+                    } else {
+                        summary.addWeekdayHours(hoursInDay);
+                        summary.addWeekdayDays(1);
+                    }
+
+                    summary.addTotalTeachingHours(hoursInDay);
+                    summary.addTotalTeachingDays(1);
+
+                    log.debug("📅 Date: {}, Hours: {}, Weekend: {}",
+                            date, hoursInDay, isWeekend);
                 }
-                
-                summary.addTotalTeachingHours(hoursInDay);
-                summary.addTotalTeachingDays(1);
-                
-                log.debug("📅 Date: {}, Slots: {}, Hours: {}, Weekend: {}", 
-                        date, slotsInDay, hoursInDay, isWeekend);
             }
         }
-        
+
         return summary;
+    }
+
+    /**
+     * Tính số giờ làm việc từ attendance logs trong một ngày
+     */
+    private double calculateHoursFromLogs(List<AttendanceLog> dayLogs) {
+        double totalHours = 0.0;
+
+        for (AttendanceLog attendanceLog : dayLogs) {
+            if (attendanceLog.getCheckIn() != null && attendanceLog.getCheckOut() != null) {
+                // Tính số giờ từ check-in đến check-out
+                long minutes = java.time.Duration.between(attendanceLog.getCheckIn(), attendanceLog.getCheckOut()).toMinutes();
+                double hours = minutes / 60.0;
+                totalHours += hours;
+
+                log.debug("⏰ AttendanceLog {}: {} to {} = {} hours",
+                        attendanceLog.getId(), attendanceLog.getCheckIn(), attendanceLog.getCheckOut(), hours);
+            }
+        }
+
+        return totalHours;
     }
     
     /**

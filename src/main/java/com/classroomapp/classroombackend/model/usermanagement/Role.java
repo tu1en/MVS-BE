@@ -19,7 +19,7 @@ public class Role {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(length = 20, unique = true)
+    @Column(length = 20, unique = true, columnDefinition = "NVARCHAR(20)")
     private String name;
 
     public Role(String name) {

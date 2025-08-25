@@ -92,6 +92,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/health").permitAll() // Health check endpoint
                 .requestMatchers("/api/v1/health").permitAll() // Health check endpoint v1
                 .requestMatchers("/api/test/**").permitAll() // Test endpoints
+                .requestMatchers("/api/my/payroll/test").permitAll() // Payroll test endpoint
+                .requestMatchers("/api/my/payroll/test-all-teachers").permitAll() // All teachers payroll test
                 .requestMatchers("/api/v1/greetings/hello").permitAll() // Only allow hello endpoint for health check
                 .requestMatchers("/api/greetings/hello").permitAll() // Allow greetings endpoint
                 .requestMatchers("/api/role-requests/**").permitAll()
@@ -124,11 +126,14 @@ public class SecurityConfig {
                 .requestMatchers("/api/materials/**").authenticated()
                 .requestMatchers("/api/mock-materials/**").permitAll() // For testing purposes
                 
-                // Lecture endpoints - FIXED: Add these endpoints  
-                .requestMatchers("/api/lectures/**").authenticated()
+                // Lecture endpoints - FIXED: Add these endpoints with proper role access
+                .requestMatchers("/api/lectures/**").hasAnyRole("TEACHER", "MANAGER", "ADMIN", "STUDENT")
                 
-                // Class endpoints - FIXED: Add these endpoints
-                .requestMatchers("/api/classes/**").authenticated()
+                // Classroom endpoints - FIXED: Add these endpoints with proper role access
+                .requestMatchers("/api/classrooms/**").hasAnyRole("TEACHER", "MANAGER", "ADMIN", "STUDENT")
+
+                // Class endpoints - FIXED: Proper role-based access with concurrency handling
+                .requestMatchers("/api/classes/**").hasAnyRole("TEACHER", "MANAGER", "ADMIN")
                 
                 // Protected endpoints - Attendance system
                 .requestMatchers("/api/v1/attendance/**").authenticated()

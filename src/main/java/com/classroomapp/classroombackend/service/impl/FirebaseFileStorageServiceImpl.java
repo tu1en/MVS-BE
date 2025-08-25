@@ -5,7 +5,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.classroomapp.classroombackend.dto.FileUploadResponse;
+import com.classroomapp.classroombackend.dto.common.FileUploadResponse;
 import com.classroomapp.classroombackend.service.FileStorageService;
 import com.classroomapp.classroombackend.service.firebase.FirebaseStorageService;
 
@@ -28,12 +28,7 @@ public class FirebaseFileStorageServiceImpl implements FileStorageService {
                 firebaseStorageService.uploadFile(file, folder);
 
             // Trả về response đúng định dạng FileUploadResponse
-            return new FileUploadResponse(
-                firebaseResponse.getFileName(),
-                firebaseResponse.getFileUrl(),
-                firebaseResponse.getFileType(),
-                firebaseResponse.getFileSize()
-            );
+            return firebaseResponse;
         } catch (Exception e) {
             log.error("Firebase File Storage Service: Lỗi khi tải lên file", e);
             throw new RuntimeException("Tải lên file lên Firebase Storage thất bại", e);

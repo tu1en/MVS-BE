@@ -1,6 +1,7 @@
 package com.classroomapp.classroombackend.service;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -92,6 +93,14 @@ public interface AttendanceService {
 
     List<AttendanceRecordDto> getAttendanceForLecture(Long lectureId, Long classroomId);
 
+    /**
+     * Gets the attendance status information for a specific lecture.
+     * @param lectureId The ID of the lecture
+     * @param classroomId The ID of the classroom
+     * @return Map containing status information like overall status, counts, etc.
+     */
+    Map<String, Object> getAttendanceStatusForLecture(Long lectureId, Long classroomId);
+
     List<MyAttendanceHistoryDto> getMyAttendanceHistory(Long studentId, Long classroomId);
     
     /**
@@ -109,4 +118,10 @@ public interface AttendanceService {
     List<AttendanceDto> findByUserId(Long userId);
 
     void submitAttendance(AttendanceSubmitDto submitDto);
+
+    /**
+     * Xóa attendance session và tất cả attendance records liên quan
+     * @param sessionId ID của session cần xóa
+     */
+    void deleteSession(Long sessionId);
 }

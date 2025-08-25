@@ -1,6 +1,6 @@
 package com.classroomapp.classroombackend.service.impl;
 
-import com.classroomapp.classroombackend.dto.FileUploadResponse;
+import com.classroomapp.classroombackend.dto.common.FileUploadResponse;
 import com.classroomapp.classroombackend.service.FileStorageService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
@@ -41,7 +41,7 @@ public class LocalFileStorageServiceImpl implements FileStorageService {
             Path filePath = uploadDir.resolve(uniqueFilename);
             Files.copy(file.getInputStream(), filePath);
             
-            return new FileUploadResponse(
+            return FileUploadResponse.success(
                 uniqueFilename,
                 "/files/" + folder + "/" + uniqueFilename,
                 file.getContentType(),

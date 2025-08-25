@@ -59,13 +59,14 @@ public class AttendanceSession {
     @Builder.Default
     private Boolean isOpen = true;
 
+    @Column(columnDefinition = "NVARCHAR(255)")
     private String qrCodeData; // Can store a unique identifier for the QR code
 
     @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Attendance> records;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 20)
+    @Column(length = 20, columnDefinition = "NVARCHAR(20)")
     private SessionStatus status;
 
     @Column(name = "start_time")

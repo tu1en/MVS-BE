@@ -1,6 +1,6 @@
 package com.classroomapp.classroombackend.service.impl;
 
-import com.classroomapp.classroombackend.dto.FileUploadResponse;
+import com.classroomapp.classroombackend.dto.common.FileUploadResponse;
 import com.classroomapp.classroombackend.service.FileStorageService;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
@@ -25,7 +25,7 @@ public class DummyFileStorageServiceImpl implements FileStorageService {
         // Trả về URL giả
         String dummyUrl = "https://dummy-storage-provider.com/files/" + folder + "/" + uniqueFilename;
         
-        return new FileUploadResponse(
+        return FileUploadResponse.success(
             uniqueFilename,
             dummyUrl,
             file.getContentType(),

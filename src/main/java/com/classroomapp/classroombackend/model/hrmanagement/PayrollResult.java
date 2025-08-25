@@ -33,6 +33,10 @@ public class PayrollResult {
     private Integer weekendWorkingDays; // số ngày làm cuối tuần
     private Integer weekendWorkingHours; // tổng giờ làm cuối tuần
     private Integer weekdayWorkingHours; // tổng giờ làm ngày thường
+
+    // Teaching data (for teachers)
+    private Double totalTeachingHours; // tổng giờ dạy thực tế
+    private Double totalTeachingSlots; // tổng số tiết dạy (1 slot = 1.5 giờ)
     
     // Original contract salary
     private BigDecimal contractSalary;
@@ -102,5 +106,34 @@ public class PayrollResult {
         // Dùng giờ dạy thực tế cho teacher
         this.actualWorkingHours = actualTeachingHours != null ? (int) Math.round(actualTeachingHours) : null;
         this.standardMonthlyHours = actualTeachingHours != null ? (int) Math.round(actualTeachingHours) : null;
+        this.totalTeachingHours = actualTeachingHours;
+        this.totalTeachingSlots = actualTeachingHours != null ? actualTeachingHours / 1.5 : null; // 1 slot = 1.5 giờ
+    }
+
+    /**
+     * Constructor cho teacher với cả teaching hours và teaching slots
+     */
+    public PayrollResult(Long userId, String userName, YearMonth period,
+                        Integer totalDays, Integer actualDays,
+                        BigDecimal contractSalary, BigDecimal proratedGross, BigDecimal netSalary,
+                        TopCVCalculation.SalaryCalculationResult details,
+                        Double actualTeachingHours, Double totalTeachingSlots) {
+        this.userId = userId;
+        this.userName = userName;
+        this.payrollPeriod = period;
+        this.totalWorkingDays = totalDays;
+        this.actualWorkingDays = actualDays;
+        this.absentDays = totalDays - actualDays;
+        this.contractSalary = contractSalary;
+        this.proratedGrossSalary = proratedGross;
+        this.netSalary = netSalary;
+        this.topCVResult = details;
+        this.status = "CALCULATED";
+        this.calculatedAt = LocalDate.now();
+        // Dùng giờ dạy thực tế cho teacher
+        this.actualWorkingHours = actualTeachingHours != null ? (int) Math.round(actualTeachingHours) : null;
+        this.standardMonthlyHours = actualTeachingHours != null ? (int) Math.round(actualTeachingHours) : null;
+        this.totalTeachingHours = actualTeachingHours;
+        this.totalTeachingSlots = totalTeachingSlots;
     }
 }

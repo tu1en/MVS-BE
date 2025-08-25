@@ -40,13 +40,13 @@ public class StudentMessage {
     @Column(columnDefinition = "NVARCHAR(MAX)", nullable = false)
     private String content;
     
-    @Column(length = 50)
+    @Column(length = 50, columnDefinition = "NVARCHAR(50)")
     private String messageType = "GENERAL"; // GENERAL, COMPLAINT, REQUEST, INQUIRY, URGENT
-    
-    @Column(length = 50)
+
+    @Column(length = 50, columnDefinition = "NVARCHAR(50)")
     private String priority = "MEDIUM"; // LOW, MEDIUM, HIGH, URGENT
-    
-    @Column(length = 50)
+
+    @Column(length = 50, columnDefinition = "NVARCHAR(50)")
     private String status = "SENT"; // SENT, READ, REPLIED, RESOLVED, ARCHIVED
     
     @Column

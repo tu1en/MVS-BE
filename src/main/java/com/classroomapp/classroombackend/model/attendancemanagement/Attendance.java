@@ -42,9 +42,9 @@ public class Attendance {
     private User student;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
     private AttendanceStatus status;
 
-    @Column(name = "note", length = 1000)
+    @Column(name = "note", length = 1000, columnDefinition = "NVARCHAR(1000)")
     private String note;
 }

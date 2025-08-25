@@ -121,6 +121,8 @@ public class ViolationTestDataLoader implements CommandLineRunner {
             createTeacherContract(teacher2, "Mathematics");
             seedTeacherHourlyAttendance(teacher2, 2025, 8, 32 * 2, 0); // 32h weekday, 0 weekend
         }
+        // COMMENTED OUT: Staff contract creation to focus on teacher contracts only
+        /*
         if (userRepository.findByEmail("ank89353@gmail.com").isEmpty()) {
             User accountant = new User();
             accountant.setUsername("ank89353");
@@ -134,12 +136,13 @@ public class ViolationTestDataLoader implements CommandLineRunner {
             accountant.setEligibleForShiftAssignment(true);
             userRepository.save(accountant);
             logger.info("Created accountant: {}", accountant.getFullName());
-            
+
             // Create contract for accountant
             createStaffContract(accountant, "Finance", "Accountant");
             // Seed attendance for August 2025 (Mon-Fri 8h/day)
             seedMonthlyAttendanceForStaff(accountant, 2025, 8);
         }
+        */
     }
 
     private void ensureContractsExist() {
@@ -164,6 +167,8 @@ public class ViolationTestDataLoader implements CommandLineRunner {
             }
         }
         
+        // COMMENTED OUT: Staff contract verification to focus on teacher contracts only
+        /*
         User bobAccountant = userRepository.findByEmail("bob.accountant@mvs.edu").orElse(null);
         if (bobAccountant != null) {
             boolean hasContract = contractRepository.findActiveContractByUserId(bobAccountant.getId()).isPresent();
@@ -172,6 +177,7 @@ public class ViolationTestDataLoader implements CommandLineRunner {
                 createStaffContract(bobAccountant, "Finance", "Accountant");
             }
         }
+        */
         
         logger.info("Contract verification completed.");
     }
@@ -231,10 +237,11 @@ public class ViolationTestDataLoader implements CommandLineRunner {
     private void createShiftAssignments() {
         logger.info("Creating shift assignments...");
 
-        // Get users and shifts
+        // Get users and shifts - FOCUS ON TEACHERS ONLY
         User johnTeacher = userRepository.findByEmail("john.teacher@mvs.edu").orElse(null);
         User janeTeacher = userRepository.findByEmail("jane.teacher@mvs.edu").orElse(null);
-        User bobAccountant = userRepository.findByEmail("bob.accountant@mvs.edu").orElse(null);
+        // COMMENTED OUT: Staff user to focus on teacher contracts only
+        // User bobAccountant = userRepository.findByEmail("bob.accountant@mvs.edu").orElse(null);
 
         List<WorkShift> shifts = workShiftRepository.findAll();
         WorkShift morningShift = shifts.stream()
@@ -292,6 +299,8 @@ public class ViolationTestDataLoader implements CommandLineRunner {
             }
         }
 
+        // COMMENTED OUT: Staff shift assignment to focus on teacher contracts only
+        /*
         // Assign Bob to office hours
         if (bobAccountant != null && officeShift != null) {
             boolean exists = userShiftAssignmentRepository
@@ -312,6 +321,7 @@ public class ViolationTestDataLoader implements CommandLineRunner {
                 logger.info("Assignment already exists for {} on {}-{} to shift {}", bobAccountant.getFullName(), testDate, endDate, officeShift.getName());
             }
         }
+        */
     }
 
     private void createAttendanceLogs() {
@@ -319,7 +329,8 @@ public class ViolationTestDataLoader implements CommandLineRunner {
 
         User johnTeacher = userRepository.findByEmail("john.teacher@mvs.edu").orElse(null);
         User janeTeacher = userRepository.findByEmail("jane.teacher@mvs.edu").orElse(null);
-        User bobAccountant = userRepository.findByEmail("bob.accountant@mvs.edu").orElse(null);
+        // COMMENTED OUT: Staff user to focus on teacher contracts only
+        // User bobAccountant = userRepository.findByEmail("bob.accountant@mvs.edu").orElse(null);
 
         LocalDate testDate = LocalDate.of(2025, 8, 4);
 
@@ -351,6 +362,8 @@ public class ViolationTestDataLoader implements CommandLineRunner {
             logger.info("Created EARLY DEPARTURE log for {}: expected 17:00, actual 16:30", janeTeacher.getFullName());
         }
 
+        // COMMENTED OUT: Staff attendance log to focus on teacher contracts only
+        /*
         // Case 3: Bob forgets to check out (Missing check-out)
         if (bobAccountant != null) {
             StaffAttendanceLog missingCheckOut = new StaffAttendanceLog();
@@ -364,6 +377,7 @@ public class ViolationTestDataLoader implements CommandLineRunner {
             staffAttendanceLogRepository.save(missingCheckOut);
             logger.info("Created MISSING CHECK-OUT log for {}: checked in 08:05, no check-out", bobAccountant.getFullName());
         }
+        */
 
         logger.info("Test attendance logs created successfully!");
         logger.info("Expected violations for {}:", testDate);
@@ -419,8 +433,9 @@ public class ViolationTestDataLoader implements CommandLineRunner {
     }
 
     /**
-     * Create a contract for staff member
+     * COMMENTED OUT: Create a contract for staff member - FOCUS ON TEACHER CONTRACTS ONLY
      */
+    /*
     private void createStaffContract(User staff, String department, String position) {
         try {
             Contract contract = new Contract();
@@ -443,10 +458,12 @@ public class ViolationTestDataLoader implements CommandLineRunner {
             logger.warn("Could not create contract for staff {}: {}", staff.getFullName(), e.getMessage());
         }
     }
+    */
 
     /**
-     * Seed attendance logs for a specific user and month with Mon-Fri 8h/day
+     * COMMENTED OUT: Seed attendance logs for staff - FOCUS ON TEACHER CONTRACTS ONLY
      */
+    /*
     private void seedMonthlyAttendanceForStaff(User staff, int year, int month) {
         java.time.YearMonth ym = java.time.YearMonth.of(year, month);
         java.time.LocalDate start = ym.atDay(1);
@@ -466,6 +483,7 @@ public class ViolationTestDataLoader implements CommandLineRunner {
         }
         logger.info("Seeded monthly attendance for {}: {}/{} (Mon-Fri 8h/day)", staff.getFullName(), month, year);
     }
+    */
 
     /**
      * Seed hourly attendance summary for teacher payroll demo

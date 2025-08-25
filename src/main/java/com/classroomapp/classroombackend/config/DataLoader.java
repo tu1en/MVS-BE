@@ -92,7 +92,7 @@ import com.classroomapp.classroombackend.service.ContractService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
-// @Component - Temporarily disabled for payroll testing
+@Component  
     @Order(1) // Run first since we removed DatabaseCleanupService
     @DependsOn("entityManagerFactory") // Wait for JPA to be initialized
 public class DataLoader implements CommandLineRunner {
@@ -210,7 +210,10 @@ private EvidenceTemplateRepository evidenceTemplateRepository;
     @Transactional
     public void run(String... args) throws Exception {
         log.info("🚫 DataLoader temporarily disabled for payroll testing");
-        return; // Disable DataLoader temporarily
+        // return; // Disable DataLoader temporarily
+
+        // TODO: Uncomment below when DataLoader is re-enabled
+        
         // Clean up duplicate submissions first
         cleanupDuplicateSubmissions();
         
@@ -237,8 +240,8 @@ private EvidenceTemplateRepository evidenceTemplateRepository;
             // Seed classrooms
             classrooms = seedClassrooms();
             
-            // Comment out automatic enrollment seeding - manager sẽ thêm học viên thủ công
-            // seedClassroomEnrollments();
+            // Automatic enrollment seeding - tạo sample enrollments cho testing
+            seedClassroomEnrollments();
             
             // Seed schedules
             log.info("============== Seeding Schedules ==============");
@@ -266,9 +269,11 @@ private EvidenceTemplateRepository evidenceTemplateRepository;
             seedLectures(classrooms);
             log.info("============== Lecture Seeding Complete ==============");
             
-            // Seed assignments
-            seedAssignments();
-            
+            // Clear and reseed assignments with proper data
+            log.info("============== Starting Assignment Seeding ==============");
+            clearAndReseedAssignments();
+            log.info("============== Assignment Seeding Complete ==============");
+
             // Seed submissions
             seedSubmissions();
             
@@ -395,7 +400,7 @@ seedEvidenceTemplates();
         seedAssignmentTestData();
         seedComprehensiveGradingData();
         log.info("============== Comprehensive Grading Seeding Complete ==============");
-
+    }
         // Comment out automatic course materials seeding
         // Tài liệu sẽ được tạo thủ công bởi manager/teacher thay vì tự động
         /*
@@ -410,7 +415,7 @@ seedEvidenceTemplates();
         } else {
             log.info("Course materials already seeded. Skipping.");
         }
-        */
+        
         log.info("Course materials seeding disabled - materials should be uploaded manually by teachers/managers.");
     
         // Always check and seed absence data after users exist
@@ -1318,18 +1323,30 @@ seedEvidenceTemplates();
             }
             
             log.info("🔄 Creating comprehensive schedules for {} classrooms", classrooms.size());
-            
-            // Create detailed schedules for each classroom
+
+            // Create detailed schedules for each classroom with smart teacher assignment
             for (int i = 0; i < classrooms.size(); i++) {
                 Classroom classroom = classrooms.get(i);
-                User teacher = teachers.get(i % teachers.size());
                 Room room = rooms.get(i % rooms.size());
-                
-                // Create weekly schedule for each classroom
-                createWeeklySchedule(classroom, teacher, room, i);
+
+                // Find the best available teacher for this classroom
+                User assignedTeacher = findBestAvailableTeacher(teachers, classroom, i);
+
+                if (assignedTeacher != null) {
+                    // Create weekly schedule for each classroom
+                    createWeeklySchedule(classroom, assignedTeacher, room, i);
+                } else {
+                    log.warn("⚠️ No available teacher found for classroom: {}", classroom.getName());
+                }
             }
             
+            // Log summary statistics
+            long totalSchedules = scheduleRepository.count();
             log.info("✅ Created comprehensive schedules for {} classrooms", classrooms.size());
+            log.info("📊 Schedule Summary: {} total schedules created", totalSchedules);
+
+            // Validate no conflicts exist
+            validateScheduleIntegrity();
         } else {
             log.info("✅ Schedules already seeded.");
         }
@@ -1339,27 +1356,183 @@ seedEvidenceTemplates();
         // Monday - Friday schedule
         String[] days = {"Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6"};
         int[] dayOfWeek = {0, 1, 2, 3, 4}; // Monday = 0, Tuesday = 1, etc.
-        
+
+        // Define time slots with staggered times to avoid conflicts
+        LocalTime[][] timeSlots = {
+            {LocalTime.of(8, 0), LocalTime.of(9, 30)},   // Morning slot 1
+            {LocalTime.of(10, 0), LocalTime.of(11, 30)}, // Morning slot 2
+            {LocalTime.of(14, 0), LocalTime.of(15, 30)}, // Afternoon slot 1
+            {LocalTime.of(16, 0), LocalTime.of(17, 30)}, // Afternoon slot 2
+            {LocalTime.of(18, 0), LocalTime.of(19, 30)}  // Evening slot
+        };
+
+        String[] sessionNames = {"Ca sáng 1", "Ca sáng 2", "Ca chiều 1", "Ca chiều 2", "Ca tối"};
+
+        int scheduleCount = 0;
         for (int day = 0; day < days.length; day++) {
-            // Morning session: 8:00 - 9:30
-            createScheduleForDay(classroom, teacher, dayOfWeek[day], 
-                LocalTime.of(8, 0), LocalTime.of(9, 30), room.getRoomCode(), "Ca sáng");
-            
-            // Afternoon session: 14:00 - 15:30  
-            createScheduleForDay(classroom, teacher, dayOfWeek[day], 
-                LocalTime.of(14, 0), LocalTime.of(15, 30), room.getRoomCode(), "Ca chiều");
-            
-            // Evening session for some classrooms (alternate days)
-            if (classroomIndex % 2 == 0 && day % 2 == 0) {
-                createScheduleForDay(classroom, teacher, dayOfWeek[day], 
-                    LocalTime.of(18, 0), LocalTime.of(19, 30), room.getRoomCode(), "Ca tối");
+            // Create 2-3 sessions per day, staggered to avoid teacher conflicts
+            int sessionsPerDay = 2 + (classroomIndex % 2); // 2 or 3 sessions
+
+            for (int session = 0; session < sessionsPerDay; session++) {
+                // Use different time slots based on classroom index to avoid conflicts
+                int timeSlotIndex = (classroomIndex * 2 + session) % timeSlots.length;
+                LocalTime startTime = timeSlots[timeSlotIndex][0];
+                LocalTime endTime = timeSlots[timeSlotIndex][1];
+
+                // Check for time conflicts before creating schedule (teacher, room, and students)
+                if (!hasTimeConflict(teacher, dayOfWeek[day], startTime, endTime) &&
+                    !hasRoomConflict(room.getRoomCode(), dayOfWeek[day], startTime, endTime) &&
+                    !hasStudentConflict(classroom, dayOfWeek[day], startTime, endTime)) {
+                    createScheduleForDay(classroom, teacher, dayOfWeek[day],
+                        startTime, endTime, room.getRoomCode(), sessionNames[timeSlotIndex]);
+                    scheduleCount++;
+                } else {
+                    log.warn("⚠️ Conflict detected for teacher {}, room {}, or students in {} on {} at {}-{}, skipping...",
+                        teacher.getFullName(), room.getRoomCode(), classroom.getName(), days[day], startTime, endTime);
+                }
             }
         }
-        
-        log.info("✅ Created weekly schedule for {} with teacher {} in room {}", 
-            classroom.getName(), teacher.getFullName(), room.getRoomCode());
+
+        log.info("✅ Created {} schedules for {} with teacher {} in room {}",
+            scheduleCount, classroom.getName(), teacher.getFullName(), room.getRoomCode());
     }
     
+    /**
+     * Find the best available teacher for a classroom, considering workload and conflicts
+     */
+    private User findBestAvailableTeacher(List<User> teachers, Classroom classroom, int classroomIndex) {
+        // Try to find a teacher with minimal conflicts
+        for (User teacher : teachers) {
+            // Count existing schedules for this teacher
+            long existingScheduleCount = scheduleRepository.findAll().stream()
+                .filter(s -> s.getTeacher().getId().equals(teacher.getId()))
+                .count();
+
+            // Prefer teachers with fewer existing schedules (max 10 schedules per teacher)
+            if (existingScheduleCount < 10) {
+                log.debug("🎯 Assigned teacher {} to classroom {} (current schedules: {})",
+                    teacher.getFullName(), classroom.getName(), existingScheduleCount);
+                return teacher;
+            }
+        }
+
+        // If all teachers are busy, use round-robin assignment
+        User fallbackTeacher = teachers.get(classroomIndex % teachers.size());
+        log.debug("🔄 Fallback assignment: teacher {} to classroom {}",
+            fallbackTeacher.getFullName(), classroom.getName());
+        return fallbackTeacher;
+    }
+
+    /**
+     * Check if teacher has time conflict with existing schedules
+     */
+    private boolean hasTimeConflict(User teacher, int dayOfWeek, LocalTime startTime, LocalTime endTime) {
+        try {
+            // Query existing schedules for this teacher on the same day
+            List<Schedule> existingSchedules = scheduleRepository.findAll().stream()
+                .filter(s -> s.getTeacher().getId().equals(teacher.getId()) && s.getDayOfWeek() == dayOfWeek)
+                .collect(Collectors.toList());
+
+            // Check for time overlap
+            for (Schedule existing : existingSchedules) {
+                if (timesOverlap(startTime, endTime, existing.getStartTime(), existing.getEndTime())) {
+                    return true; // Conflict found
+                }
+            }
+
+            return false; // No conflict
+        } catch (Exception e) {
+            log.warn("Error checking time conflict: {}", e.getMessage());
+            return false; // Assume no conflict if error occurs
+        }
+    }
+
+    /**
+     * Check if room has time conflict with existing schedules
+     */
+    private boolean hasRoomConflict(String roomCode, int dayOfWeek, LocalTime startTime, LocalTime endTime) {
+        try {
+            // Query existing schedules for this room on the same day
+            List<Schedule> existingSchedules = scheduleRepository.findAll().stream()
+                .filter(s -> s.getRoom().equals(roomCode) && s.getDayOfWeek() == dayOfWeek)
+                .collect(Collectors.toList());
+
+            // Check for time overlap
+            for (Schedule existing : existingSchedules) {
+                if (timesOverlap(startTime, endTime, existing.getStartTime(), existing.getEndTime())) {
+                    return true; // Conflict found
+                }
+            }
+
+            return false; // No conflict
+        } catch (Exception e) {
+            log.warn("Error checking room conflict: {}", e.getMessage());
+            return false; // Assume no conflict if error occurs
+        }
+    }
+
+    /**
+     * Check if students in classroom have time conflict with existing schedules
+     */
+    private boolean hasStudentConflict(Classroom classroom, int dayOfWeek, LocalTime startTime, LocalTime endTime) {
+        try {
+            // Get all students enrolled in this classroom
+            List<ClassroomEnrollment> enrollments = classroomEnrollmentRepository.findByClassroomId(classroom.getId());
+
+            if (enrollments.isEmpty()) {
+                return false; // No students, no conflict
+            }
+
+            // Check each student for schedule conflicts
+            for (ClassroomEnrollment enrollment : enrollments) {
+                User student = enrollment.getUser();
+
+                // Find all schedules where this student is enrolled
+                List<Schedule> studentSchedules = scheduleRepository.findAll().stream()
+                    .filter(s -> s.getDayOfWeek() == dayOfWeek)
+                    .filter(s -> hasStudentEnrolledInClassroom(student, s.getClassroom()))
+                    .collect(Collectors.toList());
+
+                // Check for time overlap with existing student schedules
+                for (Schedule existing : studentSchedules) {
+                    if (timesOverlap(startTime, endTime, existing.getStartTime(), existing.getEndTime())) {
+                        log.debug("Student conflict: {} has overlapping schedule on day {} ({}-{} vs {}-{})",
+                            student.getFullName(), dayOfWeek,
+                            startTime, endTime,
+                            existing.getStartTime(), existing.getEndTime());
+                        return true; // Conflict found
+                    }
+                }
+            }
+
+            return false; // No conflicts found
+        } catch (Exception e) {
+            log.warn("Error checking student conflict: {}", e.getMessage());
+            return false; // Assume no conflict if error occurs
+        }
+    }
+
+    /**
+     * Check if a student is enrolled in a specific classroom
+     */
+    private boolean hasStudentEnrolledInClassroom(User student, Classroom classroom) {
+        try {
+            return classroomEnrollmentRepository.findByClassroomId(classroom.getId()).stream()
+                .anyMatch(enrollment -> enrollment.getUser().getId().equals(student.getId()));
+        } catch (Exception e) {
+            log.warn("Error checking student enrollment: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Check if two time ranges overlap
+     */
+    private boolean timesOverlap(LocalTime start1, LocalTime end1, LocalTime start2, LocalTime end2) {
+        // Two time ranges overlap if: start1 < end2 AND start2 < end1
+        return start1.isBefore(end2) && start2.isBefore(end1);
+    }
+
     private void createScheduleForDay(Classroom classroom, User teacher, int dayOfWeek, LocalTime startTime, LocalTime endTime, String roomCode, String sessionType) {
         Schedule schedule = new Schedule();
         schedule.setClassroom(classroom);
@@ -1369,16 +1542,98 @@ seedEvidenceTemplates();
         schedule.setEndTime(endTime);
         schedule.setRoom(roomCode);
         schedule.setSubject(classroom.getSubject());
-        
+
         // Add materials and meeting URLs based on subject
         String subjectKey = classroom.getSubject().toLowerCase().replaceAll(" ", "-");
         schedule.setMaterialsUrl("https://drive.google.com/folder/" + subjectKey + "-materials");
         schedule.setMeetUrl("https://meet.google.com/" + subjectKey + "-" + dayOfWeek + "-" + sessionType.toLowerCase().replaceAll(" ", ""));
-        
+
         // Note: Schedule model doesn't have description field
         // schedule.setDescription(sessionType + " - " + classroom.getSubject() + " - " + classroom.getName());
-        
+
         scheduleRepository.save(schedule);
+        log.debug("✅ Created schedule: {} - {} on {} from {} to {}",
+            teacher.getFullName(), classroom.getName(), dayOfWeek, startTime, endTime);
+    }
+
+    /**
+     * Validate schedule integrity - check for any remaining conflicts
+     */
+    private void validateScheduleIntegrity() {
+        try {
+            log.info("🔍 Validating schedule integrity...");
+
+            List<Schedule> allSchedules = scheduleRepository.findAll();
+            int conflictCount = 0;
+
+            // Check teacher, room, and student conflicts
+            for (int i = 0; i < allSchedules.size(); i++) {
+                Schedule schedule1 = allSchedules.get(i);
+                for (int j = i + 1; j < allSchedules.size(); j++) {
+                    Schedule schedule2 = allSchedules.get(j);
+
+                    // Same teacher, same day, overlapping time
+                    if (schedule1.getTeacher().getId().equals(schedule2.getTeacher().getId()) &&
+                        schedule1.getDayOfWeek() == schedule2.getDayOfWeek() &&
+                        timesOverlap(schedule1.getStartTime(), schedule1.getEndTime(),
+                                   schedule2.getStartTime(), schedule2.getEndTime())) {
+
+                        log.warn("⚠️ Teacher conflict: {} has overlapping schedules on day {} ({}-{} vs {}-{})",
+                            schedule1.getTeacher().getFullName(), schedule1.getDayOfWeek(),
+                            schedule1.getStartTime(), schedule1.getEndTime(),
+                            schedule2.getStartTime(), schedule2.getEndTime());
+                        conflictCount++;
+                    }
+
+                    // Same room, same day, overlapping time
+                    if (schedule1.getRoom().equals(schedule2.getRoom()) &&
+                        schedule1.getDayOfWeek() == schedule2.getDayOfWeek() &&
+                        timesOverlap(schedule1.getStartTime(), schedule1.getEndTime(),
+                                   schedule2.getStartTime(), schedule2.getEndTime())) {
+
+                        log.warn("⚠️ Room conflict: {} has overlapping bookings on day {} ({}-{} vs {}-{})",
+                            schedule1.getRoom(), schedule1.getDayOfWeek(),
+                            schedule1.getStartTime(), schedule1.getEndTime(),
+                            schedule2.getStartTime(), schedule2.getEndTime());
+                        conflictCount++;
+                    }
+
+                    // Check for student conflicts between two schedules
+                    if (schedule1.getDayOfWeek() == schedule2.getDayOfWeek() &&
+                        timesOverlap(schedule1.getStartTime(), schedule1.getEndTime(),
+                                   schedule2.getStartTime(), schedule2.getEndTime())) {
+
+                        // Check if any student is enrolled in both classrooms
+                        List<ClassroomEnrollment> enrollments1 = classroomEnrollmentRepository.findByClassroomId(schedule1.getClassroom().getId());
+                        List<ClassroomEnrollment> enrollments2 = classroomEnrollmentRepository.findByClassroomId(schedule2.getClassroom().getId());
+
+                        for (ClassroomEnrollment enrollment1 : enrollments1) {
+                            for (ClassroomEnrollment enrollment2 : enrollments2) {
+                                if (enrollment1.getUser().getId().equals(enrollment2.getUser().getId())) {
+                                    log.warn("⚠️ Student conflict: {} is enrolled in both {} and {} with overlapping schedules on day {} ({}-{} vs {}-{})",
+                                        enrollment1.getUser().getFullName(),
+                                        schedule1.getClassroom().getName(), schedule2.getClassroom().getName(),
+                                        schedule1.getDayOfWeek(),
+                                        schedule1.getStartTime(), schedule1.getEndTime(),
+                                        schedule2.getStartTime(), schedule2.getEndTime());
+                                    conflictCount++;
+                                    break; // Only count once per student pair
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (conflictCount == 0) {
+                log.info("✅ Schedule integrity validation passed - no conflicts found");
+            } else {
+                log.warn("⚠️ Schedule integrity validation found {} conflicts", conflictCount);
+            }
+
+        } catch (Exception e) {
+            log.error("❌ Error validating schedule integrity: {}", e.getMessage(), e);
+        }
     }
 
     private void seedTimetableEvents() {
@@ -1415,8 +1670,8 @@ seedEvidenceTemplates();
                         .withMinute(schedule.getEndTime().getMinute())
                         .withSecond(0);
                     
-                    // Skip past events
-                    if (eventStart.isBefore(now)) {
+                    // Skip events that are more than 1 day in the past (keep today's events)
+                    if (eventStart.isBefore(now.minusDays(1))) {
                         continue;
                     }
                     
@@ -1869,28 +2124,117 @@ seedEvidenceTemplates();
         lecture.setTitle(title);
         lecture.setContent(description); // Sử dụng content thay vì description
         lecture.setClassroom(classroom);
+
         // Tạo ngày khác nhau cho các bài giảng để test validation
         // order 1,2 = hôm qua, hôm nay | order 3,4,5 = ngày mai và các ngày sau
         lecture.setLectureDate(LocalDate.now().plusDays(order - 2)); // order 1=-1, order 2=0 (today), order 3=+1, etc.
-        // lecture.setOrder(order); // Không có field order
-        // lecture.setStatus("ACTIVE"); // Không có field status
-        // lecture.setCreatedAt(LocalDateTime.now().minusDays(order)); // Không có field createdAt
+
+        // 🔧 FIX: Liên kết lecture với schedule của classroom để có thời gian cụ thể
+        List<Schedule> classroomSchedules = scheduleRepository.findByClassroomId(classroom.getId());
+        if (!classroomSchedules.isEmpty()) {
+            // Lấy schedule đầu tiên của classroom (có thể cải thiện logic này sau)
+            Schedule schedule = classroomSchedules.get(0);
+            lecture.setSchedule(schedule);
+            log.debug("✅ Linked lecture '{}' with schedule ({})", title,
+                schedule.getStartTime() + "-" + schedule.getEndTime());
+        } else {
+            log.warn("⚠️ No schedule found for classroom {}, lecture will use default time", classroom.getName());
+        }
+
         return lecture;
+    }
+
+    /**
+     * Clear existing assignments and create new ones with proper data
+     */
+    private void clearAndReseedAssignments() {
+        try {
+            // Clear existing assignments and submissions
+            log.info("🗑️ Clearing existing assignments and submissions...");
+            submissionRepository.deleteAll();
+            assignmentRepository.deleteAll();
+
+            List<Classroom> classrooms = classroomRepository.findAll();
+            int assignmentCount = 0;
+
+            log.info("📝 Creating assignments for {} classrooms...", classrooms.size());
+
+            for (int i = 0; i < classrooms.size(); i++) {
+                Classroom classroom = classrooms.get(i);
+
+                // Create 2-3 assignments per classroom
+                for (int j = 1; j <= 3; j++) {
+                    Assignment assignment = new Assignment();
+                    assignment.setClassroom(classroom);
+                    assignment.setTitle("Bài tập số " + j + " - " + classroom.getName());
+                    assignment.setDescription("Mô tả chi tiết cho bài tập số " + j + " của lớp " + classroom.getName() +
+                        ". Học sinh cần hoàn thành các yêu cầu được nêu trong nội dung bài tập.");
+                    assignment.setRichTextContent("<h3>Yêu cầu bài tập</h3>" +
+                        "<p>1. Đọc tài liệu tham khảo</p>" +
+                        "<p>2. Thực hiện bài tập theo hướng dẫn</p>" +
+                        "<p>3. Nộp bài đúng hạn</p>" +
+                        "<p><strong>Lưu ý:</strong> Bài tập cần được làm cẩn thận và đầy đủ.</p>");
+
+                    // Set due date: Assignment 1 = +3 days, Assignment 2 = +7 days, Assignment 3 = +14 days
+                    assignment.setDueDate(LocalDateTime.now().plusDays(j * 3 + 1));
+
+                    // Set points: 50, 75, 100 points respectively
+                    assignment.setPoints(25 * j + 25);
+
+                    // Add sample file attachment URL for testing
+                    if (j == 1) {
+                        assignment.setFileAttachmentUrl("https://example.com/sample-assignment-" + classroom.getId() + ".pdf");
+                    }
+
+                    assignmentRepository.save(assignment);
+                    assignmentCount++;
+                }
+            }
+            log.info("✅ Created {} assignments for {} classrooms", assignmentCount, classrooms.size());
+        } catch (Exception e) {
+            log.error("❌ Error during assignment reseeding: {}", e.getMessage(), e);
+        }
     }
 
     private void seedAssignments() {
         if (assignmentRepository.count() == 0) {
             List<Classroom> classrooms = classroomRepository.findAll();
-            for (Classroom classroom : classrooms) {
-                Assignment assignment = new Assignment();
-                assignment.setClassroom(classroom);
-                assignment.setTitle("Bài tập số 1");
-                assignment.setDueDate(LocalDateTime.now().plusDays(7)); // Set dueDate to 7 days in the future
-                assignmentRepository.save(assignment);
+            int assignmentCount = 0;
+
+            for (int i = 0; i < classrooms.size(); i++) {
+                Classroom classroom = classrooms.get(i);
+
+                // Create 2-3 assignments per classroom
+                for (int j = 1; j <= 3; j++) {
+                    Assignment assignment = new Assignment();
+                    assignment.setClassroom(classroom);
+                    assignment.setTitle("Bài tập số " + j + " - " + classroom.getName());
+                    assignment.setDescription("Mô tả chi tiết cho bài tập số " + j + " của lớp " + classroom.getName() +
+                        ". Học sinh cần hoàn thành các yêu cầu được nêu trong nội dung bài tập.");
+                    assignment.setRichTextContent("<h3>Yêu cầu bài tập</h3>" +
+                        "<p>1. Đọc tài liệu tham khảo</p>" +
+                        "<p>2. Thực hiện bài tập theo hướng dẫn</p>" +
+                        "<p>3. Nộp bài đúng hạn</p>" +
+                        "<p><strong>Lưu ý:</strong> Bài tập cần được làm cẩn thận và đầy đủ.</p>");
+
+                    // Set due date: Assignment 1 = +3 days, Assignment 2 = +7 days, Assignment 3 = +14 days
+                    assignment.setDueDate(LocalDateTime.now().plusDays(j * 3 + 1));
+
+                    // Set points: 50, 75, 100 points respectively
+                    assignment.setPoints(25 * j + 25);
+
+                    // Add sample file attachment URL for testing
+                    if (j == 1) {
+                        assignment.setFileAttachmentUrl("https://example.com/sample-assignment-" + classroom.getId() + ".pdf");
+                    }
+
+                    assignmentRepository.save(assignment);
+                    assignmentCount++;
+                }
             }
-            log.info("✅ Created assignments for {} classrooms", classrooms.size());
+            log.info("✅ Created {} assignments for {} classrooms", assignmentCount, classrooms.size());
         } else {
-            log.info("✅ Assignments already seeded.");
+            log.info("✅ Assignments already seeded. Total count: {}", assignmentRepository.count());
         }
     }
 
@@ -2078,6 +2422,15 @@ seedEvidenceTemplates();
                 .collect(Collectors.toList());
 
         if (!existingSessions.isEmpty()) {
+            // Delete attendance records first to avoid foreign key constraint violation
+            for (AttendanceSession session : existingSessions) {
+                List<Attendance> attendanceRecords = attendanceRepository.findBySession(session);
+                if (!attendanceRecords.isEmpty()) {
+                    attendanceRepository.deleteAll(attendanceRecords);
+                    log.info("🗑️ Deleted {} attendance records for session {}", attendanceRecords.size(), session.getId());
+                }
+            }
+            // Now safe to delete sessions
             attendanceSessionRepository.deleteAll(existingSessions);
             log.info("🗑️ Deleted {} existing test sessions", existingSessions.size());
         }
@@ -2133,6 +2486,15 @@ seedEvidenceTemplates();
                         .collect(Collectors.toList());
 
                 if (!existingSessions.isEmpty()) {
+                    // Delete attendance records first to avoid foreign key constraint violation
+                    for (AttendanceSession session : existingSessions) {
+                        List<Attendance> attendanceRecords = attendanceRepository.findBySession(session);
+                        if (!attendanceRecords.isEmpty()) {
+                            attendanceRepository.deleteAll(attendanceRecords);
+                            log.info("🗑️ Deleted {} attendance records for session {}", attendanceRecords.size(), session.getId());
+                        }
+                    }
+                    // Now safe to delete sessions
                     attendanceSessionRepository.deleteAll(existingSessions);
                     log.info("🗑️ Deleted {} existing test sessions", existingSessions.size());
                 }
@@ -3263,8 +3625,8 @@ private void createEvidenceTemplate(String name, String code, String description
                             .withMinute(schedule.getEndTime().getMinute())
                             .withSecond(0);
                         
-                        // Skip past events
-                        if (eventStart.isBefore(now)) {
+                        // Skip events that are more than 1 day in the past (keep today's events)
+                        if (eventStart.isBefore(now.minusDays(1))) {
                             continue;
                         }
                         

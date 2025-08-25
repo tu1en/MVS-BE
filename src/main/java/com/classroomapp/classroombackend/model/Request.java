@@ -21,25 +21,25 @@ public class Request {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(nullable = true, length = 255)
+    @Column(nullable = true, length = 255, columnDefinition = "NVARCHAR(255)")
     private String email;
 
     @Column(name = "full_name", nullable = true, columnDefinition = "NVARCHAR(MAX)")
     private String fullName;
 
-    @Column(name = "phone_number", nullable = true, length = 20)
+    @Column(name = "phone_number", nullable = true, length = 20, columnDefinition = "NVARCHAR(20)")
     private String phoneNumber;
 
-    @Column(name = "requested_role", nullable = true, length = 50)
+    @Column(name = "requested_role", nullable = true, length = 50, columnDefinition = "NVARCHAR(50)")
     private String requestedRole = "STUDENT"; // "TEACHER" or "STUDENT" - default to STUDENT
     
     @Column(columnDefinition = "NVARCHAR(MAX)", length = 4000, nullable = true)
     private String formResponses; // JSON string containing form responses
 
-    @Column(name = "status", nullable = true, length = 50)
+    @Column(name = "status", nullable = true, length = 50, columnDefinition = "NVARCHAR(50)")
     private String status = "PENDING"; // PENDING, APPROVED, REJECTED, COMPLETED
 
-    @Column(name = "result_status", length = 50)
+    @Column(name = "result_status", length = 50, columnDefinition = "NVARCHAR(50)")
     private String resultStatus; // APPROVED, REJECTED, null
 
     @Column(columnDefinition = "NVARCHAR(MAX)", length = 4000, nullable = true)

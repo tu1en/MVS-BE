@@ -2,6 +2,7 @@ package com.classroomapp.classroombackend.controller;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -106,7 +107,17 @@ public class SubmissionController {
     public ResponseEntity<SubmissionDto> GetStudentSubmissionForAssignment(
             @PathVariable Long assignmentId,
             @PathVariable Long studentId) {
-        return ResponseEntity.ok(submissionService.GetStudentSubmissionForAssignment(assignmentId, studentId));
+
+        logger.info("🔍 Getting submission for assignment {} and student {}", assignmentId, studentId);
+        SubmissionDto submission = submissionService.GetStudentSubmissionForAssignment(assignmentId, studentId);
+
+        if (submission == null) {
+            logger.info("📝 No submission found for assignment {} and student {}", assignmentId, studentId);
+            return ResponseEntity.notFound().build();
+        }
+
+        logger.info("✅ Found submission {} for assignment {} and student {}", submission.getId(), assignmentId, studentId);
+        return ResponseEntity.ok(submission);
     }
     
     @PutMapping("/{submissionId}/grade")
@@ -133,4 +144,45 @@ public class SubmissionController {
             @PathVariable Long assignmentId) {
         return ResponseEntity.ok(submissionService.GetSubmissionStatisticsForAssignment(assignmentId));
     }
-} 
+
+    // Debug endpoint to check submission data
+    @GetMapping("/debug/assignment/{assignmentId}/student/{studentId}")
+    public ResponseEntity<Object> debugStudentSubmission(
+            @PathVariable Long assignmentId,
+            @PathVariable Long studentId) {
+
+        logger.info("🔍 DEBUG: Checking submission for assignment {} and student {}", assignmentId, studentId);
+
+        try {
+            // Check if assignment exists
+            boolean assignmentExists = submissionService.assignmentExists(assignmentId);
+            logger.info("📋 Assignment {} exists: {}", assignmentId, assignmentExists);
+
+            // Check if student exists
+            boolean studentExists = submissionService.studentExists(studentId);
+            logger.info("👤 Student {} exists: {}", studentId, studentExists);
+
+            // Get all submissions for this assignment
+            var allSubmissions = submissionService.GetSubmissionsByAssignment(assignmentId);
+            logger.info("📝 Total submissions for assignment {}: {}", assignmentId, allSubmissions.size());
+
+            // Try to get the specific submission
+            SubmissionDto submission = submissionService.GetStudentSubmissionForAssignment(assignmentId, studentId);
+
+            return ResponseEntity.ok(Map.of(
+                "assignmentExists", assignmentExists,
+                "studentExists", studentExists,
+                "totalSubmissions", allSubmissions.size(),
+                "submissionFound", submission != null,
+                "submission", submission
+            ));
+
+        } catch (Exception e) {
+            logger.error("❌ DEBUG: Error checking submission", e);
+            return ResponseEntity.ok(Map.of(
+                "error", e.getMessage(),
+                "errorType", e.getClass().getSimpleName()
+            ));
+        }
+    }
+}

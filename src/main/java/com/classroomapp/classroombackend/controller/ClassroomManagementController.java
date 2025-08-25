@@ -1,7 +1,9 @@
 package com.classroomapp.classroombackend.controller;
 
 import java.util.List;
+import java.util.Map;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -27,6 +29,7 @@ import com.classroomapp.classroombackend.dto.exammangement.ExamDto;
 import com.classroomapp.classroombackend.service.ClassroomService;
 import com.classroomapp.classroombackend.service.ExamService;
 
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -124,9 +127,60 @@ public class ClassroomManagementController {
     
     @PostMapping("/{classroomId}/enrollments")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'TEACHER')")
-    public ResponseEntity<Void> enrollStudent(@PathVariable Long classroomId, @Valid @RequestBody EnrollmentRequestDto enrollmentRequest) {
-        classroomService.EnrollStudent(classroomId, enrollmentRequest.getStudentId());
-        return ResponseEntity.ok().build();
+    public ResponseEntity<?> enrollStudent(@PathVariable Long classroomId, @Valid @RequestBody EnrollmentRequestDto enrollmentRequest) {
+        log.info("🔍 ENROLLMENT REQUEST: POST /{}/enrollments - ClassroomId: {}, StudentId: {}",
+            classroomId, classroomId, enrollmentRequest.getStudentId());
+
+        // Validate request parameters
+        if (classroomId == null || classroomId <= 0) {
+            log.error("❌ ENROLLMENT ERROR: Invalid classroomId: {}", classroomId);
+            return ResponseEntity.badRequest()
+                .body(Map.of("error", "Invalid classroom ID", "classroomId", classroomId));
+        }
+
+        if (enrollmentRequest.getStudentId() == null || enrollmentRequest.getStudentId() <= 0) {
+            log.error("❌ ENROLLMENT ERROR: Invalid studentId: {}", enrollmentRequest.getStudentId());
+            return ResponseEntity.badRequest()
+                .body(Map.of("error", "Invalid student ID", "studentId", enrollmentRequest.getStudentId()));
+        }
+
+        try {
+            classroomService.EnrollStudent(classroomId, enrollmentRequest.getStudentId());
+            log.info("✅ ENROLLMENT SUCCESS: Successfully enrolled student {} in classroom {}",
+                enrollmentRequest.getStudentId(), classroomId);
+            return ResponseEntity.ok()
+                .body(Map.of("message", "Student enrolled successfully",
+                           "classroomId", classroomId,
+                           "studentId", enrollmentRequest.getStudentId()));
+        } catch (EntityNotFoundException e) {
+            log.error("❌ ENROLLMENT ERROR: EntityNotFoundException - {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("error", "Resource not found",
+                           "message", e.getMessage(),
+                           "classroomId", classroomId,
+                           "studentId", enrollmentRequest.getStudentId()));
+        } catch (IllegalArgumentException e) {
+            log.error("❌ ENROLLMENT ERROR: IllegalArgumentException - {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", "Invalid request",
+                           "message", e.getMessage(),
+                           "classroomId", classroomId,
+                           "studentId", enrollmentRequest.getStudentId()));
+        } catch (IllegalStateException e) {
+            log.error("❌ ENROLLMENT ERROR: IllegalStateException - {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("error", "Conflict",
+                           "message", e.getMessage(),
+                           "classroomId", classroomId,
+                           "studentId", enrollmentRequest.getStudentId()));
+        } catch (Exception e) {
+            log.error("❌ ENROLLMENT ERROR: Unexpected error - {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Internal server error",
+                           "message", "An unexpected error occurred during enrollment",
+                           "classroomId", classroomId,
+                           "studentId", enrollmentRequest.getStudentId()));
+        }
     }
     
     @DeleteMapping("/{classroomId}/students/{studentId}")

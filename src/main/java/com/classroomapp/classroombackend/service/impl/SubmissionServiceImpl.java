@@ -2,6 +2,7 @@ package com.classroomapp.classroombackend.service.impl;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.stream.Collectors;
 
@@ -228,17 +229,21 @@ public class SubmissionServiceImpl implements SubmissionService {
         // Get assignment
         Assignment assignment = assignmentRepository.findById(assignmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Assignment", "id", assignmentId));
-        
+
         // Get student
         User student = userRepository.findById(studentId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", studentId));
-        
-        // Get submission
-        Submission submission = submissionRepository.findByAssignmentAndStudent(assignment, student)
-                .orElseThrow(() -> new ResourceNotFoundException("Submission", "assignment and student", 
-                        assignmentId + " and " + studentId));
-        
-        return modelMapper.map(submission, SubmissionDto.class);
+
+        // Get submission - return null if not found instead of throwing exception
+        Optional<Submission> submissionOpt = submissionRepository.findByAssignmentAndStudent(assignment, student);
+
+        if (submissionOpt.isEmpty()) {
+            // Log for debugging but don't throw exception - this is a normal case
+            System.out.println("📝 No submission found for assignment " + assignmentId + " and student " + studentId);
+            return null;
+        }
+
+        return modelMapper.map(submissionOpt.get(), SubmissionDto.class);
     }
 
     @Override
@@ -386,4 +391,14 @@ public class SubmissionServiceImpl implements SubmissionService {
         return submissionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Submission", "id", id));
     }
-} 
+
+    @Override
+    public boolean assignmentExists(Long assignmentId) {
+        return assignmentRepository.existsById(assignmentId);
+    }
+
+    @Override
+    public boolean studentExists(Long studentId) {
+        return userRepository.existsById(studentId);
+    }
+}

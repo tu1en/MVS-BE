@@ -27,6 +27,7 @@ import com.classroomapp.classroombackend.dto.FileUploadResponse;
 import com.classroomapp.classroombackend.dto.GradeDto;
 import com.classroomapp.classroombackend.dto.GradingAnalyticsDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto;
+import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentAttachmentDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.CreateAssignmentDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.GradeSubmissionDto;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
@@ -45,7 +46,7 @@ import com.classroomapp.classroombackend.security.CustomUserDetails;
 import com.classroomapp.classroombackend.service.AssignmentService;
 import com.classroomapp.classroombackend.service.ClassroomSecurityService;
 
-import java.nio.file.AccessDeniedException;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -90,12 +91,29 @@ public class AssignmentServiceImpl implements AssignmentService {
     }
 
     /**
+     * Custom mapping method to convert Assignment entity to AssignmentDto with attachments
+     */
+    private AssignmentDto mapToDto(Assignment assignment) {
+        AssignmentDto dto = modelMapper.map(assignment, AssignmentDto.class);
+
+        // Map attachments
+        if (assignment.getAttachments() != null && !assignment.getAttachments().isEmpty()) {
+            List<AssignmentAttachmentDto> attachmentDtos = assignment.getAttachments().stream()
+                .map(attachment -> modelMapper.map(attachment, AssignmentAttachmentDto.class))
+                .collect(Collectors.toList());
+            dto.setAttachments(attachmentDtos);
+        }
+
+        return dto;
+    }
+
+    /**
      * Get assignment by ID
      */
     @Override
     public AssignmentDto GetAssignmentById(Long id) {
         Assignment assignment = findEntityById(id);
-        return modelMapper.map(assignment, AssignmentDto.class);
+        return mapToDto(assignment);
     }
 
     @Override
@@ -449,7 +467,7 @@ public class AssignmentServiceImpl implements AssignmentService {
         // Fetch all assignments for those classrooms in a single query
         return assignmentRepository.findByClassroomInOrderByDueDateAsc(enrolledClassrooms)
                 .stream()
-                .map(assignment -> modelMapper.map(assignment, AssignmentDto.class))
+                .map(this::mapToDto)
                 .collect(Collectors.toList());
     }
 

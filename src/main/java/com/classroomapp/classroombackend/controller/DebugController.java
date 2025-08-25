@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,6 +18,11 @@ import com.classroomapp.classroombackend.repository.classroommanagement.Classroo
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceSessionRepository;
 import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSession;
+import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomEnrollmentRepository;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,6 +35,7 @@ public class DebugController {
     private final ScheduleRepository scheduleRepository;
     private final ClassroomRepository classroomRepository;
     private final AttendanceSessionRepository attendanceSessionRepository;
+    private final ClassroomEnrollmentRepository classroomEnrollmentRepository;
 
     @GetMapping("/users")
     public ResponseEntity<?> getAllUsers() {
@@ -402,6 +409,120 @@ public class DebugController {
             return ResponseEntity.ok(result.toString());
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Kiểm tra thông tin classroom cụ thể
+     */
+    @GetMapping("/classroom/{classroomId}")
+    public ResponseEntity<Map<String, Object>> checkClassroom(@PathVariable Long classroomId) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("classroomId", classroomId);
+
+        try {
+            Optional<Classroom> classroomOpt = classroomRepository.findById(classroomId);
+
+            if (classroomOpt.isPresent()) {
+                Classroom classroom = classroomOpt.get();
+                result.put("exists", true);
+                result.put("id", classroom.getId());
+                result.put("name", classroom.getName());
+                result.put("description", classroom.getDescription());
+                result.put("subject", classroom.getSubject());
+                result.put("teacherId", classroom.getTeacher() != null ? classroom.getTeacher().getId() : null);
+                result.put("teacherName", classroom.getTeacher() != null ? classroom.getTeacher().getFullName() : null);
+
+                // Check enrollments
+                var enrollments = classroomEnrollmentRepository.findByClassroomId(classroomId);
+                result.put("enrollmentCount", enrollments.size());
+
+            } else {
+                result.put("exists", false);
+
+                // Get available classroom IDs
+                List<Classroom> allClassrooms = classroomRepository.findAll();
+                result.put("availableClassroomIds", allClassrooms.stream()
+                    .map(Classroom::getId)
+                    .sorted()
+                    .toList());
+            }
+
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            result.put("error", e.getMessage());
+            return ResponseEntity.status(500).body(result);
+        }
+    }
+
+    /**
+     * Kiểm tra thông tin student cụ thể
+     */
+    @GetMapping("/student/{studentId}")
+    public ResponseEntity<Map<String, Object>> checkStudent(@PathVariable Long studentId) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("studentId", studentId);
+
+        try {
+            Optional<User> studentOpt = userRepository.findById(studentId);
+
+            if (studentOpt.isPresent()) {
+                User student = studentOpt.get();
+                result.put("exists", true);
+                result.put("id", student.getId());
+                result.put("username", student.getUsername());
+                result.put("fullName", student.getFullName());
+                result.put("email", student.getEmail());
+                result.put("roleId", student.getRoleId());
+                result.put("isStudent", student.getRoleId() == 1);
+
+                // Check enrollments
+                var enrollments = classroomEnrollmentRepository.findByUserId(studentId);
+                result.put("enrollmentCount", enrollments.size());
+                result.put("enrolledClassroomIds", enrollments.stream()
+                    .map(e -> e.getClassroom().getId())
+                    .toList());
+
+            } else {
+                result.put("exists", false);
+
+                // Get available student IDs
+                List<User> students = userRepository.findByRoleId(1);
+                result.put("availableStudentIds", students.stream()
+                    .map(User::getId)
+                    .sorted()
+                    .limit(10)
+                    .toList());
+            }
+
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            result.put("error", e.getMessage());
+            return ResponseEntity.status(500).body(result);
+        }
+    }
+
+    /**
+     * Database statistics
+     */
+    @GetMapping("/stats")
+    public ResponseEntity<Map<String, Object>> getDatabaseStats() {
+        Map<String, Object> result = new HashMap<>();
+
+        try {
+            result.put("totalClassrooms", classroomRepository.count());
+            result.put("totalUsers", userRepository.count());
+            result.put("totalStudents", userRepository.countByRoleId(1));
+            result.put("totalTeachers", userRepository.countByRoleId(2));
+            result.put("totalEnrollments", classroomEnrollmentRepository.count());
+
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            result.put("error", e.getMessage());
+            return ResponseEntity.status(500).body(result);
         }
     }
 }

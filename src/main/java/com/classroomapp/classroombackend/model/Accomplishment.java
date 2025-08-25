@@ -27,7 +27,7 @@ public class Accomplishment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(length = 255)
+    @Column(length = 255, columnDefinition = "NVARCHAR(255)")
     private String title;
 
     @Column(columnDefinition = "NVARCHAR(MAX)")
@@ -41,12 +41,13 @@ public class Accomplishment {
     private User student;
     
     // Legacy fields - can be deprecated later
-    @Column(name = "course_title")
+    @Column(name = "course_title", columnDefinition = "NVARCHAR(255)")
     private String courseTitle;
-    
+
+    @Column(columnDefinition = "NVARCHAR(255)")
     private String subject;
-    
-    @Column(name = "teacher_name")
+
+    @Column(name = "teacher_name", columnDefinition = "NVARCHAR(255)")
     private String teacherName;
     
     private Double grade;

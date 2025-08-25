@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.classroomapp.classroombackend.dto.CourseMaterialDto;
-import com.classroomapp.classroombackend.dto.FileUploadResponse;
+import com.classroomapp.classroombackend.dto.common.FileUploadResponse;
 import com.classroomapp.classroombackend.dto.UploadMaterialDto;
 import com.classroomapp.classroombackend.model.CourseMaterial;
 import com.classroomapp.classroombackend.repository.CourseMaterialRepository;
