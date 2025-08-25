@@ -50,6 +50,7 @@ public class EnrollmentRequest {
     
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private EnrollmentStatus status = EnrollmentStatus.PENDING;
     
     @Column(columnDefinition = "NVARCHAR(MAX)")

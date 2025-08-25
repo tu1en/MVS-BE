@@ -1,6 +1,5 @@
 package com.classroomapp.classroombackend.service.firebase.impl;
 
-import java.io.IOException;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -28,15 +27,28 @@ public class FirebaseStorageServiceImpl implements FirebaseStorageService {
 
     @Override
     public FileUploadResponse uploadFile(MultipartFile file, String folder) {
+        log.info("Starting Firebase upload: file={}, folder={}, size={}",
+                file.getOriginalFilename(), folder, file.getSize());
+
         try {
+            // Validate input
+            if (file == null || file.isEmpty()) {
+                throw new IllegalArgumentException("File is null or empty");
+            }
+
             String fileName = generateFileName(file.getOriginalFilename());
             String filePath = folder + "/" + fileName;
-            
+
+            log.info("Generated file path: {}", filePath);
+
             var firebaseApp = FirebaseApp.getInstance("classroom-management");
             var bucket = StorageClient.getInstance(firebaseApp).bucket();
             Storage storage = bucket.getStorage();
             // Prefer the bucket name provided by the initialized FirebaseApp to avoid mismatch
             String effectiveBucketName = bucket.getName();
+
+            log.info("Using Firebase bucket: {}", effectiveBucketName);
+
             BlobId blobId = BlobId.of(effectiveBucketName, filePath);
             // Set Firebase download token in metadata to enable tokenized downloads without ACLs
             String downloadToken = java.util.UUID.randomUUID().toString();
@@ -48,7 +60,9 @@ public class FirebaseStorageServiceImpl implements FirebaseStorageService {
                     .setMetadata(metadata)
                     .build();
 
+            log.info("Uploading to Firebase Storage...");
             storage.create(blobInfo, file.getBytes());
+            log.info("File uploaded successfully to Firebase Storage");
 
             String downloadUrl = String.format(
                     "https://firebasestorage.googleapis.com/v0/b/%s/o/%s?alt=media&token=%s",
@@ -56,17 +70,26 @@ public class FirebaseStorageServiceImpl implements FirebaseStorageService {
                     java.net.URLEncoder.encode(filePath, "UTF-8"),
                     downloadToken
             );
-            
+
+            log.info("Generated download URL: {}", downloadUrl);
+
             return FileUploadResponse.builder()
+                    .success(true)
                     .filename(fileName)
                     .fileUrl(downloadUrl)
                     .mimeType(file.getContentType())
                     .fileSize(file.getSize())
                     .build();
-                    
-        } catch (IOException e) {
-            log.error("Lỗi khi tải lên file lên Firebase Storage: {}", e.getMessage());
-            throw new RuntimeException("Tải lên file thất bại", e);
+
+        } catch (Exception e) {
+            log.error("Firebase upload failed: file={}, folder={}, error={}",
+                    file.getOriginalFilename(), folder, e.getMessage(), e);
+
+            return FileUploadResponse.builder()
+                    .success(false)
+                    .error("Firebase upload failed: " + e.getMessage())
+                    .originalFilename(file.getOriginalFilename())
+                    .build();
         }
     }
 
