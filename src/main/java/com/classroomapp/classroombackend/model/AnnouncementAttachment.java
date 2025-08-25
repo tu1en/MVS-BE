@@ -33,17 +33,17 @@ public class AnnouncementAttachment {
     private Long announcementId;
 
     @NotBlank
-    @Column(name = "file_name", nullable = false)
+    @Column(name = "file_name", nullable = false, columnDefinition = "NVARCHAR(255)")
     private String fileName;
 
     @NotBlank
-    @Column(name = "file_path", nullable = false, length = 500)
+    @Column(name = "file_path", nullable = false, length = 500, columnDefinition = "NVARCHAR(500)")
     private String filePath;
 
     @Column(name = "file_size")
     private Long fileSize;
 
-    @Column(name = "file_type", length = 100)
+    @Column(name = "file_type", length = 100, columnDefinition = "NVARCHAR(100)")
     private String fileType;
 
     @Column(name = "uploaded_at")

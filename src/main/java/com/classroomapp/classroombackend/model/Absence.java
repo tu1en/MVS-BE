@@ -26,7 +26,7 @@ public class Absence {
     @Column(name = "user_id", nullable = false)
     private Long userId; // Reference to Teacher user
     
-    @Column(name = "user_email", nullable = false, length = 255)
+    @Column(name = "user_email", nullable = false, length = 255, columnDefinition = "NVARCHAR(255)")
     private String userEmail;
     
     @Column(name = "user_full_name", nullable = false, columnDefinition = "NVARCHAR(255)")
@@ -44,10 +44,10 @@ public class Absence {
     @Column(columnDefinition = "NVARCHAR(MAX)", nullable = false)
     private String description; // Reason for leave
     
-    @Column(name = "status", nullable = false, length = 50)
+    @Column(name = "status", nullable = false, length = 50, columnDefinition = "NVARCHAR(50)")
     private String status = "PENDING"; // PENDING, APPROVED, REJECTED
-    
-    @Column(name = "result_status", length = 50)
+
+    @Column(name = "result_status", length = 50, columnDefinition = "NVARCHAR(50)")
     private String resultStatus; // APPROVED, REJECTED, null
     
     @Column(columnDefinition = "NVARCHAR(MAX)", nullable = true)

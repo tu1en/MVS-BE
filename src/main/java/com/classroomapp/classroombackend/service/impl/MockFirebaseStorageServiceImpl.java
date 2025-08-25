@@ -1,6 +1,6 @@
 package com.classroomapp.classroombackend.service.impl;
 
-import com.classroomapp.classroombackend.dto.FileUploadResponse;
+import com.classroomapp.classroombackend.dto.common.FileUploadResponse;
 import com.classroomapp.classroombackend.service.FileStorageService;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
@@ -25,7 +25,7 @@ public class MockFirebaseStorageServiceImpl implements FileStorageService {
         // Trả về URL giả Firebase
         String mockFirebaseUrl = "https://firebasestorage.googleapis.com/v0/b/mock-bucket/o/" + folder + "%2F" + uniqueFilename + "?alt=media";
         
-        return new FileUploadResponse(
+        return FileUploadResponse.success(
             uniqueFilename,
             mockFirebaseUrl,
             file.getContentType(),

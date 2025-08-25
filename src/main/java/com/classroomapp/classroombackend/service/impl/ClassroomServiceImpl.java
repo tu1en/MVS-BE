@@ -1,13 +1,16 @@
 package com.classroomapp.classroombackend.service.impl;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -37,6 +40,7 @@ import com.classroomapp.classroombackend.repository.classroommanagement.Classroo
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.security.CustomUserDetails;
 import com.classroomapp.classroombackend.service.ClassroomService;
+import com.classroomapp.classroombackend.util.EnrollmentDebugUtil;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -193,29 +197,101 @@ public class ClassroomServiceImpl implements ClassroomService {
                 .collect(Collectors.toList());
     }
 
+    @Autowired
+    private EnrollmentDebugUtil enrollmentDebugUtil;
+
     @Override
     public void EnrollStudent(Long classroomId, Long studentId) {
+        log.info("🔍 ENROLLMENT DEBUG: Starting enrollment process - ClassroomId: {}, StudentId: {}", classroomId, studentId);
+
+        // Validate input parameters
+        if (classroomId == null) {
+            log.error("❌ ENROLLMENT ERROR: ClassroomId is null");
+            throw new IllegalArgumentException("ClassroomId không được để trống");
+        }
+
+        if (studentId == null) {
+            log.error("❌ ENROLLMENT ERROR: StudentId is null");
+            throw new IllegalArgumentException("StudentId không được để trống");
+        }
+
+        // Use debug utility for comprehensive logging
+        enrollmentDebugUtil.debugEnrollmentRequest(classroomId, studentId);
+
+        // Check if classroom exists with detailed logging
+        log.info("🔍 ENROLLMENT DEBUG: Searching for classroom with ID: {}", classroomId);
         Classroom classroom = classroomRepository.findById(classroomId)
-                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy lớp học với id: " + classroomId));
-        
+                .orElseThrow(() -> {
+                    log.error("❌ ENROLLMENT ERROR: Classroom not found with ID: {}", classroomId);
+                    // Let's also check if there are any classrooms in the database
+                    long totalClassrooms = classroomRepository.count();
+                    log.error("❌ ENROLLMENT ERROR: Total classrooms in database: {}", totalClassrooms);
+                    if (totalClassrooms > 0) {
+                        List<Classroom> allClassrooms = classroomRepository.findAll();
+                        log.error("❌ ENROLLMENT ERROR: Available classroom IDs: {}",
+                            allClassrooms.stream().map(Classroom::getId).sorted().toList());
+                    }
+                    return new EntityNotFoundException("Không tìm thấy lớp học với id: " + classroomId +
+                        ". Vui lòng kiểm tra lại ID lớp học.");
+                });
+
+        log.info("✅ ENROLLMENT DEBUG: Found classroom - ID: {}, Name: '{}', CourseId: {}, Teacher: {}",
+            classroom.getId(), classroom.getName(), classroom.getCourseId(),
+            classroom.getTeacher() != null ? classroom.getTeacher().getFullName() : "NULL");
+
+        // Check if student exists with detailed logging
+        log.info("🔍 ENROLLMENT DEBUG: Searching for student with ID: {}", studentId);
         User student = userRepository.findById(studentId)
-                .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy học sinh với id: " + studentId));
-        
+                .orElseThrow(() -> {
+                    log.error("❌ ENROLLMENT ERROR: Student not found with ID: {}", studentId);
+                    // Check if user exists but with different role
+                    Optional<User> userOpt = userRepository.findById(studentId);
+                    if (userOpt.isPresent()) {
+                        User user = userOpt.get();
+                        log.error("❌ ENROLLMENT ERROR: User {} exists but has role {} (expected role 1 for student)",
+                            studentId, user.getRoleId());
+                        return new EntityNotFoundException("Người dùng với id " + studentId +
+                            " không phải là học sinh (role: " + user.getRoleId() + ")");
+                    }
+                    return new EntityNotFoundException("Không tìm thấy học sinh với id: " + studentId +
+                        ". Vui lòng kiểm tra lại ID học sinh.");
+                });
+
+        // Validate student role
+        if (student.getRoleId() != 1) {
+            log.error("❌ ENROLLMENT ERROR: User {} has role {} (expected role 1 for student)",
+                studentId, student.getRoleId());
+            throw new IllegalArgumentException("Người dùng với id " + studentId +
+                " không phải là học sinh (role: " + student.getRoleId() + ")");
+        }
+
+        log.info("✅ ENROLLMENT DEBUG: Found student - ID: {}, Username: '{}', FullName: '{}', Role: {}",
+            student.getId(), student.getUsername(), student.getFullName(), student.getRoleId());
+
         // Check if student is already enrolled
         ClassroomEnrollmentId enrollmentId = new ClassroomEnrollmentId(classroomId, studentId);
         boolean alreadyEnrolled = classroomEnrollmentRepository.existsById(enrollmentId);
         if (alreadyEnrolled) {
-            log.info("Student {} is already enrolled in classroom {}", studentId, classroomId);
-            return;
+            log.info("⚠️ ENROLLMENT WARNING: Student {} is already enrolled in classroom {}", studentId, classroomId);
+            throw new IllegalStateException("Học sinh đã được ghi danh vào lớp học này rồi");
         }
-        
+
+        log.info("🔍 ENROLLMENT DEBUG: Creating new enrollment record...");
+
         // Create enrollment
         ClassroomEnrollment enrollment = new ClassroomEnrollment();
         enrollment.setId(enrollmentId);
         enrollment.setClassroom(classroom);
         enrollment.setUser(student);
-        classroomEnrollmentRepository.save(enrollment);
-        log.info("Student {} successfully enrolled in classroom {}", studentId, classroomId);
+        enrollment.setEnrollmentDate(LocalDateTime.now());
+
+        try {
+            classroomEnrollmentRepository.save(enrollment);
+            log.info("✅ ENROLLMENT SUCCESS: Student {} successfully enrolled in classroom {}", studentId, classroomId);
+        } catch (Exception e) {
+            log.error("❌ ENROLLMENT ERROR: Failed to save enrollment - {}", e.getMessage(), e);
+            throw new RuntimeException("Lỗi khi lưu thông tin ghi danh: " + e.getMessage(), e);
+        }
     }
 
     @Override

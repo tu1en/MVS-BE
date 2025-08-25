@@ -32,35 +32,35 @@ public class Notification {
     @Column
     private Boolean isRead = false;
     
-    @Column
+    @Column(columnDefinition = "NVARCHAR(255)")
     private String sender;
-    
+
     @Column
     private Long recipientId;
-    
-    @Column
+
+    @Column(columnDefinition = "NVARCHAR(255)")
     private String type = "GENERAL"; // GENERAL, URGENT, SYSTEM, ANNOUNCEMENT, ADMIN_ANNOUNCEMENT
-    
+
     // New fields for admin notification management
-    @Column
+    @Column(columnDefinition = "NVARCHAR(255)")
     private String title; // Notification title
     
     @Column
     private LocalDateTime scheduledAt; // For scheduled notifications
     
-    @Column
+    @Column(columnDefinition = "NVARCHAR(255)")
     private String targetAudience; // ALL, STUDENTS, PARENTS, TEACHERS, ACCOUNTANTS, MANAGERS, SPECIFIC_USER, SPECIFIC_CLASS
-    
-    @Column
+
+    @Column(columnDefinition = "NVARCHAR(255)")
     private String targetDetails; // Additional targeting info (class ID, user ID, etc.)
-    
-    @Column
+
+    @Column(columnDefinition = "NVARCHAR(255)")
     private String status = "PENDING"; // PENDING, SENT, SCHEDULED, FAILED
-    
-    @Column
+
+    @Column(columnDefinition = "NVARCHAR(255)")
     private String priority = "NORMAL"; // LOW, NORMAL, HIGH, URGENT
-    
-    @Column
+
+    @Column(columnDefinition = "NVARCHAR(255)")
     private String createdBy; // Admin who created the notification
     
     @PrePersist

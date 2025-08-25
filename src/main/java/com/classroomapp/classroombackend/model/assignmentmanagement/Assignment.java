@@ -57,6 +57,10 @@ public class Assignment {
     @Min(0) // Points must be positive
     private Integer points;
 
+    // File attachment URL for simple file upload (alternative to complex attachments)
+    @Column(name = "file_attachment_url", columnDefinition = "NVARCHAR(500)")
+    private String fileAttachmentUrl;
+
     @OneToMany(
             mappedBy = "assignment",
             cascade = CascadeType.ALL,

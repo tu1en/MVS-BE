@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,10 +15,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.classroomapp.classroombackend.model.AttendanceLog;
 import com.classroomapp.classroombackend.model.Contract;
 import com.classroomapp.classroombackend.model.hrmanagement.PayrollResult;
 import com.classroomapp.classroombackend.model.hrmanagement.StaffAttendanceLog;
 import com.classroomapp.classroombackend.model.usermanagement.User;
+import com.classroomapp.classroombackend.repository.AttendanceLogRepository;
 import com.classroomapp.classroombackend.repository.ContractRepository;
 import com.classroomapp.classroombackend.repository.hrmanagement.StaffAttendanceLogRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
@@ -39,10 +42,14 @@ public class PayrollGenerationServiceImpl implements PayrollGenerationService {
     
     private final ContractRepository contractRepository;
     private final UserRepository userRepository;
-    private final StaffAttendanceLogRepository attendanceLogRepository;
+    private final StaffAttendanceLogRepository staffAttendanceLogRepository;
+    private final AttendanceLogRepository attendanceLogRepository;
     
     @Autowired
     private TeacherSalaryCalculationService teacherSalaryCalculationService;
+
+    @Autowired
+    private TeacherPayrollCalculationService teacherPayrollCalculationService;
     
     @Override
     public PayrollResult generatePayrollForUser(Long userId, YearMonth period) {
@@ -175,29 +182,35 @@ public class PayrollGenerationServiceImpl implements PayrollGenerationService {
             YearMonth period) {
         
         try {
-            // Sử dụng service mới để tính lương
-            TeacherSalaryCalculationService.TeacherSalaryResult salaryResult = 
-                teacherSalaryCalculationService.calculateSalaryFromTeachingHistory(
+            // Sử dụng service mới để tính lương từ AttendanceSession
+            TeacherPayrollCalculationService.TeacherPayrollResult payrollResult =
+                teacherPayrollCalculationService.calculateSalaryFromTeachingSessions(
                     user.getId(), periodStart, periodEnd, contract);
-            
-            // Chuyển đổi kết quả sang PayrollResult - dùng constructor mới cho teacher
-            PayrollResult payrollResult = new PayrollResult(
+
+            // Chuyển đổi kết quả sang PayrollResult - dùng constructor mới với teaching slots
+            PayrollResult result = new PayrollResult(
                 user.getId(),
                 user.getFullName(),
                 period,
-                (int) salaryResult.getTotalTeachingDays(), // totalWorkingDays
-                (int) salaryResult.getTotalTeachingDays(), // actualWorkingDays (giáo viên làm việc theo giờ)
+                payrollResult.getTotalTeachingDays(), // totalWorkingDays
+                payrollResult.getTotalTeachingDays(), // actualWorkingDays (giáo viên làm việc theo giờ)
                 contract.getSalary() != null ? new BigDecimal(contract.getSalary()) : BigDecimal.ZERO, // contractSalary
-                salaryResult.getTotalSalary(), // proratedGrossSalary
-                salaryResult.getTotalSalary(), // netSalary (giáo viên không có BHXH)
+                payrollResult.getTotalSalary(), // proratedGrossSalary
+                payrollResult.getTotalSalary(), // netSalary (giáo viên không có BHXH)
                 null, // calculationResult
-                salaryResult.getTotalTeachingHours() // actualTeachingHours - giờ dạy thực tế
+                payrollResult.getTotalTeachingHours(), // actualTeachingHours - giờ dạy thực tế
+                payrollResult.getTotalTeachingSlots() // totalTeachingSlots - số tiết dạy
             );
-            
-            log.info("✅ Teacher payroll generated: {} VND for {} hours", 
-                    salaryResult.getTotalSalary(), salaryResult.getTotalTeachingHours());
-            
-            return payrollResult;
+
+            // Set contract type và thông tin khác
+            result.setContractType(contract.getContractType());
+            result.setUserEmail(user.getEmail());
+            result.setHourlySalary(contract.getHourlySalary() != null ? new BigDecimal(contract.getHourlySalary()) : BigDecimal.ZERO);
+
+            log.info("✅ Teacher payroll generated: {} VND for {} hours ({} slots)",
+                    payrollResult.getTotalSalary(), payrollResult.getTotalTeachingHours(), payrollResult.getTotalTeachingSlots());
+
+            return result;
             
         } catch (Exception e) {
             log.error("❌ Error calculating teacher salary from teaching history: {}", e.getMessage(), e);
@@ -215,9 +228,9 @@ public class PayrollGenerationServiceImpl implements PayrollGenerationService {
             LocalDate periodEnd, 
             YearMonth period) {
         
-        // Logic cũ giữ nguyên
-        List<StaffAttendanceLog> attendanceLogs = attendanceLogRepository
-                .findByUserIdAndDateRange(user.getId(), periodStart, periodEnd);
+        // Sử dụng AttendanceLog thay vì StaffAttendanceLog vì dữ liệu nằm trong bảng attendance_logs
+        List<AttendanceLog> attendanceLogs = attendanceLogRepository
+                .findByUserIdAndDateBetween(user.getId(), periodStart, periodEnd);
 
         // Sử dụng toàn bộ kỳ lương vì không cần ràng buộc theo ngày bắt đầu/kết thúc hợp đồng
         LocalDate standardStart = periodStart;
@@ -228,7 +241,7 @@ public class PayrollGenerationServiceImpl implements PayrollGenerationService {
 
         int totalWorkingDays = calculateWorkingDaysInPeriod(standardStart, standardEnd, allowedDays);
         int actualWorkingDays = (int) attendanceLogs.stream()
-                .filter(log -> allowedDays.contains(log.getAttendanceDate().getDayOfWeek()))
+                .filter(log -> allowedDays.contains(log.getDate().getDayOfWeek()))
                 .count();
 
         // Tính toán cuối tuần để trả lương gấp đôi
@@ -236,10 +249,11 @@ public class PayrollGenerationServiceImpl implements PayrollGenerationService {
         int weekendHoursWorked = 0;
         int weekdayHoursWorked = 0;
         double totalHours = 0.0;
-        for (StaffAttendanceLog logEntry : attendanceLogs) {
-            boolean isWeekend = logEntry.getAttendanceDate().getDayOfWeek().getValue() >= 6;
-            int hours = (int) Math.round(logEntry.getWorkingHours());
-            totalHours += logEntry.getWorkingHours();
+        for (AttendanceLog logEntry : attendanceLogs) {
+            boolean isWeekend = logEntry.getDate().getDayOfWeek().getValue() >= 6;
+            double workingHours = calculateWorkingHours(logEntry.getCheckIn(), logEntry.getCheckOut());
+            int hours = (int) Math.round(workingHours);
+            totalHours += workingHours;
             if (isWeekend) {
                 weekendDaysWorked += 1;
                 weekendHoursWorked += hours;
@@ -318,7 +332,11 @@ public class PayrollGenerationServiceImpl implements PayrollGenerationService {
             netSalary,
             calculationResult
         );
-        
+
+        // Set contract type và thông tin khác cho staff
+        payrollResult.setContractType(contract.getContractType());
+        payrollResult.setUserEmail(user.getEmail());
+
         return payrollResult;
     }
 
@@ -375,5 +393,25 @@ public class PayrollGenerationServiceImpl implements PayrollGenerationService {
             current = current.plusDays(1);
         }
         return count;
+    }
+
+    /**
+     * Tính toán số giờ làm việc từ thời gian check-in và check-out
+     */
+    private double calculateWorkingHours(LocalTime checkIn, LocalTime checkOut) {
+        if (checkIn == null || checkOut == null) {
+            return 0.0;
+        }
+
+        // Tính số giờ giữa check-in và check-out
+        long minutes = java.time.Duration.between(checkIn, checkOut).toMinutes();
+
+        // Nếu check-out trước check-in (qua ngày), coi như 0 giờ
+        if (minutes < 0) {
+            return 0.0;
+        }
+
+        // Chuyển đổi phút thành giờ
+        return minutes / 60.0;
     }
 }

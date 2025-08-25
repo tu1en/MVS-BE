@@ -103,16 +103,23 @@ public class ContractBackfillSeeder implements CommandLineRunner {
                 changed = true;
             }
 
-            // Infer contract type if missing
+            // Infer contract type if missing - FOCUS ON TEACHER CONTRACTS ONLY
             if (isBlank(c.getContractType())) {
                 String positionLower = c.getPosition() != null ? c.getPosition().toLowerCase(Locale.ROOT) : "";
                 String deptLower = c.getDepartment() != null ? c.getDepartment().toLowerCase(Locale.ROOT) : "";
             if (positionLower.contains("giáo viên") || positionLower.contains("teacher") || !isBlank(c.getSubject())) {
                     c.setContractType("TEACHER");
-                } else if (positionLower.contains("kế toán") || positionLower.contains("accountant") || deptLower.contains("tài chính")) {
-                    c.setContractType("ACCOUNTANT");
                 } else {
-                    c.setContractType("STAFF");
+                    // COMMENTED OUT: Non-teacher contract types to focus on teacher contracts only
+                    /*
+                    else if (positionLower.contains("kế toán") || positionLower.contains("accountant") || deptLower.contains("tài chính")) {
+                        c.setContractType("ACCOUNTANT");
+                    } else {
+                        c.setContractType("STAFF");
+                    }
+                    */
+                    // Default to TEACHER for simplicity in test environment
+                    c.setContractType("TEACHER");
                 }
                 changed = true;
             }

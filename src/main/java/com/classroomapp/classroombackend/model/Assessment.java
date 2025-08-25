@@ -32,13 +32,13 @@ public class Assessment {
     @JoinColumn(name = "lecture_id", nullable = false)
     private Lecture lecture;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
     private String title;
 
     @Column(columnDefinition = "NVARCHAR(MAX)")
     private String description;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
     private String assessmentType; // e.g., "QUIZ", "POLL"
 
     private Integer timeLimit; // in minutes

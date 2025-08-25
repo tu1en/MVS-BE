@@ -130,6 +130,7 @@ public class ClassController {
     
     /**
      * Get class by ID
+     * FIXED: Improved error handling to return correct HTTP status codes
      */
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<ClassDto>> getClassById(@PathVariable Long id) {
@@ -137,10 +138,24 @@ public class ClassController {
             ClassDto classDto = classService.getClassById(id);
             return ResponseEntity.ok(ApiResponse.success(classDto));
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND.value())
-                    .body(ApiResponse.error("Không tìm thấy lớp học"));
+            // Check if it's actually a not found error or a database error
+            String errorMsg = e.getMessage().toLowerCase();
+            if (errorMsg.contains("not found") || errorMsg.contains("không tìm thấy")) {
+                logger.warn("Class not found: {}", id);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND.value())
+                        .body(ApiResponse.error("Không tìm thấy lớp học"));
+            } else if (errorMsg.contains("deadlock") || errorMsg.contains("timeout") ||
+                      errorMsg.contains("constraint") || errorMsg.contains("database")) {
+                logger.error("Database error getting class {}: {}", id, e.getMessage());
+                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE.value())
+                        .body(ApiResponse.error("Dịch vụ tạm thời không khả dụng, vui lòng thử lại"));
+            } else {
+                logger.error("Runtime error getting class {}: {}", id, e.getMessage());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                        .body(ApiResponse.error("Lỗi hệ thống: " + e.getMessage()));
+            }
         } catch (Exception e) {
-            logger.error("Error getting class: {}", e.getMessage());
+            logger.error("Unexpected error getting class {}: {}", id, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                     .body(ApiResponse.error("Lỗi lấy chi tiết lớp học: " + e.getMessage()));
         }
@@ -152,14 +167,39 @@ public class ClassController {
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<ClassDto>> updateClass(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
         try {
+            logger.info("🔄 PUT /api/classes/{} - Thread: {} - Payload: {}",
+                id, Thread.currentThread().getName(), payload);
+
             // Cho phép cập nhật nhẹ isPublic và tuitionFee (xử lý bên service)
             ClassDto updated = classService.updateClassPartial(id, payload);
+
+            logger.info("✅ PUT /api/classes/{} completed successfully - Thread: {}",
+                id, Thread.currentThread().getName());
+
             return ResponseEntity.ok(ApiResponse.success(updated, "Cập nhật lớp thành công"));
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND.value())
-                    .body(ApiResponse.error("Không tìm thấy lớp học"));
+            String errorMsg = e.getMessage().toLowerCase();
+
+            if (errorMsg.contains("not found") || errorMsg.contains("không tìm thấy")) {
+                logger.warn("❌ PUT /api/classes/{} - Class not found - Thread: {}",
+                    id, Thread.currentThread().getName());
+                return ResponseEntity.status(HttpStatus.NOT_FOUND.value())
+                        .body(ApiResponse.error("Không tìm thấy lớp học"));
+            } else if (errorMsg.contains("deadlock") || errorMsg.contains("timeout") ||
+                      errorMsg.contains("constraint") || errorMsg.contains("database")) {
+                logger.error("❌ PUT /api/classes/{} - Database concurrency error - Thread: {} - Error: {}",
+                    id, Thread.currentThread().getName(), e.getMessage());
+                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE.value())
+                        .body(ApiResponse.error("Dịch vụ tạm thời không khả dụng do xung đột dữ liệu, vui lòng thử lại"));
+            } else {
+                logger.error("❌ PUT /api/classes/{} - Runtime error - Thread: {} - Error: {}",
+                    id, Thread.currentThread().getName(), e.getMessage());
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST.value())
+                        .body(ApiResponse.error("Lỗi cập nhật lớp: " + e.getMessage()));
+            }
         } catch (Exception e) {
-            logger.error("Error updating class: {}", e.getMessage());
+            logger.error("❌ PUT /api/classes/{} - Unexpected error - Thread: {} - Error: {}",
+                id, Thread.currentThread().getName(), e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST.value())
                     .body(ApiResponse.error("Lỗi cập nhật lớp học: " + e.getMessage()));
         }
@@ -255,7 +295,37 @@ public class ClassController {
                     .body(ApiResponse.error("Lỗi chạy đồng bộ trạng thái: " + e.getMessage()));
         }
     }
-    
+
+    /**
+     * Đồng bộ một lớp cụ thể sang Classroom
+     */
+    @PutMapping("/{classId}/sync-to-classroom")
+    public ResponseEntity<ApiResponse<String>> syncClassToClassroom(@PathVariable Long classId) {
+        try {
+            classService.syncClassToClassroom(classId);
+            return ResponseEntity.ok(ApiResponse.success("OK", "Đã đồng bộ lớp sang Classroom thành công"));
+        } catch (Exception e) {
+            logger.error("Error syncing class {} to classroom: {}", classId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .body(ApiResponse.error("Lỗi đồng bộ lớp sang Classroom: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Đồng bộ tất cả lớp sang Classroom
+     */
+    @PutMapping("/sync-all-to-classrooms")
+    public ResponseEntity<ApiResponse<String>> syncAllClassesToClassrooms() {
+        try {
+            classService.syncAllClassesToClassrooms();
+            return ResponseEntity.ok(ApiResponse.success("OK", "Đã đồng bộ tất cả lớp sang Classroom thành công"));
+        } catch (Exception e) {
+            logger.error("Error syncing all classes to classrooms: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .body(ApiResponse.error("Lỗi đồng bộ tất cả lớp sang Classroom: " + e.getMessage()));
+        }
+    }
+
     /**
      * Check schedule conflicts
      */

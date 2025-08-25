@@ -35,7 +35,7 @@ public class CourseSchedule {
     private Long classroomId;
 
     @NotBlank
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
     private String title;
 
     @Column(columnDefinition = "NVARCHAR(MAX)")
@@ -49,14 +49,15 @@ public class CourseSchedule {
     @Column(name = "end_time", nullable = false)
     private LocalDateTime endTime;
 
+    @Column(columnDefinition = "NVARCHAR(255)")
     private String location;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "schedule_type")
+    @Column(name = "schedule_type", columnDefinition = "NVARCHAR(255)")
     private ScheduleType scheduleType = ScheduleType.LECTURE;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "recurring_type")
+    @Column(name = "recurring_type", columnDefinition = "NVARCHAR(255)")
     private RecurringType recurringType;
 
     @Column(name = "recurring_end_date")
@@ -65,7 +66,7 @@ public class CourseSchedule {
     @Column(name = "is_online")
     private Boolean isOnline = false;
 
-    @Column(name = "meeting_link", length = 500)
+    @Column(name = "meeting_link", length = 500, columnDefinition = "NVARCHAR(500)")
     private String meetingLink;
 
     @NotNull

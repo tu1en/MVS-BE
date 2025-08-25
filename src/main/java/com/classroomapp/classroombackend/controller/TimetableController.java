@@ -2,6 +2,7 @@ package com.classroomapp.classroombackend.controller;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.classroomapp.classroombackend.dto.CreateEventDto;
 import com.classroomapp.classroombackend.dto.TimetableEventDto;
+import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.TimetableService;
@@ -162,6 +164,8 @@ public class TimetableController {
         List<TimetableEventDto> events = timetableService.getUpcomingEvents(null);
         return ResponseEntity.ok(events);
     }
+
+
     
     // Create event
     @PostMapping("/events")

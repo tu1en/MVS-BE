@@ -114,4 +114,10 @@ public interface TimetableEventRepository extends JpaRepository<TimetableEvent, 
     List<TimetableEvent> findAllDayEventsByDateRange(
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate);
+
+    // Find events by classroom and exact start datetime (for duplicate checking)
+    List<TimetableEvent> findByClassroomIdAndStartDatetime(Long classroomId, LocalDateTime startDatetime);
+
+    // Find all events by classroom ID
+    List<TimetableEvent> findByClassroomId(Long classroomId);
 }

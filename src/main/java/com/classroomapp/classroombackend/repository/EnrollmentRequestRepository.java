@@ -37,4 +37,8 @@ public interface EnrollmentRequestRepository extends JpaRepository<EnrollmentReq
     
     @Query("SELECT er FROM EnrollmentRequest er WHERE er.courseTemplate.id = :courseTemplateId")
     List<EnrollmentRequest> findByCourseTemplateId(@Param("courseTemplateId") Long courseTemplateId);
+
+    @Query("SELECT er FROM EnrollmentRequest er WHERE er.courseTemplate.id = :courseTemplateId AND er.status = :status")
+    List<EnrollmentRequest> findByCourseTemplateIdAndStatus(@Param("courseTemplateId") Long courseTemplateId,
+                                                           @Param("status") EnrollmentStatus status);
 }

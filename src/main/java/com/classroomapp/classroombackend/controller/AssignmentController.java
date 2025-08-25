@@ -30,7 +30,7 @@ import com.classroomapp.classroombackend.dto.BulkGradingResultDto;
 import com.classroomapp.classroombackend.dto.CreateFeedbackDto;
 import com.classroomapp.classroombackend.dto.CreateRubricDto;
 import com.classroomapp.classroombackend.dto.FeedbackDto;
-import com.classroomapp.classroombackend.dto.FileUploadResponse;
+import com.classroomapp.classroombackend.dto.common.FileUploadResponse;
 import com.classroomapp.classroombackend.dto.GradeDto;
 import com.classroomapp.classroombackend.dto.GradingAnalyticsDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto;

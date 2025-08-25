@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -62,4 +63,21 @@ public interface AttendanceSessionRepository extends JpaRepository<AttendanceSes
      * @return Session nếu tồn tại
      */
     Optional<AttendanceSession> findByLectureIdAndSessionDate(Long lectureId, LocalDate sessionDate);
+
+    /**
+     * Xóa session và tất cả attendance records liên quan bằng SQL native
+     * @param sessionId ID của session cần xóa
+     */
+    @Modifying
+    @Query(value = "DELETE FROM attendance_records WHERE session_id = :sessionId; " +
+                   "DELETE FROM attendance_sessions WHERE id = :sessionId", nativeQuery = true)
+    void deleteSessionWithRecords(@Param("sessionId") Long sessionId);
+
+    /**
+     * Find attendance sessions by date range
+     * @param startDate Start date
+     * @param endDate End date
+     * @return List of attendance sessions
+     */
+    List<AttendanceSession> findBySessionDateBetween(LocalDate startDate, LocalDate endDate);
 }

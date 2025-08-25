@@ -55,7 +55,11 @@ public interface SubmissionService {
     
     // Get submission statistics for an assignment
     SubmissionStatistics GetSubmissionStatisticsForAssignment(Long assignmentId);
-    
+
+    // Debug helper methods
+    boolean assignmentExists(Long assignmentId);
+    boolean studentExists(Long studentId);
+
     // Inner class for submission statistics
     class SubmissionStatistics {
         private long totalStudents;

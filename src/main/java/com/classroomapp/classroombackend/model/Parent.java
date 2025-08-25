@@ -50,14 +50,14 @@ public class Parent {
     @Column(name = "name", columnDefinition = "NVARCHAR(255)", nullable = false)
     private String name;
 
-    @Column(name = "phone", length = 20)
+    @Column(name = "phone", length = 20, columnDefinition = "NVARCHAR(20)")
     private String phone;
 
-    @Column(name = "email", length = 100)
+    @Column(name = "email", length = 100, columnDefinition = "NVARCHAR(100)")
     private String email;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status")
+    @Column(name = "status", columnDefinition = "NVARCHAR(255)")
     private ParentStatus status = ParentStatus.ACTIVE;
 
     @Column(name = "created_at")

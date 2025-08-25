@@ -38,10 +38,10 @@ public class Payment {
     private BigDecimal amount;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "payment_method", nullable = false, length = 50)
+    @Column(name = "payment_method", nullable = false, length = 50, columnDefinition = "NVARCHAR(50)")
     private PaymentMethod paymentMethod;
 
-    @Column(name = "reference_number", length = 100)
+    @Column(name = "reference_number", length = 100, columnDefinition = "NVARCHAR(100)")
     private String referenceNumber;
 
     @Nationalized
@@ -49,7 +49,7 @@ public class Payment {
     private String note;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 20)
+    @Column(name = "status", nullable = false, length = 20, columnDefinition = "NVARCHAR(20)")
     private PaymentStatus status = PaymentStatus.COMPLETED;
 
     @Column(name = "receipt_id")
@@ -58,7 +58,7 @@ public class Payment {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "receipt_path")
+    @Column(name = "receipt_path", columnDefinition = "NVARCHAR(500)")
     private String receiptPath; // Path to uploaded receipt PDF file
 
     // Relationships

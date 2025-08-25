@@ -35,7 +35,7 @@ public class TimetableEvent {
     private Long id;
 
     @NotBlank
-    @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
+    @Column(nullable = false, columnDefinition = "NVARCHAR(255)" )
     private String title;
 
     @Column(columnDefinition = "NVARCHAR(MAX)")
@@ -63,7 +63,7 @@ public class TimetableEvent {
     @NotNull
     @Column(name = "created_by", nullable = false)
     private Long createdBy;
-
+    @Column(name = "location", columnDefinition = "NVARCHAR(255)")
     private String location;
 
     @Column(name = "is_all_day")

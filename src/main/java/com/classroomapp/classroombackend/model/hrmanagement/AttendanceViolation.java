@@ -46,11 +46,11 @@ public class AttendanceViolation {
     private LocalDate violationDate;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "violation_type", nullable = false)
+    @Column(name = "violation_type", nullable = false, columnDefinition = "NVARCHAR(255)")
     private ViolationType violationType;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "severity", nullable = false)
+    @Column(name = "severity", nullable = false, columnDefinition = "NVARCHAR(255)")
     private ViolationSeverity severity = ViolationSeverity.MINOR;
 
     @Column(name = "expected_time")
@@ -66,7 +66,7 @@ public class AttendanceViolation {
     private String systemDescription;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
+    @Column(name = "status", nullable = false, columnDefinition = "NVARCHAR(255)")
     private ViolationStatus status = ViolationStatus.PENDING_EXPLANATION;
 
     @Column(name = "auto_detected", columnDefinition = "BIT DEFAULT 1")
