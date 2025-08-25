@@ -30,6 +30,7 @@ public class CreateShiftSwapRequestDto {
     @NotNull(message = "Priority không được null")
     private String priority; // HIGH, MEDIUM, LOW
     
+    @Builder.Default
     private Boolean isEmergency = false;
     
     private LocalDateTime requestTime;

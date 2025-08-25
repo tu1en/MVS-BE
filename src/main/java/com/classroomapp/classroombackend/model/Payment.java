@@ -50,6 +50,7 @@ public class Payment {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20, columnDefinition = "NVARCHAR(20)")
+    @Builder.Default
     private PaymentStatus status = PaymentStatus.COMPLETED;
 
     @Column(name = "receipt_id")

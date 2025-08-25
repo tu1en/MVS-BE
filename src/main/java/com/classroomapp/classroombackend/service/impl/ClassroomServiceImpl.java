@@ -8,8 +8,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.Authentication;
@@ -51,8 +50,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 public class ClassroomServiceImpl implements ClassroomService {
-
-    private static final Logger log = LoggerFactory.getLogger(ClassroomServiceImpl.class);
 
     private final ClassroomRepository classroomRepository;
     private final UserRepository userRepository;

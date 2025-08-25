@@ -31,6 +31,7 @@ public class InvoiceItem {
     private String description;
 
     @Column(name = "quantity", nullable = false)
+    @Builder.Default
     private Integer quantity = 1;
 
     @Column(name = "unit_price", nullable = false, precision = 12, scale = 2)

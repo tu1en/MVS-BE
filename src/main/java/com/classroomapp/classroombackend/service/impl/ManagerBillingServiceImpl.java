@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.classroomapp.classroombackend.dto.common.FileUploadResponse;
 import com.classroomapp.classroombackend.dto.request.CreateInvoiceDto;
 import com.classroomapp.classroombackend.dto.request.UpdateInvoiceStatusDto;
 import com.classroomapp.classroombackend.model.Invoice;
@@ -27,6 +29,7 @@ import com.classroomapp.classroombackend.repository.PaymentRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.BillingNotificationService;
 import com.classroomapp.classroombackend.service.ManagerBillingService;
+import com.classroomapp.classroombackend.service.firebase.FirebaseStorageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
@@ -42,6 +45,7 @@ public class ManagerBillingServiceImpl implements ManagerBillingService {
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
     private final BillingNotificationService billingNotificationService;
+    private final FirebaseStorageService firebaseStorageService;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -94,24 +98,41 @@ public class ManagerBillingServiceImpl implements ManagerBillingService {
             User student = userRepository.findById(invoiceDto.getStudentId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy học sinh với ID: " + invoiceDto.getStudentId()));
 
+            // Validate invoice items
+            if (invoiceDto.getItems() == null || invoiceDto.getItems().isEmpty()) {
+                throw new RuntimeException("Hóa đơn phải có ít nhất một khoản phí");
+            }
+
             // Calculate total amount from items
             BigDecimal totalAmount = invoiceDto.getItems().stream()
                 .map(item -> item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+            // Validate total amount
+            if (totalAmount.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new RuntimeException("Tổng tiền hóa đơn phải lớn hơn 0 VND");
+            }
+
+            // Auto-set dates if not provided
+            LocalDateTime now = LocalDateTime.now();
+            LocalDate issueDate = invoiceDto.getIssueDate() != null ?
+                invoiceDto.getIssueDate() : now.toLocalDate();
+            LocalDate dueDate = invoiceDto.getDueDate() != null ?
+                invoiceDto.getDueDate() : now.toLocalDate().plusDays(30);
+
             // Create invoice
             Invoice invoice = Invoice.builder()
                 .invoiceNumber(invoiceDto.getInvoiceNumber())
                 .studentId(invoiceDto.getStudentId())
-                .issueDate(invoiceDto.getIssueDate())
-                .dueDate(invoiceDto.getDueDate())
+                .issueDate(issueDate)
+                .dueDate(dueDate)
                 .totalAmount(totalAmount)
                 .paidAmount(BigDecimal.ZERO)
                 .status(Invoice.InvoiceStatus.valueOf(invoiceDto.getStatus()))
                 .note(invoiceDto.getNote())
                 .documentPath(documentPath)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
+                .createdAt(now)
+                .updatedAt(now)
                 .build();
 
             Invoice savedInvoice = invoiceRepository.save(invoice);
@@ -161,27 +182,38 @@ public class ManagerBillingServiceImpl implements ManagerBillingService {
             invoice.setStatus(newStatus);
             invoice.setUpdatedAt(LocalDateTime.now());
 
-            // If status is PAID, create payment record
-            if (newStatus == Invoice.InvoiceStatus.PAID && statusDto.getPaidAmount() != null) {
-                invoice.setPaidAmount(statusDto.getPaidAmount());
-                
+            // If status is PAID, handle payment logic
+            if (newStatus == Invoice.InvoiceStatus.PAID) {
+                BigDecimal paidAmount;
+
+                // If paidAmount is provided, use it; otherwise use totalAmount (full payment)
+                if (statusDto.getPaidAmount() != null) {
+                    paidAmount = statusDto.getPaidAmount();
+                } else {
+                    // Auto-set paidAmount to totalAmount for full payment
+                    paidAmount = invoice.getTotalAmount();
+                }
+
+                invoice.setPaidAmount(paidAmount);
+
                 // Create payment record
                 Payment payment = Payment.builder()
                     .invoiceId(invoiceId)
                     .studentId(invoice.getStudentId())
                     .paymentDate(LocalDateTime.now())
-                    .amount(statusDto.getPaidAmount())
-                    .paymentMethod(Payment.PaymentMethod.valueOf(statusDto.getPaymentMethod() != null ? 
+                    .amount(paidAmount)
+                    .paymentMethod(Payment.PaymentMethod.valueOf(statusDto.getPaymentMethod() != null ?
                                   statusDto.getPaymentMethod() : "CASH"))
                     .referenceNumber(statusDto.getPaymentReference())
-                    .note(statusDto.getNote())
+                    .note(statusDto.getNote() != null ? statusDto.getNote() : "Thanh toán đầy đủ")
                     .status(Payment.PaymentStatus.COMPLETED)
                     .receiptId(System.currentTimeMillis()) // Generate simple receipt ID
                     .createdAt(LocalDateTime.now())
                     .build();
 
                 paymentRepository.save(payment);
-                log.info("Created payment record for invoice {}", invoice.getInvoiceNumber());
+                log.info("Created payment record for invoice {} with amount {}",
+                        invoice.getInvoiceNumber(), paidAmount);
             }
 
             Invoice updatedInvoice = invoiceRepository.save(invoice);
@@ -326,18 +358,25 @@ public class ManagerBillingServiceImpl implements ManagerBillingService {
         try {
             Invoice invoice = invoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn"));
-            
+
             if (invoice.getDocumentPath() == null) {
                 throw new RuntimeException("Hóa đơn không có file đính kèm");
             }
-            
-            Path filePath = Paths.get(invoice.getDocumentPath());
-            if (!Files.exists(filePath)) {
-                throw new RuntimeException("File hóa đơn không tồn tại");
+
+            // Check if it's a Firebase URL (starts with https://)
+            if (invoice.getDocumentPath().startsWith("https://")) {
+                // For Firebase URLs, we redirect the client to download directly
+                // This method should not be used for Firebase URLs
+                throw new RuntimeException("File được lưu trên Firebase, sử dụng URL trực tiếp: " + invoice.getDocumentPath());
+            } else {
+                // Legacy local file support
+                Path filePath = Paths.get(invoice.getDocumentPath());
+                if (!Files.exists(filePath)) {
+                    throw new RuntimeException("File hóa đơn không tồn tại");
+                }
+                return Files.readAllBytes(filePath);
             }
-            
-            return Files.readAllBytes(filePath);
-            
+
         } catch (IOException e) {
             log.error("Error reading invoice file for invoice {}", invoiceId, e);
             throw new RuntimeException("Không thể đọc file hóa đơn");
@@ -346,30 +385,20 @@ public class ManagerBillingServiceImpl implements ManagerBillingService {
 
     private String saveInvoiceFile(MultipartFile file, String invoiceNumber) {
         try {
-            // Create uploads directory if not exists
-            String uploadDir = "uploads/invoices/";
-            Path uploadPath = Paths.get(uploadDir);
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
+            // Upload to Firebase Storage
+            String storagePath = "invoices/" + invoiceNumber;
+            FileUploadResponse uploadResponse = firebaseStorageService.uploadFile(file, storagePath);
+
+            if (!uploadResponse.isSuccess()) {
+                throw new RuntimeException("Firebase upload failed: " + uploadResponse.getError());
             }
-            
-            // Generate filename
-            String originalFilename = file.getOriginalFilename();
-            String extension = originalFilename != null && originalFilename.contains(".") 
-                ? originalFilename.substring(originalFilename.lastIndexOf("."))
-                : ".pdf";
-            String filename = invoiceNumber + extension;
-            
-            // Save file
-            Path filePath = uploadPath.resolve(filename);
-            Files.copy(file.getInputStream(), filePath);
-            
-            log.info("Saved invoice file: {}", filePath.toString());
-            return filePath.toString();
-            
-        } catch (IOException e) {
-            log.error("Error saving invoice file for invoice {}", invoiceNumber, e);
-            throw new RuntimeException("Không thể lưu file hóa đơn");
+
+            log.info("Saved invoice file to Firebase: {} -> {}", invoiceNumber, uploadResponse.getFileUrl());
+            return uploadResponse.getFileUrl();
+
+        } catch (Exception e) {
+            log.error("Error saving invoice file for invoice {}: {}", invoiceNumber, e.getMessage(), e);
+            throw new RuntimeException("Không thể lưu file hóa đơn: " + e.getMessage());
         }
     }
 

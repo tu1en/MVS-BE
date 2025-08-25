@@ -17,10 +17,10 @@ public class CreateInvoiceDto {
     @NotNull(message = "ID học sinh không được để trống")
     private Long studentId;
 
-    @NotNull(message = "Ngày phát hành không được để trống")
+    // Ngày phát hành sẽ được tự động set = createdAt.toLocalDate()
     private LocalDate issueDate;
 
-    @NotNull(message = "Hạn thanh toán không được để trống")
+    // Hạn thanh toán sẽ được tự động set = createdAt.toLocalDate().plusDays(30)
     private LocalDate dueDate;
 
     @Size(max = 1000, message = "Ghi chú không được vượt quá 1000 ký tự")

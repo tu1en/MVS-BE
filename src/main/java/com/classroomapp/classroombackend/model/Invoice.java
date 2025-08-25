@@ -41,13 +41,16 @@ public class Invoice {
     private LocalDate dueDate;
 
     @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
+    @Builder.Default
     private BigDecimal totalAmount = BigDecimal.ZERO;
 
     @Column(name = "paid_amount", nullable = false, precision = 12, scale = 2)
+    @Builder.Default
     private BigDecimal paidAmount = BigDecimal.ZERO;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
+    @Builder.Default
     private InvoiceStatus status = InvoiceStatus.PENDING;
 
     @Nationalized
