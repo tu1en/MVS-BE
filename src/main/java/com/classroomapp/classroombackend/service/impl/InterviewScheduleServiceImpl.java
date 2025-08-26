@@ -106,8 +106,8 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
     public void updateEvaluation(Long id, String evaluation) {
         InterviewSchedule entity = interviewRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy lịch phỏng vấn"));
-        if (evaluation != null && evaluation.length() > 200) {
-            throw new IllegalArgumentException("Đánh giá tối đa 200 ký tự!");
+        if (evaluation != null && evaluation.length() > 500) {
+            throw new IllegalArgumentException("Đánh giá tối đa 500 ký tự!");
         }
         entity.setEvaluation(evaluation);
         interviewRepo.save(entity);
