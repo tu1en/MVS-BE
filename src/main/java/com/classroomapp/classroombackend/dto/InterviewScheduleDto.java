@@ -27,4 +27,5 @@ public class InterviewScheduleDto {
     private String evaluation;
     private String contractType;
     private BigDecimal hourlyRate;
+    private String cvUrl;
 } 
