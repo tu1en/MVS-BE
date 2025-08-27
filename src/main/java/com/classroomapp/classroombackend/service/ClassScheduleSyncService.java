@@ -16,6 +16,7 @@ import com.classroomapp.classroombackend.entity.ClassEntity;
 import com.classroomapp.classroombackend.entity.LessonTemplate;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.repository.ClassRepository;
+import com.classroomapp.classroombackend.repository.TimetableEventRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,6 +28,7 @@ public class ClassScheduleSyncService {
     @Autowired private ClassRepository classRepository;
     @Autowired private ClassroomRepository classroomRepository;
     @Autowired private TimetableService timetableService;
+    @Autowired private TimetableEventRepository timetableEventRepository;
     @Autowired private com.classroomapp.classroombackend.repository.LessonTemplateRepository lessonTemplateRepository;
     @Autowired private ObjectMapper objectMapper;
 
@@ -91,7 +93,32 @@ public class ClassScheduleSyncService {
                     dto.setColor("#007bff");
 
                     try {
-                        timetableService.createEvent(dto, createdById != null ? createdById : classroom.getTeacher() != null ? classroom.getTeacher().getId() : 1L);
+                        // 🔍 ENHANCED: Check for existing events before creating to prevent conflicts
+                        Long teacherId = createdById != null ? createdById : classroom.getTeacher() != null ? classroom.getTeacher().getId() : 1L;
+
+                        // Check if event already exists
+                        boolean eventExists = timetableEventRepository.findAll().stream()
+                            .anyMatch(e -> e.getClassroomId().equals(classroom.getId()) &&
+                                         e.getStartDatetime().equals(dto.getStartDatetime()) &&
+                                         e.getEndDatetime().equals(dto.getEndDatetime()));
+
+                        if (eventExists) {
+                            log.debug("⏭️ Skipping duplicate event creation for class {} at {}", classId, dto.getStartDatetime());
+                            continue;
+                        }
+
+                        // Check for teacher conflicts
+                        boolean hasConflict = timetableEventRepository.findAll().stream()
+                            .anyMatch(e -> e.getCreatedBy().equals(teacherId) &&
+                                         e.getStartDatetime().isBefore(dto.getEndDatetime()) &&
+                                         dto.getStartDatetime().isBefore(e.getEndDatetime()));
+
+                        if (hasConflict) {
+                            log.warn("⚠️ Teacher conflict detected for class {} at {}, skipping event creation", classId, dto.getStartDatetime());
+                            continue;
+                        }
+
+                        timetableService.createEvent(dto, teacherId);
                     } catch (Exception e) {
                         log.warn("Background createEvent failed for class {} week {}: {}", classId, week, e.getMessage());
                     }

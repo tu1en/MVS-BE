@@ -395,7 +395,7 @@ public class TeachingAssistantController {
             request1.setStudentCode("SV001");
             request1.setClassroomId(classroomId);
             request1.setParentName("Trần Văn B");
-            request1.setParentPhone("0901234567");
+            request1.setParentPhone("0971335989");
             request1.setRequestType(ParentRequest.RequestType.LATE_ARRIVAL);
             request1.setRequestDate(java.time.LocalDate.now());
             request1.setStartTime("08:30");

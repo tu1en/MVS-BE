@@ -17,4 +17,5 @@ public class ErrorHandlingConfig {
     // This configuration is now handled in application.properties:
     // spring.web.throw-exception-if-no-handler-found=true
     // spring.web.resources.add-mappings=false
+    
 }

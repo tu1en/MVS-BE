@@ -18,7 +18,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PathVariable;
 
+import com.classroomapp.classroombackend.dto.CreateEventDto;
+import com.classroomapp.classroombackend.dto.TimetableEventDto;
 import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSession;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.Lecture;
@@ -30,8 +33,11 @@ import com.classroomapp.classroombackend.repository.LectureRepository;
 import com.classroomapp.classroombackend.repository.TimetableEventRepository;
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.ClassService;
+import com.classroomapp.classroombackend.service.ScheduleService;
+import com.classroomapp.classroombackend.service.TimetableService;
 import com.classroomapp.classroombackend.repository.ClassRepository;
 import com.classroomapp.classroombackend.entity.ClassEntity;
+import com.classroomapp.classroombackend.config.CourseTemplateSeeder;
 import java.util.stream.Collectors;
 
 @RestController
@@ -57,7 +63,16 @@ public class TestController {
     private TimetableEventRepository timetableEventRepository;
 
     @Autowired
+    private TimetableService timetableService;
+
+    @Autowired
+    private ScheduleService scheduleService;
+
+    @Autowired
     private ClassRepository classRepository;
+
+    @Autowired
+    private CourseTemplateSeeder courseTemplateSeeder;
 
     @GetMapping("/health")
     public String health() {
@@ -354,46 +369,134 @@ public class TestController {
                 return ResponseEntity.ok(response);
             }
 
-            // Parse dates
+            // Debug: Check timetable events directly
+            System.out.println("🧪 TEST: Checking TimetableEvents for teacher ID: " + teacher.getId());
+
             LocalDate start = LocalDate.parse(startDate);
             LocalDate end = LocalDate.parse(endDate);
             LocalDateTime startDateTime = start.atStartOfDay();
             LocalDateTime endDateTime = end.atTime(23, 59, 59);
 
-            // Get teacher's classrooms
-            List<Classroom> classrooms = classroomRepository.findByTeacherId(teacher.getId());
-            List<Long> classroomIds = classrooms.stream().map(Classroom::getId).collect(Collectors.toList());
+            List<TimetableEventDto> events = timetableService.getEventsForUser(teacher.getId(), startDateTime, endDateTime);
 
-            // Get TimetableEvents for the date range
-            List<TimetableEvent> events = timetableEventRepository.findByClassroomsAndDateRange(
-                classroomIds, startDateTime, endDateTime);
-
-            // Convert to simple format
-            List<Map<String, Object>> eventDetails = events.stream()
-                .map(event -> {
-                    Map<String, Object> eventMap = new HashMap<>();
-                    eventMap.put("id", event.getId());
-                    eventMap.put("title", event.getTitle());
-                    eventMap.put("classroomId", event.getClassroomId());
-                    eventMap.put("startDatetime", event.getStartDatetime());
-                    eventMap.put("endDatetime", event.getEndDatetime());
-                    eventMap.put("eventType", event.getEventType());
-                    eventMap.put("location", event.getLocation());
-                    return eventMap;
-                })
-                .collect(Collectors.toList());
+            System.out.println("🧪 TEST: Found " + events.size() + " events");
+            for (TimetableEventDto event : events) {
+                System.out.println("🧪 Event ID: " + event.getId() +
+                                 ", Title: " + event.getTitle() +
+                                 ", ClassroomId: " + event.getClassroomId() +
+                                 ", LectureId: " + event.getLectureId() +
+                                 ", StartTime: " + event.getStartDatetime());
+            }
 
             response.put("success", true);
             response.put("teacherId", teacher.getId());
-            response.put("teacherEmail", teacher.getEmail());
-            response.put("dateRange", startDate + " to " + endDate);
-            response.put("classroomCount", classrooms.size());
-            response.put("eventsFound", events.size());
-            response.put("events", eventDetails);
-            response.put("message", "Found " + events.size() + " events for teacher in date range");
-            response.put("timestamp", LocalDateTime.now());
+            response.put("eventsCount", events.size());
+            response.put("events", events);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.out.println("❌ TEST: Error - " + e.getMessage());
+            e.printStackTrace();
+            response.put("success", false);
+            response.put("error", e.getMessage());
+            return ResponseEntity.ok(response);
+        }
+    }
 
-            System.out.println("✅ TEST: Found " + events.size() + " events for teacher in date range");
+    @GetMapping("/create-timetable-test-data")
+    public ResponseEntity<Map<String, Object>> createTimetableTestData() {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            System.out.println("🧪 TEST: Creating timetable test data...");
+
+            // Get teacher user
+            User teacher = userRepository.findByEmail("teacher@test.com").orElse(null);
+            if (teacher == null) {
+                response.put("success", false);
+                response.put("message", "Teacher not found");
+                return ResponseEntity.ok(response);
+            }
+
+            // Get teacher's classrooms
+            List<Classroom> classrooms = classroomRepository.findByTeacherId(teacher.getId());
+            if (classrooms.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "No classrooms found for teacher");
+                return ResponseEntity.ok(response);
+            }
+
+            Classroom classroom = classrooms.get(0); // Use first classroom
+
+            // Create test timetable events for the week 2025-08-18 to 2025-08-24
+            LocalDateTime baseDate = LocalDateTime.of(2025, 8, 18, 9, 0); // Monday 9:00 AM
+
+            for (int i = 0; i < 5; i++) { // Monday to Friday
+                LocalDateTime startTime = baseDate.plusDays(i);
+                LocalDateTime endTime = startTime.plusHours(2); // 2-hour classes
+
+                CreateEventDto eventDto = new CreateEventDto();
+                eventDto.setTitle("Bài " + (i + 1) + ": Từ vựng cơ bản - " + classroom.getName());
+                eventDto.setDescription("Học từ vựng về thành viên gia đình và nghề nghiệp");
+                eventDto.setStartDatetime(startTime);
+                eventDto.setEndDatetime(endTime);
+                eventDto.setEventType("CLASS");
+                eventDto.setClassroomId(classroom.getId());
+                eventDto.setLocation("Phòng học " + (i + 1));
+                eventDto.setColor("#1890ff");
+
+                // Create the event
+                TimetableEventDto createdEvent = timetableService.createEvent(eventDto, teacher.getId());
+                System.out.println("🧪 Created event: ID=" + createdEvent.getId() +
+                                 ", Title=" + createdEvent.getTitle() +
+                                 ", ClassroomId=" + createdEvent.getClassroomId());
+            }
+
+            response.put("success", true);
+            response.put("message", "Created 5 test timetable events for teacher");
+            response.put("teacherId", teacher.getId());
+            response.put("classroomId", classroom.getId());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.out.println("❌ TEST: Error creating timetable test data - " + e.getMessage());
+            e.printStackTrace();
+            response.put("success", false);
+            response.put("error", e.getMessage());
+            return ResponseEntity.ok(response);
+        }
+    }
+
+    @GetMapping("/check-schedule-data")
+    public ResponseEntity<Map<String, Object>> checkScheduleData() {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            System.out.println("🧪 TEST: Checking Schedule data...");
+
+            // Get teacher user
+            User teacher = userRepository.findByEmail("teacher@test.com").orElse(null);
+            if (teacher == null) {
+                response.put("success", false);
+                response.put("message", "Teacher not found");
+                return ResponseEntity.ok(response);
+            }
+
+            // Check schedules using ScheduleService
+            LocalDate start = LocalDate.of(2025, 8, 18);
+            LocalDate end = LocalDate.of(2025, 8, 24);
+
+            List<TimetableEventDto> schedules = scheduleService.getTimetableForUser(teacher.getId(), start, end);
+
+            System.out.println("🧪 TEST: Found " + schedules.size() + " schedules from ScheduleService");
+            for (TimetableEventDto schedule : schedules) {
+                System.out.println("🧪 Schedule ID: " + schedule.getId() +
+                                 ", Title: " + schedule.getTitle() +
+                                 ", ClassroomId: " + schedule.getClassroomId() +
+                                 ", LectureId: " + schedule.getLectureId() +
+                                 ", StartTime: " + schedule.getStartDatetime());
+            }
+
+            response.put("success", true);
+            response.put("teacherId", teacher.getId());
+            response.put("schedulesCount", schedules.size());
+            response.put("schedules", schedules);
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
@@ -405,6 +508,74 @@ public class TestController {
             response.put("timestamp", LocalDateTime.now());
 
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    @PostMapping("/create-lectures/{classroomId}")
+    public ResponseEntity<Map<String, Object>> createLecturesForClassroom(@PathVariable Long classroomId) {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            System.out.println("🧪 TEST: Creating lectures for classroom ID: " + classroomId);
+
+            // Tìm classroom
+            Classroom classroom = classroomRepository.findById(classroomId).orElse(null);
+            if (classroom == null) {
+                response.put("success", false);
+                response.put("message", "Classroom not found with ID: " + classroomId);
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            System.out.println("🧪 TEST: Found classroom: " + classroom.getName());
+
+            // Kiểm tra lectures hiện tại
+            List<Lecture> existingLectures = lectureRepository.findByClassroomId(classroomId);
+            System.out.println("🧪 TEST: Existing lectures count: " + existingLectures.size());
+
+            // Gọi method createJapaneseLectures
+            // courseTemplateSeeder.createJapaneseLectures(classroom);
+
+            // Kiểm tra lại sau khi tạo
+            List<Lecture> newLectures = lectureRepository.findByClassroomId(classroomId);
+            System.out.println("🧪 TEST: New lectures count: " + newLectures.size());
+
+            response.put("success", true);
+            response.put("message", "Successfully called createJapaneseLectures for classroom: " + classroom.getName());
+            response.put("classroomId", classroomId);
+            response.put("classroomName", classroom.getName());
+            response.put("existingLecturesCount", existingLectures.size());
+            response.put("newLecturesCount", newLectures.size());
+            response.put("lecturesCreated", newLectures.size() - existingLectures.size());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            System.out.println("❌ TEST: Error calling createJapaneseLectures: " + e.getMessage());
+            e.printStackTrace();
+            response.put("success", false);
+            response.put("message", "Error: " + e.getMessage());
+            response.put("error", e.getClass().getSimpleName());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    @GetMapping("/classrooms")
+    public ResponseEntity<Map<String, Object>> getAllClassrooms() {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            var classrooms = classroomRepository.findAll();
+            response.put("success", true);
+            response.put("classrooms", classrooms);
+            response.put("count", classrooms.size());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            System.out.println("❌ TEST: Error getting classrooms: " + e.getMessage());
+            response.put("success", false);
+            response.put("message", "Error: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
         }
     }
 }

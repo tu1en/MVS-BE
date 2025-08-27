@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
 
@@ -49,6 +50,8 @@ import com.classroomapp.classroombackend.model.assignmentmanagement.Assignment;
 import com.classroomapp.classroombackend.model.assignmentmanagement.Submission;
 import com.classroomapp.classroombackend.model.attendancemanagement.Attendance;
 import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSession;
+import com.classroomapp.classroombackend.model.attendancemanagement.MakeupAttendanceRequest;
+import com.classroomapp.classroombackend.model.Lecture;
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.classroommanagement.ClassroomEnrollment;
 import com.classroomapp.classroombackend.model.classroommanagement.ClassroomEnrollmentId;
@@ -76,6 +79,7 @@ import com.classroomapp.classroombackend.repository.assignmentmanagement.Assignm
 import com.classroomapp.classroombackend.repository.assignmentmanagement.SubmissionRepository;
 import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceRepository;
 import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceSessionRepository;
+import com.classroomapp.classroombackend.repository.MakeupAttendanceRequestRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomEnrollmentRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.CourseRepository;
@@ -154,7 +158,11 @@ private EvidenceTemplateRepository evidenceTemplateRepository;
     
     @Autowired
     private AttendanceSessionRepository attendanceSessionRepository;
-    
+
+    @Autowired
+    private MakeupAttendanceRequestRepository makeupAttendanceRequestRepository;
+
+
     @Autowired
     private AttendanceExplanationRepository attendanceExplanationRepository;
     
@@ -247,6 +255,9 @@ private EvidenceTemplateRepository evidenceTemplateRepository;
             log.info("============== Seeding Schedules ==============");
             seedSchedules();
             log.info("============== Schedule Seeding Complete ==============");
+
+            // Generate schedule conflict report
+            generateScheduleConflictReport();
             
             // Seed timetable events
             log.info("============== Seeding Timetable Events ==============");
@@ -388,6 +399,13 @@ seedEvidenceTemplates();
             forceCreateTestAttendanceSessionsForPayroll();
         } catch (Exception e) {
             log.warn("⚠️ Error creating test attendance sessions: {}", e.getMessage());
+        }
+
+        // Always ensure makeup attendance requests exist for testing past attendance
+        try {
+            forceCreateTestMakeupAttendanceRequests();
+        } catch (Exception e) {
+            log.warn("⚠️ Error creating test makeup attendance requests: {}", e.getMessage());
         }
 
         // Always run the submission seeder to add new test data
@@ -818,7 +836,7 @@ seedEvidenceTemplates();
                 litTeacher.setEmail("literature@test.com");
                 litTeacher.setFullName("Phạm Thị Lan");
                 litTeacher.setRoleId(RoleConstants.TEACHER);
-                litTeacher.setPhoneNumber("0976543210");
+                litTeacher.setPhoneNumber("0859326040");
                 litTeacher.setDepartment("Khoa Ngữ Văn");
                 litTeacher.setHireDate(LocalDate.now().minusYears(1));
                 litTeacher.setAnnualLeaveBalance(-3);
@@ -1101,7 +1119,7 @@ seedEvidenceTemplates();
                 parentUser.setEmail("parent@test.com");
                 parentUser.setFullName("Parent User");
                 parentUser.setRoleId(parentRole.getId()); // Use the actual role ID from database
-                parentUser.setParentPhone("0901234567");
+                parentUser.setParentPhone("0971335989");
                 parentUser.setParentName("Parent User");
                 parentUser = userRepository.save(parentUser);
                 log.info("✅ Ensured default parent user exists.");
@@ -1116,7 +1134,7 @@ seedEvidenceTemplates();
                     parent.setUserId(parentUser.getId());
                     parent.setName("Parent User");
                     parent.setEmail("parent@test.com");
-                    parent.setPhone("0901234567");
+                    parent.setPhone("0971335989");
                     parent = parentRepository.save(parent);
                     log.info("✅ Created Parent entity for default parent user.");
 
@@ -1125,9 +1143,9 @@ seedEvidenceTemplates();
                     child1.setUsername("child1_of_parent");
                     child1.setPassword(passwordEncoder.encode("student123"));
                     child1.setEmail("child1@test.com");
-                    child1.setFullName("Nguyễn Văn An");
+                    child1.setFullName("lê long vũ");
                     child1.setRoleId(RoleConstants.STUDENT);
-                    child1.setParentPhone("0901234567");
+                    child1.setParentPhone("0971335989");
                     child1.setParentName("Parent User");
                     User savedChild1 = userRepository.save(child1);
 
@@ -1137,7 +1155,7 @@ seedEvidenceTemplates();
                     child2.setEmail("child2@test.com");
                     child2.setFullName("Nguyễn Thị Bình");
                     child2.setRoleId(RoleConstants.STUDENT);
-                    child2.setParentPhone("0901234567");
+                    child2.setParentPhone("0971335989");
                     child2.setParentName("Parent User");
                     User savedChild2 = userRepository.save(child2);
 
@@ -1170,6 +1188,89 @@ seedEvidenceTemplates();
         } catch (Exception e) {
             log.warn("⚠️ Could not ensure PARENT role/user: {}", e.getMessage());
             e.printStackTrace();
+        }
+
+        // Tạo phụ huynh cho tất cả học sinh hiện có
+        createParentsForExistingStudents();
+    }
+
+    /**
+     * Tạo phụ huynh cho tất cả học sinh hiện có nếu chưa có
+     */
+    private void createParentsForExistingStudents() {
+        try {
+            log.info("🔄 Checking and creating parents for existing students...");
+
+            // Lấy tất cả học sinh
+            List<User> students = userRepository.findByRoleId(RoleConstants.STUDENT);
+            log.info("📊 Found {} students", students.size());
+
+            for (User student : students) {
+                // Kiểm tra xem học sinh đã có phụ huynh chưa
+                List<StudentParent> existingRelations = studentParentRepository.findActiveParentsByStudentId(student.getId());
+
+                if (existingRelations.isEmpty()) {
+                    // Tạo phụ huynh mới cho học sinh này
+                    createParentForStudent(student);
+                } else {
+                    log.info("👨‍👩‍👧‍👦 Student '{}' already has {} parent(s)", student.getFullName(), existingRelations.size());
+                }
+            }
+
+            log.info("✅ Completed creating parents for existing students");
+        } catch (Exception e) {
+            log.error("❌ Error creating parents for existing students: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Tạo phụ huynh cho 1 học sinh cụ thể
+     */
+    private void createParentForStudent(User student) {
+        try {
+            // Danh sách số điện thoại test Zalo
+            String[] testPhones = {"0859326040", "0971335989", "0344749396"};
+            String selectedPhone = testPhones[(int) (student.getId() % testPhones.length)];
+
+            // Tạo User cho phụ huynh trước
+            User parentUser = new User();
+            parentUser.setUsername("parent_" + student.getUsername());
+            parentUser.setPassword(passwordEncoder.encode("parent123"));
+            parentUser.setEmail("parent_" + student.getUsername() + "@test.com");
+            parentUser.setFullName("Phụ huynh của " + student.getFullName());
+            parentUser.setPhoneNumber(selectedPhone);
+            parentUser.setRoleId(RoleConstants.PARENT);
+            parentUser.setStatus("active");
+
+            User savedParentUser = userRepository.save(parentUser);
+
+            // Tạo Parent entity với user_id
+            Parent parent = new Parent();
+            parent.setUserId(savedParentUser.getId()); // Set user_id
+            parent.setName("Phụ huynh của " + student.getFullName());
+            parent.setEmail("parent_" + student.getUsername() + "@test.com");
+            parent.setPhone(selectedPhone); // Số điện thoại test Zalo được chọn
+            parent.setStatus(Parent.ParentStatus.ACTIVE);
+            parent.setCreatedAt(LocalDateTime.now());
+            parent.setUpdatedAt(LocalDateTime.now());
+
+            Parent savedParent = parentRepository.save(parent);
+
+            // Tạo mối quan hệ StudentParent
+            StudentParent relationship = new StudentParent();
+            relationship.setStudentId(student.getId());
+            relationship.setParentId(savedParent.getId());
+            relationship.setRelationType(StudentParent.RelationType.FATHER);
+            relationship.setIsPrimary(true);
+            relationship.setLegalGuardian(true);
+            relationship.setStartAt(LocalDate.now());
+
+            studentParentRepository.save(relationship);
+
+            log.info("✅ Created parent for student '{}' with phone {}", student.getFullName(), selectedPhone);
+
+        } catch (Exception e) {
+            log.error("❌ Error creating parent for student '{}': {}", student.getFullName(), e.getMessage(), e);
         }
     }
 
@@ -1379,16 +1480,26 @@ seedEvidenceTemplates();
                 LocalTime startTime = timeSlots[timeSlotIndex][0];
                 LocalTime endTime = timeSlots[timeSlotIndex][1];
 
-                // Check for time conflicts before creating schedule (teacher, room, and students)
-                if (!hasTimeConflict(teacher, dayOfWeek[day], startTime, endTime) &&
-                    !hasRoomConflict(room.getRoomCode(), dayOfWeek[day], startTime, endTime) &&
-                    !hasStudentConflict(classroom, dayOfWeek[day], startTime, endTime)) {
+                // Enhanced conflict detection with detailed logging
+                boolean teacherConflict = hasTimeConflict(teacher, dayOfWeek[day], startTime, endTime);
+                boolean roomConflict = hasRoomConflict(room.getRoomCode(), dayOfWeek[day], startTime, endTime);
+                boolean studentConflict = hasStudentConflict(classroom, dayOfWeek[day], startTime, endTime);
+
+                if (!teacherConflict && !roomConflict && !studentConflict) {
                     createScheduleForDay(classroom, teacher, dayOfWeek[day],
                         startTime, endTime, room.getRoomCode(), sessionNames[timeSlotIndex]);
                     scheduleCount++;
+                    log.debug("✅ Created schedule: {} - {} on {} from {} to {} in room {}",
+                        teacher.getFullName(), classroom.getName(), days[day], startTime, endTime, room.getRoomCode());
                 } else {
-                    log.warn("⚠️ Conflict detected for teacher {}, room {}, or students in {} on {} at {}-{}, skipping...",
-                        teacher.getFullName(), room.getRoomCode(), classroom.getName(), days[day], startTime, endTime);
+                    // Log specific conflict types for better debugging
+                    StringBuilder conflictDetails = new StringBuilder();
+                    if (teacherConflict) conflictDetails.append("TEACHER ");
+                    if (roomConflict) conflictDetails.append("ROOM ");
+                    if (studentConflict) conflictDetails.append("STUDENT ");
+
+                    log.warn("⚠️ {} conflict(s) detected for {} on {} at {}-{} in room {}, skipping schedule creation",
+                        conflictDetails.toString().trim(), classroom.getName(), days[day], startTime, endTime, room.getRoomCode());
                 }
             }
         }
@@ -1398,27 +1509,92 @@ seedEvidenceTemplates();
     }
     
     /**
-     * Find the best available teacher for a classroom, considering workload and conflicts
+     * Find the best available teacher for a classroom, considering workload and schedule conflicts
      */
     private User findBestAvailableTeacher(List<User> teachers, Classroom classroom, int classroomIndex) {
-        // Try to find a teacher with minimal conflicts
+        log.debug("🔍 Finding best available teacher for classroom: {}", classroom.getName());
+
+        // Define potential time slots for this classroom (we'll check conflicts for all possible slots)
+        LocalTime[][] timeSlots = {
+            {LocalTime.of(7, 30), LocalTime.of(9, 0)},   // Morning slot 1
+            {LocalTime.of(9, 15), LocalTime.of(10, 45)}, // Morning slot 2
+            {LocalTime.of(13, 30), LocalTime.of(15, 0)}, // Afternoon slot 1
+            {LocalTime.of(15, 15), LocalTime.of(16, 45)} // Afternoon slot 2
+        };
+
+        // Try to find a teacher with minimal conflicts and reasonable workload
         for (User teacher : teachers) {
             // Count existing schedules for this teacher
             long existingScheduleCount = scheduleRepository.findAll().stream()
                 .filter(s -> s.getTeacher().getId().equals(teacher.getId()))
                 .count();
 
-            // Prefer teachers with fewer existing schedules (max 10 schedules per teacher)
-            if (existingScheduleCount < 10) {
-                log.debug("🎯 Assigned teacher {} to classroom {} (current schedules: {})",
+            // Skip teachers with too many existing schedules (max 10 schedules per teacher)
+            if (existingScheduleCount >= 10) {
+                log.debug("⚠️ Teacher {} has too many schedules ({}), skipping",
+                    teacher.getFullName(), existingScheduleCount);
+                continue;
+            }
+
+            // Check if this teacher has schedule conflicts for potential time slots
+            boolean hasAnyConflict = false;
+            for (int day = 0; day < 5; day++) { // Monday to Friday
+                for (LocalTime[] slot : timeSlots) {
+                    if (hasTimeConflict(teacher, day, slot[0], slot[1])) {
+                        hasAnyConflict = true;
+                        log.debug("⚠️ Teacher {} has conflict on day {} at {}-{}",
+                            teacher.getFullName(), day, slot[0], slot[1]);
+                        break;
+                    }
+                }
+                if (hasAnyConflict) break;
+            }
+
+            // If teacher has no conflicts, assign them
+            if (!hasAnyConflict) {
+                log.info("✅ Assigned teacher {} to classroom {} (schedules: {}, no conflicts)",
                     teacher.getFullName(), classroom.getName(), existingScheduleCount);
                 return teacher;
+            } else {
+                log.debug("⚠️ Teacher {} has schedule conflicts, trying next teacher", teacher.getFullName());
             }
         }
 
-        // If all teachers are busy, use round-robin assignment
+        // If no teacher is completely conflict-free, find one with minimal conflicts
+        User bestTeacher = null;
+        int minConflicts = Integer.MAX_VALUE;
+
+        for (User teacher : teachers) {
+            long existingScheduleCount = scheduleRepository.findAll().stream()
+                .filter(s -> s.getTeacher().getId().equals(teacher.getId()))
+                .count();
+
+            if (existingScheduleCount >= 15) continue; // Hard limit
+
+            int conflictCount = 0;
+            for (int day = 0; day < 5; day++) {
+                for (LocalTime[] slot : timeSlots) {
+                    if (hasTimeConflict(teacher, day, slot[0], slot[1])) {
+                        conflictCount++;
+                    }
+                }
+            }
+
+            if (conflictCount < minConflicts) {
+                minConflicts = conflictCount;
+                bestTeacher = teacher;
+            }
+        }
+
+        if (bestTeacher != null) {
+            log.info("🔄 Assigned teacher {} to classroom {} with minimal conflicts ({})",
+                bestTeacher.getFullName(), classroom.getName(), minConflicts);
+            return bestTeacher;
+        }
+
+        // Last resort: use round-robin assignment
         User fallbackTeacher = teachers.get(classroomIndex % teachers.size());
-        log.debug("🔄 Fallback assignment: teacher {} to classroom {}",
+        log.warn("🚨 Fallback assignment: teacher {} to classroom {} (all teachers have conflicts)",
             fallbackTeacher.getFullName(), classroom.getName());
         return fallbackTeacher;
     }
@@ -1428,14 +1604,52 @@ seedEvidenceTemplates();
      */
     private boolean hasTimeConflict(User teacher, int dayOfWeek, LocalTime startTime, LocalTime endTime) {
         try {
-            // Query existing schedules for this teacher on the same day
+            // 🔍 ENHANCED: Check both Schedule table AND TimetableEvent table for conflicts
+
+            // 1. Check existing schedules for this teacher on the same day
             List<Schedule> existingSchedules = scheduleRepository.findAll().stream()
                 .filter(s -> s.getTeacher().getId().equals(teacher.getId()) && s.getDayOfWeek() == dayOfWeek)
                 .collect(Collectors.toList());
 
-            // Check for time overlap
+            // Check for time overlap in schedules
             for (Schedule existing : existingSchedules) {
                 if (timesOverlap(startTime, endTime, existing.getStartTime(), existing.getEndTime())) {
+                    log.debug("⚠️ Schedule conflict detected for teacher {} on day {} at {}-{}",
+                        teacher.getFullName(), dayOfWeek, startTime, endTime);
+                    return true; // Conflict found
+                }
+            }
+
+            // 2. Check existing timetable events for this teacher
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime startOfWeek = now.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+
+            // Check next 8 weeks for existing events
+            for (int week = 0; week < 8; week++) {
+                LocalDateTime eventStart = startOfWeek
+                    .plusWeeks(week)
+                    .plusDays(dayOfWeek)
+                    .withHour(startTime.getHour())
+                    .withMinute(startTime.getMinute())
+                    .withSecond(0);
+
+                LocalDateTime eventEnd = startOfWeek
+                    .plusWeeks(week)
+                    .plusDays(dayOfWeek)
+                    .withHour(endTime.getHour())
+                    .withMinute(endTime.getMinute())
+                    .withSecond(0);
+
+                // Query existing timetable events for this teacher at this time
+                List<TimetableEvent> existingEvents = timetableEventRepository.findAll().stream()
+                    .filter(e -> e.getCreatedBy().equals(teacher.getId()))
+                    .filter(e -> e.getStartDatetime().toLocalDate().equals(eventStart.toLocalDate()))
+                    .filter(e -> timesOverlapDateTime(eventStart, eventEnd, e.getStartDatetime(), e.getEndDatetime()))
+                    .collect(Collectors.toList());
+
+                if (!existingEvents.isEmpty()) {
+                    log.debug("⚠️ TimetableEvent conflict detected for teacher {} on {} at {}-{}",
+                        teacher.getFullName(), eventStart.toLocalDate(), startTime, endTime);
                     return true; // Conflict found
                 }
             }
@@ -1530,6 +1744,14 @@ seedEvidenceTemplates();
      */
     private boolean timesOverlap(LocalTime start1, LocalTime end1, LocalTime start2, LocalTime end2) {
         // Two time ranges overlap if: start1 < end2 AND start2 < end1
+        return start1.isBefore(end2) && start2.isBefore(end1);
+    }
+
+    /**
+     * Check if two datetime ranges overlap
+     */
+    private boolean timesOverlapDateTime(LocalDateTime start1, LocalDateTime end1, LocalDateTime start2, LocalDateTime end2) {
+        // Two datetime ranges overlap if: start1 < end2 AND start2 < end1
         return start1.isBefore(end2) && start2.isBefore(end1);
     }
 
@@ -1670,11 +1892,36 @@ seedEvidenceTemplates();
                         .withMinute(schedule.getEndTime().getMinute())
                         .withSecond(0);
                     
-                    // Skip events that are more than 1 day in the past (keep today's events)
-                    if (eventStart.isBefore(now.minusDays(1))) {
+                    // Skip events that are more than 7 days in the past (keep recent events for testing)
+                    if (eventStart.isBefore(now.minusDays(7))) {
                         continue;
                     }
-                    
+
+                    // 🔍 ENHANCED: Check for existing timetable events to prevent duplicates
+                    List<TimetableEvent> existingEvents = timetableEventRepository.findAll().stream()
+                        .filter(e -> e.getClassroomId().equals(schedule.getClassroom().getId()))
+                        .filter(e -> e.getStartDatetime().equals(eventStart))
+                        .filter(e -> e.getEndDatetime().equals(eventEnd))
+                        .collect(Collectors.toList());
+
+                    if (!existingEvents.isEmpty()) {
+                        log.debug("⏭️ Skipping duplicate timetable event for {} at {}",
+                            schedule.getClassroom().getName(), eventStart);
+                        continue;
+                    }
+
+                    // Check for teacher conflicts with existing events
+                    List<TimetableEvent> teacherConflicts = timetableEventRepository.findAll().stream()
+                        .filter(e -> e.getCreatedBy().equals(schedule.getTeacher().getId()))
+                        .filter(e -> timesOverlapDateTime(eventStart, eventEnd, e.getStartDatetime(), e.getEndDatetime()))
+                        .collect(Collectors.toList());
+
+                    if (!teacherConflicts.isEmpty()) {
+                        log.warn("⚠️ Teacher conflict detected for {} at {}, skipping event creation",
+                            schedule.getTeacher().getFullName(), eventStart);
+                        continue;
+                    }
+
                     TimetableEvent classEvent = new TimetableEvent();
                     classEvent.setTitle(schedule.getSubject());
                     classEvent.setDescription("Lớp học " + schedule.getSubject() + " - " + schedule.getClassroom().getName());
@@ -1687,7 +1934,7 @@ seedEvidenceTemplates();
                     classEvent.setColor("#1890ff");
                     classEvent.setCreatedAt(now);
                     classEvent.setUpdatedAt(now);
-                    
+
                     timetableEventRepository.save(classEvent);
                     eventCount++;
                     
@@ -1752,7 +1999,7 @@ seedEvidenceTemplates();
             Request studentRequest3 = new Request();
             studentRequest3.setEmail("levand@gmail.com");
             studentRequest3.setFullName("Lê Văn D");
-            studentRequest3.setPhoneNumber("0976543210");
+            studentRequest3.setPhoneNumber("0859326040");
             studentRequest3.setRequestedRole("STUDENT");
             studentRequest3.setFormResponses("{\"grade\":\"Lớp 12\",\"parentContact\":\"Phụ huynh: Lê Thị E, SĐT: 0934567890\",\"additionalInfo\":\"Em muốn đăng ký học để chuẩn bị thi đại học.\"}");
             studentRequest3.setStatus("APPROVED");
@@ -2462,7 +2709,7 @@ seedEvidenceTemplates();
                     log.info("✅ Created attendance session for date: {} (1.5 hours)", date);
                 }
 
-                log.info("✅ Created 3 attendance sessions × 1.5 hours = 4.5 hours for January 2024");
+                log.info("✅ Created 3 attendance sessions × 1.5 hours = 4.5 hours for recent past dates");
                 log.info("✅ Teacher: {} (ID: {})", teacher.getFullName(), teacher.getId());
                 log.info("✅ Classroom: {} (ID: {})", classroom.getName(), classroom.getId());
             } else {
@@ -2480,9 +2727,11 @@ seedEvidenceTemplates();
 
             if (teacher != null && classroom != null) {
                 // Delete existing test sessions first
+                LocalDate today = LocalDate.now();
+                LocalDate cutoffDate = today.minusDays(7); // Last 7 days
                 List<AttendanceSession> existingSessions = attendanceSessionRepository.findAll().stream()
                         .filter(s -> s.getTeacherClockInTime() != null && s.getSessionDate() != null &&
-                                   s.getSessionDate().getYear() == 2024 && s.getSessionDate().getMonthValue() == 1)
+                                   s.getSessionDate().isAfter(cutoffDate) && s.getSessionDate().isBefore(today))
                         .collect(Collectors.toList());
 
                 if (!existingSessions.isEmpty()) {
@@ -2499,11 +2748,11 @@ seedEvidenceTemplates();
                     log.info("🗑️ Deleted {} existing test sessions", existingSessions.size());
                 }
 
-                // Create 3 attendance sessions in January 2024 with teacher clock-in times
+                // Create 3 attendance sessions for recent past dates with teacher clock-in times
                 LocalDate[] dates = {
-                    LocalDate.of(2024, 1, 15),
-                    LocalDate.of(2024, 1, 20),
-                    LocalDate.of(2024, 1, 25)
+                    today.minusDays(1),  // Hôm qua
+                    today.minusDays(2),  // Hôm kia
+                    today.minusDays(3)   // 3 ngày trước
                 };
 
                 for (LocalDate date : dates) {
@@ -2528,6 +2777,75 @@ seedEvidenceTemplates();
             }
         } catch (Exception e) {
             log.error("❌ Error in forceCreateTestAttendanceSessionsForPayroll: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Create test makeup attendance requests for testing past attendance functionality
+     */
+    private void forceCreateTestMakeupAttendanceRequests() {
+        log.info("🚀 FORCE Creating test makeup attendance requests for past attendance testing...");
+
+        try {
+            // Find teacher with ID 2 and classroom with ID 1
+            User teacher = userRepository.findById(2L).orElse(null);
+            User manager = userRepository.findByRoleId(RoleConstants.MANAGER).stream().findFirst().orElse(null);
+            Classroom classroom = classroomRepository.findById(1L).orElse(null);
+
+            if (teacher != null && manager != null && classroom != null) {
+                // Delete ALL existing makeup requests first
+                List<MakeupAttendanceRequest> allExistingRequests = makeupAttendanceRequestRepository.findAll();
+
+                if (!allExistingRequests.isEmpty()) {
+                    makeupAttendanceRequestRepository.deleteAll(allExistingRequests);
+                    log.info("🗑️ Deleted {} existing makeup requests", allExistingRequests.size());
+                }
+
+                // Find existing lectures for this classroom to use as reference
+                List<Lecture> availableLectures = lectureRepository.findByClassroomId(classroom.getId());
+
+                if (availableLectures.isEmpty()) {
+                    log.warn("⚠️ No lectures found for classroom {}, skipping makeup request creation", classroom.getId());
+                    return;
+                }
+
+                // Create 3 approved makeup attendance requests for recent past dates
+                LocalDate today = LocalDate.now();
+                LocalDate[] dates = {
+                    today.minusDays(1),  // Hôm qua
+                    today.minusDays(2),  // Hôm kia
+                    today.minusDays(3)   // 3 ngày trước
+                };
+
+                for (int i = 0; i < dates.length; i++) {
+                    LocalDate date = dates[i];
+                    // Use existing lecture or cycle through available lectures
+                    Lecture lecture = availableLectures.get(i % availableLectures.size());
+
+                    MakeupAttendanceRequest request = MakeupAttendanceRequest.builder()
+                        .teacher(teacher)
+                        .lecture(lecture)  // ✅ Add required lecture_id
+                        .classroom(classroom)
+                        .reason("Xin lỗi nhưng tôi đã không điểm danh vào ngày:  " + date.toString())
+                        .status(MakeupAttendanceRequest.RequestStatus.PENDING)
+                        .requestedAt(date.atTime(8, 0))
+                        .approvedBy(null)
+                        .approvedAt(null)
+                        .build();
+
+                    makeupAttendanceRequestRepository.save(request);
+                    log.info("✅ FORCE Created approved makeup request for date: {} with lecture: {}", date, lecture.getId());
+                }
+
+                log.info("🎉 FORCE Created 3 approved makeup attendance requests for recent past dates");
+                log.info("🎯 Teacher: {} (ID: {})", teacher.getFullName(), teacher.getId());
+                log.info("👨‍💼 Manager: {} (ID: {})", manager.getFullName(), manager.getId());
+                log.info("🏫 Classroom: {} (ID: {})", classroom.getName(), classroom.getId());
+            } else {
+                log.warn("⚠️ Could not find teacher (ID: 2), manager, or classroom (ID: 1) for FORCE makeup request creation");
+            }
+        } catch (Exception e) {
+            log.error("❌ Error in forceCreateTestMakeupAttendanceRequests: {}", e.getMessage(), e);
         }
     }
 
@@ -3186,7 +3504,7 @@ private void createEvidenceTemplate(String name, String code, String description
     private List<User> createParentUsers() {
         List<User> parentUsers = new ArrayList<>();
         
-        // Parent 1: Trần Văn Nam (will have 2 children)
+        // Parent 1: Trần Văn Nam (will have 2 children) - Updated for n8n Zalo testing
         String email1 = "tran.van.nam@email.com";
         if (!userRepository.existsByEmail(email1)) {
             User parent1 = new User();
@@ -3194,17 +3512,24 @@ private void createEvidenceTemplate(String name, String code, String description
             parent1.setPassword(passwordEncoder.encode("password123"));
             parent1.setEmail(email1);
             parent1.setFullName("Trần Văn Nam");
-            parent1.setPhoneNumber("0901234567");
+            parent1.setPhoneNumber("0971335989"); // Updated for n8n Zalo testing
             parent1.setRoleId(RoleConstants.PARENT);
             parent1.setStatus("active");
             parentUsers.add(userRepository.save(parent1));
             log.info("✅ Created parent user: " + email1);
         } else {
-            parentUsers.add(userRepository.findByEmail(email1).orElse(null));
+            User existingParent1 = userRepository.findByEmail(email1).orElse(null);
+            if (existingParent1 != null) {
+                // Update phone number for n8n testing
+                existingParent1.setPhoneNumber("0971335989");
+                userRepository.save(existingParent1);
+                log.info("✅ Updated parent phone number for n8n testing: " + email1);
+            }
+            parentUsers.add(existingParent1);
             log.info("ℹ️ Parent user already exists: " + email1);
         }
         
-        // Parent 2: Nguyễn Thị Lan (will have 1 child)
+        // Parent 2: Nguyễn Thị Lan (will have 1 child) - Updated for n8n Zalo testing
         String email2 = "nguyen.thi.lan@email.com";
         if (!userRepository.existsByEmail(email2)) {
             User parent2 = new User();
@@ -3212,13 +3537,20 @@ private void createEvidenceTemplate(String name, String code, String description
             parent2.setPassword(passwordEncoder.encode("password123"));
             parent2.setEmail(email2);
             parent2.setFullName("Nguyễn Thị Lan");
-            parent2.setPhoneNumber("0912345678");
+            parent2.setPhoneNumber("0859326040"); // Updated for n8n Zalo testing
             parent2.setRoleId(RoleConstants.PARENT);
             parent2.setStatus("active");
             parentUsers.add(userRepository.save(parent2));
             log.info("✅ Created parent user: " + email2);
         } else {
-            parentUsers.add(userRepository.findByEmail(email2).orElse(null));
+            User existingParent2 = userRepository.findByEmail(email2).orElse(null);
+            if (existingParent2 != null) {
+                // Update phone number for n8n testing
+                existingParent2.setPhoneNumber("0859326040");
+                userRepository.save(existingParent2);
+                log.info("✅ Updated parent phone number for n8n testing: " + email2);
+            }
+            parentUsers.add(existingParent2);
             log.info("ℹ️ Parent user already exists: " + email2);
         }
         
@@ -3274,13 +3606,20 @@ private void createEvidenceTemplate(String name, String code, String description
             student1.setFullName("Trần Minh Anh");
             student1.setPhoneNumber("0987654321");
             student1.setRoleId(RoleConstants.STUDENT);
-            student1.setParentPhone("0901234567");
+            student1.setParentPhone("0971335989"); // Updated for n8n Zalo testing
             student1.setParentName("Trần Văn Nam");
             student1.setStatus("active");
             studentUsers.add(userRepository.save(student1));
             log.info("✅ Created student user: " + studentEmail1);
         } else {
-            studentUsers.add(userRepository.findByEmail(studentEmail1).orElse(null));
+            User existingStudent1 = userRepository.findByEmail(studentEmail1).orElse(null);
+            if (existingStudent1 != null) {
+                // Update parent phone for n8n testing
+                existingStudent1.setParentPhone("0971335989");
+                userRepository.save(existingStudent1);
+                log.info("✅ Updated student parent phone for n8n testing: " + studentEmail1);
+            }
+            studentUsers.add(existingStudent1);
             log.info("ℹ️ Student user already exists: " + studentEmail1);
         }
         
@@ -3292,15 +3631,22 @@ private void createEvidenceTemplate(String name, String code, String description
             student2.setPassword(passwordEncoder.encode("password123"));
             student2.setEmail(studentEmail2);
             student2.setFullName("Trần Thu Hà");
-            student2.setPhoneNumber("0976543210");
+            student2.setPhoneNumber("0859326040");
             student2.setRoleId(RoleConstants.STUDENT);
-            student2.setParentPhone("0901234567");
+            student2.setParentPhone("0971335989"); // Updated for n8n Zalo testing
             student2.setParentName("Trần Văn Nam");
             student2.setStatus("active");
             studentUsers.add(userRepository.save(student2));
             log.info("✅ Created student user: " + studentEmail2);
         } else {
-            studentUsers.add(userRepository.findByEmail(studentEmail2).orElse(null));
+            User existingStudent2 = userRepository.findByEmail(studentEmail2).orElse(null);
+            if (existingStudent2 != null) {
+                // Update parent phone for n8n testing
+                existingStudent2.setParentPhone("0971335989");
+                userRepository.save(existingStudent2);
+                log.info("✅ Updated student parent phone for n8n testing: " + studentEmail2);
+            }
+            studentUsers.add(existingStudent2);
             log.info("ℹ️ Student user already exists: " + studentEmail2);
         }
         
@@ -3314,13 +3660,20 @@ private void createEvidenceTemplate(String name, String code, String description
             student3.setFullName("Nguyễn Hoàng Long");
             student3.setPhoneNumber("0965432109");
             student3.setRoleId(RoleConstants.STUDENT);
-            student3.setParentPhone("0912345678");
+            student3.setParentPhone("0859326040"); // Updated for n8n Zalo testing
             student3.setParentName("Nguyễn Thị Lan");
             student3.setStatus("active");
             studentUsers.add(userRepository.save(student3));
             log.info("✅ Created student user: " + studentEmail3);
         } else {
-            studentUsers.add(userRepository.findByEmail(studentEmail3).orElse(null));
+            User existingStudent3 = userRepository.findByEmail(studentEmail3).orElse(null);
+            if (existingStudent3 != null) {
+                // Update parent phone for n8n testing
+                existingStudent3.setParentPhone("0859326040");
+                userRepository.save(existingStudent3);
+                log.info("✅ Updated student parent phone for n8n testing: " + studentEmail3);
+            }
+            studentUsers.add(existingStudent3);
             log.info("ℹ️ Student user already exists: " + studentEmail3);
         }
         
@@ -3369,17 +3722,36 @@ private void createEvidenceTemplate(String name, String code, String description
     
     private List<Parent> createParentEntities(List<User> parentUsers) {
         List<Parent> parents = new ArrayList<>();
-        
+
         for (User parentUser : parentUsers) {
-            Parent parent = new Parent();
-            parent.setUserId(parentUser.getId());
-            parent.setName(parentUser.getFullName());
-            parent.setPhone(parentUser.getPhoneNumber());
-            parent.setEmail(parentUser.getEmail());
-            parent.setStatus(Parent.ParentStatus.ACTIVE);
+            // Check if parent entity already exists
+            Parent existingParent = entityManager.createQuery(
+                "SELECT p FROM Parent p WHERE p.userId = :userId", Parent.class)
+                .setParameter("userId", parentUser.getId())
+                .getResultStream()
+                .findFirst()
+                .orElse(null);
+
+            Parent parent;
+            if (existingParent != null) {
+                // Update existing parent with new phone number
+                parent = existingParent;
+                parent.setPhone(parentUser.getPhoneNumber()); // Update phone for n8n testing
+                log.info("✅ Updated existing parent entity phone: " + parentUser.getFullName() + " -> " + parentUser.getPhoneNumber());
+            } else {
+                // Create new parent entity
+                parent = new Parent();
+                parent.setUserId(parentUser.getId());
+                parent.setName(parentUser.getFullName());
+                parent.setPhone(parentUser.getPhoneNumber());
+                parent.setEmail(parentUser.getEmail());
+                parent.setStatus(Parent.ParentStatus.ACTIVE);
+                log.info("✅ Created new parent entity: " + parentUser.getFullName() + " -> " + parentUser.getPhoneNumber());
+            }
+
             parents.add(entityManager.merge(parent));
         }
-        
+
         return parents;
     }
     
@@ -3625,8 +3997,8 @@ private void createEvidenceTemplate(String name, String code, String description
                             .withMinute(schedule.getEndTime().getMinute())
                             .withSecond(0);
                         
-                        // Skip events that are more than 1 day in the past (keep today's events)
-                        if (eventStart.isBefore(now.minusDays(1))) {
+                        // Skip events that are more than 7 days in the past (keep recent events for testing)
+                        if (eventStart.isBefore(now.minusDays(7))) {
                             continue;
                         }
                         
@@ -4028,5 +4400,86 @@ private void createEvidenceTemplate(String name, String code, String description
             }
         }
         return true; // default to male
+    }
+
+    /**
+     * Generate a comprehensive schedule conflict report after seeding
+     */
+    private void generateScheduleConflictReport() {
+        log.info("============== Schedule Conflict Report ==============");
+
+        List<Schedule> allSchedules = scheduleRepository.findAll();
+        int totalConflicts = 0;
+        int teacherConflicts = 0;
+        int roomConflicts = 0;
+
+        // Check for teacher conflicts
+        Map<Long, List<Schedule>> teacherSchedules = allSchedules.stream()
+            .collect(Collectors.groupingBy(s -> s.getTeacher().getId()));
+
+        for (Map.Entry<Long, List<Schedule>> entry : teacherSchedules.entrySet()) {
+            List<Schedule> schedules = entry.getValue();
+            User teacher = schedules.get(0).getTeacher();
+
+            for (int i = 0; i < schedules.size(); i++) {
+                for (int j = i + 1; j < schedules.size(); j++) {
+                    Schedule s1 = schedules.get(i);
+                    Schedule s2 = schedules.get(j);
+
+                    if (s1.getDayOfWeek() == s2.getDayOfWeek() &&
+                        timesOverlap(s1.getStartTime(), s1.getEndTime(), s2.getStartTime(), s2.getEndTime())) {
+                        teacherConflicts++;
+                        totalConflicts++;
+                        log.warn("⚠️ TEACHER CONFLICT: {} has overlapping schedules on day {} ({}-{} vs {}-{})",
+                            teacher.getFullName(), s1.getDayOfWeek(),
+                            s1.getStartTime(), s1.getEndTime(),
+                            s2.getStartTime(), s2.getEndTime());
+                    }
+                }
+            }
+        }
+
+        // Check for room conflicts
+        Map<String, List<Schedule>> roomSchedules = allSchedules.stream()
+            .collect(Collectors.groupingBy(Schedule::getRoom));
+
+        for (Map.Entry<String, List<Schedule>> entry : roomSchedules.entrySet()) {
+            List<Schedule> schedules = entry.getValue();
+            String roomCode = entry.getKey();
+
+            for (int i = 0; i < schedules.size(); i++) {
+                for (int j = i + 1; j < schedules.size(); j++) {
+                    Schedule s1 = schedules.get(i);
+                    Schedule s2 = schedules.get(j);
+
+                    if (s1.getDayOfWeek() == s2.getDayOfWeek() &&
+                        timesOverlap(s1.getStartTime(), s1.getEndTime(), s2.getStartTime(), s2.getEndTime())) {
+                        roomConflicts++;
+                        totalConflicts++;
+                        log.warn("⚠️ ROOM CONFLICT: Room {} has overlapping bookings on day {} ({}-{} vs {}-{})",
+                            roomCode, s1.getDayOfWeek(),
+                            s1.getStartTime(), s1.getEndTime(),
+                            s2.getStartTime(), s2.getEndTime());
+                    }
+                }
+            }
+        }
+
+        // Summary report
+        log.info("📊 CONFLICT SUMMARY:");
+        log.info("   Total Schedules: {}", allSchedules.size());
+        log.info("   Total Conflicts: {}", totalConflicts);
+        log.info("   Teacher Conflicts: {}", teacherConflicts);
+        log.info("   Room Conflicts: {}", roomConflicts);
+        log.info("   Unique Teachers: {}", teacherSchedules.size());
+        log.info("   Unique Rooms: {}", roomSchedules.size());
+
+        if (totalConflicts == 0) {
+            log.info("✅ No schedule conflicts detected! All teachers and rooms are properly scheduled.");
+        } else {
+            log.warn("⚠️ {} schedule conflicts detected. Review the logs above for details.", totalConflicts);
+        }
+
+        log.info("============== End Conflict Report ==============");
     }
 }

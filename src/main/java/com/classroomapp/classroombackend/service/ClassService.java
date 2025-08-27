@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -730,20 +731,120 @@ public class ClassService {
         if (request.getClassName() == null || request.getClassName().trim().isEmpty()) {
             throw new RuntimeException("Tên lớp là bắt buộc");
         }
-        
+
         if (request.getStartDate() == null) {
             throw new RuntimeException("Ngày bắt đầu là bắt buộc");
         }
-        
+
         if (request.getEndDate() != null && request.getStartDate().isAfter(request.getEndDate())) {
             throw new RuntimeException("Ngày bắt đầu phải trước ngày kết thúc");
         }
-        
+
         if (request.getMaxStudents() == null || request.getMaxStudents() <= 0) {
             request.setMaxStudents(30);
         }
+
+        // Validate schedule consistency
+        validateScheduleConsistency(request);
     }
-    
+
+    private void validateScheduleConsistency(CreateClassRequest request) {
+        if (request.getStartDate() == null || request.getSchedule() == null) {
+            return;
+        }
+
+        try {
+            JsonNode scheduleNode = objectMapper.readTree(request.getSchedule());
+            if (!scheduleNode.has("days") || !scheduleNode.get("days").isArray()) {
+                return;
+            }
+
+            // Lấy thứ trong tuần của ngày bắt đầu (1=T2, 2=T3, ..., 7=CN)
+            int startDayOfWeek = request.getStartDate().getDayOfWeek().getValue();
+
+            // Collect all schedule days
+            List<Integer> scheduleDays = new ArrayList<>();
+            for (JsonNode dayNode : scheduleNode.get("days")) {
+                String dayName = dayNode.asText().toLowerCase();
+                int scheduleDayOfWeek = mapDayNameToValue(dayName);
+                if (scheduleDayOfWeek > 0) {
+                    scheduleDays.add(scheduleDayOfWeek);
+                }
+            }
+
+            // Kiểm tra xem ngày bắt đầu có nằm trong lịch học không
+            boolean isStartDayInSchedule = scheduleDays.contains(startDayOfWeek);
+
+            if (!isStartDayInSchedule) {
+                // Tìm ngày học đầu tiên sau ngày bắt đầu
+                LocalDate startDate = request.getStartDate();
+                LocalDate firstLessonDate = findFirstLessonDate(startDate, scheduleDays);
+
+                if (firstLessonDate != null && firstLessonDate.isBefore(startDate.plusWeeks(1))) {
+                    // Nếu tìm thấy ngày học trong vòng 1 tuần → Warning (cho phép)
+                    logger.info("Start date {} doesn't match schedule days, but first lesson will be on {}",
+                            startDate, firstLessonDate);
+                    // Không throw exception, chỉ log warning
+                } else {
+                    // Nếu không tìm thấy ngày học trong 1 tuần → Error
+                    throw new RuntimeException(
+                        "Ngày bắt đầu (" + getDayNameInVietnamese(startDayOfWeek) +
+                        ") không khớp với lịch học đã chọn và không thể xác định buổi học đầu tiên."
+                    );
+                }
+            }
+
+        } catch (JsonProcessingException e) {
+            logger.warn("Error parsing schedule JSON: {}", e.getMessage());
+            // Không block nếu có lỗi parse JSON
+        } catch (RuntimeException e) {
+            if (e.getMessage() != null && e.getMessage().contains("không khớp")) {
+                throw e; // Re-throw validation errors
+            }
+            logger.warn("Error validating schedule consistency: {}", e.getMessage());
+        } catch (Exception e) {
+            logger.warn("Unexpected error validating schedule consistency: {}", e.getMessage());
+        }
+    }
+
+    private LocalDate findFirstLessonDate(LocalDate startDate, List<Integer> scheduleDays) {
+        LocalDate currentDate = startDate;
+        for (int i = 0; i < 7; i++) { // Tìm trong vòng 1 tuần
+            int dayOfWeek = currentDate.getDayOfWeek().getValue();
+            if (scheduleDays.contains(dayOfWeek)) {
+                return currentDate;
+            }
+            currentDate = currentDate.plusDays(1);
+        }
+        return null;
+    }
+
+    private int mapDayNameToValue(String dayName) {
+        switch (dayName.toLowerCase()) {
+            case "monday": return 1;
+            case "tuesday": return 2;
+            case "wednesday": return 3;
+            case "thursday": return 4;
+            case "friday": return 5;
+            case "saturday": return 6;
+            case "sunday": return 7;
+            default: return 0;
+        }
+    }
+
+    private String getDayNameInVietnamese(int dayOfWeek) {
+        switch (dayOfWeek) {
+            case 1: return "Thứ 2";
+            case 2: return "Thứ 3";
+            case 3: return "Thứ 4";
+            case 4: return "Thứ 5";
+            case 5: return "Thứ 6";
+            case 6: return "Thứ 7";
+            case 7: return "Chủ nhật";
+            default: return "Không xác định";
+        }
+    }
+
     private void createClassLessonsFromTemplate(ClassEntity classEntity) {
         List<LessonTemplate> lessonTemplates = classEntity.getCourseTemplate().getLessonTemplates()
                 .stream()
@@ -1388,6 +1489,13 @@ public class ClassService {
      */
     private void syncStudentEnrollments(ClassEntity classEntity, Classroom classroom) {
         try {
+            // Kiểm tra xem đã có enrollments chưa (có thể được tạo bởi seeder)
+            List<ClassroomEnrollment> existingEnrollments = classroomEnrollmentRepository.findByClassroomId(classroom.getId());
+            if (!existingEnrollments.isEmpty()) {
+                logger.debug("👨‍🎓 Classroom '{}' đã có {} enrollments, giữ nguyên", classroom.getName(), existingEnrollments.size());
+                return;
+            }
+
             // Tìm các enrollment requests đã được approve cho course template này
             List<EnrollmentRequest> approvedRequests = enrollmentRequestRepository
                 .findByCourseTemplateIdAndStatus(classEntity.getCourseTemplate().getId(),
@@ -1396,13 +1504,6 @@ public class ClassService {
             if (approvedRequests.isEmpty()) {
                 logger.debug("📝 Không có enrollment requests được approve cho lớp '{}'", classEntity.getClassName());
                 return;
-            }
-
-            // Xóa enrollments cũ của classroom này
-            List<ClassroomEnrollment> existingEnrollments = classroomEnrollmentRepository.findByClassroomId(classroom.getId());
-            if (!existingEnrollments.isEmpty()) {
-                classroomEnrollmentRepository.deleteAll(existingEnrollments);
-                logger.debug("🗑️ Đã xóa {} enrollments cũ của classroom '{}'", existingEnrollments.size(), classroom.getName());
             }
 
             // Tạo enrollments mới từ approved requests
