@@ -51,6 +51,31 @@ public class JobPositionServiceImpl implements JobPositionService {
             if (!dto.getSalaryRange().isEmpty() && digits.isEmpty()) {
                 throw new IllegalArgumentException("Mức lương chỉ được chứa số");
             }
+
+            // Validation theo contractType
+            if (!digits.isEmpty()) {
+                java.math.BigDecimal salaryValue = new java.math.BigDecimal(digits);
+                String contractType = dto.getContractType() != null ? dto.getContractType() : "FULL_TIME";
+
+                if ("PART_TIME".equals(contractType)) {
+                    // Validation cho lương theo giờ (PART_TIME)
+                    if (salaryValue.compareTo(new java.math.BigDecimal("20000")) < 0) {
+                        throw new IllegalArgumentException("Lương theo giờ tối thiểu là 20,000 VNĐ/giờ!");
+                    }
+                    if (salaryValue.compareTo(new java.math.BigDecimal("10000000")) > 0) {
+                        throw new IllegalArgumentException("Lương theo giờ tối đa là 10,000,000 VNĐ/giờ!");
+                    }
+                } else {
+                    // Validation cho lương gross (FULL_TIME) - tính theo triệu
+                    if (salaryValue.compareTo(new java.math.BigDecimal("20000")) < 0) {
+                        throw new IllegalArgumentException("Lương gross tối thiểu là 20,000 VNĐ/tháng!");
+                    }
+                    if (salaryValue.compareTo(new java.math.BigDecimal("10000000")) > 0) {
+                        throw new IllegalArgumentException("Lương gross tối đa là 10,000,000 VNĐ/tháng!");
+                    }
+                }
+            }
+
             dto.setSalaryRange(digits);
         }
         // Mặc định contractType nếu trống
@@ -100,6 +125,13 @@ public class JobPositionServiceImpl implements JobPositionService {
         
         entity.setTitle(dto.getTitle());
         entity.setDescription(dto.getDescription());
+
+        // Cập nhật contractType trước để validation salaryRange
+        String contractType = entity.getContractType();
+        if (dto.getContractType() != null && !dto.getContractType().trim().isEmpty()) {
+            contractType = dto.getContractType();
+        }
+
         if (dto.getSalaryRange() != null) {
             String digits = dto.getSalaryRange().replaceAll("[^0-9]", "");
             if (digits.length() > 50) {
@@ -108,6 +140,30 @@ public class JobPositionServiceImpl implements JobPositionService {
             if (!dto.getSalaryRange().isEmpty() && digits.isEmpty()) {
                 throw new IllegalArgumentException("Mức lương chỉ được chứa số");
             }
+
+            // Validation theo contractType
+            if (!digits.isEmpty()) {
+                java.math.BigDecimal salaryValue = new java.math.BigDecimal(digits);
+
+                if ("PART_TIME".equals(contractType)) {
+                    // Validation cho lương theo giờ (PART_TIME)
+                    if (salaryValue.compareTo(new java.math.BigDecimal("20000")) < 0) {
+                        throw new IllegalArgumentException("Lương theo giờ tối thiểu là 20,000 VNĐ/giờ!");
+                    }
+                    if (salaryValue.compareTo(new java.math.BigDecimal("10000000")) > 0) {
+                        throw new IllegalArgumentException("Lương theo giờ tối đa là 10,000,000 VNĐ/giờ!");
+                    }
+                } else {
+                    // Validation cho lương gross (FULL_TIME) - tính theo triệu
+                    if (salaryValue.compareTo(new java.math.BigDecimal("20000")) < 0) {
+                        throw new IllegalArgumentException("Lương gross tối thiểu là 20,000 VNĐ/tháng!");
+                    }
+                    if (salaryValue.compareTo(new java.math.BigDecimal("10000000")) > 0) {
+                        throw new IllegalArgumentException("Lương gross tối đa là 10,000,000 VNĐ/tháng!");
+                    }
+                }
+            }
+
             entity.setSalaryRange(digits);
         } else {
             entity.setSalaryRange(null);
