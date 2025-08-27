@@ -29,6 +29,7 @@ import com.classroomapp.classroombackend.service.ContractService;
 import com.classroomapp.classroombackend.service.InterviewScheduleService;
 import com.classroomapp.classroombackend.service.RecruitmentApplicationService;
 import com.classroomapp.classroombackend.service.UserService;
+import com.classroomapp.classroombackend.service.UserServiceExtension;
 import com.classroomapp.classroombackend.util.TopCVCalculation;
 
 import lombok.RequiredArgsConstructor;
@@ -45,6 +46,7 @@ public class ContractServiceImpl implements ContractService {
     private final InterviewScheduleService interviewScheduleService;
     private final RecruitmentApplicationService recruitmentApplicationService;
     private final UserService userService;
+    private final UserServiceExtension userServiceExtension;
     private final ClassLessonRepository classLessonRepository;
     private final ClassRepository classRepository;
 
@@ -170,22 +172,35 @@ public class ContractServiceImpl implements ContractService {
         Contract savedContract = contractRepository.save(contract);
         log.info("Contract created successfully with id: {}", savedContract.getId());
         
-        // Automatically unlock user account ONLY. Do NOT assign role here.
+        // Activate account and assign TEACHER role when creating TEACHER contracts
         try {
             String email = savedContract.getEmail();
+            String fullName = savedContract.getFullName();
+            boolean isTeacherContract = savedContract.getContractType() != null &&
+                    "TEACHER".equalsIgnoreCase(savedContract.getContractType());
+            if (!isTeacherContract && savedContract.getPosition() != null) {
+                String pos = savedContract.getPosition().toLowerCase();
+                isTeacherContract = pos.contains("giáo viên") || pos.contains("teacher");
+            }
+
             if (email != null && !email.trim().isEmpty()) {
-                User unlockedUser = userRepository.findByEmail(email).orElse(null);
-                if (unlockedUser != null) {
-                    // Mark account as active/unlocked without changing role
-                    unlockedUser.setStatus("active");
-                    userRepository.save(unlockedUser);
-                    log.info("User account unlocked (no role changes) for email: {}", email);
+                if (isTeacherContract) {
+                    boolean ok = userServiceExtension.createUserWithActiveStatus(email, fullName, "TEACHER");
+                    log.info("Activated user and assigned TEACHER role for {} -> {}", email, ok);
+                } else {
+                    // Fallback: ensure account is active without modifying role
+                    User existing = userRepository.findByEmail(email).orElse(null);
+                    if (existing != null) {
+                        existing.setStatus("active");
+                        userRepository.save(existing);
+                        log.info("User account set to active for email: {}", email);
+                    }
                 }
             }
         } catch (Exception e) {
-            log.warn("Mở khóa tài khoản người dùng thất bại cho email: {}. Lỗi: {}", 
+            log.warn("Kích hoạt tài khoản hoặc phân quyền thất bại cho email: {}. Lỗi: {}",
                     savedContract.getEmail(), e.getMessage());
-            // Continue execution - contract creation should not fail if unlocking fails
+            // Do not fail contract creation if user activation/role assignment fails
         }
         
         return convertToDto(savedContract);
