@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.classroomapp.classroombackend.dto.ScheduleDto;
@@ -179,20 +180,34 @@ public class TeacherController {
     }
     */
     @GetMapping("/schedules")
-    public ResponseEntity<?> getTeacherSchedule(Authentication authentication) {
+    public ResponseEntity<?> getTeacherSchedule(
+            Authentication authentication,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
         try {
             String username = authentication.getName();
             User currentUser = userRepository.findByUsername(username)
                     .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
-            
-            // Define a date range, e.g., the current month
-            LocalDate today = LocalDate.now();
-            LocalDate startDate = today.withDayOfMonth(1);
-            LocalDate endDate = today.withDayOfMonth(today.lengthOfMonth());
+
+            // Parse date parameters or use default range
+            LocalDate start, end;
+            if (startDate != null && endDate != null) {
+                start = LocalDate.parse(startDate);
+                end = LocalDate.parse(endDate);
+            } else {
+                // Default to current month if no dates provided
+                LocalDate today = LocalDate.now();
+                start = today.withDayOfMonth(1);
+                end = today.withDayOfMonth(today.lengthOfMonth());
+            }
+
+            System.out.println("📅 TeacherController.getTeacherSchedule: Getting schedules for user " + currentUser.getId() + " from " + start + " to " + end);
 
             // Use the more efficient, date-ranged query
-            List<TimetableEventDto> schedules = scheduleService.getTimetableForUser(currentUser.getId(), startDate, endDate);
-            
+            List<TimetableEventDto> schedules = scheduleService.getTimetableForUser(currentUser.getId(), start, end);
+
+            System.out.println("📅 TeacherController.getTeacherSchedule: Found " + schedules.size() + " schedules");
+
             return ResponseEntity.ok(schedules);
             
         } catch (Exception e) {
@@ -458,7 +473,7 @@ public class TeacherController {
                 request.setClassroomId(classroom.getId());
                 request.setClassroomName(classroom.getName());
                 request.setParentName("Trần Văn B");
-                request.setParentPhone("0901234567");
+                request.setParentPhone("0971335989");
                 request.setRequestType(ParentRequest.RequestType.LATE_ARRIVAL);
                 request.setRequestDate(LocalDate.now());
                 request.setStartTime("08:30");

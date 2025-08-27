@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -33,6 +34,7 @@ import com.classroomapp.classroombackend.model.attendancemanagement.AttendanceSt
 import com.classroomapp.classroombackend.model.classroommanagement.Classroom;
 import com.classroomapp.classroombackend.model.usermanagement.User;
 import com.classroomapp.classroombackend.repository.LectureRepository;
+import com.classroomapp.classroombackend.repository.MakeupAttendanceRequestRepository;
 import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceRepository;
 import com.classroomapp.classroombackend.repository.attendancemanagement.AttendanceSessionRepository;
 import com.classroomapp.classroombackend.repository.classroommanagement.ClassroomEnrollmentRepository;
@@ -40,6 +42,7 @@ import com.classroomapp.classroombackend.repository.classroommanagement.Classroo
 import com.classroomapp.classroombackend.repository.usermanagement.UserRepository;
 import com.classroomapp.classroombackend.service.AttendanceService;
 import com.classroomapp.classroombackend.service.ClassroomSecurityService;
+import com.classroomapp.classroombackend.service.ZaloNotificationService;
 import com.classroomapp.classroombackend.service.firebase.FirebaseClassroomService;
 
 import lombok.RequiredArgsConstructor;
@@ -58,6 +61,8 @@ public class AttendanceServiceImpl implements AttendanceService {
     private final ClassroomSecurityService classroomSecurityService;
     private final LectureRepository lectureRepository; // Inject LectureRepository
     private final FirebaseClassroomService firebaseClassroomService;
+    private final MakeupAttendanceRequestRepository makeupAttendanceRequestRepository;
+    private final ZaloNotificationService zaloNotificationService;
 
     @Override
     @Transactional
@@ -145,8 +150,28 @@ public class AttendanceServiceImpl implements AttendanceService {
                 throw new BusinessLogicException("Failed to process attendance for student " + record.getStudentId() + ": " + e.getMessage());
             }
         }
-        
+
         System.out.println("=== SUBMIT ATTENDANCE COMPLETED ===");
+
+        // Tự động gọi N8N để gửi thông báo Zalo
+        System.out.println("🔄 About to call N8N notification...");
+        System.out.println("🔄 ZaloNotificationService is null? " + (zaloNotificationService == null));
+        try {
+            // Lấy teacher ID từ classroom
+            Long teacherId = classroom.getTeacher().getId();
+            System.out.println("🔄 Teacher ID: " + teacherId + ", Classroom: " + classroom.getName());
+
+            if (zaloNotificationService != null) {
+                zaloNotificationService.sendAttendanceNotification(submitDto, teacherId);
+            } else {
+                System.err.println("❌ ZaloNotificationService is null!");
+            }
+            System.out.println("✅ Sent attendance notification to N8N for classroom " + submitDto.getClassroomId());
+        } catch (Exception e) {
+            System.err.println("❌ Failed to send attendance notification: " + e.getMessage());
+            e.printStackTrace();
+            // Không throw exception để không ảnh hưởng đến việc lưu attendance
+        }
     }
 
     /**
@@ -207,8 +232,16 @@ public class AttendanceServiceImpl implements AttendanceService {
             throw new BusinessLogicException(errorMsg);
         }
 
-        // Test Case 3: Past dates - Require makeup request (will be handled by frontend)
+        // Test Case 3: Past dates - Check for makeup approval first
         if (lectureDate.isBefore(today)) {
+            // Check if makeup attendance has been approved by manager
+            boolean makeupApproved = checkMakeupApproval(lectureId, lecture.getClassroom().getId());
+
+            if (makeupApproved) {
+                System.out.println("✅ VALIDATION PASSED: Past date attendance approved by manager for lecture " + lectureId);
+                return; // Allow attendance submission because manager approved
+            }
+
             String errorMsg = "📝 CẦN TẠO YÊU CẦU ĐIỂM DANH BÙ!\n" +
                 "Ngày hôm nay: " + today.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) + "\n" +
                 "Ngày buổi học: " + lectureDate.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) + "\n" +
@@ -237,14 +270,31 @@ public class AttendanceServiceImpl implements AttendanceService {
         }
         
         if (now.isAfter(maxAllowedTime)) {
+            // Kiểm tra xem có makeup approval không trước khi block
+            boolean makeupApproved = checkMakeupApproval(lectureId, lecture.getClassroom().getId());
+
+            if (makeupApproved) {
+                System.out.println("VALIDATION PASSED: Makeup attendance approved for lecture " + lectureId);
+                return; // Cho phép điểm danh vì đã được duyệt
+            }
+
             String errorMsg = "⏰ Không thể điểm danh quá muộn!\n" +
                 "Chỉ có thể điểm danh trong vòng 24 giờ sau buổi học.\n" +
                 "Buổi học: " + lectureDate.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) +
-                (lectureEnd != null ? 
+                (lectureEnd != null ?
                     " kết thúc lúc " + lecture.getSchedule().getEndTime().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")) :
-                    (lecture.getSchedule() != null && lecture.getSchedule().getStartTime() != null ? 
+                    (lecture.getSchedule() != null && lecture.getSchedule().getStartTime() != null ?
                         " bắt đầu lúc " + lecture.getSchedule().getStartTime().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")) : "")) +
                 "\nĐã hết hạn điểm danh từ: " + maxAllowedTime.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+
+            // Check if this is a makeup attendance scenario
+            if (lectureDate.isBefore(LocalDate.now())) {
+                errorMsg = "📝 CẦN TẠO YÊU CẦU ĐIỂM DANH BÙ!\n" +
+                    "Ngày hôm nay: " + now.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) + "\n" +
+                    "Ngày cuối học: " + lectureDate.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) + "\n" +
+                    "Đã quá thời hạn điểm danh thông thường. Vui lòng tạo yêu cầu điểm danh bù để được manager phê duyệt.";
+            }
+
             System.out.println("VALIDATION FAILED: Too late - " + errorMsg);
             throw new BusinessLogicException(errorMsg);
         }
@@ -507,9 +557,34 @@ public List<AttendanceResultDto> getSessionResults(Long sessionId) {
      * Check if makeup attendance has been approved for this lecture
      */
     private boolean checkMakeupApproval(Long lectureId, Long classroomId) {
-        // TODO: Implement actual makeup approval check
-        // For now, return false - this should check MakeupAttendanceRequest table
-        return false;
+        try {
+            // Get current teacher from security context
+            UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            User teacher = userRepository.findByEmail(userDetails.getUsername())
+                    .orElse(null);
+
+            if (teacher == null) {
+                System.out.println("No teacher found in security context");
+                return false;
+            }
+
+            // Check if there's an ACKNOWLEDGED makeup request for this lecture
+            Optional<com.classroomapp.classroombackend.model.attendancemanagement.MakeupAttendanceRequest> request =
+                makeupAttendanceRequestRepository.findExistingRequestForLecture(teacher, lectureId);
+
+            if (request.isPresent()) {
+                boolean isAcknowledged = request.get().getStatus() ==
+                    com.classroomapp.classroombackend.model.attendancemanagement.MakeupAttendanceRequest.RequestStatus.ACKNOWLEDGED;
+                System.out.println("Found makeup request for lecture " + lectureId + ", status: " + request.get().getStatus() + ", approved: " + isAcknowledged);
+                return isAcknowledged;
+            }
+
+            System.out.println("No makeup request found for lecture " + lectureId);
+            return false;
+        } catch (Exception e) {
+            System.err.println("Error checking makeup approval: " + e.getMessage());
+            return false;
+        }
     }
 
     @Override
@@ -527,8 +602,17 @@ public List<AttendanceResultDto> getSessionResults(Long sessionId) {
 
     private MyAttendanceHistoryDto mapToDto(Attendance attendance) {
         MyAttendanceHistoryDto dto = new MyAttendanceHistoryDto();
-        dto.setLectureId(attendance.getSession().getLecture().getId());
-        dto.setLectureTitle(attendance.getSession().getLecture().getTitle());
+
+        // Kiểm tra null cho lecture để tránh NullPointerException
+        Lecture lecture = attendance.getSession().getLecture();
+        if (lecture != null) {
+            dto.setLectureId(lecture.getId());
+            dto.setLectureTitle(lecture.getTitle());
+        } else {
+            dto.setLectureId(null);
+            dto.setLectureTitle("Phiên điểm danh không có bài giảng");
+        }
+
         dto.setSessionDate(attendance.getSession().getSessionDate());
         dto.setStatus(attendance.getStatus());
         return dto;
@@ -543,10 +627,19 @@ public List<AttendanceResultDto> getSessionResults(Long sessionId) {
         
         return sessions.stream().map(session -> {
             Lecture lecture = session.getLecture();
-            System.out.println("Processing session ID: " + session.getId() + 
-                             ", Lecture: " + lecture.getTitle() + 
+
+            // Kiểm tra null cho lecture để tránh NullPointerException
+            if (lecture == null) {
+                System.out.println("Processing session ID: " + session.getId() +
+                                 ", Lecture: NULL" +
+                                 ", Clock-in time: " + session.getTeacherClockInTime());
+                return null; // Skip sessions without lecture
+            }
+
+            System.out.println("Processing session ID: " + session.getId() +
+                             ", Lecture: " + lecture.getTitle() +
                              ", Clock-in time: " + session.getTeacherClockInTime());
-                             
+
             TeachingHistoryDto dto = new TeachingHistoryDto();
             dto.setLectureId(lecture.getId());
             dto.setLectureTitle(lecture.getTitle());
@@ -555,7 +648,7 @@ public List<AttendanceResultDto> getSessionResults(Long sessionId) {
             dto.setLectureDate(lecture.getLectureDate());
             dto.setClockInTime(session.getTeacherClockInTime());
             return dto;
-        }).collect(Collectors.toList());
+        }).filter(dto -> dto != null).collect(Collectors.toList());
     }
 
     @Override

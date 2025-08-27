@@ -30,8 +30,8 @@ import java.util.Optional;
  * Creates test data including classroom, students, parents, and relationships
  * Only runs in 'dev' or 'test' profiles
  */
-@Component
-@Profile({"dev", "test"})
+// @Component   // Vô hiệu hóa seeder   
+@Profile({"dev", "test"})  
 @RequiredArgsConstructor
 @Slf4j
 public class ZaloNotificationTestSeeder implements CommandLineRunner {
@@ -45,7 +45,7 @@ public class ZaloNotificationTestSeeder implements CommandLineRunner {
 
     // Test data constants
     private static final String TEST_CLASSROOM_NAME = "Lớp Test Zalo Notification";
-    private static final String TEST_TEACHER_USERNAME = "teacher_zalo_test";
+    private static final String TEST_TEACHER_USERNAME = "Nguyễn Văn Minh";
     private static final String TEST_STUDENT1_USERNAME = "student_zalo_test_1";
     private static final String TEST_STUDENT2_USERNAME = "student_zalo_test_2";
     private static final String TEST_PARENT1_USERNAME = "parent_zalo_test_1";
@@ -187,7 +187,7 @@ public class ZaloNotificationTestSeeder implements CommandLineRunner {
         student.setPassword(passwordEncoder.encode("password123"));
         student.setEmail("le.van.minh@student.mvs.edu.vn");
         student.setFullName("Lê Văn Minh");
-        student.setPhoneNumber("0976543210");
+        student.setPhoneNumber("0859326040");
         student.setRoleId(RoleConstants.STUDENT);
         student.setGender("MALE");
         student.setBirthDate(LocalDate.of(2010, 8, 20));

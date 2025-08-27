@@ -353,9 +353,9 @@ public class FrontendApiBridgeController {
     @GetMapping("/attendance/current-student")
     public ResponseEntity<?> getCurrentStudentAttendance(Authentication authentication) {
         try {
-            String username = authentication.getName();
-            User currentUser = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+            String email = authentication.getName(); // JWT contains email, not username
+            User currentUser = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
             
             // Get actual attendance data from service
             List<AttendanceDto> attendanceRecords = attendanceService.findByUserId(currentUser.getId());
@@ -377,9 +377,9 @@ public class FrontendApiBridgeController {
     @GetMapping("/student-messages/unread-count")
     public ResponseEntity<?> getStudentUnreadMessageCount(Authentication authentication) {
         try {
-            String username = authentication.getName();
-            User currentUser = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+            String email = authentication.getName(); // JWT contains email, not username
+            User currentUser = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
             
             // Get actual unread count from service
             Long unreadCount = messageService.countUnreadMessages(currentUser.getId());
@@ -396,14 +396,14 @@ public class FrontendApiBridgeController {
                 }});
             }});
         }
-    }  
-    
+    }
+
   @GetMapping("/messages/dashboard/unread-count")
 public ResponseEntity<?> getDashboardUnreadMessageCount(Authentication authentication) {
     try {
-        String username = authentication.getName();
-        User currentUser = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+        String email = authentication.getName(); // JWT contains email, not username
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
         
         Long unreadCount = messageService.countUnreadMessages(currentUser.getId());
         
@@ -430,9 +430,9 @@ public ResponseEntity<?> getDashboardUnreadMessageCount(Authentication authentic
     @GetMapping("/attendance/current-teacher/stats")
     public ResponseEntity<?> getTeacherAttendanceStats(Authentication authentication) {
         try {
-            String username = authentication.getName();
-            User currentUser = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+            String email = authentication.getName(); // JWT contains email, not username
+            User currentUser = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
             
             // Get real stats based on teacher's classrooms
             List<ClassroomDto> classrooms = classroomService.GetClassroomsByTeacher(currentUser.getId());
@@ -469,9 +469,9 @@ public ResponseEntity<?> getDashboardUnreadMessageCount(Authentication authentic
     @GetMapping("/teacher-messages/unread-count")
     public ResponseEntity<?> getTeacherUnreadMessageCount(Authentication authentication) {
         try {
-            String username = authentication.getName();
-            userRepository.findByUsername(username)
-                    .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+            String email = authentication.getName(); // JWT contains email, not username
+            userRepository.findByEmail(email)
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
             
             // Return mock data for now
             return ResponseEntity.ok(new java.util.HashMap<String, Object>() {{
@@ -495,9 +495,9 @@ public ResponseEntity<?> getDashboardUnreadMessageCount(Authentication authentic
     @GetMapping("/courses/student")
     public ResponseEntity<List<ClassroomDto>> getStudentCourses(Authentication authentication) {
         // Extract user ID from JWT token
-        String username = authentication.getName();
-        User currentUser = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+        String email = authentication.getName(); // JWT contains email, not username
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
         return ResponseEntity.ok(classroomService.GetClassroomsByStudent(currentUser.getId()));
     }
 
@@ -519,9 +519,9 @@ public ResponseEntity<?> getDashboardUnreadMessageCount(Authentication authentic
     @GetMapping("/teacher/profile")
     public ResponseEntity<?> getTeacherProfile(Authentication authentication) {
         try {
-            String username = authentication.getName();
-            User currentUser = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+            String email = authentication.getName(); // JWT contains email, not username
+            User currentUser = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
             
             // Return basic teacher profile - should be replaced with actual teacher profile service
             return ResponseEntity.ok(new java.util.HashMap<String, Object>() {{
