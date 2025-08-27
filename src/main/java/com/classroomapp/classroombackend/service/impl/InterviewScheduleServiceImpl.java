@@ -106,8 +106,8 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
     public void updateEvaluation(Long id, String evaluation) {
         InterviewSchedule entity = interviewRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy lịch phỏng vấn"));
-        if (evaluation != null && evaluation.length() > 200) {
-            throw new IllegalArgumentException("Đánh giá tối đa 200 ký tự!");
+        if (evaluation != null && evaluation.length() > 500) {
+            throw new IllegalArgumentException("Đánh giá tối đa 500 ký tự!");
         }
         entity.setEvaluation(evaluation);
         interviewRepo.save(entity);
@@ -119,13 +119,13 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
         InterviewSchedule entity = interviewRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy lịch phỏng vấn"));
         
-        // Validation: Tối thiểu 23,800 VNĐ/giờ, tối đa 5,000,000 VNĐ/giờ
+        // Validation: Tối thiểu 20,000 VNĐ/giờ, tối đa 10,000,000 VNĐ/giờ
         BigDecimal rate = new java.math.BigDecimal(hourlyRate);
-        if (rate.compareTo(new java.math.BigDecimal("23800")) < 0) {
-            throw new IllegalArgumentException("Lương theo giờ tối thiểu là 23,800 VNĐ/giờ!");
+        if (rate.compareTo(new java.math.BigDecimal("20000")) < 0) {
+            throw new IllegalArgumentException("Lương theo giờ tối thiểu là 20,000 VNĐ/giờ!");
         }
-        if (rate.compareTo(new java.math.BigDecimal("5000000")) > 0) {
-            throw new IllegalArgumentException("Lương theo giờ tối đa là 5,000,000 VNĐ/giờ!");
+        if (rate.compareTo(new java.math.BigDecimal("10000000")) > 0) {
+            throw new IllegalArgumentException("Lương theo giờ tối đa là 10,000,000 VNĐ/giờ!");
         }
         
         entity.setHourlyRate(rate);
@@ -312,7 +312,8 @@ public class InterviewScheduleServiceImpl implements InterviewScheduleService {
             dto.setApplicantName(entity.getApplication().getFullName());
             dto.setApplicantEmail(entity.getApplication().getEmail());
             dto.setApplicantPhone(entity.getApplication().getPhoneNumber());
-            
+            dto.setCvUrl(entity.getApplication().getCvUrl());
+
             if (entity.getApplication().getJobPosition() != null) {
                 dto.setJobTitle(entity.getApplication().getJobPosition().getTitle());
                 dto.setSalaryRange(entity.getApplication().getJobPosition().getSalaryRange());
