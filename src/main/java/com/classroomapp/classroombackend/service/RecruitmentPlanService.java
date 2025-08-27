@@ -4,6 +4,7 @@ import com.classroomapp.classroombackend.model.RecruitmentPlan;
 import com.classroomapp.classroombackend.repository.RecruitmentPlanRepository;
 import com.classroomapp.classroombackend.repository.JobPositionRepository;
 import com.classroomapp.classroombackend.repository.RecruitmentApplicationRepository;
+import com.classroomapp.classroombackend.repository.InterviewScheduleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,9 @@ public class RecruitmentPlanService {
     
     @Autowired
     private RecruitmentApplicationRepository recruitmentApplicationRepository;
+
+    @Autowired
+    private InterviewScheduleRepository interviewScheduleRepository;
     
     public List<RecruitmentPlan> getAllRecruitmentPlans() {
         // Tự động scan và đóng kế hoạch tương lai trước khi trả về
@@ -132,18 +136,30 @@ public class RecruitmentPlanService {
         }
     }
     
+    @Transactional
     public void deleteRecruitmentPlan(Long id) {
         RecruitmentPlan plan = recruitmentPlanRepository.findById(id).orElse(null);
-        if (plan != null && !plan.getStartDate().isAfter(LocalDate.now())) {
-            throw new IllegalArgumentException("Kế hoạch đã bắt đầu, không thể xoá.");
+        if (plan == null) {
+            throw new IllegalArgumentException("Không tìm thấy kế hoạch tuyển dụng");
         }
-        // Xóa các vị trí liên quan
-        jobPositionRepository.deleteByRecruitmentPlanId(id);
-        
-        // Xóa các đơn ứng tuyển liên quan
-        recruitmentApplicationRepository.deleteByJobPosition_RecruitmentPlanId(id);
-        
-        recruitmentPlanRepository.deleteById(id);
+
+        // Override: Xóa tất cả dữ liệu liên quan bất kể trạng thái
+        try {
+            // Xóa tất cả lịch phỏng vấn liên quan đến các đơn ứng tuyển của kế hoạch này
+            interviewScheduleRepository.deleteByApplication_JobPosition_RecruitmentPlanId(id);
+
+            // Xóa tất cả đơn ứng tuyển liên quan đến các vị trí của kế hoạch này
+            recruitmentApplicationRepository.deleteByJobPosition_RecruitmentPlanId(id);
+
+            // Xóa tất cả vị trí tuyển dụng của kế hoạch này
+            jobPositionRepository.deleteByRecruitmentPlanId(id);
+
+            // Cuối cùng xóa kế hoạch tuyển dụng
+            recruitmentPlanRepository.deleteById(id);
+
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Không thể xóa kế hoạch tuyển dụng: " + e.getMessage());
+        }
     }
     
     public RecruitmentPlan changeStatus(Long id, RecruitmentPlan.Status status) {

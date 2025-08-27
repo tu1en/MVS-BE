@@ -9,4 +9,7 @@ import java.util.List;
 public interface InterviewScheduleRepository extends JpaRepository<InterviewSchedule, Long> {
     List<InterviewSchedule> findByApplication_JobPosition_Id(Long jobPositionId);
     List<InterviewSchedule> findByApplication_Id(Long applicationId);
+
+    // Thêm method để xóa tất cả lịch phỏng vấn của một kế hoạch tuyển dụng
+    void deleteByApplication_JobPosition_RecruitmentPlanId(Long recruitmentPlanId);
 } 
