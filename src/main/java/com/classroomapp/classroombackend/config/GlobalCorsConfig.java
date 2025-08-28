@@ -23,7 +23,7 @@ public class GlobalCorsConfig {
         config.setAllowCredentials(true);
         // Allow localhost dev ports; you can tighten this if needed
         config.setAllowedOriginPatterns(Arrays.asList("http://localhost:*", "https://localhost:*"));
-        config.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:3001"));
+        config.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:3000"));
         config.setAllowedHeaders(Arrays.asList("*"));
         config.setExposedHeaders(Arrays.asList(
             "Authorization", "Cache-Control", "Content-Type",

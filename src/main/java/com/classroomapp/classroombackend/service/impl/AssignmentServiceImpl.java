@@ -1,14 +1,15 @@
 package com.classroomapp.classroombackend.service.impl;
 
-import org.springframework.security.access.AccessDeniedException;
+import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.Authentication;
@@ -26,8 +27,8 @@ import com.classroomapp.classroombackend.dto.FeedbackDto;
 import com.classroomapp.classroombackend.dto.FileUploadResponse;
 import com.classroomapp.classroombackend.dto.GradeDto;
 import com.classroomapp.classroombackend.dto.GradingAnalyticsDto;
-import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentAttachmentDto;
+import com.classroomapp.classroombackend.dto.assignmentmanagement.AssignmentDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.CreateAssignmentDto;
 import com.classroomapp.classroombackend.dto.assignmentmanagement.GradeSubmissionDto;
 import com.classroomapp.classroombackend.exception.ResourceNotFoundException;
@@ -46,23 +47,8 @@ import com.classroomapp.classroombackend.security.CustomUserDetails;
 import com.classroomapp.classroombackend.service.AssignmentService;
 import com.classroomapp.classroombackend.service.ClassroomSecurityService;
 
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.security.authentication.InsufficientAuthenticationException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Lazy
@@ -92,16 +78,22 @@ public class AssignmentServiceImpl implements AssignmentService {
 
     /**
      * Custom mapping method to convert Assignment entity to AssignmentDto with attachments
+     * Optimized to avoid N+1 query problem when attachments are already fetched
      */
     private AssignmentDto mapToDto(Assignment assignment) {
         AssignmentDto dto = modelMapper.map(assignment, AssignmentDto.class);
 
-        // Map attachments
+        // Map attachments - attachments should already be fetched by JOIN FETCH
         if (assignment.getAttachments() != null && !assignment.getAttachments().isEmpty()) {
             List<AssignmentAttachmentDto> attachmentDtos = assignment.getAttachments().stream()
                 .map(attachment -> modelMapper.map(attachment, AssignmentAttachmentDto.class))
                 .collect(Collectors.toList());
             dto.setAttachments(attachmentDtos);
+            
+            log.debug("Mapped {} attachments for assignment ID: {}", attachmentDtos.size(), assignment.getId());
+        } else {
+            dto.setAttachments(new ArrayList<>());
+            log.debug("No attachments found for assignment ID: {}", assignment.getId());
         }
 
         return dto;
@@ -215,8 +207,9 @@ public class AssignmentServiceImpl implements AssignmentService {
     @Override
     public List<AssignmentDto> GetAssignmentsByClassroom(Long classroomId) {
         Classroom classroom = classroomRepository.findById(classroomId).orElseThrow(() -> new EntityNotFoundException("Không tìm thấy lớp học với ID: " + classroomId));
-        return assignmentRepository.findByClassroomOrderByDueDateAsc(classroom).stream()
-                .map(assignment -> modelMapper.map(assignment, AssignmentDto.class))
+        // Sử dụng method đã optimize để tránh N+1 query problem
+        return assignmentRepository.findByClassroomWithAttachmentsAndClassroomOrderByDueDateAsc(classroom).stream()
+                .map(this::mapToDto)
                 .collect(Collectors.toList());
     }
 
@@ -260,10 +253,10 @@ public class AssignmentServiceImpl implements AssignmentService {
             return new ArrayList<>();
         }
 
-        // Fetch all assignments for those classrooms in a single query
-        return assignmentRepository.findByClassroomInOrderByDueDateAsc(enrolledClassrooms)
+        // Fetch all assignments for those classrooms in a single query with attachments to avoid N+1
+        return assignmentRepository.findByClassroomInWithAttachmentsAndClassroomOrderByDueDateAsc(enrolledClassrooms)
                 .stream()
-                .map(assignment -> modelMapper.map(assignment, AssignmentDto.class))
+                .map(this::mapToDto)
                 .collect(Collectors.toList());
     }
 
@@ -280,14 +273,16 @@ public class AssignmentServiceImpl implements AssignmentService {
     }    @Override
     public List<AssignmentDto> GetUpcomingAssignmentsByClassroom(Long classroomId) {
         Classroom classroom = classroomRepository.findById(classroomId).orElseThrow(() -> new EntityNotFoundException("Không tìm thấy lớp học với ID: " + classroomId));
-        return assignmentRepository.findByClassroomAndDueDateAfter(classroom, LocalDateTime.now()).stream()
-                .map(assignment -> modelMapper.map(assignment, AssignmentDto.class))
+        // Sử dụng method đã optimize để tránh N+1 query problem
+        return assignmentRepository.findByClassroomAndDueDateAfterWithAttachmentsAndClassroomOrderByDueDateAsc(classroom, LocalDateTime.now()).stream()
+                .map(this::mapToDto)
                 .collect(Collectors.toList());
     }    @Override
     public List<AssignmentDto> GetPastAssignmentsByClassroom(Long classroomId) {
         Classroom classroom = classroomRepository.findById(classroomId).orElseThrow(() -> new EntityNotFoundException("Không tìm thấy lớp học với ID: " + classroomId));
-        return assignmentRepository.findByClassroomAndDueDateBefore(classroom, LocalDateTime.now()).stream()
-                .map(assignment -> modelMapper.map(assignment, AssignmentDto.class))
+        // Sử dụng method đã optimize để tránh N+1 query problem
+        return assignmentRepository.findByClassroomAndDueDateBeforeWithAttachmentsAndClassroomOrderByDueDateDesc(classroom, LocalDateTime.now()).stream()
+                .map(this::mapToDto)
                 .collect(Collectors.toList());
     }
 

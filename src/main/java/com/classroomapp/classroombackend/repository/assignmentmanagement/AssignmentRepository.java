@@ -25,6 +25,40 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
     @Query("SELECT a FROM Assignment a JOIN FETCH a.classroom WHERE a.classroom = :classroom")
     List<Assignment> findByClassroomWithClassroom(@Param("classroom") Classroom classroom);
     
+    // NEW: Optimized query to fetch assignments with attachments to avoid N+1 problem
+    @Query("SELECT DISTINCT a FROM Assignment a " +
+           "LEFT JOIN FETCH a.attachments " +
+           "JOIN FETCH a.classroom " +
+           "WHERE a.classroom = :classroom " +
+           "ORDER BY a.dueDate ASC")
+    List<Assignment> findByClassroomWithAttachmentsAndClassroomOrderByDueDateAsc(@Param("classroom") Classroom classroom);
+    
+    // NEW: Optimized query for upcoming assignments with attachments
+    @Query("SELECT DISTINCT a FROM Assignment a " +
+           "LEFT JOIN FETCH a.attachments " +
+           "JOIN FETCH a.classroom " +
+           "WHERE a.classroom = :classroom AND a.dueDate > :now " +
+           "ORDER BY a.dueDate ASC")
+    List<Assignment> findByClassroomAndDueDateAfterWithAttachmentsAndClassroomOrderByDueDateAsc(
+        @Param("classroom") Classroom classroom, @Param("now") LocalDateTime now);
+    
+    // NEW: Optimized query for past assignments with attachments
+    @Query("SELECT DISTINCT a FROM Assignment a " +
+           "LEFT JOIN FETCH a.attachments " +
+           "JOIN FETCH a.classroom " +
+           "WHERE a.classroom = :classroom AND a.dueDate < :now " +
+           "ORDER BY a.dueDate DESC")
+    List<Assignment> findByClassroomAndDueDateBeforeWithAttachmentsAndClassroomOrderByDueDateDesc(
+        @Param("classroom") Classroom classroom, @Param("now") LocalDateTime now);
+    
+    // NEW: Optimized query for multiple classrooms with attachments
+    @Query("SELECT DISTINCT a FROM Assignment a " +
+           "LEFT JOIN FETCH a.attachments " +
+           "JOIN FETCH a.classroom " +
+           "WHERE a.classroom IN :classrooms " +
+           "ORDER BY a.dueDate ASC")
+    List<Assignment> findByClassroomInWithAttachmentsAndClassroomOrderByDueDateAsc(@Param("classrooms") List<Classroom> classrooms);
+    
     // Find upcoming assignments (due date is after now)
     List<Assignment> findByClassroomAndDueDateAfterOrderByDueDateAsc(Classroom classroom, LocalDateTime now);
     

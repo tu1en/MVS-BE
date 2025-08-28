@@ -182,7 +182,7 @@ public class SecurityConfig {
         
         configuration.setAllowedOrigins(Arrays.asList(
             "http://localhost:3000", 
-            "http://localhost:3001", 
+            "http://localhost:3000", 
             "http://localhost:8088", 
             "http://localhost", 
             "https://mvsclassroom.com"

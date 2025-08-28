@@ -960,7 +960,7 @@ seedEvidenceTemplates();
                     {"ly_gv1","ly1@school.vn","Trần Quốc Huy","Vật lý","0912002001","1984-05-12","037184456789","Thanh Hóa"},
                     {"ly_gv2","ly2@school.vn","Đỗ Thanh Tùng","Vật lý","0912002002","1987-09-30","037187567890","Thanh Hóa"},
                     {"ly_gv3","ly3@school.vn","Ngô Nhật Nam","Vật lý","0912002003","1983-12-18","037183678901","Thanh Hóa"},
-                    {"hoa_gv1","hoa1@school.vn","Vũ Hồng Phúc","Hóa học","0903003001","1986-02-25","037186789012","Thanh Hóa"},
+                    {"hoa_gv1","hoa1@school.vn","Vũ Hồng Phúc","Hóa học","0903003000","1986-02-25","037186789012","Thanh Hóa"},
                     {"hoa_gv2","hoa2@school.vn","Bùi Thanh Hà","Hóa học","0903003002","1989-06-14","037289890123","Thanh Hóa"},
                     {"hoa_gv3","hoa3@school.vn","Phan Anh Dũng","Hóa học","0903003003","1981-10-07","037181901234","Thanh Hóa"},
                     {"van_gv1","van1@school.vn","Phạm Thu Hà","Ngữ văn","0934004001","1990-04-20","037290012345","Thanh Hóa"},

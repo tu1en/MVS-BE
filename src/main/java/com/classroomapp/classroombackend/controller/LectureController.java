@@ -22,9 +22,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.classroomapp.classroombackend.dto.common.FileUploadResponse;
 import com.classroomapp.classroombackend.dto.LectureDto;
 import com.classroomapp.classroombackend.dto.LectureMaterialDto;
+import com.classroomapp.classroombackend.dto.common.FileUploadResponse;
 import com.classroomapp.classroombackend.model.Lecture;
 import com.classroomapp.classroombackend.model.LectureMaterial;
 import com.classroomapp.classroombackend.model.Schedule;
@@ -74,6 +74,7 @@ public class LectureController {
             dto.setId(lecture.getId());
             dto.setTitle(lecture.getTitle());
             dto.setContent(lecture.getContent());
+            dto.setVideoUrl(lecture.getVideoUrl());
             dto.setLectureDate(lecture.getLectureDate());
             dto.setClassroomId(lecture.getClassroom().getId());
             
@@ -194,6 +195,7 @@ public class LectureController {
             Lecture lecture = new Lecture();
             lecture.setTitle(lectureDto.getTitle());
             lecture.setContent(lectureDto.getContent());
+            lecture.setVideoUrl(lectureDto.getVideoUrl());
             lecture.setClassroom(classroom);
             lecture.setCreatedAt(LocalDateTime.now());
             lecture.setUpdatedAt(LocalDateTime.now());
@@ -239,6 +241,7 @@ public class LectureController {
             responseDto.setId(savedLecture.getId());
             responseDto.setTitle(savedLecture.getTitle());
             responseDto.setContent(savedLecture.getContent());
+            responseDto.setVideoUrl(savedLecture.getVideoUrl());
             responseDto.setLectureDate(savedLecture.getLectureDate());
             responseDto.setClassroomId(classroomId);
             responseDto.setMaterials(materialDtos);
@@ -300,6 +303,7 @@ public class LectureController {
             // Update fields
             lecture.setTitle(lectureDto.getTitle());
             lecture.setContent(lectureDto.getContent());
+            lecture.setVideoUrl(lectureDto.getVideoUrl());
             if (lectureDto.getLectureDate() != null) {
                 lecture.setLectureDate(lectureDto.getLectureDate());
             }
@@ -311,6 +315,7 @@ public class LectureController {
             responseDto.setId(updatedLecture.getId());
             responseDto.setTitle(updatedLecture.getTitle());
             responseDto.setContent(updatedLecture.getContent());
+            responseDto.setVideoUrl(updatedLecture.getVideoUrl());
             responseDto.setLectureDate(updatedLecture.getLectureDate());
             responseDto.setClassroomId(classroomId);
             

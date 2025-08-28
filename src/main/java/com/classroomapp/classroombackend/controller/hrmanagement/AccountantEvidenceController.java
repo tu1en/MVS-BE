@@ -34,7 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 @RestController
 @RequestMapping("/api/accountant/evidence")
 @CrossOrigin(
-    origins = {"http://localhost:3000", "http://localhost:3001"},
+    origins = {"http://localhost:3000", "http://localhost:3000"},
     allowedHeaders = "*",
     methods = { RequestMethod.GET, RequestMethod.POST, RequestMethod.PATCH, RequestMethod.DELETE, RequestMethod.OPTIONS },
     allowCredentials = "true",

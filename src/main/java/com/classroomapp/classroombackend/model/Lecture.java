@@ -50,6 +50,9 @@ public class Lecture {
     @Column(name = "content", columnDefinition = "NVARCHAR(MAX)")
     private String content;
     
+    @Column(name = "video_url", columnDefinition = "NVARCHAR(500)")
+    private String videoUrl;
+    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "classroom_id", nullable = false)
     @ToString.Exclude

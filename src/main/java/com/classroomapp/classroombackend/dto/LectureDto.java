@@ -31,6 +31,7 @@ public class LectureDto {
     private LocalDateTime createdDate;
     private LocalDateTime updatedDate;
     private LocalDate lectureDate;
+    private String videoUrl;
     private List<LectureMaterialDto> materials = new ArrayList<>();
     
     public LectureDto(Long id, String title, String content, Long classroomId) {

@@ -1,15 +1,16 @@
 package com.classroomapp.classroombackend.exception;
 
+import java.io.IOException;
+import java.nio.file.AccessDeniedException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -119,11 +120,62 @@ public class GlobalExceptionHandler {
     }
     
     /**
+     * Handle client abort exceptions (client disconnected unexpectedly)
+     * This is a common issue when users close browser tabs or lose connection
+     */
+    @ExceptionHandler(IOException.class)
+    public ResponseEntity<?> handleIOException(IOException ex, WebRequest request) {
+        String errorMessage = ex.getMessage();
+        
+        // Kiểm tra xem có phải là ClientAbortException không
+        if (errorMessage != null && (
+            errorMessage.contains("An established connection was aborted by the software in your host machine") ||
+            errorMessage.contains("Broken pipe") ||
+            errorMessage.contains("Connection reset by peer") ||
+            errorMessage.contains("Software caused connection abort"))) {
+            
+            // Log ở mức WARN thay vì ERROR vì đây không phải lỗi server
+            log.warn("Client connection aborted: {} - Path: {} - User-Agent: {}", 
+                errorMessage, 
+                request.getDescription(false).replace("uri=", ""),
+                request.getHeader("User-Agent"));
+            
+            // Không cần trả về response vì client đã ngắt kết nối
+            return null;
+        }
+        
+        // Nếu là IOException khác, log như bình thường
+        log.error("IO Exception: {}", ex.getMessage(), ex);
+        
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", new Date());
+        body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+        body.put("error", "Internal Server Error");
+        body.put("message", "An I/O error occurred");
+        body.put("path", request.getDescription(false).replace("uri=", ""));
+        body.put("exception_type", ex.getClass().getName());
+        
+        return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    
+    /**
      * Handle general exceptions
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleGlobalException(Exception ex, WebRequest request) {
-        log.error("Global exception: {}", ex.getMessage(), ex);
+        // Kiểm tra xem có phải là ClientAbortException không (một số framework throw Exception thay vì IOException)
+        if (ex.getMessage() != null && ex.getMessage().contains("An established connection was aborted by the software in your host machine")) {
+            log.warn("Client connection aborted (via Exception handler): {} - Path: {} - User-Agent: {}", 
+                ex.getMessage(), 
+                request.getDescription(false).replace("uri=", ""),
+                request.getHeader("User-Agent"));
+            return null;
+        }
+        
+        log.error("Global exception: {} - Path: {} - User-Agent: {}", 
+            ex.getMessage(), 
+            request.getDescription(false).replace("uri=", ""),
+            request.getHeader("User-Agent"), ex);
         
         Map<String, Object> body = new HashMap<>();
         body.put("timestamp", new Date());

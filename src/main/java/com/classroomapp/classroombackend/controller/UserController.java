@@ -39,7 +39,7 @@ import com.classroomapp.classroombackend.constants.RoleConstants;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:3001"}, allowCredentials = "true")
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:3000"}, allowCredentials = "true")
 public class UserController {
     
     private static final Logger logger = Logger.getLogger(UserController.class.getName());
